@@ -106,6 +106,24 @@
     .no-villain h3 { font-size: 24px; font-weight: 700; color: white; margin-bottom: 8px; }
     .no-villain p { color: #888; font-size: 15px; }
     
+    /* Match Day Header */
+    .matchday-header { background: white; border-radius: 20px; padding: 24px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border: 2px solid var(--cream-dark); }
+    .matchday-header.active { border-color: var(--clay); background: linear-gradient(135deg, rgba(224,120,80,0.05) 0%, rgba(224,120,80,0.02) 100%); }
+    .matchday-info { flex: 1; }
+    .matchday-status { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; color: var(--brown-dark); }
+    .matchday-status.live { color: var(--clay); display: flex; align-items: center; gap: 12px; }
+    .matchday-status.live::before { content: ''; width: 12px; height: 12px; background: var(--danger); border-radius: 50%; animation: pulse 1.5s infinite; }
+    .matchday-details { font-size: 14px; color: var(--text-muted); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 16px; }
+    .matchday-details span { display: flex; align-items: center; gap: 6px; }
+    .matchday-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .upcoming-matchdays { margin-bottom: 24px; padding: 20px; }
+    .upcoming-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--cream); border-radius: 10px; margin-bottom: 8px; }
+    .upcoming-item:last-child { margin-bottom: 0; }
+    .upcoming-item-info { display: flex; align-items: center; gap: 12px; }
+    .upcoming-item-date { font-weight: 700; font-size: 14px; }
+    .upcoming-item-venue { font-size: 13px; color: var(--text-muted); }
+    .upcoming-item-time { font-size: 12px; color: var(--clay); font-weight: 600; }
+    
     .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; grid-column: span 2; }
     @media (max-width: 900px) { .stats-grid { grid-column: span 1; grid-template-columns: repeat(2, 1fr); } }
     .stat-card { background: white; border-radius: 16px; padding: 24px; text-align: center; transition: all 0.3s; border: 1px solid rgba(0,0,0,0.04); }
@@ -400,11 +418,24 @@
     </nav>
     <!-- ===== DASHBOARD TAB ===== -->
     <section class="tab active" id="dashboard">
-      <div class="venue-selector">
-        <label><i class="fas fa-calendar-day"></i> Match Day:</label>
-        <input type="date" id="matchDaySelect" onchange="changeMatchDay()">
-        <button class="btn btn-sm btn-secondary" onclick="setToday()" style="margin-left:8px">Today</button>
+      <!-- Match Day Header -->
+      <div class="matchday-header" id="matchdayHeader">
+        <div class="matchday-info" id="matchdayInfo">
+          <div class="matchday-status" id="matchdayStatus">No Match Day Scheduled</div>
+          <div class="matchday-details" id="matchdayDetails"></div>
+        </div>
+        <div class="matchday-actions">
+          <button class="btn btn-sm btn-secondary" onclick="openModal('createMatchday')" id="createMatchdayBtn"><i class="fas fa-plus"></i> Create Match Day</button>
+          <button class="btn btn-sm btn-danger hidden" onclick="closeMatchday()" id="closeMatchdayBtn"><i class="fas fa-flag-checkered"></i> Close Match Day</button>
+        </div>
       </div>
+      
+      <!-- Upcoming Match Days -->
+      <div class="card upcoming-matchdays hidden" id="upcomingMatchdays">
+        <h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-muted)"><i class="fas fa-calendar"></i> Upcoming Match Days</h4>
+        <div id="upcomingList"></div>
+      </div>
+      
       <div class="grid-2">
         <div class="villain-card" id="villainCard">
           <div class="no-villain">
@@ -422,7 +453,7 @@
         <div class="card">
           <div class="section-header" style="margin-bottom:20px">
             <div><h3 style="font-size:18px;font-weight:700">Today's Matches</h3></div>
-            <button class="btn btn-primary btn-sm" onclick="openModal('queueMatch')"><i class="fas fa-plus"></i> Queue Match</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('queueMatch')" id="queueMatchBtn"><i class="fas fa-plus"></i> Queue Match</button>
           </div>
           <div id="todayMatches"><div class="empty"><p>No matches today yet</p></div></div>
         </div>
@@ -671,6 +702,35 @@
     </div>
   </div>
 
+  <!-- Create Match Day Modal -->
+  <div class="modal-overlay" id="createMatchdayModal">
+    <div class="modal">
+      <div class="modal-header"><h3 class="modal-title">CREATE MATCH DAY</h3><button class="modal-close" onclick="closeModal('createMatchday')"><i class="fas fa-times"></i></button></div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="newMatchdayDate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Venue</label>
+        <select class="form-select" id="newMatchdayVenue"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Start Time</label>
+          <input type="time" class="form-input" id="newMatchdayStart" value="09:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Time</label>
+          <input type="time" class="form-input" id="newMatchdayEnd" value="17:00">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('createMatchday')">Cancel</button>
+        <button class="btn btn-primary" onclick="createMatchday()"><i class="fas fa-calendar-plus"></i> Create</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Queue Match Modal (for ongoing games) -->
   <div class="modal-overlay" id="queueMatchModal">
     <div class="modal">
@@ -751,8 +811,8 @@
     let supabaseClient = null;
     
     // ===== STATE =====
-    let players = [], teams = [], matches = [], venues = [], ongoingMatches = [];
-    let currentMatchDay = { date: new Date().toISOString().split('T')[0], venue: '', villains: null };
+    let players = [], teams = [], matches = [], venues = [], ongoingMatches = [], matchdays = [];
+    let activeMatchday = null; // Current active match day
     let selectedPlayers = [];
     let confirmAction = null;
     let tempPhotoData = { addPlayer: null, editPlayer: null };
@@ -768,6 +828,7 @@
       document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
       document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('queueMatchDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('newMatchdayDate').value = new Date().toISOString().split('T')[0];
       setupTabs();
       setupFilters();
       
@@ -818,21 +879,23 @@
     // ===== DATA =====
     async function fetchData() {
       try {
-        const [p, t, m, v, s, o] = await Promise.all([
+        const [p, t, m, v, o, md] = await Promise.all([
           supabaseClient.from('players').select('*').order('created_at'),
           supabaseClient.from('teams').select('*').order('created_at'),
           supabaseClient.from('matches').select('*').order('date', { ascending: false }),
           supabaseClient.from('venues').select('*').order('name'),
-          supabaseClient.from('settings').select('*').eq('key', 'current_match_day').single(),
-          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false })
+          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false }),
+          supabaseClient.from('matchdays').select('*').order('date', { ascending: true })
         ]);
         players = p.data || []; 
         teams = t.data || []; 
         matches = m.data || [];
         venues = v.data?.length ? v.data : defaultVenues;
         ongoingMatches = o.data || [];
-        if (s.data) currentMatchDay = JSON.parse(s.data.value);
-        if (!currentMatchDay.venue && venues.length) currentMatchDay.venue = venues[0].name;
+        matchdays = md.data || [];
+        
+        // Set active matchday
+        determineActiveMatchday();
         renderAll();
       } catch (e) { console.error(e); toast('Error loading data', 'error'); loadLocal(); renderAll(); }
     }
@@ -843,8 +906,8 @@
       matches = JSON.parse(localStorage.getItem('pv_matches') || '[]');
       venues = JSON.parse(localStorage.getItem('pv_venues') || JSON.stringify(defaultVenues));
       ongoingMatches = JSON.parse(localStorage.getItem('pv_ongoing') || '[]');
-      currentMatchDay = JSON.parse(localStorage.getItem('pv_matchday') || JSON.stringify(currentMatchDay));
-      if (!currentMatchDay.venue && venues.length) currentMatchDay.venue = venues[0].name;
+      matchdays = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
+      determineActiveMatchday();
     }
     
     function saveLocal() {
@@ -853,7 +916,21 @@
       localStorage.setItem('pv_matches', JSON.stringify(matches));
       localStorage.setItem('pv_venues', JSON.stringify(venues));
       localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
-      localStorage.setItem('pv_matchday', JSON.stringify(currentMatchDay));
+      localStorage.setItem('pv_matchdays', JSON.stringify(matchdays));
+    }
+    
+    // Determine active matchday (current or next upcoming)
+    function determineActiveMatchday() {
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      
+      // Filter out closed matchdays
+      const openMatchdays = matchdays.filter(md => md.status !== 'closed');
+      
+      // Find today's matchday or next upcoming
+      activeMatchday = openMatchdays.find(md => md.date === today) || 
+                       openMatchdays.find(md => md.date > today) ||
+                       null;
     }
     
     // ===== HELPERS =====
@@ -863,7 +940,8 @@
     const winRate = (w, l) => (w + l) > 0 ? Math.round((w / (w + l)) * 100) : 0;
     const activePlayers = () => players.filter(p => p.active !== false);
     const activeTeams = () => teams.filter(t => t.active !== false);
-    const getCurrentVenue = () => venues.find(v => v.name === currentMatchDay.venue) || venues[0];
+    const getCurrentVenue = () => activeMatchday ? venues.find(v => v.name === activeMatchday.venue) : venues[0];
+    
     
     // Calculate stats from match history
     function getTeamStats(teamId, filterDate = null) {
@@ -918,12 +996,13 @@
       });
     }
     
-    // Get today's matches
-    const todayMatches = () => matches.filter(m => m.date === currentMatchDay.date);
+    // Get matches for active matchday
+    const todayMatches = () => activeMatchday ? matches.filter(m => m.date === activeMatchday.date) : [];
     
-    // Get villains (top ranked team for the day)
+    // Get villains (top ranked team for the matchday)
     function getDayVillains() {
-      const dayRankings = rankTeamsByMatches(currentMatchDay.date);
+      if (!activeMatchday) return null;
+      const dayRankings = rankTeamsByMatches(activeMatchday.date);
       return dayRankings.length > 0 ? dayRankings[0] : null;
     }
     
@@ -948,17 +1027,67 @@
     
     // ===== DASHBOARD =====
     function renderDashboard() {
-      // Match day selector
-      document.getElementById('matchDaySelect').value = currentMatchDay.date;
+      const header = document.getElementById('matchdayHeader');
+      const statusEl = document.getElementById('matchdayStatus');
+      const detailsEl = document.getElementById('matchdayDetails');
+      const createBtn = document.getElementById('createMatchdayBtn');
+      const closeBtn = document.getElementById('closeMatchdayBtn');
+      const queueBtn = document.getElementById('queueMatchBtn');
+      
+      // Render matchday header
+      if (activeMatchday) {
+        header.classList.add('active');
+        const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        statusEl.innerHTML = `<span class="live">MATCH DAY LIVE</span>`;
+        statusEl.className = 'matchday-status live';
+        detailsEl.innerHTML = `
+          <span><i class="fas fa-calendar"></i> ${dateStr}</span>
+          <span><i class="fas fa-map-marker-alt"></i> ${activeMatchday.venue}</span>
+          <span><i class="fas fa-clock"></i> ${activeMatchday.start_time} - ${activeMatchday.end_time}</span>
+        `;
+        createBtn.classList.add('hidden');
+        closeBtn.classList.remove('hidden');
+        queueBtn.disabled = false;
+      } else {
+        header.classList.remove('active');
+        statusEl.textContent = 'No Match Day Scheduled';
+        statusEl.className = 'matchday-status';
+        detailsEl.innerHTML = '<span>Create a match day to start tracking</span>';
+        createBtn.classList.remove('hidden');
+        closeBtn.classList.add('hidden');
+        queueBtn.disabled = true;
+      }
+      
+      // Render upcoming matchdays
+      const upcomingSection = document.getElementById('upcomingMatchdays');
+      const upcomingList = document.getElementById('upcomingList');
+      const today = new Date().toISOString().split('T')[0];
+      const upcoming = matchdays.filter(md => md.status !== 'closed' && md.date > today);
+      
+      if (upcoming.length > 0) {
+        upcomingSection.classList.remove('hidden');
+        upcomingList.innerHTML = upcoming.slice(0, 3).map(md => {
+          const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+          return `<div class="upcoming-item">
+            <div class="upcoming-item-info">
+              <span class="upcoming-item-date">${dateStr}</span>
+              <span class="upcoming-item-venue">${md.venue}</span>
+            </div>
+            <span class="upcoming-item-time">${md.start_time} - ${md.end_time}</span>
+          </div>`;
+        }).join('');
+      } else {
+        upcomingSection.classList.add('hidden');
+      }
       
       const tm = todayMatches();
-      const dayRankings = rankTeamsByMatches(currentMatchDay.date);
+      const dayRankings = activeMatchday ? rankTeamsByMatches(activeMatchday.date) : [];
       const villain = dayRankings.length > 0 ? dayRankings[0] : null;
       
       document.getElementById('statMatches').textContent = tm.length;
       document.getElementById('statPlayers').textContent = activePlayers().length;
       document.getElementById('statTeams').textContent = activeTeams().length;
-      document.getElementById('statVenue').textContent = currentMatchDay.venue || '-';
+      document.getElementById('statVenue').textContent = activeMatchday?.venue || '-';
       
       // Render villains card based on day rankings
       const vc = document.getElementById('villainCard');
@@ -993,7 +1122,7 @@
           </div>
           <div class="quick-match-scores">${(m.scores||[]).map(s=>`<span class="quick-match-score">${s[0]}-${s[1]}</span>`).join('')}</div>
         </div>`;
-      }).join('') : '<div class="empty" style="padding:30px"><p>No matches today yet</p></div>';
+      }).join('') : '<div class="empty" style="padding:30px"><p>No matches yet</p></div>';
       
       // Day rankings
       document.getElementById('dayRankings').innerHTML = dayRankings.length ? dayRankings.slice(0, 5).map((t, i) => {
@@ -1007,28 +1136,112 @@
             <span style="padding:4px 10px;background:var(--danger);color:white;border-radius:6px;font-size:12px;font-weight:700">${t.losses}L</span>
           </div>
         </div>`;
-      }).join('') : '<div class="empty" style="padding:20px"><p>No matches today yet</p></div>';
+      }).join('') : '<div class="empty" style="padding:20px"><p>No matches yet</p></div>';
     }
     
-    function changeMatchDay() {
-      currentMatchDay.date = document.getElementById('matchDaySelect').value;
+    // ===== MATCHDAY MANAGEMENT =====
+    async function createMatchday() {
+      const date = document.getElementById('newMatchdayDate').value;
+      const venueId = document.getElementById('newMatchdayVenue').value;
+      const venue = venues.find(v => v.id == venueId) || venues[0];
+      const startTime = document.getElementById('newMatchdayStart').value;
+      const endTime = document.getElementById('newMatchdayEnd').value;
+      
+      if (!date || !venue) {
+        toast('Please fill all fields', 'error');
+        return;
+      }
+      
+      // Check if matchday already exists for this date
+      if (matchdays.some(md => md.date === date && md.status !== 'closed')) {
+        toast('A match day already exists for this date', 'error');
+        return;
+      }
+      
+      const newMatchday = {
+        id: Date.now(),
+        date,
+        venue: venue.name,
+        venue_id: venue.id,
+        start_time: startTime,
+        end_time: endTime,
+        status: 'open',
+        created_at: new Date().toISOString()
+      };
+      
       if (supabaseClient) {
-        supabaseClient.from('settings').upsert({ key: 'current_match_day', value: JSON.stringify(currentMatchDay) });
+        try {
+          const { data, error } = await supabaseClient.from('matchdays').insert([newMatchday]).select().single();
+          if (error) throw error;
+          matchdays.push(data);
+        } catch (e) {
+          console.error(e);
+          toast('Error creating match day', 'error');
+          return;
+        }
       } else {
+        matchdays.push(newMatchday);
         saveLocal();
       }
+      
+      determineActiveMatchday();
+      closeModal('createMatchday');
       renderAll();
+      toast('Match day created!', 'success');
     }
     
-    function setToday() {
-      currentMatchDay.date = new Date().toISOString().split('T')[0];
-      document.getElementById('matchDaySelect').value = currentMatchDay.date;
-      if (supabaseClient) {
-        supabaseClient.from('settings').upsert({ key: 'current_match_day', value: JSON.stringify(currentMatchDay) });
-      } else {
-        saveLocal();
+    async function closeMatchday() {
+      if (!activeMatchday) return;
+      
+      // Confirm before closing
+      const tm = todayMatches();
+      const dayRankings = rankTeamsByMatches(activeMatchday.date);
+      
+      document.getElementById('confirmTitle').textContent = 'Close Match Day';
+      document.getElementById('confirmText').textContent = `Close this match day? ${tm.length} matches will be saved to history. The dashboard will reset for the next match day.`;
+      document.getElementById('confirmBtn').textContent = 'Close Match Day';
+      
+      confirmAction = async () => {
+        const idx = matchdays.findIndex(md => md.id === activeMatchday.id);
+        if (idx !== -1) {
+          matchdays[idx].status = 'closed';
+          
+          if (supabaseClient) {
+            try {
+              await supabaseClient.from('matchdays').update({ status: 'closed' }).eq('id', activeMatchday.id);
+            } catch (e) {
+              console.error(e);
+              toast('Error closing match day', 'error');
+              return;
+            }
+          } else {
+            saveLocal();
+          }
+        }
+        
+        // Clear ongoing matches for this day
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('ongoing_matches').delete().eq('date', activeMatchday.date);
+          } catch (e) { console.error(e); }
+        }
+        ongoingMatches = ongoingMatches.filter(m => m.date !== activeMatchday.date);
+        
+        determineActiveMatchday();
+        closeModal('confirm');
+        renderAll();
+        toast('Match day closed!', 'success');
+      };
+      
+      openModal('confirm');
+    }
+    
+    // Update dropdowns to include venue selector for new matchday
+    function updateMatchdayVenueDropdown() {
+      const venueSelect = document.getElementById('newMatchdayVenue');
+      if (venueSelect) {
+        venueSelect.innerHTML = venues.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
       }
-      renderAll();
     }
     
     // ===== PLAYERS =====
@@ -1218,7 +1431,7 @@
           const datePicker = document.getElementById('rankingDatePicker');
           if (rankingFilter === 'day') {
             datePicker.classList.remove('hidden');
-            document.getElementById('rankingDate').value = currentMatchDay.date;
+            document.getElementById('rankingDate').value = activeMatchday?.date || new Date().toISOString().split('T')[0];
           } else {
             datePicker.classList.add('hidden');
           }
@@ -1485,11 +1698,20 @@
       document.getElementById('queueTeam1').innerHTML = to;
       document.getElementById('queueTeam2').innerHTML = to;
       
+      // Venue dropdowns
+      document.getElementById('newMatchdayVenue').innerHTML = venues.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+      
       const venue = getCurrentVenue();
       if (venue) {
         const courtOptions = venue.courts.map(c => `<option value="${c}">${c}</option>`).join('');
         document.getElementById('matchCourt').innerHTML = courtOptions;
         document.getElementById('queueMatchCourt').innerHTML = courtOptions;
+      }
+      
+      // Set queue match date to active matchday
+      if (activeMatchday) {
+        document.getElementById('queueMatchDate').value = activeMatchday.date;
+        document.getElementById('matchDate').value = activeMatchday.date;
       }
     }
     
