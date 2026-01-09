@@ -612,7 +612,7 @@
     // ===== CONFIG =====
     const SUPABASE_URL = 'https://hihujmoapelzuvcrdhfh.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpaHVqbW9hcGVsenV2Y3JkaGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NTM4OTUsImV4cCI6MjA4MzUyOTg5NX0.BjCkaElKR6lj057FLOmryWH7CbCn8Ssg-Agp2BbSJeI';
-    let supabase;
+    let supabaseClient = null;
     
     // ===== STATE =====
     let players = [], teams = [], matches = [], venues = [];
@@ -637,9 +637,17 @@
       if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         const s = document.createElement('script');
         s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-        s.onload = async () => { 
-          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
-          await fetchData(); 
+        s.onload = async () => {
+          try {
+            const { createClient } = window.supabase;
+            supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase connected!');
+            await fetchData();
+          } catch (e) {
+            console.error('Supabase init error:', e);
+            loadLocal();
+            renderAll();
+          }
         };
         s.onerror = () => { console.error('Failed to load Supabase'); loadLocal(); renderAll(); };
         document.head.appendChild(s);
@@ -674,11 +682,11 @@
     async function fetchData() {
       try {
         const [p, t, m, v, s] = await Promise.all([
-          supabase.from('players').select('*').order('created_at'),
-          supabase.from('teams').select('*').order('created_at'),
-          supabase.from('matches').select('*').order('date', { ascending: false }),
-          supabase.from('venues').select('*').order('name'),
-          supabase.from('settings').select('*').eq('key', 'current_match_day').single()
+          supabaseClient.from('players').select('*').order('created_at'),
+          supabaseClient.from('teams').select('*').order('created_at'),
+          supabaseClient.from('matches').select('*').order('date', { ascending: false }),
+          supabaseClient.from('venues').select('*').order('name'),
+          supabaseClient.from('settings').select('*').eq('key', 'current_match_day').single()
         ]);
         players = p.data || []; 
         teams = t.data || []; 
@@ -770,8 +778,8 @@
     
     function changeVenue() {
       currentMatchDay.venue = document.getElementById('venueSelect').value;
-      if (supabase) {
-        supabase.from('settings').upsert({ key: 'current_match_day', value: JSON.stringify(currentMatchDay) });
+      if (supabaseClient) {
+        supabaseClient.from('settings').upsert({ key: 'current_match_day', value: JSON.stringify(currentMatchDay) });
       } else {
         saveLocal();
       }
@@ -911,9 +919,9 @@
       const courts = courtsStr.split(',').map(c => c.trim()).filter(c => c);
       const nv = { id: Date.now(), name, courts };
       
-      if (supabase) {
+      if (supabaseClient) {
         try {
-          const { data, error } = await supabase.from('venues').insert([nv]).select().single();
+          const { data, error } = await supabaseClient.from('venues').insert([nv]).select().single();
           if (error) throw error;
           venues.push(data);
         } catch (e) { toast('Error adding venue', 'error'); return; }
@@ -930,8 +938,8 @@
     
     async function deleteVenue(id) {
       if (venues.length <= 1) { toast('Must have at least one venue', 'error'); return; }
-      if (supabase) {
-        try { await supabase.from('venues').delete().eq('id', id); } catch (e) { toast('Error', 'error'); return; }
+      if (supabaseClient) {
+        try { await supabaseClient.from('venues').delete().eq('id', id); } catch (e) { toast('Error', 'error'); return; }
       }
       venues = venues.filter(v => v.id !== id);
       if (currentMatchDay.venue === venues.find(v => v.id === id)?.name) {
@@ -1003,9 +1011,9 @@
       if (!name) { toast('Enter a name', 'error'); return; }
       const np = { id: Date.now(), name, photo: tempPhotoData.addPlayer, wins: 0, losses: 0, games_played: 0, active: true, created_at: new Date().toISOString() };
       
-      if (supabase) {
+      if (supabaseClient) {
         try {
-          const { data, error } = await supabase.from('players').insert([np]).select().single();
+          const { data, error } = await supabaseClient.from('players').insert([np]).select().single();
           if (error) throw error;
           players.push(data);
         } catch (e) { toast('Error', 'error'); return; }
@@ -1035,8 +1043,8 @@
       players[idx].active = active;
       if (tempPhotoData.editPlayer !== undefined) players[idx].photo = tempPhotoData.editPlayer;
       
-      if (supabase) {
-        try { await supabase.from('players').update(players[idx]).eq('id', id); } 
+      if (supabaseClient) {
+        try { await supabaseClient.from('players').update(players[idx]).eq('id', id); } 
         catch (e) { toast('Error', 'error'); return; }
       } else { saveLocal(); }
       
@@ -1058,8 +1066,8 @@
     }
     
     async function deletePlayer(id) {
-      if (supabase) {
-        try { await supabase.from('players').delete().eq('id', id); } 
+      if (supabaseClient) {
+        try { await supabaseClient.from('players').delete().eq('id', id); } 
         catch (e) { toast('Error', 'error'); return; }
       }
       players = players.filter(p => p.id !== id);
@@ -1095,9 +1103,9 @@
       if (p1 === p2) { toast('Select different players', 'error'); return; }
       const nt = { id: Date.now(), name, player1_id: p1, player2_id: p2, wins: 0, losses: 0, active: true, created_at: new Date().toISOString() };
       
-      if (supabase) {
+      if (supabaseClient) {
         try {
-          const { data, error } = await supabase.from('teams').insert([nt]).select().single();
+          const { data, error } = await supabaseClient.from('teams').insert([nt]).select().single();
           if (error) throw error;
           teams.push(data);
         } catch (e) { toast('Error', 'error'); return; }
@@ -1132,8 +1140,8 @@
       teams[idx].player2_id = p2;
       teams[idx].active = active;
       
-      if (supabase) {
-        try { await supabase.from('teams').update(teams[idx]).eq('id', id); }
+      if (supabaseClient) {
+        try { await supabaseClient.from('teams').update(teams[idx]).eq('id', id); }
         catch (e) { toast('Error', 'error'); return; }
       } else { saveLocal(); }
       
@@ -1155,8 +1163,8 @@
     }
     
     async function deleteTeam(id) {
-      if (supabase) {
-        try { await supabase.from('teams').delete().eq('id', id); }
+      if (supabaseClient) {
+        try { await supabaseClient.from('teams').delete().eq('id', id); }
         catch (e) { toast('Error', 'error'); return; }
       }
       teams = teams.filter(t => t.id !== id);
@@ -1205,12 +1213,12 @@
         else currentMatchDay.villains = { teamId: wid, winStreak: 1 };
       }
       
-      if (supabase) {
+      if (supabaseClient) {
         try {
-          await supabase.from('matches').insert([nm]);
-          await supabase.from('teams').upsert(teams);
-          await supabase.from('players').upsert(players);
-          await supabase.from('settings').upsert({ key: 'current_match_day', value: JSON.stringify(currentMatchDay) });
+          await supabaseClient.from('matches').insert([nm]);
+          await supabaseClient.from('teams').upsert(teams);
+          await supabaseClient.from('players').upsert(players);
+          await supabaseClient.from('settings').upsert({ key: 'current_match_day', value: JSON.stringify(currentMatchDay) });
           matches.unshift(nm);
         } catch (e) { toast('Error', 'error'); return; }
       } else {
