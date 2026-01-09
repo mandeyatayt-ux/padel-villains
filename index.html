@@ -610,8 +610,8 @@
   <div class="toast" id="toast"></div>
   <script>
     // ===== CONFIG =====
-    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const SUPABASE_URL = 'https://hihujmoapelzuvcrdhfh.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_INTYT_qXrL-jNMvMlyIfUQ_73eazrUm';
     let supabase;
     
     // ===== STATE =====
@@ -634,10 +634,14 @@
       setupTabs();
       setupFilters();
       
-      if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+      if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         const s = document.createElement('script');
         s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-        s.onload = async () => { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); await fetchData(); };
+        s.onload = async () => { 
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
+          await fetchData(); 
+        };
+        s.onerror = () => { console.error('Failed to load Supabase'); loadLocal(); renderAll(); };
         document.head.appendChild(s);
       } else { 
         loadLocal(); 
