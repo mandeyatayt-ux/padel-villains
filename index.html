@@ -198,6 +198,21 @@
     .team-actions { display: flex; justify-content: center; gap: 8px; }
     
     /* ===== MATCHES PAGE ===== */
+    .live-dot { width: 10px; height: 10px; background: var(--danger); border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
+    
+    .ongoing-match { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 2px solid var(--gold); cursor: pointer; transition: all 0.2s; }
+    .ongoing-match:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+    .ongoing-match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .ongoing-match-status { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
+    .ongoing-match-court { font-size: 12px; color: var(--text-muted); background: var(--cream); padding: 4px 10px; border-radius: 6px; }
+    .ongoing-match-teams { display: flex; align-items: center; justify-content: center; gap: 20px; }
+    .ongoing-match-team { display: flex; align-items: center; gap: 10px; }
+    .ongoing-match-team-avatars { display: flex; gap: 4px; }
+    .ongoing-match-team-name { font-size: 15px; font-weight: 600; }
+    .ongoing-match-vs { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--clay); letter-spacing: 2px; }
+    .ongoing-match-time { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 12px; }
+    
     .matches-filters { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
     .filter-btn { padding: 10px 20px; background: white; border: 2px solid var(--cream-dark); border-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
     .filter-btn:hover { border-color: var(--clay-light); color: var(--clay); }
@@ -451,9 +466,23 @@
 
     <!-- ===== MATCHES TAB ===== -->
     <section class="tab" id="matches">
+      <!-- Ongoing Matches Section -->
+      <div class="card" style="margin-bottom:24px" id="ongoingSection">
+        <div class="section-header" style="margin-bottom:20px">
+          <div>
+            <h3 style="font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px">
+              <span class="live-dot"></span> Ongoing Matches
+            </h3>
+            <p style="font-size:13px;color:var(--text-muted)">Matches in progress - click to enter final score</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('queueMatch')"><i class="fas fa-plus"></i> Queue Match</button>
+        </div>
+        <div id="ongoingMatches"><div class="empty" style="padding:30px"><p>No ongoing matches</p></div></div>
+      </div>
+      
+      <!-- Match History Section -->
       <div class="section-header">
-        <div><h2 class="section-title">MATCH HISTORY</h2><p class="section-subtitle">Complete record of all matches</p></div>
-        <button class="btn btn-primary" onclick="openModal('addMatch')"><i class="fas fa-plus"></i> Log Match</button>
+        <div><h2 class="section-title">MATCH HISTORY</h2><p class="section-subtitle">Completed matches</p></div>
       </div>
       <div class="matches-filters">
         <button class="filter-btn active" data-filter="all">All</button>
@@ -623,6 +652,45 @@
     </div>
   </div>
 
+  <!-- Queue Match Modal (for ongoing games) -->
+  <div class="modal-overlay" id="queueMatchModal">
+    <div class="modal">
+      <div class="modal-header"><h3 class="modal-title">QUEUE MATCH</h3><button class="modal-close" onclick="closeModal('queueMatch')"><i class="fas fa-times"></i></button></div>
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:20px">Start tracking a match in progress. Add the score when the game finishes.</p>
+      <div class="form-row" style="margin-bottom:20px">
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">Date</label><input type="date" class="form-input" id="queueMatchDate"></div>
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">Court</label><select class="form-select" id="queueMatchCourt"></select></div>
+      </div>
+      <div class="teams-vs-row">
+        <div class="form-group"><label class="form-label">Team 1</label><select class="form-select" id="queueTeam1"></select></div>
+        <span class="teams-vs-text">VS</span>
+        <div class="form-group"><label class="form-label">Team 2</label><select class="form-select" id="queueTeam2"></select></div>
+      </div>
+      <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('queueMatch')">Cancel</button><button class="btn btn-primary" onclick="queueMatch()"><i class="fas fa-play"></i> Start Match</button></div>
+    </div>
+  </div>
+
+  <!-- Finalize Match Modal -->
+  <div class="modal-overlay" id="finalizeMatchModal">
+    <div class="modal">
+      <div class="modal-header"><h3 class="modal-title">FINALIZE MATCH</h3><button class="modal-close" onclick="closeModal('finalizeMatch')"><i class="fas fa-times"></i></button></div>
+      <input type="hidden" id="finalizeMatchId">
+      <div id="finalizeMatchInfo" style="background:var(--cream);border-radius:12px;padding:16px;margin-bottom:20px;text-align:center"></div>
+      <div class="form-group">
+        <label class="form-label">Final Score</label>
+        <div class="score-row">
+          <input type="number" class="score-input" id="finalScoreA" min="0" placeholder="0">
+          <span class="score-dash">-</span>
+          <input type="number" class="score-input" id="finalScoreB" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="cancelOngoingMatch()"><i class="fas fa-trash"></i> Cancel Match</button>
+        <button class="btn btn-primary" onclick="finalizeMatch()"><i class="fas fa-check"></i> Finalize</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm Modal -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal" style="max-width:400px">
@@ -643,7 +711,7 @@
     let supabaseClient = null;
     
     // ===== STATE =====
-    let players = [], teams = [], matches = [], venues = [];
+    let players = [], teams = [], matches = [], venues = [], ongoingMatches = [];
     let currentMatchDay = { date: new Date().toISOString().split('T')[0], venue: '', villains: null };
     let selectedPlayers = [];
     let confirmAction = null;
@@ -659,6 +727,7 @@
     document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
       document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('queueMatchDate').value = new Date().toISOString().split('T')[0];
       setupTabs();
       setupFilters();
       
@@ -709,21 +778,23 @@
     // ===== DATA =====
     async function fetchData() {
       try {
-        const [p, t, m, v, s] = await Promise.all([
+        const [p, t, m, v, s, o] = await Promise.all([
           supabaseClient.from('players').select('*').order('created_at'),
           supabaseClient.from('teams').select('*').order('created_at'),
           supabaseClient.from('matches').select('*').order('date', { ascending: false }),
           supabaseClient.from('venues').select('*').order('name'),
-          supabaseClient.from('settings').select('*').eq('key', 'current_match_day').single()
+          supabaseClient.from('settings').select('*').eq('key', 'current_match_day').single(),
+          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false })
         ]);
         players = p.data || []; 
         teams = t.data || []; 
         matches = m.data || [];
         venues = v.data?.length ? v.data : defaultVenues;
+        ongoingMatches = o.data || [];
         if (s.data) currentMatchDay = JSON.parse(s.data.value);
         if (!currentMatchDay.venue && venues.length) currentMatchDay.venue = venues[0].name;
         renderAll();
-      } catch (e) { console.error(e); toast('Error loading data', 'error'); }
+      } catch (e) { console.error(e); toast('Error loading data', 'error'); loadLocal(); renderAll(); }
     }
     
     function loadLocal() {
@@ -731,6 +802,7 @@
       teams = JSON.parse(localStorage.getItem('pv_teams') || '[]');
       matches = JSON.parse(localStorage.getItem('pv_matches') || '[]');
       venues = JSON.parse(localStorage.getItem('pv_venues') || JSON.stringify(defaultVenues));
+      ongoingMatches = JSON.parse(localStorage.getItem('pv_ongoing') || '[]');
       currentMatchDay = JSON.parse(localStorage.getItem('pv_matchday') || JSON.stringify(currentMatchDay));
       if (!currentMatchDay.venue && venues.length) currentMatchDay.venue = venues[0].name;
     }
@@ -740,6 +812,7 @@
       localStorage.setItem('pv_teams', JSON.stringify(teams));
       localStorage.setItem('pv_matches', JSON.stringify(matches));
       localStorage.setItem('pv_venues', JSON.stringify(venues));
+      localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
       localStorage.setItem('pv_matchday', JSON.stringify(currentMatchDay));
     }
     
@@ -767,6 +840,7 @@
       renderDashboard();
       renderPlayers();
       renderTeams();
+      renderOngoingMatches();
       renderMatches();
       renderRankings();
       renderMatchup();
@@ -867,6 +941,41 @@
           <div class="team-winrate"><div class="team-winrate-bar"><div class="team-winrate-fill" style="width:${winRate(t.wins, t.losses)}%"></div></div><span class="team-winrate-text">${winRate(t.wins, t.losses)}%</span></div>
         </div>`;
       }).join('') : '<div class="empty"><div class="empty-icon">🏅</div><h3>No Teams Yet</h3><p>Create your first team</p></div>';
+    }
+    
+    // ===== ONGOING MATCHES =====
+    function renderOngoingMatches() {
+      const container = document.getElementById('ongoingMatches');
+      if (ongoingMatches.length === 0) {
+        container.innerHTML = '<div class="empty" style="padding:30px"><p>No ongoing matches</p></div>';
+        return;
+      }
+      
+      container.innerHTML = ongoingMatches.map(m => {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+        const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
+        const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
+        const startTime = new Date(m.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        
+        return `<div class="ongoing-match" onclick="openFinalizeMatch(${m.id})">
+          <div class="ongoing-match-header">
+            <div class="ongoing-match-status"><span class="live-dot"></span> ONGOING</div>
+            <span class="ongoing-match-court">${m.court}</span>
+          </div>
+          <div class="ongoing-match-teams">
+            <div class="ongoing-match-team">
+              <div class="ongoing-match-team-avatars">${av(t1p1, 'sm')}${av(t1p2, 'sm')}</div>
+              <span class="ongoing-match-team-name">${t1?.name || '?'}</span>
+            </div>
+            <span class="ongoing-match-vs">VS</span>
+            <div class="ongoing-match-team">
+              <span class="ongoing-match-team-name">${t2?.name || '?'}</span>
+              <div class="ongoing-match-team-avatars">${av(t2p1, 'sm')}${av(t2p2, 'sm')}</div>
+            </div>
+          </div>
+          <div class="ongoing-match-time">Started at ${startTime}</div>
+        </div>`;
+      }).join('');
     }
     
     // ===== MATCHES =====
@@ -1086,10 +1195,14 @@
       document.getElementById('editTeamPlayer2').innerHTML = allPo;
       document.getElementById('matchTeam1').innerHTML = to;
       document.getElementById('matchTeam2').innerHTML = to;
+      document.getElementById('queueTeam1').innerHTML = to;
+      document.getElementById('queueTeam2').innerHTML = to;
       
       const venue = getCurrentVenue();
       if (venue) {
-        document.getElementById('matchCourt').innerHTML = venue.courts.map(c => `<option value="${c}">${c}</option>`).join('');
+        const courtOptions = venue.courts.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('matchCourt').innerHTML = courtOptions;
+        document.getElementById('queueMatchCourt').innerHTML = courtOptions;
       }
     }
     
@@ -1388,6 +1501,164 @@
       closeModal('addMatch');
       renderAll();
       toast('Match logged!', 'success');
+    }
+    
+    // ===== QUEUE MATCH (ONGOING) =====
+    async function queueMatch() {
+      const date = document.getElementById('queueMatchDate').value;
+      const court = document.getElementById('queueMatchCourt').value;
+      const t1 = parseInt(document.getElementById('queueTeam1').value);
+      const t2 = parseInt(document.getElementById('queueTeam2').value);
+      
+      if (!t1 || !t2) { toast('Select both teams', 'error'); return; }
+      if (t1 === t2) { toast('Select different teams', 'error'); return; }
+      
+      const nm = { 
+        id: Date.now(), 
+        date, 
+        location: currentMatchDay.venue, 
+        court, 
+        team1_id: t1, 
+        team2_id: t2, 
+        status: 'ongoing',
+        started_at: new Date().toISOString()
+      };
+      
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient.from('ongoing_matches').insert([nm]).select().single();
+          if (error) throw error;
+          ongoingMatches.unshift(data);
+        } catch (e) { 
+          console.error(e);
+          toast('Error', 'error'); 
+          return; 
+        }
+      } else {
+        ongoingMatches.unshift(nm);
+        saveLocal();
+      }
+      
+      document.getElementById('queueTeam1').value = '';
+      document.getElementById('queueTeam2').value = '';
+      closeModal('queueMatch');
+      renderAll();
+      toast('Match started!', 'success');
+    }
+    
+    function openFinalizeMatch(id) {
+      const m = ongoingMatches.find(match => match.id === id);
+      if (!m) return;
+      
+      const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+      const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
+      const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
+      
+      document.getElementById('finalizeMatchId').value = id;
+      document.getElementById('finalizeMatchInfo').innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${av(t1p1, 'xs')}${av(t1p2, 'xs')}
+            <strong>${t1?.name || '?'}</strong>
+          </div>
+          <span style="color:var(--clay);font-weight:700">VS</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <strong>${t2?.name || '?'}</strong>
+            ${av(t2p1, 'xs')}${av(t2p2, 'xs')}
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted)">${m.court}</div>
+      `;
+      document.getElementById('finalScoreA').value = '';
+      document.getElementById('finalScoreB').value = '';
+      openModal('finalizeMatch');
+    }
+    
+    async function finalizeMatch() {
+      const id = parseInt(document.getElementById('finalizeMatchId').value);
+      const scoreA = parseInt(document.getElementById('finalScoreA').value) || 0;
+      const scoreB = parseInt(document.getElementById('finalScoreB').value) || 0;
+      
+      if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); return; }
+      
+      const m = ongoingMatches.find(match => match.id === id);
+      if (!m) return;
+      
+      const scores = [[scoreA, scoreB]];
+      const wid = scoreA > scoreB ? m.team1_id : m.team2_id;
+      const lid = wid === m.team1_id ? m.team2_id : m.team1_id;
+      
+      const finalMatch = { 
+        id: Date.now(), 
+        date: m.date, 
+        location: m.location, 
+        court: m.court, 
+        team1_id: m.team1_id, 
+        team2_id: m.team2_id, 
+        scores, 
+        winner_id: wid, 
+        created_at: new Date().toISOString() 
+      };
+      
+      // Update team stats
+      const wi = teams.findIndex(t => t.id === wid), li = teams.findIndex(t => t.id === lid);
+      if (wi !== -1) teams[wi].wins++;
+      if (li !== -1) teams[li].losses++;
+      
+      // Update player stats
+      const wt = getTeam(wid), lt = getTeam(lid);
+      players.forEach(p => {
+        if (p.id === wt?.player1_id || p.id === wt?.player2_id) { p.wins++; p.games_played = (p.games_played || 0) + 1; }
+        if (p.id === lt?.player1_id || p.id === lt?.player2_id) { p.losses++; p.games_played = (p.games_played || 0) + 1; }
+      });
+      
+      // Update villains
+      if (m.date === currentMatchDay.date) {
+        if (wid === currentMatchDay.villains?.teamId) currentMatchDay.villains.winStreak++;
+        else currentMatchDay.villains = { teamId: wid, winStreak: 1 };
+      }
+      
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('matches').insert([finalMatch]);
+          await supabaseClient.from('ongoing_matches').delete().eq('id', id);
+          await supabaseClient.from('teams').upsert(teams);
+          await supabaseClient.from('players').upsert(players);
+          await supabaseClient.from('settings').upsert({ key: 'current_match_day', value: JSON.stringify(currentMatchDay) });
+          matches.unshift(finalMatch);
+          ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+        } catch (e) { 
+          console.error(e);
+          toast('Error', 'error'); 
+          return; 
+        }
+      } else {
+        matches.unshift(finalMatch);
+        ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+        saveLocal();
+      }
+      
+      closeModal('finalizeMatch');
+      renderAll();
+      toast('Match finalized!', 'success');
+    }
+    
+    async function cancelOngoingMatch() {
+      const id = parseInt(document.getElementById('finalizeMatchId').value);
+      
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('ongoing_matches').delete().eq('id', id);
+          ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+        } catch (e) { toast('Error', 'error'); return; }
+      } else {
+        ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+        saveLocal();
+      }
+      
+      closeModal('finalizeMatch');
+      renderAll();
+      toast('Match cancelled', 'success');
     }
     
     function toast(msg, type = 'info') {
