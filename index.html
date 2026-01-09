@@ -50,7 +50,10 @@
     .btn-secondary { background: white; color: var(--clay); border: 2px solid var(--clay); }
     .btn-secondary:hover { background: rgba(224,120,80,0.05); }
     .btn-sm { padding: 10px 20px; font-size: 13px; }
+    .btn-xs { padding: 6px 12px; font-size: 11px; }
     .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: #DC2626; }
+    .btn-icon { width: 36px; height: 36px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     
     /* Cards */
     .card { background: white; border-radius: 20px; padding: 28px; box-shadow: 0 4px 25px rgba(0,0,0,0.06); }
@@ -59,7 +62,8 @@
     .section-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
     
     /* Avatar */
-    .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--brown-light), var(--brown-medium)); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; border: 3px solid var(--clay); flex-shrink: 0; }
+    .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--brown-light), var(--brown-medium)); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; border: 3px solid var(--clay); flex-shrink: 0; overflow: hidden; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
     .avatar.xl { width: 100px; height: 100px; font-size: 40px; border-width: 4px; }
     .avatar.lg { width: 72px; height: 72px; font-size: 28px; }
     .avatar.sm { width: 40px; height: 40px; font-size: 16px; border-width: 2px; }
@@ -80,6 +84,11 @@
     @media (max-width: 600px) { .grid-3, .grid-4 { grid-template-columns: 1fr; } }
     
     /* ===== DASHBOARD ===== */
+    .venue-selector { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding: 16px 20px; background: white; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+    .venue-selector label { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+    .venue-selector select { padding: 10px 16px; border: 2px solid var(--cream-dark); border-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; background: var(--cream); cursor: pointer; min-width: 160px; }
+    .venue-selector select:focus { outline: none; border-color: var(--clay); }
+    
     .villain-card { grid-column: span 2; background: linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%); border-radius: 24px; padding: 48px; text-align: center; position: relative; overflow: hidden; }
     @media (max-width: 900px) { .villain-card { grid-column: span 1; padding: 32px 20px; } }
     .villain-card::before { content: ''; position: absolute; top: -120px; left: 50%; transform: translateX(-50%); width: 350px; height: 350px; background: radial-gradient(circle, rgba(224,120,80,0.25) 0%, transparent 70%); }
@@ -125,16 +134,20 @@
     
     .player-card { background: white; border-radius: 20px; padding: 28px; text-align: center; transition: all 0.3s; position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.04); }
     .player-card:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+    .player-card.inactive { opacity: 0.5; }
     .player-card.top-player { border: 2px solid var(--gold); }
     .player-card.top-player::before { content: '👑'; position: absolute; top: 12px; left: 12px; font-size: 20px; }
     .player-rank { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: var(--clay); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
     .player-rank.gold { background: linear-gradient(135deg, #F59E0B, #D97706); }
     .player-rank.silver { background: linear-gradient(135deg, #9CA3AF, #6B7280); }
     .player-rank.bronze { background: linear-gradient(135deg, #F97316, #C2410C); }
-    .player-avatar-wrap { margin: 16px auto 20px; }
+    .player-avatar-wrap { margin: 16px auto 20px; position: relative; }
     .player-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-    .player-joined { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
-    .player-stats-row { display: flex; justify-content: center; gap: 24px; padding-top: 20px; border-top: 1px solid var(--cream-dark); }
+    .player-status { font-size: 11px; padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
+    .player-status.active { background: rgba(16,185,129,0.1); color: var(--success); }
+    .player-status.inactive { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .player-joined { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+    .player-stats-row { display: flex; justify-content: center; gap: 24px; padding-top: 16px; border-top: 1px solid var(--cream-dark); }
     .player-stat { text-align: center; }
     .player-stat-value { font-size: 22px; font-weight: 700; color: var(--brown-dark); }
     .player-stat-value.wins { color: var(--success); }
@@ -144,6 +157,7 @@
     .player-winrate-bar { height: 8px; background: var(--cream-dark); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
     .player-winrate-fill { height: 100%; background: linear-gradient(90deg, var(--clay), var(--clay-light)); border-radius: 4px; transition: width 0.5s; }
     .player-winrate-text { font-size: 14px; font-weight: 700; color: var(--clay); }
+    .player-actions { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
     
     /* ===== TEAMS PAGE ===== */
     .teams-hero { background: linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%); border-radius: 24px; padding: 40px; color: white; margin-bottom: 32px; }
@@ -159,6 +173,7 @@
     
     .team-card { background: white; border-radius: 20px; padding: 28px; text-align: center; transition: all 0.3s; position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.04); }
     .team-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+    .team-card.inactive { opacity: 0.5; }
     .team-card.villain-team { border: 2px solid var(--clay); }
     .team-villain-badge { position: absolute; top: 0; left: 0; right: 0; padding: 8px; background: var(--clay); color: white; font-size: 11px; font-weight: 700; letter-spacing: 2px; }
     .team-rank-badge { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; background: var(--cream); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--brown-dark); }
@@ -166,17 +181,21 @@
     .team-avatars.has-badge { margin-top: 40px; }
     .team-amp { font-size: 24px; color: var(--clay); font-weight: 300; }
     .team-name { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 4px; }
-    .team-players-names { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+    .team-status { font-size: 11px; padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
+    .team-status.active { background: rgba(16,185,129,0.1); color: var(--success); }
+    .team-status.inactive { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .team-players-names { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; }
     .team-record { display: flex; justify-content: center; gap: 20px; padding: 16px 0; border-top: 1px solid var(--cream-dark); border-bottom: 1px solid var(--cream-dark); margin-bottom: 16px; }
     .team-record-item { text-align: center; }
     .team-record-value { font-size: 24px; font-weight: 700; }
     .team-record-value.wins { color: var(--success); }
     .team-record-value.losses { color: var(--danger); }
     .team-record-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
-    .team-winrate { display: flex; align-items: center; gap: 12px; }
+    .team-winrate { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
     .team-winrate-bar { flex: 1; height: 10px; background: var(--cream-dark); border-radius: 5px; overflow: hidden; }
     .team-winrate-fill { height: 100%; background: linear-gradient(90deg, var(--clay), var(--clay-light)); border-radius: 5px; }
     .team-winrate-text { font-size: 18px; font-weight: 700; color: var(--brown-dark); min-width: 50px; }
+    .team-actions { display: flex; justify-content: center; gap: 8px; }
     
     /* ===== MATCHES PAGE ===== */
     .matches-filters { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
@@ -259,6 +278,19 @@
     .generated-team-names { font-size: 15px; font-weight: 600; }
     .generated-vs { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--clay); padding: 0 24px; letter-spacing: 2px; }
     
+    /* ===== SETTINGS PAGE ===== */
+    .settings-section { background: white; border-radius: 20px; padding: 28px; margin-bottom: 24px; }
+    .settings-section-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .venue-list { display: flex; flex-direction: column; gap: 12px; }
+    .venue-item { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: var(--cream); border-radius: 12px; }
+    .venue-item-info { display: flex; align-items: center; gap: 12px; }
+    .venue-item-name { font-weight: 600; }
+    .venue-item-courts { font-size: 13px; color: var(--text-muted); }
+    .venue-item-actions { display: flex; gap: 8px; }
+    .add-venue-form { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+    .add-venue-form input { flex: 1; min-width: 200px; padding: 12px 16px; border: 2px solid var(--cream-dark); border-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 14px; }
+    .add-venue-form input:focus { outline: none; border-color: var(--clay); }
+    
     /* ===== MODALS ===== */
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s; backdrop-filter: blur(4px); padding: 20px; }
     .modal-overlay.active { opacity: 1; visibility: visible; }
@@ -281,18 +313,38 @@
     .teams-vs-row .form-group { flex: 1; margin-bottom: 0; }
     .teams-vs-text { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--clay); padding-bottom: 16px; letter-spacing: 2px; }
     @media (max-width: 500px) { .teams-vs-row { flex-direction: column; } .teams-vs-text { padding: 8px 0; text-align: center; } }
-    .scores-grid { margin-bottom: 20px; }
-    .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .score-label { font-size: 14px; font-weight: 600; color: var(--text-muted); width: 55px; }
-    .score-input { width: 70px; padding: 14px; border: 2px solid var(--cream-dark); border-radius: 12px; font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; text-align: center; background: var(--cream); }
+    .score-row { display: flex; align-items: center; gap: 12px; justify-content: center; }
+    .score-input { width: 80px; padding: 16px; border: 2px solid var(--cream-dark); border-radius: 12px; font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; text-align: center; background: var(--cream); }
     .score-input:focus { outline: none; border-color: var(--clay); background: white; }
-    .score-dash { color: var(--text-muted); font-weight: 600; }
+    .score-dash { color: var(--text-muted); font-weight: 600; font-size: 24px; }
+    
+    /* Photo Upload */
+    .photo-upload { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .photo-preview { width: 100px; height: 100px; border-radius: 50%; background: var(--cream); border: 3px dashed var(--cream-dark); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; transition: all 0.2s; }
+    .photo-preview:hover { border-color: var(--clay); }
+    .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-preview i { font-size: 32px; color: var(--text-muted); }
+    .photo-upload input[type="file"] { display: none; }
+    .photo-upload-text { font-size: 12px; color: var(--text-muted); }
+    
+    /* Toggle Switch */
+    .toggle-group { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+    .toggle-label { font-size: 14px; font-weight: 500; }
+    .toggle { position: relative; width: 50px; height: 28px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--cream-dark); border-radius: 28px; transition: 0.3s; }
+    .toggle-slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+    .toggle input:checked + .toggle-slider { background: var(--clay); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(22px); }
     
     /* Toast */
     .toast { position: fixed; bottom: 28px; right: 28px; padding: 18px 28px; background: var(--text); color: white; border-radius: 14px; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1001; font-weight: 500; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast.success { background: var(--success); }
     .toast.error { background: var(--danger); }
+    
+    /* Confirm Dialog */
+    .confirm-text { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin-bottom: 8px; }
     
     .hidden { display: none !important; }
   </style>
@@ -319,9 +371,14 @@
       <button data-tab="matches"><i class="fas fa-list"></i><span>Matches</span></button>
       <button data-tab="rankings"><i class="fas fa-trophy"></i><span>Rankings</span></button>
       <button data-tab="matchup"><i class="fas fa-shuffle"></i><span>Matchup</span></button>
+      <button data-tab="settings"><i class="fas fa-cog"></i><span>Settings</span></button>
     </nav>
     <!-- ===== DASHBOARD TAB ===== -->
     <section class="tab active" id="dashboard">
+      <div class="venue-selector">
+        <label><i class="fas fa-map-marker-alt"></i> Current Venue:</label>
+        <select id="venueSelect" onchange="changeVenue()"></select>
+      </div>
       <div class="grid-2">
         <div class="villain-card" id="villainCard">
           <div class="no-villain">
@@ -332,8 +389,8 @@
         </div>
         <div class="stats-grid">
           <div class="stat-card"><div class="stat-icon">🎾</div><div class="stat-value" id="statMatches">0</div><div class="stat-label">Matches</div></div>
-          <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Players</div></div>
-          <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-value" id="statTeams">0</div><div class="stat-label">Teams</div></div>
+          <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Active Players</div></div>
+          <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-value" id="statTeams">0</div><div class="stat-label">Active Teams</div></div>
           <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-value" id="statVenue">-</div><div class="stat-label">Venue</div></div>
         </div>
         <div class="card">
@@ -358,54 +415,47 @@
           <p style="opacity:0.85">Track individual performance and rankings</p>
         </div>
         <div class="players-hero-stats">
-          <div class="players-hero-stat"><div class="players-hero-stat-value" id="heroPlayers">0</div><div class="players-hero-stat-label">Players</div></div>
-          <div class="players-hero-stat"><div class="players-hero-stat-value" id="heroGames">0</div><div class="players-hero-stat-label">Games Played</div></div>
+          <div class="players-hero-stat"><div class="players-hero-stat-value" id="heroPlayers">0</div><div class="players-hero-stat-label">Active</div></div>
+          <div class="players-hero-stat"><div class="players-hero-stat-value" id="heroGames">0</div><div class="players-hero-stat-label">Games</div></div>
         </div>
       </div>
       <div class="section-header">
-        <div><h2 class="section-title">ALL PLAYERS</h2><p class="section-subtitle">Ranked by win rate</p></div>
+        <div><h2 class="section-title">ALL PLAYERS</h2><p class="section-subtitle">Click on a player card to manage</p></div>
         <button class="btn btn-primary" onclick="openModal('addPlayer')"><i class="fas fa-plus"></i> Add Player</button>
       </div>
-      <div class="grid-4" id="playersGrid"><div class="empty"><div class="empty-icon">👥</div><h3>No Players Yet</h3><p>Add your first player to get started</p><button class="btn btn-primary" onclick="openModal('addPlayer')"><i class="fas fa-plus"></i> Add Player</button></div></div>
+      <div class="grid-4" id="playersGrid"><div class="empty"><div class="empty-icon">👥</div><h3>No Players Yet</h3><p>Add your first player to get started</p></div></div>
     </section>
 
     <!-- ===== TEAMS TAB ===== -->
     <section class="tab" id="teams">
       <div class="teams-hero" id="teamsHero">
         <div class="teams-hero-title">🏆 TOP RANKED TEAM</div>
-        <div class="teams-hero-content" id="teamsHeroContent">
-          <p style="color:#888">No teams created yet</p>
-        </div>
+        <div class="teams-hero-content" id="teamsHeroContent"><p style="color:#888">No teams created yet</p></div>
       </div>
       <div class="section-header">
-        <div><h2 class="section-title">ALL TEAMS</h2><p class="section-subtitle">Partnerships & their records</p></div>
+        <div><h2 class="section-title">ALL TEAMS</h2><p class="section-subtitle">Click on a team card to manage</p></div>
         <button class="btn btn-primary" onclick="openModal('addTeam')"><i class="fas fa-plus"></i> Create Team</button>
       </div>
-      <div class="grid-3" id="teamsGrid"><div class="empty"><div class="empty-icon">🏅</div><h3>No Teams Yet</h3><p>Create your first team to start tracking</p><button class="btn btn-primary" onclick="openModal('addTeam')"><i class="fas fa-plus"></i> Create Team</button></div></div>
+      <div class="grid-3" id="teamsGrid"><div class="empty"><div class="empty-icon">🏅</div><h3>No Teams Yet</h3><p>Create your first team to start tracking</p></div></div>
     </section>
 
     <!-- ===== MATCHES TAB ===== -->
     <section class="tab" id="matches">
       <div class="section-header">
-        <div><h2 class="section-title">MATCH HISTORY</h2><p class="section-subtitle">Complete record of all matches played</p></div>
+        <div><h2 class="section-title">MATCH HISTORY</h2><p class="section-subtitle">Complete record of all matches</p></div>
         <button class="btn btn-primary" onclick="openModal('addMatch')"><i class="fas fa-plus"></i> Log Match</button>
       </div>
       <div class="matches-filters">
-        <button class="filter-btn active" data-filter="all">All Matches</button>
+        <button class="filter-btn active" data-filter="all">All</button>
         <button class="filter-btn" data-filter="today">Today</button>
         <button class="filter-btn" data-filter="week">This Week</button>
-        <button class="filter-btn" data-filter="hub">The Hub</button>
-        <button class="filter-btn" data-filter="stables">Stables</button>
       </div>
-      <div id="matchesList"><div class="empty"><div class="empty-icon">📋</div><h3>No Matches Yet</h3><p>Log your first match to start tracking history</p><button class="btn btn-primary" onclick="openModal('addMatch')"><i class="fas fa-plus"></i> Log Match</button></div></div>
+      <div id="matchesList"><div class="empty"><div class="empty-icon">📋</div><h3>No Matches Yet</h3><p>Log your first match</p></div></div>
     </section>
 
     <!-- ===== RANKINGS TAB ===== -->
     <section class="tab" id="rankings">
-      <div class="rankings-hero">
-        <h2>🏆 TEAM LEADERBOARD</h2>
-        <p>Official rankings based on win percentage</p>
-      </div>
+      <div class="rankings-hero"><h2>🏆 TEAM LEADERBOARD</h2><p>Rankings based on win percentage</p></div>
       <div class="rankings-table">
         <div class="rankings-head"><span>Rank</span><span>Team</span><span>Record</span><span>Win Rate</span></div>
         <div id="rankingsBody"><div class="empty" style="padding:40px"><p>No teams to rank yet</p></div></div>
@@ -414,17 +464,14 @@
 
     <!-- ===== MATCHUP TAB ===== -->
     <section class="tab" id="matchup">
-      <div class="matchup-hero">
-        <h2>🎲 MATCHUP GENERATOR</h2>
-        <p>Randomly create fair teams for today's session</p>
-      </div>
+      <div class="matchup-hero"><h2>🎲 MATCHUP GENERATOR</h2><p>Randomly create fair teams for today</p></div>
       <div class="card">
         <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">Select Attending Players</h3>
-        <p style="color:var(--text-muted);margin-bottom:24px;font-size:14px">Choose who's playing today to generate random matchups</p>
-        <div class="matchup-players" id="matchupPlayers"><div class="empty"><p>Add players first</p></div></div>
+        <p style="color:var(--text-muted);margin-bottom:24px;font-size:14px">Only active players are shown</p>
+        <div class="matchup-players" id="matchupPlayers"></div>
         <div class="matchup-actions">
           <span class="selected-count"><strong id="selectedCount">0</strong> players selected (min 4)</span>
-          <button class="btn btn-primary" onclick="generateMatchups()" id="generateBtn"><i class="fas fa-shuffle"></i> Generate Matchups</button>
+          <button class="btn btn-primary" onclick="generateMatchups()"><i class="fas fa-shuffle"></i> Generate</button>
         </div>
       </div>
       <div class="generated-section hidden" id="generatedSection">
@@ -433,49 +480,133 @@
         <button class="btn btn-secondary" onclick="generateMatchups()" style="margin-top:20px"><i class="fas fa-refresh"></i> Regenerate</button>
       </div>
     </section>
+
+    <!-- ===== SETTINGS TAB ===== -->
+    <section class="tab" id="settings">
+      <div class="section-header">
+        <div><h2 class="section-title">⚙️ SETTINGS</h2><p class="section-subtitle">Manage venues and app configuration</p></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title"><i class="fas fa-map-marker-alt"></i> Venues</div>
+        <div class="venue-list" id="venueList"></div>
+        <div class="add-venue-form">
+          <input type="text" id="newVenueName" placeholder="Venue name (e.g., The Hub)">
+          <input type="text" id="newVenueCourts" placeholder="Courts (e.g., Court 1, Court 2)">
+          <button class="btn btn-primary" onclick="addVenue()"><i class="fas fa-plus"></i> Add Venue</button>
+        </div>
+      </div>
+    </section>
   </div>
 
-  <!-- MODALS -->
+  <!-- ===== MODALS ===== -->
+  
+  <!-- Add Player Modal -->
   <div class="modal-overlay" id="addPlayerModal">
     <div class="modal">
       <div class="modal-header"><h3 class="modal-title">ADD PLAYER</h3><button class="modal-close" onclick="closeModal('addPlayer')"><i class="fas fa-times"></i></button></div>
+      <div class="photo-upload">
+        <div class="photo-preview" onclick="document.getElementById('playerPhoto').click()"><i class="fas fa-camera"></i></div>
+        <input type="file" id="playerPhoto" accept="image/*" onchange="previewPhoto(this, 'addPlayer')">
+        <span class="photo-upload-text">Click to upload photo</span>
+      </div>
       <div class="form-group"><label class="form-label">Player Name</label><input type="text" class="form-input" id="playerName" placeholder="Enter player name"></div>
       <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('addPlayer')">Cancel</button><button class="btn btn-primary" onclick="addPlayer()">Add Player</button></div>
     </div>
   </div>
+
+  <!-- Edit Player Modal -->
+  <div class="modal-overlay" id="editPlayerModal">
+    <div class="modal">
+      <div class="modal-header"><h3 class="modal-title">EDIT PLAYER</h3><button class="modal-close" onclick="closeModal('editPlayer')"><i class="fas fa-times"></i></button></div>
+      <div class="photo-upload">
+        <div class="photo-preview" id="editPlayerPhotoPreview" onclick="document.getElementById('editPlayerPhoto').click()"><i class="fas fa-camera"></i></div>
+        <input type="file" id="editPlayerPhoto" accept="image/*" onchange="previewPhoto(this, 'editPlayer')">
+        <span class="photo-upload-text">Click to change photo</span>
+      </div>
+      <input type="hidden" id="editPlayerId">
+      <div class="form-group"><label class="form-label">Player Name</label><input type="text" class="form-input" id="editPlayerName" placeholder="Enter player name"></div>
+      <div class="toggle-group">
+        <span class="toggle-label">Active Status</span>
+        <label class="toggle"><input type="checkbox" id="editPlayerActive" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="deletePlayerBtn" onclick="confirmDeletePlayer()"><i class="fas fa-trash"></i> Delete</button>
+        <button class="btn btn-primary" onclick="savePlayer()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Team Modal -->
   <div class="modal-overlay" id="addTeamModal">
     <div class="modal">
       <div class="modal-header"><h3 class="modal-title">CREATE TEAM</h3><button class="modal-close" onclick="closeModal('addTeam')"><i class="fas fa-times"></i></button></div>
       <div class="form-group"><label class="form-label">Team Name</label><input type="text" class="form-input" id="teamName" placeholder="Enter team name"></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Player 1</label><select class="form-select" id="teamPlayer1"><option value="">Select player</option></select></div>
-        <div class="form-group"><label class="form-label">Player 2</label><select class="form-select" id="teamPlayer2"><option value="">Select player</option></select></div>
+        <div class="form-group"><label class="form-label">Player 1</label><select class="form-select" id="teamPlayer1"></select></div>
+        <div class="form-group"><label class="form-label">Player 2</label><select class="form-select" id="teamPlayer2"></select></div>
       </div>
       <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('addTeam')">Cancel</button><button class="btn btn-primary" onclick="addTeam()">Create Team</button></div>
     </div>
   </div>
+
+  <!-- Edit Team Modal -->
+  <div class="modal-overlay" id="editTeamModal">
+    <div class="modal">
+      <div class="modal-header"><h3 class="modal-title">EDIT TEAM</h3><button class="modal-close" onclick="closeModal('editTeam')"><i class="fas fa-times"></i></button></div>
+      <input type="hidden" id="editTeamId">
+      <div class="form-group"><label class="form-label">Team Name</label><input type="text" class="form-input" id="editTeamName" placeholder="Enter team name"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Player 1</label><select class="form-select" id="editTeamPlayer1"></select></div>
+        <div class="form-group"><label class="form-label">Player 2</label><select class="form-select" id="editTeamPlayer2"></select></div>
+      </div>
+      <div class="toggle-group">
+        <span class="toggle-label">Active Status</span>
+        <label class="toggle"><input type="checkbox" id="editTeamActive" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="deleteTeamBtn" onclick="confirmDeleteTeam()"><i class="fas fa-trash"></i> Delete</button>
+        <button class="btn btn-primary" onclick="saveTeam()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Match Modal -->
   <div class="modal-overlay" id="addMatchModal">
     <div class="modal">
       <div class="modal-header"><h3 class="modal-title">LOG MATCH</h3><button class="modal-close" onclick="closeModal('addMatch')"><i class="fas fa-times"></i></button></div>
-      <div class="form-row-3" style="margin-bottom:20px">
+      <div class="form-row" style="margin-bottom:20px">
         <div class="form-group" style="margin-bottom:0"><label class="form-label">Date</label><input type="date" class="form-input" id="matchDate"></div>
-        <div class="form-group" style="margin-bottom:0"><label class="form-label">Location</label><select class="form-select" id="matchLocation" onchange="updateCourts()"><option value="The Hub">The Hub</option><option value="Stables">Stables</option></select></div>
         <div class="form-group" style="margin-bottom:0"><label class="form-label">Court</label><select class="form-select" id="matchCourt"></select></div>
       </div>
       <div class="teams-vs-row">
-        <div class="form-group"><label class="form-label">Team 1</label><select class="form-select" id="matchTeam1"><option value="">Select team</option></select></div>
+        <div class="form-group"><label class="form-label">Team 1</label><select class="form-select" id="matchTeam1"></select></div>
         <span class="teams-vs-text">VS</span>
-        <div class="form-group"><label class="form-label">Team 2</label><select class="form-select" id="matchTeam2"><option value="">Select team</option></select></div>
+        <div class="form-group"><label class="form-label">Team 2</label><select class="form-select" id="matchTeam2"></select></div>
       </div>
-      <div class="scores-grid">
-        <label class="form-label">Set Scores</label>
-        <div class="score-row"><span class="score-label">Set 1</span><input type="number" class="score-input" id="s1a" min="0" max="7" placeholder="-"><span class="score-dash">-</span><input type="number" class="score-input" id="s1b" min="0" max="7" placeholder="-"></div>
-        <div class="score-row"><span class="score-label">Set 2</span><input type="number" class="score-input" id="s2a" min="0" max="7" placeholder="-"><span class="score-dash">-</span><input type="number" class="score-input" id="s2b" min="0" max="7" placeholder="-"></div>
-        <div class="score-row"><span class="score-label">Set 3</span><input type="number" class="score-input" id="s3a" min="0" max="7" placeholder="-"><span class="score-dash">-</span><input type="number" class="score-input" id="s3b" min="0" max="7" placeholder="-"></div>
+      <div class="form-group">
+        <label class="form-label">Game Score</label>
+        <div class="score-row">
+          <input type="number" class="score-input" id="scoreA" min="0" placeholder="0">
+          <span class="score-dash">-</span>
+          <input type="number" class="score-input" id="scoreB" min="0" placeholder="0">
+        </div>
       </div>
       <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('addMatch')">Cancel</button><button class="btn btn-primary" onclick="addMatch()">Save Match</button></div>
     </div>
   </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header"><h3 class="modal-title" id="confirmTitle">Confirm</h3><button class="modal-close" onclick="closeModal('confirm')"><i class="fas fa-times"></i></button></div>
+      <p class="confirm-text" id="confirmText">Are you sure?</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('confirm')">Cancel</button>
+        <button class="btn btn-danger" id="confirmBtn" onclick="executeConfirm()">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
   <script>
     // ===== CONFIG =====
@@ -484,24 +615,34 @@
     let supabase;
     
     // ===== STATE =====
-    let players = [], teams = [], matches = [];
-    let currentMatchDay = { date: new Date().toISOString().split('T')[0], location: 'The Hub', villains: null };
+    let players = [], teams = [], matches = [], venues = [];
+    let currentMatchDay = { date: new Date().toISOString().split('T')[0], venue: '', villains: null };
     let selectedPlayers = [];
-    const locations = { 'The Hub': ['The Hub 1', 'The Hub 2'], 'Stables': ['Stables 1', 'Stables 2', 'Stables 3'] };
+    let confirmAction = null;
+    let tempPhotoData = { addPlayer: null, editPlayer: null };
+    
+    // Default venues
+    const defaultVenues = [
+      { id: 1, name: 'The Hub', courts: ['The Hub 1', 'The Hub 2'] },
+      { id: 2, name: 'Stables', courts: ['Stables 1', 'Stables 2', 'Stables 3'] }
+    ];
     
     // ===== INIT =====
     document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
       document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
-      updateCourts();
       setupTabs();
       setupFilters();
+      
       if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         const s = document.createElement('script');
         s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
         s.onload = async () => { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); await fetchData(); };
         document.head.appendChild(s);
-      } else { loadLocal(); renderAll(); }
+      } else { 
+        loadLocal(); 
+        renderAll(); 
+      }
     });
     
     function setupTabs() {
@@ -528,14 +669,19 @@
     // ===== DATA =====
     async function fetchData() {
       try {
-        const [p, t, m, s] = await Promise.all([
+        const [p, t, m, v, s] = await Promise.all([
           supabase.from('players').select('*').order('created_at'),
           supabase.from('teams').select('*').order('created_at'),
           supabase.from('matches').select('*').order('date', { ascending: false }),
+          supabase.from('venues').select('*').order('name'),
           supabase.from('settings').select('*').eq('key', 'current_match_day').single()
         ]);
-        players = p.data || []; teams = t.data || []; matches = m.data || [];
+        players = p.data || []; 
+        teams = t.data || []; 
+        matches = m.data || [];
+        venues = v.data?.length ? v.data : defaultVenues;
         if (s.data) currentMatchDay = JSON.parse(s.data.value);
+        if (!currentMatchDay.venue && venues.length) currentMatchDay.venue = venues[0].name;
         renderAll();
       } catch (e) { console.error(e); toast('Error loading data', 'error'); }
     }
@@ -544,13 +690,16 @@
       players = JSON.parse(localStorage.getItem('pv_players') || '[]');
       teams = JSON.parse(localStorage.getItem('pv_teams') || '[]');
       matches = JSON.parse(localStorage.getItem('pv_matches') || '[]');
+      venues = JSON.parse(localStorage.getItem('pv_venues') || JSON.stringify(defaultVenues));
       currentMatchDay = JSON.parse(localStorage.getItem('pv_matchday') || JSON.stringify(currentMatchDay));
+      if (!currentMatchDay.venue && venues.length) currentMatchDay.venue = venues[0].name;
     }
     
     function saveLocal() {
       localStorage.setItem('pv_players', JSON.stringify(players));
       localStorage.setItem('pv_teams', JSON.stringify(teams));
       localStorage.setItem('pv_matches', JSON.stringify(matches));
+      localStorage.setItem('pv_venues', JSON.stringify(venues));
       localStorage.setItem('pv_matchday', JSON.stringify(currentMatchDay));
     }
     
@@ -559,12 +708,19 @@
     const getTeam = id => teams.find(t => t.id === id);
     const getTeamPlayers = t => t ? { p1: getPlayer(t.player1_id), p2: getPlayer(t.player2_id) } : { p1: null, p2: null };
     const winRate = (w, l) => (w + l) > 0 ? Math.round((w / (w + l)) * 100) : 0;
-    const rankTeams = () => [...teams].sort((a, b) => { const ar = winRate(a.wins, a.losses), br = winRate(b.wins, b.losses); return br !== ar ? br - ar : b.wins - a.wins; });
+    const activePlayers = () => players.filter(p => p.active !== false);
+    const activeTeams = () => teams.filter(t => t.active !== false);
+    const rankTeams = () => activeTeams().sort((a, b) => { const ar = winRate(a.wins, a.losses), br = winRate(b.wins, b.losses); return br !== ar ? br - ar : b.wins - a.wins; });
     const rankPlayers = () => [...players].sort((a, b) => { const ar = winRate(a.wins, a.losses), br = winRate(b.wins, b.losses); return br !== ar ? br - ar : b.wins - a.wins; });
     const getVillains = () => currentMatchDay.villains ? getTeam(currentMatchDay.villains.teamId) : null;
     const todayMatches = () => matches.filter(m => m.date === currentMatchDay.date);
-    const av = (p, size = '') => `<div class="avatar ${size}">${p?.name?.charAt(0).toUpperCase() || '?'}</div>`;
     const totalGames = () => matches.length * 2;
+    const getCurrentVenue = () => venues.find(v => v.name === currentMatchDay.venue) || venues[0];
+    
+    const av = (p, size = '') => {
+      if (p?.photo) return `<div class="avatar ${size}"><img src="${p.photo}" alt="${p.name}"></div>`;
+      return `<div class="avatar ${size}">${p?.name?.charAt(0).toUpperCase() || '?'}</div>`;
+    };
     
     // ===== RENDER ALL =====
     function renderAll() {
@@ -574,19 +730,24 @@
       renderMatches();
       renderRankings();
       renderMatchup();
+      renderSettings();
       updateDropdowns();
     }
     
     // ===== DASHBOARD =====
     function renderDashboard() {
+      // Venue selector
+      const venueSelect = document.getElementById('venueSelect');
+      venueSelect.innerHTML = venues.map(v => `<option value="${v.name}" ${v.name === currentMatchDay.venue ? 'selected' : ''}>${v.name}</option>`).join('');
+      
       document.getElementById('statMatches').textContent = matches.length;
-      document.getElementById('statPlayers').textContent = players.length;
-      document.getElementById('statTeams').textContent = teams.length;
-      document.getElementById('statVenue').textContent = currentMatchDay.location || '-';
+      document.getElementById('statPlayers').textContent = activePlayers().length;
+      document.getElementById('statTeams').textContent = activeTeams().length;
+      document.getElementById('statVenue').textContent = currentMatchDay.venue || '-';
       
       const v = getVillains();
       const vc = document.getElementById('villainCard');
-      if (v) {
+      if (v && v.active !== false) {
         const { p1, p2 } = getTeamPlayers(v);
         vc.innerHTML = `<div class="villain-crown">👑</div><div class="villain-label">THE VILLAINS</div><div class="villain-team">${v.name}</div><div class="villain-players">${av(p1,'lg')}<span class="villain-amp">&</span>${av(p2,'lg')}</div><div class="villain-names">${p1?.name || '?'} & ${p2?.name || '?'}</div><div class="villain-arch"><span class="villain-arch-label">VILLAIN ARCH</span><span class="villain-arch-count">${currentMatchDay.villains.winStreak} ${currentMatchDay.villains.winStreak === 1 ? 'WIN' : 'WINS'}</span></div>`;
       } else {
@@ -596,114 +757,275 @@
       const tm = todayMatches();
       document.getElementById('todayMatches').innerHTML = tm.length ? tm.map(m => {
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id), w1 = m.winner_id === t1?.id;
-        return `<div class="quick-match"><div class="quick-match-info"><span class="quick-match-court">${m.court}</span><div class="quick-match-teams"><span class="quick-match-team ${w1?'winner':''}">${t1?.name||'?'}</span><span class="quick-match-vs">vs</span><span class="quick-match-team ${!w1?'winner':''}">${t2?.name||'?'}</span></div></div><div class="quick-match-scores">${(m.scores||[]).map(s=>`<span class="quick-match-score">${s[0]}-${s[1]}</span>`).join('')}</div>${w1?'<div class="win-indicator">W</div>':''}</div>`;
+        return `<div class="quick-match"><div class="quick-match-info"><span class="quick-match-court">${m.court}</span><div class="quick-match-teams"><span class="quick-match-team ${w1?'winner':''}">${t1?.name||'?'}</span><span class="quick-match-vs">vs</span><span class="quick-match-team ${!w1?'winner':''}">${t2?.name||'?'}</span></div></div><div class="quick-match-scores">${(m.scores||[]).map(s=>`<span class="quick-match-score">${s[0]}-${s[1]}</span>`).join('')}</div></div>`;
       }).join('') : '<div class="empty" style="padding:30px"><p>No matches today yet</p></div>';
       
       const rt = rankTeams()[0];
-      document.getElementById('topTeamCard').innerHTML = rt ? `<div style="display:flex;align-items:center;gap:20px;padding:16px;background:var(--cream);border-radius:14px;border:2px solid var(--clay)"><div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--clay)">#1</div><div style="flex:1"><div style="font-size:18px;font-weight:700">${rt.name}</div><div style="font-size:13px;color:var(--text-muted)">${getTeamPlayers(rt).p1?.name||'?'} & ${getTeamPlayers(rt).p2?.name||'?'}</div></div><div style="display:flex;gap:8px"><span style="padding:6px 14px;background:var(--success);color:white;border-radius:8px;font-weight:700">${rt.wins}W</span><span style="padding:6px 14px;background:var(--danger);color:white;border-radius:8px;font-weight:700">${rt.losses}L</span></div></div>` : '<div class="empty" style="padding:20px"><p>No teams yet</p></div>';
+      document.getElementById('topTeamCard').innerHTML = rt ? `<div style="display:flex;align-items:center;gap:20px;padding:16px;background:var(--cream);border-radius:14px;border:2px solid var(--clay)"><div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--clay)">#1</div><div style="flex:1"><div style="font-size:18px;font-weight:700">${rt.name}</div><div style="font-size:13px;color:var(--text-muted)">${getTeamPlayers(rt).p1?.name||'?'} & ${getTeamPlayers(rt).p2?.name||'?'}</div></div><div style="display:flex;gap:8px"><span style="padding:6px 14px;background:var(--success);color:white;border-radius:8px;font-weight:700">${rt.wins}W</span><span style="padding:6px 14px;background:var(--danger);color:white;border-radius:8px;font-weight:700">${rt.losses}L</span></div></div>` : '<div class="empty" style="padding:20px"><p>No active teams yet</p></div>';
+    }
+    
+    function changeVenue() {
+      currentMatchDay.venue = document.getElementById('venueSelect').value;
+      if (supabase) {
+        supabase.from('settings').upsert({ key: 'current_match_day', value: JSON.stringify(currentMatchDay) });
+      } else {
+        saveLocal();
+      }
+      renderAll();
     }
     
     // ===== PLAYERS =====
     function renderPlayers() {
-      document.getElementById('heroPlayers').textContent = players.length;
+      document.getElementById('heroPlayers').textContent = activePlayers().length;
       document.getElementById('heroGames').textContent = totalGames();
       const r = rankPlayers();
       document.getElementById('playersGrid').innerHTML = r.length ? r.map((p, i) => {
         const rc = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-        const top = i === 0 ? 'top-player' : '';
-        return `<div class="player-card ${top}"><div class="player-rank ${rc}">${i + 1}</div><div class="player-avatar-wrap">${av(p, 'lg')}</div><div class="player-name">${p.name}</div><div class="player-joined">Joined ${p.created_at?.split('T')[0] || 'Recently'}</div><div class="player-stats-row"><div class="player-stat"><div class="player-stat-value wins">${p.wins}</div><div class="player-stat-label">Wins</div></div><div class="player-stat"><div class="player-stat-value losses">${p.losses}</div><div class="player-stat-label">Losses</div></div><div class="player-stat"><div class="player-stat-value">${p.games_played || 0}</div><div class="player-stat-label">Games</div></div></div><div class="player-winrate"><div class="player-winrate-bar"><div class="player-winrate-fill" style="width:${winRate(p.wins, p.losses)}%"></div></div><div class="player-winrate-text">${winRate(p.wins, p.losses)}% Win Rate</div></div></div>`;
-      }).join('') : '<div class="empty"><div class="empty-icon">👥</div><h3>No Players Yet</h3><p>Add your first player to get started</p><button class="btn btn-primary" onclick="openModal(\'addPlayer\')"><i class="fas fa-plus"></i> Add Player</button></div>';
+        const top = i === 0 && p.active !== false ? 'top-player' : '';
+        const inactive = p.active === false ? 'inactive' : '';
+        return `<div class="player-card ${top} ${inactive}" onclick="openEditPlayer(${p.id})">
+          <div class="player-rank ${rc}">${i + 1}</div>
+          <div class="player-avatar-wrap">${av(p, 'lg')}</div>
+          <div class="player-name">${p.name}</div>
+          <span class="player-status ${p.active === false ? 'inactive' : 'active'}">${p.active === false ? 'Inactive' : 'Active'}</span>
+          <div class="player-stats-row">
+            <div class="player-stat"><div class="player-stat-value wins">${p.wins}</div><div class="player-stat-label">Wins</div></div>
+            <div class="player-stat"><div class="player-stat-value losses">${p.losses}</div><div class="player-stat-label">Losses</div></div>
+            <div class="player-stat"><div class="player-stat-value">${p.games_played || 0}</div><div class="player-stat-label">Games</div></div>
+          </div>
+          <div class="player-winrate"><div class="player-winrate-bar"><div class="player-winrate-fill" style="width:${winRate(p.wins, p.losses)}%"></div></div><div class="player-winrate-text">${winRate(p.wins, p.losses)}% Win Rate</div></div>
+        </div>`;
+      }).join('') : '<div class="empty"><div class="empty-icon">👥</div><h3>No Players Yet</h3><p>Add your first player to get started</p></div>';
     }
     
     // ===== TEAMS =====
     function renderTeams() {
       const r = rankTeams(), vid = currentMatchDay.villains?.teamId, top = r[0];
+      const allTeamsRanked = [...teams].sort((a, b) => { const ar = winRate(a.wins, a.losses), br = winRate(b.wins, b.losses); return br !== ar ? br - ar : b.wins - a.wins; });
+      
       if (top) {
         const { p1, p2 } = getTeamPlayers(top);
         document.getElementById('teamsHeroContent').innerHTML = `<div class="teams-hero-team"><div style="display:flex;gap:-8px">${av(p1)}${av(p2)}</div><div class="teams-hero-info"><h3>${top.name}</h3><p>${p1?.name||'?'} & ${p2?.name||'?'}</p></div></div><div class="teams-hero-stats"><div class="teams-hero-stat"><div class="teams-hero-stat-value">${top.wins}</div><div class="teams-hero-stat-label">Wins</div></div><div class="teams-hero-stat"><div class="teams-hero-stat-value">${top.losses}</div><div class="teams-hero-stat-label">Losses</div></div><div class="teams-hero-stat"><div class="teams-hero-stat-value">${winRate(top.wins, top.losses)}%</div><div class="teams-hero-stat-label">Win Rate</div></div></div>`;
+      } else {
+        document.getElementById('teamsHeroContent').innerHTML = '<p style="color:#888">No active teams yet</p>';
       }
-      document.getElementById('teamsGrid').innerHTML = r.length ? r.map((t, i) => {
-        const { p1, p2 } = getTeamPlayers(t), iv = t.id === vid;
-        return `<div class="team-card ${iv ? 'villain-team' : ''}">${iv ? '<div class="team-villain-badge">👑 CURRENT VILLAINS</div>' : ''}<div class="team-rank-badge">#${i + 1}</div><div class="team-avatars ${iv ? 'has-badge' : ''}">${av(p1)}<span class="team-amp">&</span>${av(p2)}</div><div class="team-name">${t.name}</div><div class="team-players-names">${p1?.name || '?'} & ${p2?.name || '?'}</div><div class="team-record"><div class="team-record-item"><div class="team-record-value wins">${t.wins}</div><div class="team-record-label">Wins</div></div><div class="team-record-item"><div class="team-record-value losses">${t.losses}</div><div class="team-record-label">Losses</div></div></div><div class="team-winrate"><div class="team-winrate-bar"><div class="team-winrate-fill" style="width:${winRate(t.wins, t.losses)}%"></div></div><span class="team-winrate-text">${winRate(t.wins, t.losses)}%</span></div></div>`;
-      }).join('') : '<div class="empty"><div class="empty-icon">🏅</div><h3>No Teams Yet</h3><p>Create your first team to start tracking</p><button class="btn btn-primary" onclick="openModal(\'addTeam\')"><i class="fas fa-plus"></i> Create Team</button></div>';
-    }
-    
-    // ===== MATCHES =====
-    function renderMatches(filter = 'all') {
-      let filtered = [...matches];
-      const today = new Date().toISOString().split('T')[0];
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      if (filter === 'today') filtered = filtered.filter(m => m.date === today);
-      else if (filter === 'week') filtered = filtered.filter(m => m.date >= weekAgo);
-      else if (filter === 'hub') filtered = filtered.filter(m => m.location === 'The Hub');
-      else if (filter === 'stables') filtered = filtered.filter(m => m.location === 'Stables');
       
-      document.getElementById('matchesList').innerHTML = filtered.length ? filtered.map(m => {
-        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id), w1 = m.winner_id === t1?.id;
-        const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1), { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
-        return `<div class="match-card"><div class="match-header"><div><div class="match-date">${new Date(m.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</div></div><div class="match-location"><i class="fas fa-map-marker-alt"></i> ${m.location} • ${m.court}</div></div><div class="match-body"><div class="match-team-card ${w1 ? 'winner' : ''}"><div class="match-team-avatars">${av(t1p1, 'sm')}${av(t1p2, 'sm')}</div><div class="match-team-name">${t1?.name || '?'}</div><div class="match-team-players">${t1p1?.name || '?'} & ${t1p2?.name || '?'}</div>${w1 ? '<span class="match-winner-badge">WINNER</span>' : ''}</div><div class="match-scores">${(m.scores || []).map(s => `<div class="match-set"><span class="match-score ${s[0] > s[1] ? 'win' : 'lose'}">${s[0]}</span><span class="match-score-dash">-</span><span class="match-score ${s[1] > s[0] ? 'win' : 'lose'}">${s[1]}</span></div>`).join('')}</div><div class="match-team-card ${!w1 ? 'winner' : ''}"><div class="match-team-avatars">${av(t2p1, 'sm')}${av(t2p2, 'sm')}</div><div class="match-team-name">${t2?.name || '?'}</div><div class="match-team-players">${t2p1?.name || '?'} & ${t2p2?.name || '?'}</div>${!w1 ? '<span class="match-winner-badge">WINNER</span>' : ''}</div></div></div>`;
-      }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Matches Found</h3><p>No matches match your filter criteria</p></div>';
+      document.getElementById('teamsGrid').innerHTML = allTeamsRanked.length ? allTeamsRanked.map((t, i) => {
+        const { p1, p2 } = getTeamPlayers(t), iv = t.id === vid && t.active !== false;
+        const inactive = t.active === false ? 'inactive' : '';
+        return `<div class="team-card ${iv ? 'villain-team' : ''} ${inactive}" onclick="openEditTeam(${t.id})">
+          ${iv ? '<div class="team-villain-badge">👑 CURRENT VILLAINS</div>' : ''}
+          <div class="team-rank-badge">#${i + 1}</div>
+          <div class="team-avatars ${iv ? 'has-badge' : ''}">${av(p1)}<span class="team-amp">&</span>${av(p2)}</div>
+          <div class="team-name">${t.name}</div>
+          <span class="team-status ${t.active === false ? 'inactive' : 'active'}">${t.active === false ? 'Inactive' : 'Active'}</span>
+          <div class="team-players-names">${p1?.name || '?'} & ${p2?.name || '?'}</div>
+          <div class="team-record">
+            <div class="team-record-item"><div class="team-record-value wins">${t.wins}</div><div class="team-record-label">Wins</div></div>
+            <div class="team-record-item"><div class="team-record-value losses">${t.losses}</div><div class="team-record-label">Losses</div></div>
+          </div>
+          <div class="team-winrate"><div class="team-winrate-bar"><div class="team-winrate-fill" style="width:${winRate(t.wins, t.losses)}%"></div></div><span class="team-winrate-text">${winRate(t.wins, t.losses)}%</span></div>
+        </div>`;
+      }).join('') : '<div class="empty"><div class="empty-icon">🏅</div><h3>No Teams Yet</h3><p>Create your first team</p></div>';
+    }
+item-name">${v.name}</div>
+              <div class="venue-item-courts">${v.courts.join(', ')}</div>
+            </div>
+          </div>
+          <div class="venue-item-actions">
+            <button class="btn btn-secondary btn-xs" onclick="deleteVenue(${v.id})"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      `).join('');
+      
+      // Update court dropdown
+      const venue = getCurrentVenue();
+      if (venue) {
+        document.getElementById('matchCourt').innerHTML = venue.courts.map(c => `<option value="${c}">${c}</option>`).join('');
+      }
     }
     
-    // ===== RANKINGS =====
-    function renderRankings() {
-      const r = rankTeams(), vid = currentMatchDay.villains?.teamId;
-      document.getElementById('rankingsBody').innerHTML = r.length ? r.map((t, i) => {
-        const { p1, p2 } = getTeamPlayers(t), iv = t.id === vid;
-        const rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
-        return `<div class="rankings-row ${i < 3 ? 'top-3' : ''}"><span><span class="rank-num ${rc}">${i + 1}</span></span><span class="rank-team"><div class="rank-avatars">${av(p1, 'sm')}${av(p2, 'sm')}</div><div class="rank-info"><h4>${t.name}${iv ? '<span class="rank-villain-tag">👑 VILLAINS</span>' : ''}</h4><p>${p1?.name || '?'} & ${p2?.name || '?'}</p></div></span><span class="rank-record"><span class="rank-record-wins">${t.wins}</span><span style="color:#DDD;margin:0 4px">-</span><span class="rank-record-losses">${t.losses}</span></span><span class="rank-rate"><div class="rank-rate-bar"><div class="rank-rate-fill" style="width:${winRate(t.wins, t.losses)}%"></div></div><span class="rank-rate-text">${winRate(t.wins, t.losses)}%</span></span></div>`;
-      }).join('') : '<div class="empty" style="padding:40px"><p>No teams to rank yet</p></div>';
+    async function addVenue() {
+      const name = document.getElementById('newVenueName').value.trim();
+      const courtsStr = document.getElementById('newVenueCourts').value.trim();
+      if (!name || !courtsStr) { toast('Fill in venue name and courts', 'error'); return; }
+      const courts = courtsStr.split(',').map(c => c.trim()).filter(c => c);
+      const nv = { id: Date.now(), name, courts };
+      
+      if (supabase) {
+        try {
+          const { data, error } = await supabase.from('venues').insert([nv]).select().single();
+          if (error) throw error;
+          venues.push(data);
+        } catch (e) { toast('Error adding venue', 'error'); return; }
+      } else {
+        venues.push(nv);
+        saveLocal();
+      }
+      
+      document.getElementById('newVenueName').value = '';
+      document.getElementById('newVenueCourts').value = '';
+      renderAll();
+      toast('Venue added!', 'success');
     }
     
-    // ===== MATCHUP =====
-    function renderMatchup() {
-      document.getElementById('matchupPlayers').innerHTML = players.length ? players.map(p => `<div class="matchup-player ${selectedPlayers.includes(p.id) ? 'selected' : ''}" onclick="togglePlayer(${p.id})">${av(p, 'sm')}<span class="matchup-player-name">${p.name}</span>${selectedPlayers.includes(p.id) ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}</div>`).join('') : '<div class="empty" style="padding:20px"><p>Add players first</p></div>';
-      document.getElementById('selectedCount').textContent = selectedPlayers.length;
-    }
-    
-    function togglePlayer(id) {
-      const i = selectedPlayers.indexOf(id);
-      i > -1 ? selectedPlayers.splice(i, 1) : selectedPlayers.push(id);
-      renderMatchup();
-    }
-    
-    function generateMatchups() {
-      if (selectedPlayers.length < 4) { toast('Select at least 4 players', 'error'); return; }
-      const sel = [...selectedPlayers], matchups = [];
-      for (let i = sel.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [sel[i], sel[j]] = [sel[j], sel[i]]; }
-      for (let i = 0; i < sel.length - 3; i += 4) matchups.push({ t1: [getPlayer(sel[i]), getPlayer(sel[i+1])], t2: [getPlayer(sel[i+2]), getPlayer(sel[i+3])] });
-      document.getElementById('matchupResults').innerHTML = matchups.map(m => `<div class="generated-match"><div class="generated-team"><div class="generated-team-avatars">${av(m.t1[0], 'sm')}${av(m.t1[1], 'sm')}</div><span class="generated-team-names">${m.t1[0]?.name} & ${m.t1[1]?.name}</span></div><span class="generated-vs">VS</span><div class="generated-team"><div class="generated-team-avatars">${av(m.t2[0], 'sm')}${av(m.t2[1], 'sm')}</div><span class="generated-team-names">${m.t2[0]?.name} & ${m.t2[1]?.name}</span></div></div>`).join('');
-      document.getElementById('generatedSection').classList.remove('hidden');
+    async function deleteVenue(id) {
+      if (venues.length <= 1) { toast('Must have at least one venue', 'error'); return; }
+      if (supabase) {
+        try { await supabase.from('venues').delete().eq('id', id); } catch (e) { toast('Error', 'error'); return; }
+      }
+      venues = venues.filter(v => v.id !== id);
+      if (currentMatchDay.venue === venues.find(v => v.id === id)?.name) {
+        currentMatchDay.venue = venues[0]?.name || '';
+      }
+      saveLocal();
+      renderAll();
+      toast('Venue deleted', 'success');
     }
     
     // ===== DROPDOWNS =====
     function updateDropdowns() {
-      const po = '<option value="">Select player</option>' + players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-      const to = '<option value="">Select team</option>' + teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+      const active = activePlayers();
+      const activeT = activeTeams();
+      const po = '<option value="">Select player</option>' + active.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      const allPo = '<option value="">Select player</option>' + players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      const to = '<option value="">Select team</option>' + activeT.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+      
       document.getElementById('teamPlayer1').innerHTML = po;
       document.getElementById('teamPlayer2').innerHTML = po;
+      document.getElementById('editTeamPlayer1').innerHTML = allPo;
+      document.getElementById('editTeamPlayer2').innerHTML = allPo;
       document.getElementById('matchTeam1').innerHTML = to;
       document.getElementById('matchTeam2').innerHTML = to;
-    }
-    
-    function updateCourts() {
-      const loc = document.getElementById('matchLocation').value;
-      document.getElementById('matchCourt').innerHTML = (locations[loc] || []).map(c => `<option value="${c}">${c}</option>`).join('');
+      
+      const venue = getCurrentVenue();
+      if (venue) {
+        document.getElementById('matchCourt').innerHTML = venue.courts.map(c => `<option value="${c}">${c}</option>`).join('');
+      }
     }
     
     // ===== MODALS =====
     function openModal(t) { document.getElementById(t + 'Modal').classList.add('active'); }
-    function closeModal(t) { document.getElementById(t + 'Modal').classList.remove('active'); }
+    function closeModal(t) { document.getElementById(t + 'Modal').classList.remove('active'); tempPhotoData[t] = null; }
     
-    // ===== ACTIONS =====
+    function previewPhoto(input, modalType) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          tempPhotoData[modalType] = e.target.result;
+          const previewId = modalType === 'addPlayer' ? '.photo-preview' : '#editPlayerPhotoPreview';
+          const preview = document.querySelector(`#${modalType}Modal ${previewId}`);
+          if (preview) preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+    
+    // ===== PLAYER ACTIONS =====
+    function openEditPlayer(id) {
+      const p = getPlayer(id);
+      if (!p) return;
+      document.getElementById('editPlayerId').value = id;
+      document.getElementById('editPlayerName').value = p.name;
+      document.getElementById('editPlayerActive').checked = p.active !== false;
+      const preview = document.getElementById('editPlayerPhotoPreview');
+      preview.innerHTML = p.photo ? `<img src="${p.photo}" alt="${p.name}">` : '<i class="fas fa-camera"></i>';
+      tempPhotoData.editPlayer = p.photo || null;
+      
+      // Show/hide delete button based on games
+      const canDelete = (p.games_played || 0) === 0;
+      document.getElementById('deletePlayerBtn').style.display = canDelete ? 'flex' : 'none';
+      
+      openModal('editPlayer');
+    }
+    
     async function addPlayer() {
       const name = document.getElementById('playerName').value.trim();
       if (!name) { toast('Enter a name', 'error'); return; }
-      const np = { id: Date.now(), name, wins: 0, losses: 0, games_played: 0, created_at: new Date().toISOString() };
-      if (supabase) { try { const { data, error } = await supabase.from('players').insert([np]).select().single(); if (error) throw error; players.push(data); } catch (e) { toast('Error', 'error'); return; } }
-      else { players.push(np); saveLocal(); }
+      const np = { id: Date.now(), name, photo: tempPhotoData.addPlayer, wins: 0, losses: 0, games_played: 0, active: true, created_at: new Date().toISOString() };
+      
+      if (supabase) {
+        try {
+          const { data, error } = await supabase.from('players').insert([np]).select().single();
+          if (error) throw error;
+          players.push(data);
+        } catch (e) { toast('Error', 'error'); return; }
+      } else {
+        players.push(np);
+        saveLocal();
+      }
+      
       document.getElementById('playerName').value = '';
-      closeModal('addPlayer'); renderAll(); toast('Player added!', 'success');
+      document.querySelector('#addPlayerModal .photo-preview').innerHTML = '<i class="fas fa-camera"></i>';
+      tempPhotoData.addPlayer = null;
+      closeModal('addPlayer');
+      renderAll();
+      toast('Player added!', 'success');
+    }
+    
+    async function savePlayer() {
+      const id = parseInt(document.getElementById('editPlayerId').value);
+      const name = document.getElementById('editPlayerName').value.trim();
+      const active = document.getElementById('editPlayerActive').checked;
+      if (!name) { toast('Enter a name', 'error'); return; }
+      
+      const idx = players.findIndex(p => p.id === id);
+      if (idx === -1) return;
+      
+      players[idx].name = name;
+      players[idx].active = active;
+      if (tempPhotoData.editPlayer !== undefined) players[idx].photo = tempPhotoData.editPlayer;
+      
+      if (supabase) {
+        try { await supabase.from('players').update(players[idx]).eq('id', id); } 
+        catch (e) { toast('Error', 'error'); return; }
+      } else { saveLocal(); }
+      
+      closeModal('editPlayer');
+      renderAll();
+      toast('Player updated!', 'success');
+    }
+    
+    function confirmDeletePlayer() {
+      const id = parseInt(document.getElementById('editPlayerId').value);
+      const p = getPlayer(id);
+      if ((p?.games_played || 0) > 0) { toast('Cannot delete player with games', 'error'); return; }
+      
+      document.getElementById('confirmTitle').textContent = 'Delete Player';
+      document.getElementById('confirmText').textContent = `Are you sure you want to delete ${p?.name}? This cannot be undone.`;
+      confirmAction = () => deletePlayer(id);
+      closeModal('editPlayer');
+      openModal('confirm');
+    }
+    
+    async function deletePlayer(id) {
+      if (supabase) {
+        try { await supabase.from('players').delete().eq('id', id); } 
+        catch (e) { toast('Error', 'error'); return; }
+      }
+      players = players.filter(p => p.id !== id);
+      saveLocal();
+      closeModal('confirm');
+      renderAll();
+      toast('Player deleted', 'success');
+    }
+    
+    // ===== TEAM ACTIONS =====
+    function openEditTeam(id) {
+      const t = getTeam(id);
+      if (!t) return;
+      document.getElementById('editTeamId').value = id;
+      document.getElementById('editTeamName').value = t.name;
+      document.getElementById('editTeamActive').checked = t.active !== false;
+      
+      updateDropdowns();
+      document.getElementById('editTeamPlayer1').value = t.player1_id;
+      document.getElementById('editTeamPlayer2').value = t.player2_id;
+      
+      const canDelete = (t.wins + t.losses) === 0;
+      document.getElementById('deleteTeamBtn').style.display = canDelete ? 'flex' : 'none';
+      
+      openModal('editTeam');
     }
     
     async function addTeam() {
@@ -712,45 +1034,118 @@
       const p2 = parseInt(document.getElementById('teamPlayer2').value);
       if (!name || !p1 || !p2) { toast('Fill all fields', 'error'); return; }
       if (p1 === p2) { toast('Select different players', 'error'); return; }
-      const nt = { id: Date.now(), name, player1_id: p1, player2_id: p2, wins: 0, losses: 0, created_at: new Date().toISOString() };
-      if (supabase) { try { const { data, error } = await supabase.from('teams').insert([nt]).select().single(); if (error) throw error; teams.push(data); } catch (e) { toast('Error', 'error'); return; } }
-      else { teams.push(nt); saveLocal(); }
+      const nt = { id: Date.now(), name, player1_id: p1, player2_id: p2, wins: 0, losses: 0, active: true, created_at: new Date().toISOString() };
+      
+      if (supabase) {
+        try {
+          const { data, error } = await supabase.from('teams').insert([nt]).select().single();
+          if (error) throw error;
+          teams.push(data);
+        } catch (e) { toast('Error', 'error'); return; }
+      } else {
+        teams.push(nt);
+        saveLocal();
+      }
+      
       document.getElementById('teamName').value = '';
       document.getElementById('teamPlayer1').value = '';
       document.getElementById('teamPlayer2').value = '';
-      closeModal('addTeam'); renderAll(); toast('Team created!', 'success');
+      closeModal('addTeam');
+      renderAll();
+      toast('Team created!', 'success');
     }
     
+    async function saveTeam() {
+      const id = parseInt(document.getElementById('editTeamId').value);
+      const name = document.getElementById('editTeamName').value.trim();
+      const p1 = parseInt(document.getElementById('editTeamPlayer1').value);
+      const p2 = parseInt(document.getElementById('editTeamPlayer2').value);
+      const active = document.getElementById('editTeamActive').checked;
+      
+      if (!name || !p1 || !p2) { toast('Fill all fields', 'error'); return; }
+      if (p1 === p2) { toast('Select different players', 'error'); return; }
+      
+      const idx = teams.findIndex(t => t.id === id);
+      if (idx === -1) return;
+      
+      teams[idx].name = name;
+      teams[idx].player1_id = p1;
+      teams[idx].player2_id = p2;
+      teams[idx].active = active;
+      
+      if (supabase) {
+        try { await supabase.from('teams').update(teams[idx]).eq('id', id); }
+        catch (e) { toast('Error', 'error'); return; }
+      } else { saveLocal(); }
+      
+      closeModal('editTeam');
+      renderAll();
+      toast('Team updated!', 'success');
+    }
+    
+    function confirmDeleteTeam() {
+      const id = parseInt(document.getElementById('editTeamId').value);
+      const t = getTeam(id);
+      if ((t?.wins + t?.losses) > 0) { toast('Cannot delete team with games', 'error'); return; }
+      
+      document.getElementById('confirmTitle').textContent = 'Delete Team';
+      document.getElementById('confirmText').textContent = `Are you sure you want to delete ${t?.name}? This cannot be undone.`;
+      confirmAction = () => deleteTeam(id);
+      closeModal('editTeam');
+      openModal('confirm');
+    }
+    
+    async function deleteTeam(id) {
+      if (supabase) {
+        try { await supabase.from('teams').delete().eq('id', id); }
+        catch (e) { toast('Error', 'error'); return; }
+      }
+      teams = teams.filter(t => t.id !== id);
+      saveLocal();
+      closeModal('confirm');
+      renderAll();
+      toast('Team deleted', 'success');
+    }
+    
+    function executeConfirm() {
+      if (confirmAction) confirmAction();
+      confirmAction = null;
+    }
+    
+    // ===== MATCH ACTIONS =====
     async function addMatch() {
       const date = document.getElementById('matchDate').value;
-      const location = document.getElementById('matchLocation').value;
       const court = document.getElementById('matchCourt').value;
       const t1 = parseInt(document.getElementById('matchTeam1').value);
       const t2 = parseInt(document.getElementById('matchTeam2').value);
+      const scoreA = parseInt(document.getElementById('scoreA').value) || 0;
+      const scoreB = parseInt(document.getElementById('scoreB').value) || 0;
+      
       if (!t1 || !t2) { toast('Select both teams', 'error'); return; }
       if (t1 === t2) { toast('Select different teams', 'error'); return; }
-      const scores = [];
-      const g = id => document.getElementById(id).value;
-      if (g('s1a') && g('s1b')) scores.push([parseInt(g('s1a')), parseInt(g('s1b'))]);
-      if (g('s2a') && g('s2b')) scores.push([parseInt(g('s2a')), parseInt(g('s2b'))]);
-      if (g('s3a') && g('s3b')) scores.push([parseInt(g('s3a')), parseInt(g('s3b'))]);
-      if (!scores.length) { toast('Enter at least one set', 'error'); return; }
-      let t1s = 0, t2s = 0;
-      scores.forEach(s => s[0] > s[1] ? t1s++ : t2s++);
-      const wid = t1s > t2s ? t1 : t2, lid = wid === t1 ? t2 : t1;
-      const nm = { id: Date.now(), date, location, court, team1_id: t1, team2_id: t2, scores, winner_id: wid, created_at: new Date().toISOString() };
+      if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); return; }
+      
+      const scores = [[scoreA, scoreB]];
+      const wid = scoreA > scoreB ? t1 : t2;
+      const lid = wid === t1 ? t2 : t1;
+      
+      const nm = { id: Date.now(), date, location: currentMatchDay.venue, court, team1_id: t1, team2_id: t2, scores, winner_id: wid, created_at: new Date().toISOString() };
+      
       const wi = teams.findIndex(t => t.id === wid), li = teams.findIndex(t => t.id === lid);
       if (wi !== -1) teams[wi].wins++;
       if (li !== -1) teams[li].losses++;
+      
       const wt = getTeam(wid), lt = getTeam(lid);
       players.forEach(p => {
-        if (p.id === wt?.player1_id || p.id === wt?.player2_id) { p.wins++; p.games_played++; }
-        if (p.id === lt?.player1_id || p.id === lt?.player2_id) { p.losses++; p.games_played++; }
+        if (p.id === wt?.player1_id || p.id === wt?.player2_id) { p.wins++; p.games_played = (p.games_played || 0) + 1; }
+        if (p.id === lt?.player1_id || p.id === lt?.player2_id) { p.losses++; p.games_played = (p.games_played || 0) + 1; }
       });
+      
       if (date === currentMatchDay.date) {
         if (wid === currentMatchDay.villains?.teamId) currentMatchDay.villains.winStreak++;
         else currentMatchDay.villains = { teamId: wid, winStreak: 1 };
       }
+      
       if (supabase) {
         try {
           await supabase.from('matches').insert([nm]);
@@ -759,14 +1154,24 @@
           await supabase.from('settings').upsert({ key: 'current_match_day', value: JSON.stringify(currentMatchDay) });
           matches.unshift(nm);
         } catch (e) { toast('Error', 'error'); return; }
-      } else { matches.unshift(nm); saveLocal(); }
-      ['s1a','s1b','s2a','s2b','s3a','s3b','matchTeam1','matchTeam2'].forEach(id => document.getElementById(id).value = '');
-      closeModal('addMatch'); renderAll(); toast('Match logged!', 'success');
+      } else {
+        matches.unshift(nm);
+        saveLocal();
+      }
+      
+      document.getElementById('scoreA').value = '';
+      document.getElementById('scoreB').value = '';
+      document.getElementById('matchTeam1').value = '';
+      document.getElementById('matchTeam2').value = '';
+      closeModal('addMatch');
+      renderAll();
+      toast('Match logged!', 'success');
     }
     
     function toast(msg, type = 'info') {
       const t = document.getElementById('toast');
-      t.textContent = msg; t.className = `toast ${type} show`;
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
       setTimeout(() => t.classList.remove('show'), 3000);
     }
   </script>
