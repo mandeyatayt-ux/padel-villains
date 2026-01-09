@@ -828,7 +828,62 @@
         </div>`;
       }).join('') : '<div class="empty"><div class="empty-icon">🏅</div><h3>No Teams Yet</h3><p>Create your first team</p></div>';
     }
-item-name">${v.name}</div>
+    
+    // ===== MATCHES =====
+    function renderMatches(filter = 'all') {
+      let filtered = [...matches];
+      const today = new Date().toISOString().split('T')[0];
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      if (filter === 'today') filtered = filtered.filter(m => m.date === today);
+      else if (filter === 'week') filtered = filtered.filter(m => m.date >= weekAgo);
+      
+      document.getElementById('matchesList').innerHTML = filtered.length ? filtered.map(m => {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id), w1 = m.winner_id === t1?.id;
+        const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1), { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
+        return `<div class="match-card"><div class="match-header"><div><div class="match-date">${new Date(m.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</div></div><div class="match-location"><i class="fas fa-map-marker-alt"></i> ${m.court}</div></div><div class="match-body"><div class="match-team-card ${w1 ? 'winner' : ''}"><div class="match-team-avatars">${av(t1p1, 'sm')}${av(t1p2, 'sm')}</div><div class="match-team-name">${t1?.name || '?'}</div><div class="match-team-players">${t1p1?.name || '?'} & ${t1p2?.name || '?'}</div>${w1 ? '<span class="match-winner-badge">WINNER</span>' : ''}</div><div class="match-scores">${(m.scores || []).map(s => '<div class="match-set"><span class="match-score ' + (s[0] > s[1] ? 'win' : 'lose') + '">' + s[0] + '</span><span class="match-score-dash">-</span><span class="match-score ' + (s[1] > s[0] ? 'win' : 'lose') + '">' + s[1] + '</span></div>').join('')}</div><div class="match-team-card ${!w1 ? 'winner' : ''}"><div class="match-team-avatars">${av(t2p1, 'sm')}${av(t2p2, 'sm')}</div><div class="match-team-name">${t2?.name || '?'}</div><div class="match-team-players">${t2p1?.name || '?'} & ${t2p2?.name || '?'}</div>${!w1 ? '<span class="match-winner-badge">WINNER</span>' : ''}</div></div></div>`;
+      }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Matches Found</h3></div>';
+    }
+    
+    // ===== RANKINGS =====
+    function renderRankings() {
+      const r = rankTeams(), vid = currentMatchDay.villains?.teamId;
+      document.getElementById('rankingsBody').innerHTML = r.length ? r.map((t, i) => {
+        const { p1, p2 } = getTeamPlayers(t), iv = t.id === vid;
+        const rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
+        return `<div class="rankings-row ${i < 3 ? 'top-3' : ''}"><span><span class="rank-num ${rc}">${i + 1}</span></span><span class="rank-team"><div class="rank-avatars">${av(p1, 'sm')}${av(p2, 'sm')}</div><div class="rank-info"><h4>${t.name}${iv ? '<span class="rank-villain-tag">👑 VILLAINS</span>' : ''}</h4><p>${p1?.name || '?'} & ${p2?.name || '?'}</p></div></span><span class="rank-record"><span class="rank-record-wins">${t.wins}</span><span style="color:#DDD;margin:0 4px">-</span><span class="rank-record-losses">${t.losses}</span></span><span class="rank-rate"><div class="rank-rate-bar"><div class="rank-rate-fill" style="width:${winRate(t.wins, t.losses)}%"></div></div><span class="rank-rate-text">${winRate(t.wins, t.losses)}%</span></span></div>`;
+      }).join('') : '<div class="empty" style="padding:40px"><p>No active teams to rank</p></div>';
+    }
+    
+    // ===== MATCHUP =====
+    function renderMatchup() {
+      const active = activePlayers();
+      document.getElementById('matchupPlayers').innerHTML = active.length ? active.map(p => `<div class="matchup-player ${selectedPlayers.includes(p.id) ? 'selected' : ''}" onclick="togglePlayer(${p.id})">${av(p, 'sm')}<span class="matchup-player-name">${p.name}</span>${selectedPlayers.includes(p.id) ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}</div>`).join('') : '<div class="empty" style="padding:20px"><p>No active players</p></div>';
+      document.getElementById('selectedCount').textContent = selectedPlayers.length;
+    }
+    
+    function togglePlayer(id) {
+      const i = selectedPlayers.indexOf(id);
+      i > -1 ? selectedPlayers.splice(i, 1) : selectedPlayers.push(id);
+      renderMatchup();
+    }
+    
+    function generateMatchups() {
+      if (selectedPlayers.length < 4) { toast('Select at least 4 players', 'error'); return; }
+      const sel = [...selectedPlayers], matchups = [];
+      for (let i = sel.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [sel[i], sel[j]] = [sel[j], sel[i]]; }
+      for (let i = 0; i < sel.length - 3; i += 4) matchups.push({ t1: [getPlayer(sel[i]), getPlayer(sel[i+1])], t2: [getPlayer(sel[i+2]), getPlayer(sel[i+3])] });
+      document.getElementById('matchupResults').innerHTML = matchups.map(m => `<div class="generated-match"><div class="generated-team"><div class="generated-team-avatars">${av(m.t1[0], 'sm')}${av(m.t1[1], 'sm')}</div><span class="generated-team-names">${m.t1[0]?.name} & ${m.t1[1]?.name}</span></div><span class="generated-vs">VS</span><div class="generated-team"><div class="generated-team-avatars">${av(m.t2[0], 'sm')}${av(m.t2[1], 'sm')}</div><span class="generated-team-names">${m.t2[0]?.name} & ${m.t2[1]?.name}</span></div></div>`).join('');
+      document.getElementById('generatedSection').classList.remove('hidden');
+    }
+    
+    // ===== SETTINGS =====
+    function renderSettings() {
+      document.getElementById('venueList').innerHTML = venues.map(v => `
+        <div class="venue-item">
+          <div class="venue-item-info">
+            <i class="fas fa-map-marker-alt" style="color:var(--clay)"></i>
+            <div>
+              <div class="venue-item-name">${v.name}</div>
               <div class="venue-item-courts">${v.courts.join(', ')}</div>
             </div>
           </div>
