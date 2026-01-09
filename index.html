@@ -62,10 +62,10 @@
     .section-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
     
     /* Avatar */
-    .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--brown-light), var(--brown-medium)); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; border: 3px solid var(--clay); flex-shrink: 0; overflow: hidden; }
-    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--brown-light), var(--brown-medium)); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; border: 3px solid var(--clay); flex-shrink: 0; overflow: hidden; image-rendering: -webkit-optimize-contrast; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; image-rendering: -webkit-optimize-contrast; }
     .avatar.xl { width: 100px; height: 100px; font-size: 40px; border-width: 4px; }
-    .avatar.lg { width: 72px; height: 72px; font-size: 28px; }
+    .avatar.lg { width: 72px; height: 72px; font-size: 28px; border-width: 3px; }
     .avatar.sm { width: 40px; height: 40px; font-size: 16px; border-width: 2px; }
     .avatar.xs { width: 32px; height: 32px; font-size: 13px; border-width: 2px; }
     
@@ -278,6 +278,16 @@
     .generated-team-names { font-size: 15px; font-weight: 600; }
     .generated-vs { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--clay); padding: 0 24px; letter-spacing: 2px; }
     
+    /* Round Robin */
+    .matchup-team { display: flex; align-items: center; gap: 14px; padding: 18px; background: white; border-radius: 14px; border: 2px solid var(--cream-dark); cursor: pointer; transition: all 0.2s; position: relative; }
+    .matchup-team:hover { border-color: var(--clay-light); transform: translateY(-2px); }
+    .matchup-team.selected { border-color: var(--clay); background: rgba(224,120,80,0.05); }
+    .matchup-team-info { display: flex; flex-direction: column; }
+    .matchup-team-name { font-size: 15px; font-weight: 700; }
+    .matchup-team-players { font-size: 12px; color: var(--text-muted); }
+    .round-label { display: inline-block; padding: 8px 16px; background: var(--clay); color: white; border-radius: 10px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; margin-bottom: 16px; margin-top: 24px; }
+    .round-label:first-child { margin-top: 0; }
+    
     /* ===== SETTINGS PAGE ===== */
     .settings-section { background: white; border-radius: 20px; padding: 28px; margin-bottom: 24px; }
     .settings-section-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
@@ -464,20 +474,38 @@
 
     <!-- ===== MATCHUP TAB ===== -->
     <section class="tab" id="matchup">
-      <div class="matchup-hero"><h2>🎲 MATCHUP GENERATOR</h2><p>Randomly create fair teams for today</p></div>
-      <div class="card">
-        <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">Select Attending Players</h3>
-        <p style="color:var(--text-muted);margin-bottom:24px;font-size:14px">Only active players are shown</p>
+      <div class="matchup-hero"><h2>🎲 MATCHUP GENERATOR</h2><p>Create random teams or round robin tournaments</p></div>
+      
+      <!-- Player Matchup Section -->
+      <div class="card" style="margin-bottom:24px">
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">🎯 Random Player Matchup</h3>
+        <p style="color:var(--text-muted);margin-bottom:24px;font-size:14px">Select players to randomly pair into teams</p>
         <div class="matchup-players" id="matchupPlayers"></div>
         <div class="matchup-actions">
           <span class="selected-count"><strong id="selectedCount">0</strong> players selected (min 4)</span>
-          <button class="btn btn-primary" onclick="generateMatchups()"><i class="fas fa-shuffle"></i> Generate</button>
+          <button class="btn btn-primary" onclick="generateMatchups()"><i class="fas fa-shuffle"></i> Generate Teams</button>
         </div>
       </div>
       <div class="generated-section hidden" id="generatedSection">
-        <div class="generated-title">🎯 GENERATED MATCHUPS</div>
+        <div class="generated-title">🎯 GENERATED PLAYER MATCHUPS</div>
         <div id="matchupResults"></div>
         <button class="btn btn-secondary" onclick="generateMatchups()" style="margin-top:20px"><i class="fas fa-refresh"></i> Regenerate</button>
+      </div>
+      
+      <!-- Team Round Robin Section -->
+      <div class="card" style="margin-top:32px">
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">🏆 Team Round Robin</h3>
+        <p style="color:var(--text-muted);margin-bottom:24px;font-size:14px">Select teams for a round robin tournament - every team plays each other</p>
+        <div class="matchup-players" id="roundRobinTeams"></div>
+        <div class="matchup-actions">
+          <span class="selected-count"><strong id="selectedTeamCount">0</strong> teams selected (min 2)</span>
+          <button class="btn btn-primary" onclick="generateRoundRobin()"><i class="fas fa-trophy"></i> Generate Round Robin</button>
+        </div>
+      </div>
+      <div class="generated-section hidden" id="roundRobinSection">
+        <div class="generated-title">🏆 ROUND ROBIN SCHEDULE</div>
+        <div id="roundRobinResults"></div>
+        <button class="btn btn-secondary" onclick="generateRoundRobin()" style="margin-top:20px"><i class="fas fa-refresh"></i> Regenerate Schedule</button>
       </div>
     </section>
 
@@ -867,15 +895,39 @@
     }
     
     // ===== MATCHUP =====
+    let selectedTeams = [];
+    
     function renderMatchup() {
+      // Player matchup
       const active = activePlayers();
       document.getElementById('matchupPlayers').innerHTML = active.length ? active.map(p => `<div class="matchup-player ${selectedPlayers.includes(p.id) ? 'selected' : ''}" onclick="togglePlayer(${p.id})">${av(p, 'sm')}<span class="matchup-player-name">${p.name}</span>${selectedPlayers.includes(p.id) ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}</div>`).join('') : '<div class="empty" style="padding:20px"><p>No active players</p></div>';
       document.getElementById('selectedCount').textContent = selectedPlayers.length;
+      
+      // Team round robin
+      const activeT = activeTeams();
+      document.getElementById('roundRobinTeams').innerHTML = activeT.length ? activeT.map(t => {
+        const { p1, p2 } = getTeamPlayers(t);
+        return `<div class="matchup-team ${selectedTeams.includes(t.id) ? 'selected' : ''}" onclick="toggleTeam(${t.id})">
+          <div style="display:flex;gap:4px">${av(p1, 'xs')}${av(p2, 'xs')}</div>
+          <div class="matchup-team-info">
+            <span class="matchup-team-name">${t.name}</span>
+            <span class="matchup-team-players">${p1?.name || '?'} & ${p2?.name || '?'}</span>
+          </div>
+          ${selectedTeams.includes(t.id) ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}
+        </div>`;
+      }).join('') : '<div class="empty" style="padding:20px"><p>No active teams</p></div>';
+      document.getElementById('selectedTeamCount').textContent = selectedTeams.length;
     }
     
     function togglePlayer(id) {
       const i = selectedPlayers.indexOf(id);
       i > -1 ? selectedPlayers.splice(i, 1) : selectedPlayers.push(id);
+      renderMatchup();
+    }
+    
+    function toggleTeam(id) {
+      const i = selectedTeams.indexOf(id);
+      i > -1 ? selectedTeams.splice(i, 1) : selectedTeams.push(id);
       renderMatchup();
     }
     
@@ -886,6 +938,76 @@
       for (let i = 0; i < sel.length - 3; i += 4) matchups.push({ t1: [getPlayer(sel[i]), getPlayer(sel[i+1])], t2: [getPlayer(sel[i+2]), getPlayer(sel[i+3])] });
       document.getElementById('matchupResults').innerHTML = matchups.map(m => `<div class="generated-match"><div class="generated-team"><div class="generated-team-avatars">${av(m.t1[0], 'sm')}${av(m.t1[1], 'sm')}</div><span class="generated-team-names">${m.t1[0]?.name} & ${m.t1[1]?.name}</span></div><span class="generated-vs">VS</span><div class="generated-team"><div class="generated-team-avatars">${av(m.t2[0], 'sm')}${av(m.t2[1], 'sm')}</div><span class="generated-team-names">${m.t2[0]?.name} & ${m.t2[1]?.name}</span></div></div>`).join('');
       document.getElementById('generatedSection').classList.remove('hidden');
+    }
+    
+    function generateRoundRobin() {
+      if (selectedTeams.length < 2) { toast('Select at least 2 teams', 'error'); return; }
+      
+      const teamsList = selectedTeams.map(id => getTeam(id)).filter(t => t);
+      const n = teamsList.length;
+      
+      // Generate all matches (round robin)
+      const allMatches = [];
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          allMatches.push({ t1: teamsList[i], t2: teamsList[j] });
+        }
+      }
+      
+      // Shuffle matches
+      for (let i = allMatches.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allMatches[i], allMatches[j]] = [allMatches[j], allMatches[i]];
+      }
+      
+      // Organize into rounds (each team plays max once per round)
+      const rounds = [];
+      const usedMatches = new Set();
+      
+      while (usedMatches.size < allMatches.length) {
+        const round = [];
+        const teamsInRound = new Set();
+        
+        for (let i = 0; i < allMatches.length; i++) {
+          if (usedMatches.has(i)) continue;
+          const match = allMatches[i];
+          if (!teamsInRound.has(match.t1.id) && !teamsInRound.has(match.t2.id)) {
+            round.push(match);
+            teamsInRound.add(match.t1.id);
+            teamsInRound.add(match.t2.id);
+            usedMatches.add(i);
+          }
+        }
+        if (round.length > 0) rounds.push(round);
+      }
+      
+      // Render results
+      let html = '';
+      rounds.forEach((round, idx) => {
+        html += `<div class="round-label">ROUND ${idx + 1}</div>`;
+        round.forEach(m => {
+          const { p1: t1p1, p2: t1p2 } = getTeamPlayers(m.t1);
+          const { p1: t2p1, p2: t2p2 } = getTeamPlayers(m.t2);
+          html += `<div class="generated-match">
+            <div class="generated-team">
+              <div class="generated-team-avatars">${av(t1p1, 'sm')}${av(t1p2, 'sm')}</div>
+              <span class="generated-team-names">${m.t1.name}</span>
+            </div>
+            <span class="generated-vs">VS</span>
+            <div class="generated-team">
+              <div class="generated-team-avatars">${av(t2p1, 'sm')}${av(t2p2, 'sm')}</div>
+              <span class="generated-team-names">${m.t2.name}</span>
+            </div>
+          </div>`;
+        });
+      });
+      
+      html += `<div style="margin-top:24px;padding:16px;background:var(--cream);border-radius:12px;text-align:center">
+        <strong>Total Matches:</strong> ${allMatches.length} | <strong>Rounds:</strong> ${rounds.length}
+      </div>`;
+      
+      document.getElementById('roundRobinResults').innerHTML = html;
+      document.getElementById('roundRobinSection').classList.remove('hidden');
     }
     
     // ===== SETTINGS =====
@@ -977,14 +1099,47 @@
     
     function previewPhoto(input, modalType) {
       if (input.files && input.files[0]) {
+        const file = input.files[0];
         const reader = new FileReader();
+        
         reader.onload = e => {
-          tempPhotoData[modalType] = e.target.result;
-          const previewId = modalType === 'addPlayer' ? '.photo-preview' : '#editPlayerPhotoPreview';
-          const preview = document.querySelector(`#${modalType}Modal ${previewId}`);
-          if (preview) preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+          const img = new Image();
+          img.onload = () => {
+            // Create canvas for resizing
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Target size: 400x400 for HD quality on avatars
+            const maxSize = 400;
+            let width = img.width;
+            let height = img.height;
+            
+            // Calculate new dimensions (maintain aspect ratio, crop to square)
+            const minDim = Math.min(width, height);
+            const scale = maxSize / minDim;
+            
+            // Set canvas to square
+            canvas.width = maxSize;
+            canvas.height = maxSize;
+            
+            // Calculate cropping (center crop)
+            const sx = (width - minDim) / 2;
+            const sy = (height - minDim) / 2;
+            
+            // Draw image centered and cropped to square
+            ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, maxSize, maxSize);
+            
+            // Convert to JPEG with good quality (0.85 is good balance of quality/size)
+            const compressedData = canvas.toDataURL('image/jpeg', 0.85);
+            
+            tempPhotoData[modalType] = compressedData;
+            const previewId = modalType === 'addPlayer' ? '.photo-preview' : '#editPlayerPhotoPreview';
+            const preview = document.querySelector(`#${modalType}Modal ${previewId}`);
+            if (preview) preview.innerHTML = `<img src="${compressedData}" alt="Preview">`;
+          };
+          img.src = e.target.result;
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
       }
     }
     
