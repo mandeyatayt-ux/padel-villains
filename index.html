@@ -124,6 +124,29 @@
     .upcoming-item-venue { font-size: 13px; color: var(--text-muted); }
     .upcoming-item-time { font-size: 12px; color: var(--clay); font-weight: 600; }
     
+    /* Matchday History */
+    .matchday-history-card { background: white; border-radius: 20px; padding: 24px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.04); cursor: pointer; transition: all 0.2s; }
+    .matchday-history-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+    .matchday-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--cream-dark); }
+    .matchday-history-date { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; }
+    .matchday-history-venue { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+    .matchday-history-stats { display: flex; gap: 24px; flex-wrap: wrap; }
+    .matchday-history-stat { text-align: center; }
+    .matchday-history-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--clay); }
+    .matchday-history-stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    .matchday-history-winner { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(224,120,80,0.1); border-radius: 12px; margin-top: 16px; }
+    .matchday-history-winner-label { font-size: 12px; color: var(--clay); font-weight: 700; }
+    .matchday-history-winner-name { font-size: 16px; font-weight: 700; }
+    
+    /* Matchday Select List */
+    .matchday-select-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: var(--cream); border-radius: 12px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+    .matchday-select-item:hover { background: rgba(224,120,80,0.1); }
+    .matchday-select-item.active { border: 2px solid var(--clay); }
+    .matchday-select-info { flex: 1; }
+    .matchday-select-date { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .matchday-select-meta { font-size: 12px; color: var(--text-muted); }
+    .matchday-select-matches { font-size: 13px; color: var(--clay); font-weight: 600; }
+    
     .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; grid-column: span 2; }
     @media (max-width: 900px) { .stats-grid { grid-column: span 1; grid-template-columns: repeat(2, 1fr); } }
     .stat-card { background: white; border-radius: 16px; padding: 24px; text-align: center; transition: all 0.3s; border: 1px solid rgba(0,0,0,0.04); }
@@ -414,6 +437,7 @@
       <button data-tab="matches"><i class="fas fa-list"></i><span>Matches</span></button>
       <button data-tab="rankings"><i class="fas fa-trophy"></i><span>Rankings</span></button>
       <button data-tab="matchup"><i class="fas fa-shuffle"></i><span>Matchup</span></button>
+      <button data-tab="history"><i class="fas fa-clock-rotate-left"></i><span>History</span></button>
       <button data-tab="settings"><i class="fas fa-cog"></i><span>Settings</span></button>
     </nav>
     <!-- ===== DASHBOARD TAB ===== -->
@@ -425,9 +449,16 @@
           <div class="matchday-details" id="matchdayDetails"></div>
         </div>
         <div class="matchday-actions">
+          <button class="btn btn-sm btn-secondary" onclick="openMatchdaySelectModal()"><i class="fas fa-history"></i> View History</button>
           <button class="btn btn-sm btn-secondary" onclick="openModal('createMatchday')" id="createMatchdayBtn"><i class="fas fa-plus"></i> Create Match Day</button>
           <button class="btn btn-sm btn-danger hidden" onclick="closeMatchday()" id="closeMatchdayBtn"><i class="fas fa-flag-checkered"></i> Close Match Day</button>
         </div>
+      </div>
+      
+      <!-- Viewing Past Match Day Banner -->
+      <div class="card past-matchday-banner hidden" id="pastMatchdayBanner" style="background:var(--gold);color:white;margin-bottom:24px;padding:16px 24px;display:flex;justify-content:space-between;align-items:center">
+        <div><i class="fas fa-clock-rotate-left"></i> <strong>Viewing Past Match Day:</strong> <span id="pastMatchdayDate"></span></div>
+        <button class="btn btn-sm" onclick="returnToCurrentMatchday()" style="background:white;color:var(--gold)"><i class="fas fa-arrow-left"></i> Back to Current</button>
       </div>
       
       <!-- Upcoming Match Days -->
@@ -445,14 +476,14 @@
           </div>
         </div>
         <div class="stats-grid">
-          <div class="stat-card"><div class="stat-icon">🎾</div><div class="stat-value" id="statMatches">0</div><div class="stat-label">Today's Matches</div></div>
+          <div class="stat-card"><div class="stat-icon">🎾</div><div class="stat-value" id="statMatches">0</div><div class="stat-label">Matches</div></div>
           <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Active Players</div></div>
           <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-value" id="statTeams">0</div><div class="stat-label">Active Teams</div></div>
           <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-value" id="statVenue">-</div><div class="stat-label">Venue</div></div>
         </div>
         <div class="card">
           <div class="section-header" style="margin-bottom:20px">
-            <div><h3 style="font-size:18px;font-weight:700">Today's Matches</h3></div>
+            <div><h3 style="font-size:18px;font-weight:700" id="todayMatchesTitle">Today's Matches</h3></div>
             <button class="btn btn-primary btn-sm" onclick="openModal('queueMatch')" id="queueMatchBtn"><i class="fas fa-plus"></i> Queue Match</button>
           </div>
           <div id="todayMatches"><div class="empty"><p>No matches today yet</p></div></div>
@@ -515,6 +546,7 @@
       <!-- Match History Section -->
       <div class="section-header">
         <div><h2 class="section-title">MATCH HISTORY</h2><p class="section-subtitle">Completed matches</p></div>
+        <button class="btn btn-primary" onclick="openModal('addMatch')"><i class="fas fa-plus"></i> Add Result</button>
       </div>
       <div class="matches-filters">
         <button class="filter-btn active" data-filter="all">All</button>
@@ -588,6 +620,14 @@
       </div>
     </section>
 
+    <!-- ===== HISTORY TAB ===== -->
+    <section class="tab" id="history">
+      <div class="section-header">
+        <div><h2 class="section-title">📅 MATCH DAY HISTORY</h2><p class="section-subtitle">View results from previous match days</p></div>
+      </div>
+      <div id="matchdayHistoryList"><div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Yet</h3><p>Complete a match day to see it here</p></div></div>
+    </section>
+
     <!-- ===== SETTINGS TAB ===== -->
     <section class="tab" id="settings">
       <div class="section-header">
@@ -595,6 +635,7 @@
       </div>
       <div class="settings-section">
         <div class="settings-section-title"><i class="fas fa-map-marker-alt"></i> Venues</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Click on a venue to edit it</p>
         <div class="venue-list" id="venueList"></div>
         <div class="add-venue-form">
           <input type="text" id="newVenueName" placeholder="Venue name (e.g., The Hub)">
@@ -731,6 +772,35 @@
     </div>
   </div>
 
+  <!-- Select Matchday Modal (View History) -->
+  <div class="modal-overlay" id="selectMatchdayModal">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header"><h3 class="modal-title">VIEW MATCH DAY</h3><button class="modal-close" onclick="closeModal('selectMatchday')"><i class="fas fa-times"></i></button></div>
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:20px">Select a previous match day to view results</p>
+      <div id="matchdaySelectList" style="max-height:400px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- Edit Venue Modal -->
+  <div class="modal-overlay" id="editVenueModal">
+    <div class="modal">
+      <div class="modal-header"><h3 class="modal-title">EDIT VENUE</h3><button class="modal-close" onclick="closeModal('editVenue')"><i class="fas fa-times"></i></button></div>
+      <input type="hidden" id="editVenueId">
+      <div class="form-group">
+        <label class="form-label">Venue Name</label>
+        <input type="text" class="form-input" id="editVenueName" placeholder="Venue name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Courts (comma separated)</label>
+        <input type="text" class="form-input" id="editVenueCourts" placeholder="Court 1, Court 2, Court 3">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" onclick="confirmDeleteVenue()"><i class="fas fa-trash"></i> Delete</button>
+        <button class="btn btn-primary" onclick="saveVenue()"><i class="fas fa-check"></i> Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Queue Match Modal (for ongoing games) -->
   <div class="modal-overlay" id="queueMatchModal">
     <div class="modal">
@@ -813,6 +883,7 @@
     // ===== STATE =====
     let players = [], teams = [], matches = [], venues = [], ongoingMatches = [], matchdays = [];
     let activeMatchday = null; // Current active match day
+    let viewingMatchday = null; // When viewing past matchday (null = current)
     let selectedPlayers = [];
     let confirmAction = null;
     let tempPhotoData = { addPlayer: null, editPlayer: null };
@@ -1020,6 +1091,7 @@
       renderMatches();
       renderRankings();
       renderMatchup();
+      renderHistory();
       renderSettings();
       updateDropdowns();
       setupRankingFilters();
@@ -1033,61 +1105,100 @@
       const createBtn = document.getElementById('createMatchdayBtn');
       const closeBtn = document.getElementById('closeMatchdayBtn');
       const queueBtn = document.getElementById('queueMatchBtn');
+      const pastBanner = document.getElementById('pastMatchdayBanner');
+      const titleEl = document.getElementById('todayMatchesTitle');
       
-      // Render matchday header
-      if (activeMatchday) {
-        header.classList.add('active');
-        const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-        statusEl.innerHTML = `<span class="live">MATCH DAY LIVE</span>`;
-        statusEl.className = 'matchday-status live';
-        detailsEl.innerHTML = `
-          <span><i class="fas fa-calendar"></i> ${dateStr}</span>
-          <span><i class="fas fa-map-marker-alt"></i> ${activeMatchday.venue}</span>
-          <span><i class="fas fa-clock"></i> ${activeMatchday.start_time} - ${activeMatchday.end_time}</span>
-        `;
-        createBtn.classList.add('hidden');
-        closeBtn.classList.remove('hidden');
-        queueBtn.disabled = false;
+      // Determine which matchday to display
+      const displayMatchday = viewingMatchday || activeMatchday;
+      const isViewingPast = viewingMatchday !== null;
+      
+      // Show/hide past matchday banner
+      if (isViewingPast) {
+        pastBanner.classList.remove('hidden');
+        const pastDateStr = new Date(viewingMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        document.getElementById('pastMatchdayDate').textContent = `${pastDateStr} @ ${viewingMatchday.venue}`;
+        titleEl.textContent = 'Match Results';
+        queueBtn.classList.add('hidden');
       } else {
-        header.classList.remove('active');
-        statusEl.textContent = 'No Match Day Scheduled';
-        statusEl.className = 'matchday-status';
-        detailsEl.innerHTML = '<span>Create a match day to start tracking</span>';
-        createBtn.classList.remove('hidden');
-        closeBtn.classList.add('hidden');
-        queueBtn.disabled = true;
+        pastBanner.classList.add('hidden');
+        titleEl.textContent = "Today's Matches";
+        queueBtn.classList.remove('hidden');
       }
       
-      // Render upcoming matchdays
-      const upcomingSection = document.getElementById('upcomingMatchdays');
-      const upcomingList = document.getElementById('upcomingList');
-      const today = new Date().toISOString().split('T')[0];
-      const upcoming = matchdays.filter(md => md.status !== 'closed' && md.date > today);
+      // Render matchday header (only for current)
+      if (!isViewingPast) {
+        if (activeMatchday) {
+          header.classList.add('active');
+          const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+          statusEl.innerHTML = `<span class="live">MATCH DAY LIVE</span>`;
+          statusEl.className = 'matchday-status live';
+          detailsEl.innerHTML = `
+            <span><i class="fas fa-calendar"></i> ${dateStr}</span>
+            <span><i class="fas fa-map-marker-alt"></i> ${activeMatchday.venue}</span>
+            <span><i class="fas fa-clock"></i> ${activeMatchday.start_time} - ${activeMatchday.end_time}</span>
+          `;
+          createBtn.classList.add('hidden');
+          closeBtn.classList.remove('hidden');
+          queueBtn.disabled = false;
+        } else {
+          header.classList.remove('active');
+          statusEl.textContent = 'No Match Day Scheduled';
+          statusEl.className = 'matchday-status';
+          detailsEl.innerHTML = '<span>Create a match day to start tracking</span>';
+          createBtn.classList.remove('hidden');
+          closeBtn.classList.add('hidden');
+          queueBtn.disabled = true;
+        }
+      } else {
+        // When viewing past, show that matchday info
+        header.classList.add('active');
+        const dateStr = new Date(viewingMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        statusEl.innerHTML = `<span style="color:var(--gold)">📅 VIEWING HISTORY</span>`;
+        statusEl.className = 'matchday-status';
+        detailsEl.innerHTML = `
+          <span><i class="fas fa-calendar"></i> ${dateStr}</span>
+          <span><i class="fas fa-map-marker-alt"></i> ${viewingMatchday.venue}</span>
+          <span><i class="fas fa-clock"></i> ${viewingMatchday.start_time} - ${viewingMatchday.end_time}</span>
+        `;
+        createBtn.classList.add('hidden');
+        closeBtn.classList.add('hidden');
+      }
       
-      if (upcoming.length > 0) {
-        upcomingSection.classList.remove('hidden');
-        upcomingList.innerHTML = upcoming.slice(0, 3).map(md => {
-          const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-          return `<div class="upcoming-item">
-            <div class="upcoming-item-info">
-              <span class="upcoming-item-date">${dateStr}</span>
-              <span class="upcoming-item-venue">${md.venue}</span>
-            </div>
-            <span class="upcoming-item-time">${md.start_time} - ${md.end_time}</span>
-          </div>`;
-        }).join('');
+      // Render upcoming matchdays (only when not viewing past)
+      const upcomingSection = document.getElementById('upcomingMatchdays');
+      if (!isViewingPast) {
+        const upcomingList = document.getElementById('upcomingList');
+        const today = new Date().toISOString().split('T')[0];
+        const upcoming = matchdays.filter(md => md.status !== 'closed' && md.date > today);
+        
+        if (upcoming.length > 0) {
+          upcomingSection.classList.remove('hidden');
+          upcomingList.innerHTML = upcoming.slice(0, 3).map(md => {
+            const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+            return `<div class="upcoming-item">
+              <div class="upcoming-item-info">
+                <span class="upcoming-item-date">${dateStr}</span>
+                <span class="upcoming-item-venue">${md.venue}</span>
+              </div>
+              <span class="upcoming-item-time">${md.start_time} - ${md.end_time}</span>
+            </div>`;
+          }).join('');
+        } else {
+          upcomingSection.classList.add('hidden');
+        }
       } else {
         upcomingSection.classList.add('hidden');
       }
       
-      const tm = todayMatches();
-      const dayRankings = activeMatchday ? rankTeamsByMatches(activeMatchday.date) : [];
+      // Get matches for displayed matchday
+      const tm = displayMatchday ? matches.filter(m => m.date === displayMatchday.date) : [];
+      const dayRankings = displayMatchday ? rankTeamsByMatches(displayMatchday.date) : [];
       const villain = dayRankings.length > 0 ? dayRankings[0] : null;
       
       document.getElementById('statMatches').textContent = tm.length;
       document.getElementById('statPlayers').textContent = activePlayers().length;
       document.getElementById('statTeams').textContent = activeTeams().length;
-      document.getElementById('statVenue').textContent = activeMatchday?.venue || '-';
+      document.getElementById('statVenue').textContent = displayMatchday?.venue || '-';
       
       // Render villains card based on day rankings
       const vc = document.getElementById('villainCard');
@@ -1095,12 +1206,12 @@
         const { p1, p2 } = getTeamPlayers(villain);
         vc.innerHTML = `
           <div class="villain-crown">👑</div>
-          <div class="villain-label">THE VILLAINS</div>
+          <div class="villain-label">${isViewingPast ? 'DAY WINNER' : 'THE VILLAINS'}</div>
           <div class="villain-team">${villain.name}</div>
           <div class="villain-players">${av(p1,'lg')}<span class="villain-amp">&</span>${av(p2,'lg')}</div>
           <div class="villain-names">${p1?.name || '?'} & ${p2?.name || '?'}</div>
           <div class="villain-arch">
-            <span class="villain-arch-label">TODAY'S RECORD</span>
+            <span class="villain-arch-label">${isViewingPast ? 'FINAL RECORD' : "TODAY'S RECORD"}</span>
             <span class="villain-arch-count">${villain.wins}W - ${villain.losses}L</span>
           </div>
         `;
@@ -1108,7 +1219,7 @@
         vc.innerHTML = `<div class="no-villain"><div class="no-villain-icon">⚔️</div><h3>No Villains Yet</h3><p>Win a match to become the Villains!</p></div>`;
       }
       
-      // Today's matches with edit option
+      // Matches with edit option (only editable if not viewing past)
       document.getElementById('todayMatches').innerHTML = tm.length ? tm.map(m => {
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id), w1 = m.winner_id === t1?.id;
         return `<div class="quick-match" onclick="openEditMatch(${m.id})" style="cursor:pointer">
@@ -1122,7 +1233,7 @@
           </div>
           <div class="quick-match-scores">${(m.scores||[]).map(s=>`<span class="quick-match-score">${s[0]}-${s[1]}</span>`).join('')}</div>
         </div>`;
-      }).join('') : '<div class="empty" style="padding:30px"><p>No matches yet</p></div>';
+      }).join('') : '<div class="empty" style="padding:30px"><p>No matches</p></div>';
       
       // Day rankings
       document.getElementById('dayRankings').innerHTML = dayRankings.length ? dayRankings.slice(0, 5).map((t, i) => {
@@ -1136,7 +1247,8 @@
             <span style="padding:4px 10px;background:var(--danger);color:white;border-radius:6px;font-size:12px;font-weight:700">${t.losses}L</span>
           </div>
         </div>`;
-      }).join('') : '<div class="empty" style="padding:20px"><p>No matches yet</p></div>';
+      }).join('') : '<div class="empty" style="padding:20px"><p>No matches</p></div>';
+    }
     }
     
     // ===== MATCHDAY MANAGEMENT =====
@@ -1620,9 +1732,84 @@
     }
     
     // ===== SETTINGS =====
+    // ===== HISTORY =====
+    function renderHistory() {
+      const closedMatchdays = matchdays.filter(md => md.status === 'closed').sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      document.getElementById('matchdayHistoryList').innerHTML = closedMatchdays.length ? closedMatchdays.map(md => {
+        const dayMatches = matches.filter(m => m.date === md.date);
+        const dayRankings = rankTeamsByMatches(md.date);
+        const winner = dayRankings.length > 0 ? dayRankings[0] : null;
+        const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        
+        return `<div class="matchday-history-card" onclick="viewMatchday(${md.id})">
+          <div class="matchday-history-header">
+            <div class="matchday-history-date">${dateStr}</div>
+            <div class="matchday-history-venue"><i class="fas fa-map-marker-alt"></i> ${md.venue}</div>
+          </div>
+          <div class="matchday-history-stats">
+            <div class="matchday-history-stat">
+              <div class="matchday-history-stat-value">${dayMatches.length}</div>
+              <div class="matchday-history-stat-label">Matches</div>
+            </div>
+            <div class="matchday-history-stat">
+              <div class="matchday-history-stat-value">${dayRankings.length}</div>
+              <div class="matchday-history-stat-label">Teams</div>
+            </div>
+            <div class="matchday-history-stat">
+              <div class="matchday-history-stat-value">${md.start_time} - ${md.end_time}</div>
+              <div class="matchday-history-stat-label">Duration</div>
+            </div>
+          </div>
+          ${winner ? `<div class="matchday-history-winner">
+            <span class="matchday-history-winner-label">👑 DAY WINNER:</span>
+            <span class="matchday-history-winner-name">${winner.name} (${winner.wins}W - ${winner.losses}L)</span>
+          </div>` : ''}
+        </div>`;
+      }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Yet</h3><p>Complete a match day to see it here</p></div>';
+    }
+    
+    function viewMatchday(id) {
+      const md = matchdays.find(m => m.id === id);
+      if (md) {
+        viewingMatchday = md;
+        closeModal('selectMatchday');
+        // Switch to dashboard tab
+        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+        document.querySelector('[data-tab="dashboard"]').classList.add('active');
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('dashboard').classList.add('active');
+        renderDashboard();
+      }
+    }
+    
+    function returnToCurrentMatchday() {
+      viewingMatchday = null;
+      renderDashboard();
+    }
+    
+    function openMatchdaySelectModal() {
+      const closedMatchdays = matchdays.filter(md => md.status === 'closed').sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      document.getElementById('matchdaySelectList').innerHTML = closedMatchdays.length ? closedMatchdays.map(md => {
+        const dayMatches = matches.filter(m => m.date === md.date);
+        const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        return `<div class="matchday-select-item" onclick="viewMatchday(${md.id})">
+          <div class="matchday-select-info">
+            <div class="matchday-select-date">${dateStr}</div>
+            <div class="matchday-select-meta"><i class="fas fa-map-marker-alt"></i> ${md.venue}</div>
+          </div>
+          <div class="matchday-select-matches">${dayMatches.length} matches</div>
+        </div>`;
+      }).join('') : '<div class="empty" style="padding:30px"><p>No past match days</p></div>';
+      
+      openModal('selectMatchday');
+    }
+    
+    // ===== SETTINGS =====
     function renderSettings() {
       document.getElementById('venueList').innerHTML = venues.map(v => `
-        <div class="venue-item">
+        <div class="venue-item" onclick="openEditVenue(${v.id})" style="cursor:pointer">
           <div class="venue-item-info">
             <i class="fas fa-map-marker-alt" style="color:var(--clay)"></i>
             <div>
@@ -1631,7 +1818,7 @@
             </div>
           </div>
           <div class="venue-item-actions">
-            <button class="btn btn-secondary btn-xs" onclick="deleteVenue(${v.id})"><i class="fas fa-trash"></i></button>
+            <i class="fas fa-edit" style="color:var(--text-muted);font-size:12px"></i>
           </div>
         </div>
       `).join('');
@@ -1641,6 +1828,66 @@
       if (venue) {
         document.getElementById('matchCourt').innerHTML = venue.courts.map(c => `<option value="${c}">${c}</option>`).join('');
       }
+    }
+    
+    function openEditVenue(id) {
+      const v = venues.find(venue => venue.id === id);
+      if (!v) return;
+      
+      document.getElementById('editVenueId').value = id;
+      document.getElementById('editVenueName').value = v.name;
+      document.getElementById('editVenueCourts').value = v.courts.join(', ');
+      openModal('editVenue');
+    }
+    
+    async function saveVenue() {
+      const id = parseInt(document.getElementById('editVenueId').value);
+      const name = document.getElementById('editVenueName').value.trim();
+      const courtsStr = document.getElementById('editVenueCourts').value.trim();
+      
+      if (!name || !courtsStr) { toast('Fill in venue name and courts', 'error'); return; }
+      
+      const courts = courtsStr.split(',').map(c => c.trim()).filter(c => c);
+      const idx = venues.findIndex(v => v.id === id);
+      if (idx === -1) return;
+      
+      venues[idx] = { ...venues[idx], name, courts };
+      
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('venues').update({ name, courts }).eq('id', id);
+        } catch (e) { toast('Error saving venue', 'error'); return; }
+      } else {
+        saveLocal();
+      }
+      
+      closeModal('editVenue');
+      renderAll();
+      toast('Venue updated!', 'success');
+    }
+    
+    function confirmDeleteVenue() {
+      const id = parseInt(document.getElementById('editVenueId').value);
+      const v = venues.find(venue => venue.id === id);
+      
+      document.getElementById('confirmTitle').textContent = 'Delete Venue';
+      document.getElementById('confirmText').textContent = `Delete ${v?.name}? This cannot be undone.`;
+      confirmAction = () => deleteVenueById(id);
+      closeModal('editVenue');
+      openModal('confirm');
+    }
+    
+    async function deleteVenueById(id) {
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('venues').delete().eq('id', id);
+        } catch (e) { toast('Error deleting venue', 'error'); return; }
+      }
+      venues = venues.filter(v => v.id !== id);
+      if (!supabaseClient) saveLocal();
+      closeModal('confirm');
+      renderAll();
+      toast('Venue deleted', 'success');
     }
     
     async function addVenue() {
@@ -1665,20 +1912,6 @@
       document.getElementById('newVenueCourts').value = '';
       renderAll();
       toast('Venue added!', 'success');
-    }
-    
-    async function deleteVenue(id) {
-      if (venues.length <= 1) { toast('Must have at least one venue', 'error'); return; }
-      if (supabaseClient) {
-        try { await supabaseClient.from('venues').delete().eq('id', id); } catch (e) { toast('Error', 'error'); return; }
-      }
-      venues = venues.filter(v => v.id !== id);
-      if (currentMatchDay.venue === venues.find(v => v.id === id)?.name) {
-        currentMatchDay.venue = venues[0]?.name || '';
-      }
-      saveLocal();
-      renderAll();
-      toast('Venue deleted', 'success');
     }
     
     // ===== DROPDOWNS =====
