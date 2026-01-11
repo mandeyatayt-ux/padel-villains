@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Padel Villains - Social League Tracker</title>
+  <meta name="description" content="Track your padel matches, rankings, and achievements">
+  <meta name="theme-color" content="#E07850">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,10 +17,12 @@
       --brown-dark: #8B4513; --brown-medium: #A0826D; --brown-light: #C4A484;
       --text: #2D2D2D; --text-muted: #8B7355; --white: #FFF;
       --success: #10B981; --danger: #EF4444; --gold: #F59E0B;
+      --purple: #8B5CF6; --blue: #3B82F6;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Outfit', sans-serif; background: linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%); min-height: 100vh; color: var(--text); }
     .app { max-width: 1400px; margin: 0 auto; padding: 0 24px 60px; }
+    .hidden { display: none !important; }
     
     /* Header */
     .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 3px solid var(--clay); margin-bottom: 24px; position: sticky; top: 0; background: rgba(253,246,237,0.97); backdrop-filter: blur(10px); z-index: 100; }
@@ -412,7 +416,154 @@
     /* Confirm Dialog */
     .confirm-text { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin-bottom: 8px; }
     
-    .hidden { display: none !important; }
+    /* ===== NEW FEATURES CSS ===== */
+    
+    /* Notifications */
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .notification-bell { position: relative; width: 44px; height: 44px; background: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid var(--cream-dark); transition: all 0.2s; }
+    .notification-bell:hover { border-color: var(--clay); }
+    .notification-bell i { color: var(--text-muted); font-size: 18px; }
+    .notification-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; background: var(--danger); color: white; border-radius: 10px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .notifications-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; opacity: 0; visibility: hidden; transition: all 0.3s; }
+    .notifications-overlay.open { opacity: 1; visibility: visible; }
+    .notifications-panel { position: fixed; top: 0; right: -400px; width: 400px; max-width: 100vw; height: 100vh; background: white; box-shadow: -4px 0 30px rgba(0,0,0,0.15); z-index: 1000; transition: right 0.3s; overflow-y: auto; }
+    .notifications-panel.open { right: 0; }
+    .notifications-header { padding: 24px; border-bottom: 1px solid var(--cream-dark); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; }
+    .notifications-header h3 { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; }
+    .notifications-list { padding: 16px; }
+    .notification-item { display: flex; gap: 16px; padding: 16px; background: var(--cream); border-radius: 12px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+    .notification-item:hover { background: var(--cream-dark); }
+    .notification-item.unread { background: rgba(224,120,80,0.1); border-left: 4px solid var(--clay); }
+    .notification-icon { width: 44px; height: 44px; background: var(--clay); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .notification-content { flex: 1; }
+    .notification-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .notification-text { font-size: 13px; color: var(--text-muted); }
+    .notification-time { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    
+    /* Achievements */
+    .achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+    .achievement-card { background: white; border-radius: 16px; padding: 20px; text-align: center; border: 2px solid var(--cream-dark); transition: all 0.3s; position: relative; }
+    .achievement-card.unlocked { border-color: var(--gold); background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.02) 100%); }
+    .achievement-card.locked { opacity: 0.5; filter: grayscale(0.8); }
+    .achievement-icon { font-size: 40px; margin-bottom: 12px; }
+    .achievement-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+    .achievement-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+    .achievement-date { font-size: 10px; color: var(--gold); margin-top: 8px; font-weight: 600; }
+    .achievement-new { position: absolute; top: -8px; right: -8px; background: var(--danger); color: white; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 10px; animation: bounce 1s infinite; }
+    @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+    
+    /* Streaks */
+    .streak-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+    .streak-badge.hot { background: linear-gradient(135deg, var(--gold) 0%, #D97706 100%); color: white; }
+    .streak-badge.cold { background: linear-gradient(135deg, var(--blue) 0%, #2563EB 100%); color: white; }
+    .streak-badge i { font-size: 12px; }
+    
+    /* Records */
+    .records-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .record-card { display: flex; align-items: center; gap: 16px; padding: 20px; background: var(--cream); border-radius: 14px; }
+    .record-icon { font-size: 32px; }
+    .record-info { flex: 1; }
+    .record-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+    .record-value { font-size: 12px; color: var(--text-muted); }
+    .record-holder { text-align: right; }
+    .record-holder-name { font-weight: 700; font-size: 14px; color: var(--clay); }
+    .record-holder-stat { font-size: 12px; color: var(--text-muted); }
+    
+    /* Player Profile Enhanced */
+    .profile-header { background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); border-radius: 24px; padding: 32px; color: white; margin-bottom: 24px; }
+    .profile-top { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .profile-avatar-wrap { position: relative; }
+    .profile-avatar-wrap .avatar { border-color: white; }
+    .profile-position { position: absolute; bottom: -6px; right: -6px; background: white; color: var(--clay); padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+    .profile-info { flex: 1; min-width: 200px; }
+    .profile-name { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; }
+    .profile-nickname { font-size: 14px; opacity: 0.85; margin-bottom: 8px; }
+    .profile-bio { font-size: 13px; opacity: 0.9; max-width: 400px; line-height: 1.5; }
+    .profile-stats-row { display: flex; gap: 32px; margin-top: 20px; }
+    .profile-stat { text-align: center; }
+    .profile-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 28px; }
+    .profile-stat-label { font-size: 10px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+    .profile-badges { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
+    .profile-badge-item { font-size: 20px; }
+    
+    /* Position Selector */
+    .position-selector { display: flex; gap: 12px; }
+    .position-option { flex: 1; padding: 16px 12px; border: 2px solid var(--cream-dark); border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .position-option:hover { border-color: var(--clay-light); }
+    .position-option.selected { border-color: var(--clay); background: rgba(224,120,80,0.1); }
+    .position-option-icon { font-size: 24px; margin-bottom: 6px; }
+    .position-option-label { font-size: 12px; font-weight: 600; }
+    
+    /* Live Scoring */
+    .live-score-display { background: linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%); border-radius: 20px; padding: 24px; color: white; margin-bottom: 20px; }
+    .live-score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .live-score-court { font-size: 12px; color: var(--clay); font-weight: 600; }
+    .live-indicator { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--danger); }
+    .live-indicator::before { content: ''; width: 8px; height: 8px; background: var(--danger); border-radius: 50%; animation: pulse 1.5s infinite; }
+    .live-score-teams { display: flex; justify-content: space-between; align-items: center; }
+    .live-score-team { text-align: center; flex: 1; }
+    .live-score-team-name { font-size: 14px; font-weight: 600; margin-top: 8px; }
+    .live-score-center { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 20px; }
+    .live-score-sets { display: flex; gap: 8px; }
+    .live-score-set { padding: 8px 16px; background: rgba(255,255,255,0.1); border-radius: 8px; font-family: 'Bebas Neue', sans-serif; font-size: 20px; min-width: 50px; text-align: center; }
+    .live-score-set.current { background: var(--clay); }
+    .live-score-game { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--clay); letter-spacing: 4px; }
+    .score-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .score-btn { padding: 20px; border: none; border-radius: 12px; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .score-btn:hover { transform: scale(1.02); }
+    .score-btn.team1 { background: var(--clay); color: white; }
+    .score-btn.team2 { background: var(--brown-dark); color: white; }
+    .score-btn:active { transform: scale(0.98); }
+    
+    /* Share Card */
+    .share-card { background: linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%); border-radius: 24px; padding: 32px; color: white; text-align: center; }
+    .share-card-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: var(--clay); margin-bottom: 16px; }
+    .share-card-title { font-size: 12px; opacity: 0.6; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px; }
+    .share-card-result { font-family: 'Bebas Neue', sans-serif; font-size: 42px; letter-spacing: 2px; margin-bottom: 12px; }
+    .share-card-teams { font-size: 16px; margin-bottom: 8px; }
+    .share-card-date { font-size: 12px; opacity: 0.5; }
+    .share-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
+    .share-btn { width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer; font-size: 20px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+    .share-btn:hover { transform: scale(1.1); }
+    .share-btn.whatsapp { background: #25D366; color: white; }
+    .share-btn.twitter { background: #1DA1F2; color: white; }
+    .share-btn.copy { background: var(--cream); color: var(--text); }
+    .share-btn.download { background: var(--clay); color: white; }
+    
+    /* Match Day Summary */
+    .summary-card { background: linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%); border-radius: 24px; padding: 32px; color: white; }
+    .summary-header { text-align: center; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .summary-logo { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 4px; color: var(--clay); margin-bottom: 12px; }
+    .summary-date { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; }
+    .summary-venue { font-size: 13px; opacity: 0.7; margin-top: 4px; }
+    .summary-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .summary-stat { text-align: center; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+    .summary-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--clay); }
+    .summary-stat-label { font-size: 11px; opacity: 0.6; margin-top: 4px; text-transform: uppercase; }
+    .summary-highlights { }
+    .summary-highlight { display: flex; align-items: center; gap: 16px; padding: 14px 16px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 10px; }
+    .summary-highlight-icon { font-size: 24px; }
+    .summary-highlight-info { flex: 1; }
+    .summary-highlight-label { font-size: 11px; opacity: 0.6; }
+    .summary-highlight-value { font-weight: 600; font-size: 14px; }
+    
+    /* Player card enhancements */
+    .player-badges { display: flex; justify-content: center; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+    .player-badge { font-size: 14px; }
+    .player-streak { margin-top: 8px; }
+    .player-nickname { font-size: 12px; color: var(--clay); margin-bottom: 4px; font-style: italic; }
+    .player-position-tag { font-size: 10px; color: var(--text-muted); background: var(--cream); padding: 2px 8px; border-radius: 10px; display: inline-block; margin-bottom: 8px; }
+    
+    /* Lazy loading images */
+    .avatar img { opacity: 0; transition: opacity 0.3s; }
+    .avatar img.loaded { opacity: 1; }
+    
+    @media (max-width: 600px) {
+      .profile-top { flex-direction: column; text-align: center; }
+      .profile-stats-row { justify-content: center; }
+      .summary-stats { grid-template-columns: 1fr; }
+      .notifications-panel { width: 100vw; }
+    }
   </style>
 </head>
 <body>
@@ -423,9 +574,15 @@
         <div class="logo-icon"><i class="fas fa-table-tennis-paddle-ball"></i></div>
         <div><h1>PADEL VILLAINS</h1><p>Social League Tracker</p></div>
       </div>
-      <div class="date-badge">
-        <div class="label">MATCH DAY</div>
-        <div class="date" id="currentDate"></div>
+      <div class="header-right">
+        <div class="notification-bell" onclick="toggleNotifications()">
+          <i class="fas fa-bell"></i>
+          <span class="notification-badge hidden" id="notificationBadge">0</span>
+        </div>
+        <div class="date-badge">
+          <div class="label">MATCH DAY</div>
+          <div class="date" id="currentDate"></div>
+        </div>
       </div>
     </header>
     
@@ -436,6 +593,7 @@
       <button data-tab="teams"><i class="fas fa-people-group"></i><span>Teams</span></button>
       <button data-tab="matches"><i class="fas fa-list"></i><span>Matches</span></button>
       <button data-tab="rankings"><i class="fas fa-trophy"></i><span>Rankings</span></button>
+      <button data-tab="achievements"><i class="fas fa-medal"></i><span>Achievements</span></button>
       <button data-tab="matchup"><i class="fas fa-shuffle"></i><span>Matchup</span></button>
       <button data-tab="history"><i class="fas fa-clock-rotate-left"></i><span>History</span></button>
       <button data-tab="settings"><i class="fas fa-cog"></i><span>Settings</span></button>
@@ -624,8 +782,22 @@
     <section class="tab" id="history">
       <div class="section-header">
         <div><h2 class="section-title">📅 MATCH DAY HISTORY</h2><p class="section-subtitle">View results from previous match days</p></div>
+        <button class="btn btn-secondary" onclick="openModal('matchdaySummary')"><i class="fas fa-share"></i> Share Summary</button>
       </div>
       <div id="matchdayHistoryList"><div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Yet</h3><p>Complete a match day to see it here</p></div></div>
+    </section>
+
+    <!-- ===== ACHIEVEMENTS TAB ===== -->
+    <section class="tab" id="achievements">
+      <div class="section-header">
+        <div><h2 class="section-title">🏅 ACHIEVEMENTS</h2><p class="section-subtitle">Unlock badges by playing matches and reaching milestones</p></div>
+      </div>
+      <div class="card" style="margin-bottom:24px">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">🔥 Records & Streaks</h3>
+        <div class="records-grid" id="recordsGrid"></div>
+      </div>
+      <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">🎖️ Badges</h3>
+      <div class="achievements-grid" id="achievementsGrid"></div>
     </section>
 
     <!-- ===== SETTINGS TAB ===== -->
@@ -643,10 +815,126 @@
           <button class="btn btn-primary" onclick="addVenue()"><i class="fas fa-plus"></i> Add Venue</button>
         </div>
       </div>
+      <div class="settings-section">
+        <div class="settings-section-title"><i class="fas fa-bell"></i> Notifications</div>
+        <div class="toggle-group">
+          <span class="toggle-label">Match Day Reminders</span>
+          <label class="toggle"><input type="checkbox" id="settingReminders" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-group">
+          <span class="toggle-label">"You're Up Next" Alerts</span>
+          <label class="toggle"><input type="checkbox" id="settingUpNext" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
     </section>
   </div>
 
+  <!-- ===== NOTIFICATIONS PANEL ===== -->
+  <div class="notifications-overlay" id="notificationsOverlay" onclick="toggleNotifications()"></div>
+  <div class="notifications-panel" id="notificationsPanel">
+    <div class="notifications-header">
+      <h3>🔔 Notifications</h3>
+      <button class="btn btn-xs btn-secondary" onclick="clearNotifications()">Clear All</button>
+    </div>
+    <div class="notifications-list" id="notificationsList">
+      <div class="empty" style="padding:40px"><p>No notifications yet</p></div>
+    </div>
+  </div>
+
   <!-- ===== MODALS ===== -->
+  
+  <!-- Live Score Modal -->
+  <div class="modal-overlay" id="liveScoreModal">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header"><h3 class="modal-title">LIVE SCORING</h3><button class="modal-close" onclick="closeModal('liveScore')"><i class="fas fa-times"></i></button></div>
+      
+      <!-- Setup Phase -->
+      <div id="liveScoreSetup">
+        <div class="form-row" style="margin-bottom:20px">
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Date</label><input type="date" class="form-input" id="liveScoreDate"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Court</label><select class="form-select" id="liveScoreCourt"></select></div>
+        </div>
+        <div class="teams-vs-row">
+          <div class="form-group"><label class="form-label">Team 1</label><select class="form-select" id="liveScoreTeam1"></select></div>
+          <span class="teams-vs-text">VS</span>
+          <div class="form-group"><label class="form-label">Team 2</label><select class="form-select" id="liveScoreTeam2"></select></div>
+        </div>
+        <div class="modal-actions" style="border-top:none;padding-top:0">
+          <button class="btn btn-secondary" onclick="closeModal('liveScore')">Cancel</button>
+          <button class="btn btn-primary" onclick="startLiveMatch()"><i class="fas fa-play"></i> Start Match</button>
+        </div>
+      </div>
+      
+      <!-- Scoring Phase -->
+      <div id="liveScoreGame" class="hidden">
+        <div class="live-score-display">
+          <div class="live-score-header">
+            <span class="live-score-court" id="liveCourtDisplay"></span>
+            <span class="live-indicator">LIVE</span>
+          </div>
+          <div class="live-score-teams">
+            <div class="live-score-team">
+              <div class="avatar lg" id="liveTeam1Avatar"></div>
+              <div class="live-score-team-name" id="liveTeam1Name">Team 1</div>
+            </div>
+            <div class="live-score-center">
+              <div class="live-score-sets" id="liveSetsDisplay"></div>
+              <div class="live-score-game" id="liveGameScore">0 - 0</div>
+            </div>
+            <div class="live-score-team">
+              <div class="avatar lg" id="liveTeam2Avatar"></div>
+              <div class="live-score-team-name" id="liveTeam2Name">Team 2</div>
+            </div>
+          </div>
+        </div>
+        <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:12px">Tap team button when they win a point</p>
+        <div class="score-buttons">
+          <button class="score-btn team1" onclick="scorePoint(1)" id="scoreBtn1">Point Team 1</button>
+          <button class="score-btn team2" onclick="scorePoint(2)" id="scoreBtn2">Point Team 2</button>
+        </div>
+        <div class="modal-actions" style="margin-top:20px">
+          <button class="btn btn-danger btn-sm" onclick="cancelLiveMatch()"><i class="fas fa-times"></i> Cancel</button>
+          <button class="btn btn-secondary btn-sm" onclick="undoPoint()"><i class="fas fa-undo"></i> Undo</button>
+          <button class="btn btn-success btn-sm" onclick="finishLiveMatch()"><i class="fas fa-flag-checkered"></i> Finish</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Match Day Summary Modal -->
+  <div class="modal-overlay" id="matchdaySummaryModal">
+    <div class="modal" style="max-width:440px;padding:0;overflow:hidden">
+      <div class="modal-header" style="background:var(--cream);margin:0;padding:20px 24px;border-radius:0">
+        <h3 class="modal-title">SHARE SUMMARY</h3>
+        <button class="modal-close" onclick="closeModal('matchdaySummary')"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="summaryCardContainer" style="padding:24px"></div>
+      <div class="share-buttons" style="padding:0 24px 24px">
+        <button class="share-btn whatsapp" onclick="shareSummaryWhatsApp()"><i class="fab fa-whatsapp"></i></button>
+        <button class="share-btn twitter" onclick="shareSummaryTwitter()"><i class="fab fa-twitter"></i></button>
+        <button class="share-btn copy" onclick="copySummaryText()"><i class="fas fa-copy"></i></button>
+        <button class="share-btn download" onclick="downloadSummaryImage()"><i class="fas fa-download"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share Match Modal -->
+  <div class="modal-overlay" id="shareMatchModal">
+    <div class="modal" style="max-width:400px;padding:0;overflow:hidden">
+      <div class="modal-header" style="background:var(--cream);margin:0;padding:20px 24px;border-radius:0">
+        <h3 class="modal-title">SHARE RESULT</h3>
+        <button class="modal-close" onclick="closeModal('shareMatch')"><i class="fas fa-times"></i></button>
+      </div>
+      <div style="padding:24px">
+        <div class="share-card" id="shareMatchCard"></div>
+        <div class="share-buttons" style="margin-top:20px">
+          <button class="share-btn whatsapp" onclick="shareMatchWhatsApp()"><i class="fab fa-whatsapp"></i></button>
+          <button class="share-btn twitter" onclick="shareMatchTwitter()"><i class="fab fa-twitter"></i></button>
+          <button class="share-btn copy" onclick="copyMatchText()"><i class="fas fa-copy"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
   
   <!-- Add Player Modal -->
   <div class="modal-overlay" id="addPlayerModal">
@@ -658,28 +946,101 @@
         <span class="photo-upload-text">Click to upload photo</span>
       </div>
       <div class="form-group"><label class="form-label">Player Name</label><input type="text" class="form-input" id="playerName" placeholder="Enter player name"></div>
+      <div class="form-group"><label class="form-label">Nickname (optional)</label><input type="text" class="form-input" id="playerNickname" placeholder='e.g., "The Wall"'></div>
+      <div class="form-group">
+        <label class="form-label">Playing Position</label>
+        <div class="position-selector" id="addPlayerPosition">
+          <div class="position-option selected" data-position="Hybrid" onclick="selectPosition(this)">
+            <div class="position-option-icon">⚖️</div>
+            <div class="position-option-label">Hybrid</div>
+          </div>
+          <div class="position-option" data-position="Attack" onclick="selectPosition(this)">
+            <div class="position-option-icon">⚔️</div>
+            <div class="position-option-label">Attack</div>
+          </div>
+          <div class="position-option" data-position="Defense" onclick="selectPosition(this)">
+            <div class="position-option-icon">🛡️</div>
+            <div class="position-option-label">Defense</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Bio (optional)</label><textarea class="form-input" id="playerBio" placeholder="Short bio..." style="min-height:60px;resize:vertical"></textarea></div>
       <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('addPlayer')">Cancel</button><button class="btn btn-primary" onclick="addPlayer()">Add Player</button></div>
     </div>
   </div>
 
   <!-- Edit Player Modal -->
   <div class="modal-overlay" id="editPlayerModal">
-    <div class="modal">
-      <div class="modal-header"><h3 class="modal-title">EDIT PLAYER</h3><button class="modal-close" onclick="closeModal('editPlayer')"><i class="fas fa-times"></i></button></div>
-      <div class="photo-upload">
-        <div class="photo-preview" id="editPlayerPhotoPreview" onclick="document.getElementById('editPlayerPhoto').click()"><i class="fas fa-camera"></i></div>
-        <input type="file" id="editPlayerPhoto" accept="image/*" onchange="previewPhoto(this, 'editPlayer')">
-        <span class="photo-upload-text">Click to change photo</span>
+    <div class="modal" style="max-width:520px">
+      <div class="modal-header"><h3 class="modal-title">PLAYER PROFILE</h3><button class="modal-close" onclick="closeModal('editPlayer')"><i class="fas fa-times"></i></button></div>
+      
+      <!-- Profile View -->
+      <div id="playerProfileView">
+        <div class="profile-header" style="margin:-32px -32px 24px;border-radius:24px 24px 0 0">
+          <div class="profile-top">
+            <div class="profile-avatar-wrap">
+              <div class="avatar xl" id="profileAvatar"></div>
+              <span class="profile-position" id="profilePosition">Hybrid</span>
+            </div>
+            <div class="profile-info">
+              <div class="profile-name" id="profileName">Player Name</div>
+              <div class="profile-nickname" id="profileNickname"></div>
+              <div class="profile-bio" id="profileBio"></div>
+              <div class="profile-stats-row">
+                <div class="profile-stat"><div class="profile-stat-value" id="profileWins">0</div><div class="profile-stat-label">Wins</div></div>
+                <div class="profile-stat"><div class="profile-stat-value" id="profileLosses">0</div><div class="profile-stat-label">Losses</div></div>
+                <div class="profile-stat"><div class="profile-stat-value" id="profileRate">0%</div><div class="profile-stat-label">Win Rate</div></div>
+              </div>
+              <div class="profile-badges" id="profileBadges"></div>
+            </div>
+          </div>
+        </div>
+        <div id="profileStreak" style="margin-bottom:16px;text-align:center"></div>
+        <div style="background:var(--cream);border-radius:12px;padding:16px;margin-bottom:16px">
+          <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-muted)">📊 STATS SUMMARY</h4>
+          <div id="profileStats"></div>
+        </div>
       </div>
-      <input type="hidden" id="editPlayerId">
-      <div class="form-group"><label class="form-label">Player Name</label><input type="text" class="form-input" id="editPlayerName" placeholder="Enter player name"></div>
-      <div class="toggle-group">
-        <span class="toggle-label">Active Status</span>
-        <label class="toggle"><input type="checkbox" id="editPlayerActive" checked><span class="toggle-slider"></span></label>
+      
+      <!-- Edit Form -->
+      <div id="playerEditForm" class="hidden">
+        <div class="photo-upload">
+          <div class="photo-preview" id="editPlayerPhotoPreview" onclick="document.getElementById('editPlayerPhoto').click()"><i class="fas fa-camera"></i></div>
+          <input type="file" id="editPlayerPhoto" accept="image/*" onchange="previewPhoto(this, 'editPlayer')">
+          <span class="photo-upload-text">Click to change photo</span>
+        </div>
+        <input type="hidden" id="editPlayerId">
+        <div class="form-group"><label class="form-label">Player Name</label><input type="text" class="form-input" id="editPlayerName" placeholder="Enter player name"></div>
+        <div class="form-group"><label class="form-label">Nickname</label><input type="text" class="form-input" id="editPlayerNickname" placeholder='e.g., "The Wall"'></div>
+        <div class="form-group">
+          <label class="form-label">Playing Position</label>
+          <div class="position-selector" id="editPlayerPositionSelector">
+            <div class="position-option" data-position="Hybrid" onclick="selectPosition(this)">
+              <div class="position-option-icon">⚖️</div>
+              <div class="position-option-label">Hybrid</div>
+            </div>
+            <div class="position-option" data-position="Attack" onclick="selectPosition(this)">
+              <div class="position-option-icon">⚔️</div>
+              <div class="position-option-label">Attack</div>
+            </div>
+            <div class="position-option" data-position="Defense" onclick="selectPosition(this)">
+              <div class="position-option-icon">🛡️</div>
+              <div class="position-option-label">Defense</div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Bio</label><textarea class="form-input" id="editPlayerBio" placeholder="Short bio..." style="min-height:60px;resize:vertical"></textarea></div>
+        <div class="toggle-group">
+          <span class="toggle-label">Active Status</span>
+          <label class="toggle"><input type="checkbox" id="editPlayerActive" checked><span class="toggle-slider"></span></label>
+        </div>
       </div>
+      
       <div class="modal-actions">
-        <button class="btn btn-danger" id="deletePlayerBtn" onclick="confirmDeletePlayer()"><i class="fas fa-trash"></i> Delete</button>
-        <button class="btn btn-primary" onclick="savePlayer()">Save Changes</button>
+        <button class="btn btn-danger hidden" id="deletePlayerBtn" onclick="confirmDeletePlayer()"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-secondary" id="editPlayerToggle" onclick="togglePlayerEditMode()"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn btn-primary hidden" id="savePlayerBtn" onclick="savePlayer()">Save Changes</button>
+        <button class="btn btn-secondary" onclick="sharePlayerProfile()"><i class="fas fa-share"></i> Share</button>
       </div>
     </div>
   </div>
@@ -882,11 +1243,39 @@
     
     // ===== STATE =====
     let players = [], teams = [], matches = [], venues = [], ongoingMatches = [], matchdays = [];
-    let activeMatchday = null; // Current active match day
-    let viewingMatchday = null; // When viewing past matchday (null = current)
+    let activeMatchday = null;
+    let viewingMatchday = null;
     let selectedPlayers = [];
     let confirmAction = null;
     let tempPhotoData = { addPlayer: null, editPlayer: null };
+    let notifications = [];
+    let settings = { reminders: true, upNext: true };
+    
+    // Live Match State
+    let liveMatch = null;
+    let liveScoreHistory = [];
+    
+    // Tennis scoring points
+    const TENNIS_POINTS = ['0', '15', '30', '40', 'AD'];
+    
+    // ===== ACHIEVEMENTS DEFINITIONS =====
+    const ACHIEVEMENTS = {
+      first_blood: { icon: '🗡️', name: 'First Blood', desc: 'Win your first match' },
+      hot_streak_3: { icon: '🔥', name: 'Hot Hand', desc: 'Win 3 matches in a row' },
+      hot_streak_5: { icon: '⚡', name: 'On Fire', desc: 'Win 5 matches in a row' },
+      hot_streak_10: { icon: '🌟', name: 'Unstoppable', desc: 'Win 10 matches in a row' },
+      villain: { icon: '👑', name: 'Villain', desc: 'Become the Match Day Villain' },
+      dynasty: { icon: '🏰', name: 'Dynasty', desc: 'Win 3 Match Days' },
+      perfect_game: { icon: '💎', name: 'Flawless', desc: 'Win a set 6-0' },
+      comeback: { icon: '🦅', name: 'Comeback King', desc: 'Win after being down 0-5' },
+      veteran: { icon: '🎖️', name: 'Veteran', desc: 'Play 50 matches' },
+      centurion: { icon: '💯', name: 'Centurion', desc: 'Play 100 matches' },
+      regular: { icon: '🏠', name: 'Regular', desc: 'Attend 10 match days' },
+      devoted: { icon: '💪', name: 'Devoted', desc: 'Attend 25 match days' },
+      social: { icon: '🤝', name: 'Social Butterfly', desc: 'Play with 10 different partners' },
+      rival: { icon: '⚔️', name: 'Rival', desc: 'Beat the same team 5 times' },
+      giant_slayer: { icon: '🗡️', name: 'Giant Slayer', desc: 'Beat the #1 ranked team' }
+    };
     
     // Default venues
     const defaultVenues = [
@@ -898,10 +1287,13 @@
     document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
       document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
-      document.getElementById('queueMatchDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('liveScoreDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('newMatchdayDate').value = new Date().toISOString().split('T')[0];
+      loadSettings();
+      loadNotifications();
       setupTabs();
       setupFilters();
+      setupLazyLoading();
       
       if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         const s = document.createElement('script');
@@ -1115,11 +1507,13 @@
         renderOngoingMatches();
         renderMatches();
         renderRankings();
+        renderAchievements();
         renderMatchup();
         renderHistory();
         renderSettings();
         updateDropdowns();
         setupRankingFilters();
+        updateNotificationBadge();
       } catch (e) {
         console.error('Render error:', e);
       }
@@ -1392,17 +1786,29 @@
         const rc = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
         const top = i === 0 && p.active !== false ? 'top-player' : '';
         const inactive = p.active === false ? 'inactive' : '';
-        return `<div class="player-card ${top} ${inactive}" onclick="openEditPlayer(${p.id})">
+        const badges = getPlayerBadges(p.id);
+        const playerTeams = teams.filter(t => t.player1_id === p.id || t.player2_id === p.id);
+        let bestStreak = { count: 0, type: 'none' };
+        playerTeams.forEach(t => {
+          const s = calculateCurrentStreak(t.id);
+          if (s.count > bestStreak.count) bestStreak = s;
+        });
+        const streakHtml = bestStreak.count >= 3 ? 
+          `<div class="player-streak"><span class="streak-badge ${bestStreak.type === 'win' ? 'hot' : 'cold'}"><i class="fas fa-${bestStreak.type === 'win' ? 'fire' : 'snowflake'}"></i> ${bestStreak.count}</span></div>` : '';
+        
+        return `<div class="player-card ${top} ${inactive}" onclick="openPlayerProfile(${p.id})">
           <div class="player-rank ${rc}">${i + 1}</div>
           <div class="player-avatar-wrap">${av(p, 'lg')}</div>
           <div class="player-name">${p.name}</div>
-          <span class="player-status ${p.active === false ? 'inactive' : 'active'}">${p.active === false ? 'Inactive' : 'Active'}</span>
+          ${p.nickname ? `<div class="player-nickname">"${p.nickname}"</div>` : ''}
+          ${p.position ? `<div class="player-position-tag">${p.position}</div>` : ''}
           <div class="player-stats-row">
             <div class="player-stat"><div class="player-stat-value wins">${p.wins}</div><div class="player-stat-label">Wins</div></div>
             <div class="player-stat"><div class="player-stat-value losses">${p.losses}</div><div class="player-stat-label">Losses</div></div>
-            <div class="player-stat"><div class="player-stat-value">${p.games || 0}</div><div class="player-stat-label">Games</div></div>
+            <div class="player-stat"><div class="player-stat-value">${p.rate}%</div><div class="player-stat-label">Rate</div></div>
           </div>
-          <div class="player-winrate"><div class="player-winrate-bar"><div class="player-winrate-fill" style="width:${p.rate}%"></div></div><div class="player-winrate-text">${p.rate}% Win Rate</div></div>
+          ${badges.length ? `<div class="player-badges">${badges.map(b => `<span class="player-badge">${b}</span>`).join('')}</div>` : ''}
+          ${streakHtml}
         </div>`;
       }).join('') : '<div class="empty"><div class="empty-icon">👥</div><h3>No Players Yet</h3><p>Add your first player to get started</p></div>';
     }
@@ -1970,6 +2376,12 @@
       document.getElementById('queueTeam1').innerHTML = to;
       document.getElementById('queueTeam2').innerHTML = to;
       
+      // Live Score dropdowns
+      const liveTeam1 = document.getElementById('liveScoreTeam1');
+      const liveTeam2 = document.getElementById('liveScoreTeam2');
+      if (liveTeam1) liveTeam1.innerHTML = to;
+      if (liveTeam2) liveTeam2.innerHTML = to;
+      
       // Venue dropdowns
       document.getElementById('newMatchdayVenue').innerHTML = venues.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
       
@@ -1978,12 +2390,17 @@
         const courtOptions = venue.courts.map(c => `<option value="${c}">${c}</option>`).join('');
         document.getElementById('matchCourt').innerHTML = courtOptions;
         document.getElementById('queueMatchCourt').innerHTML = courtOptions;
+        const liveCourt = document.getElementById('liveScoreCourt');
+        if (liveCourt) liveCourt.innerHTML = courtOptions;
       }
       
-      // Set queue match date to active matchday
+      // Set dates to active matchday
       if (activeMatchday) {
-        document.getElementById('queueMatchDate').value = activeMatchday.date;
+        const queueDate = document.getElementById('queueMatchDate');
+        if (queueDate) queueDate.value = activeMatchday.date;
         document.getElementById('matchDate').value = activeMatchday.date;
+        const liveDate = document.getElementById('liveScoreDate');
+        if (liveDate) liveDate.value = activeMatchday.date;
       }
     }
     
@@ -2058,7 +2475,25 @@
     async function addPlayer() {
       const name = document.getElementById('playerName').value.trim();
       if (!name) { toast('Enter a name', 'error'); return; }
-      const np = { id: Date.now(), name, photo: tempPhotoData.addPlayer, wins: 0, losses: 0, games_played: 0, active: true, created_at: new Date().toISOString() };
+      
+      const nickname = document.getElementById('playerNickname')?.value?.trim() || '';
+      const bio = document.getElementById('playerBio')?.value?.trim() || '';
+      const positionEl = document.querySelector('#addPlayerPosition .position-option.selected');
+      const position = positionEl?.dataset?.position || 'Hybrid';
+      
+      const np = { 
+        id: Date.now(), 
+        name, 
+        nickname,
+        bio,
+        position,
+        photo: tempPhotoData.addPlayer, 
+        wins: 0, 
+        losses: 0, 
+        games_played: 0, 
+        active: true, 
+        created_at: new Date().toISOString() 
+      };
       
       if (supabaseClient) {
         try {
@@ -2072,6 +2507,8 @@
       }
       
       document.getElementById('playerName').value = '';
+      if (document.getElementById('playerNickname')) document.getElementById('playerNickname').value = '';
+      if (document.getElementById('playerBio')) document.getElementById('playerBio').value = '';
       document.querySelector('#addPlayerModal .photo-preview').innerHTML = '<i class="fas fa-camera"></i>';
       tempPhotoData.addPlayer = null;
       closeModal('addPlayer');
@@ -2083,6 +2520,11 @@
       const id = parseInt(document.getElementById('editPlayerId').value);
       const name = document.getElementById('editPlayerName').value.trim();
       const active = document.getElementById('editPlayerActive').checked;
+      const nickname = document.getElementById('editPlayerNickname')?.value?.trim() || '';
+      const bio = document.getElementById('editPlayerBio')?.value?.trim() || '';
+      const positionEl = document.querySelector('#editPlayerPositionSelector .position-option.selected');
+      const position = positionEl?.dataset?.position || 'Hybrid';
+      
       if (!name) { toast('Enter a name', 'error'); return; }
       
       const idx = players.findIndex(p => p.id === id);
@@ -2090,6 +2532,9 @@
       
       players[idx].name = name;
       players[idx].active = active;
+      players[idx].nickname = nickname;
+      players[idx].bio = bio;
+      players[idx].position = position;
       if (tempPhotoData.editPlayer !== undefined) players[idx].photo = tempPhotoData.editPlayer;
       
       if (supabaseClient) {
@@ -2510,6 +2955,768 @@
       t.textContent = msg;
       t.className = `toast ${type} show`;
       setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    
+    // ===== ACHIEVEMENTS & RECORDS =====
+    function renderAchievements() {
+      // Render records
+      const records = calculateRecords();
+      document.getElementById('recordsGrid').innerHTML = `
+        <div class="record-card">
+          <div class="record-icon">🔥</div>
+          <div class="record-info">
+            <div class="record-title">Longest Win Streak</div>
+            <div class="record-value">${records.longestStreak.value} wins</div>
+          </div>
+          <div class="record-holder">
+            <div class="record-holder-name">${records.longestStreak.holder || '-'}</div>
+          </div>
+        </div>
+        <div class="record-card">
+          <div class="record-icon">🏆</div>
+          <div class="record-info">
+            <div class="record-title">Most Wins</div>
+            <div class="record-value">${records.mostWins.value} wins</div>
+          </div>
+          <div class="record-holder">
+            <div class="record-holder-name">${records.mostWins.holder || '-'}</div>
+          </div>
+        </div>
+        <div class="record-card">
+          <div class="record-icon">📊</div>
+          <div class="record-info">
+            <div class="record-title">Best Win Rate</div>
+            <div class="record-value">${records.bestWinRate.value}%</div>
+          </div>
+          <div class="record-holder">
+            <div class="record-holder-name">${records.bestWinRate.holder || '-'}</div>
+          </div>
+        </div>
+        <div class="record-card">
+          <div class="record-icon">👑</div>
+          <div class="record-info">
+            <div class="record-title">Current Streak</div>
+            <div class="record-value">${records.currentBestStreak.value} ${records.currentBestStreak.type}</div>
+          </div>
+          <div class="record-holder">
+            <div class="record-holder-name">${records.currentBestStreak.holder || '-'}</div>
+          </div>
+        </div>
+      `;
+      
+      // Render achievement badges
+      const unlocked = calculateUnlockedAchievements();
+      document.getElementById('achievementsGrid').innerHTML = Object.entries(ACHIEVEMENTS).map(([key, ach]) => {
+        const isUnlocked = unlocked[key];
+        return `<div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'}">
+          <div class="achievement-icon">${ach.icon}</div>
+          <div class="achievement-name">${ach.name}</div>
+          <div class="achievement-desc">${ach.desc}</div>
+          ${isUnlocked ? '<div class="achievement-date">Unlocked ✓</div>' : ''}
+        </div>`;
+      }).join('');
+    }
+    
+    function calculateRecords() {
+      let longestStreak = { value: 0, holder: '-' };
+      let mostWins = { value: 0, holder: '-' };
+      let bestWinRate = { value: 0, holder: '-' };
+      let currentBestStreak = { value: 0, holder: '-', type: '' };
+      
+      teams.filter(t => t.active !== false).forEach(t => {
+        const stats = getTeamStats(t.id);
+        const streak = calculateCurrentStreak(t.id);
+        
+        if (stats.wins > mostWins.value) {
+          mostWins = { value: stats.wins, holder: t.name };
+        }
+        
+        const total = stats.wins + stats.losses;
+        if (total >= 5) {
+          const rate = Math.round((stats.wins / total) * 100);
+          if (rate > bestWinRate.value) {
+            bestWinRate = { value: rate, holder: t.name };
+          }
+        }
+        
+        if (streak.count > currentBestStreak.value) {
+          currentBestStreak = { value: streak.count, holder: t.name, type: streak.type === 'win' ? 'W' : 'L' };
+        }
+        
+        // Track longest streak ever (simplified - just current)
+        if (streak.type === 'win' && streak.count > longestStreak.value) {
+          longestStreak = { value: streak.count, holder: t.name };
+        }
+      });
+      
+      return { longestStreak, mostWins, bestWinRate, currentBestStreak };
+    }
+    
+    function calculateCurrentStreak(teamId) {
+      const teamMatches = matches
+        .filter(m => m.team1_id === teamId || m.team2_id === teamId)
+        .sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
+      
+      if (teamMatches.length === 0) return { count: 0, type: 'none' };
+      
+      let count = 0;
+      const firstWon = teamMatches[0].winner_id === teamId;
+      const type = firstWon ? 'win' : 'loss';
+      
+      for (const m of teamMatches) {
+        const won = m.winner_id === teamId;
+        if ((type === 'win' && won) || (type === 'loss' && !won)) {
+          count++;
+        } else {
+          break;
+        }
+      }
+      
+      return { count, type };
+    }
+    
+    function calculateUnlockedAchievements() {
+      const unlocked = {};
+      
+      teams.forEach(t => {
+        const stats = getTeamStats(t.id);
+        const streak = calculateCurrentStreak(t.id);
+        
+        if (stats.wins >= 1) unlocked.first_blood = true;
+        if (streak.type === 'win' && streak.count >= 3) unlocked.hot_streak_3 = true;
+        if (streak.type === 'win' && streak.count >= 5) unlocked.hot_streak_5 = true;
+        if (streak.type === 'win' && streak.count >= 10) unlocked.hot_streak_10 = true;
+        if (stats.wins + stats.losses >= 50) unlocked.veteran = true;
+        if (stats.wins + stats.losses >= 100) unlocked.centurion = true;
+      });
+      
+      // Check for villain achievements
+      const closedMatchdays = matchdays.filter(md => md.status === 'closed');
+      if (closedMatchdays.length >= 1) unlocked.villain = true;
+      if (closedMatchdays.length >= 3) unlocked.dynasty = true;
+      
+      // Check for regular attendance
+      const uniqueDates = [...new Set(matches.map(m => m.date))];
+      if (uniqueDates.length >= 10) unlocked.regular = true;
+      if (uniqueDates.length >= 25) unlocked.devoted = true;
+      
+      return unlocked;
+    }
+    
+    function getPlayerBadges(playerId) {
+      const badges = [];
+      const playerTeams = teams.filter(t => t.player1_id === playerId || t.player2_id === playerId);
+      
+      let totalWins = 0, totalMatches = 0, bestStreak = 0;
+      
+      playerTeams.forEach(t => {
+        const stats = getTeamStats(t.id);
+        totalWins += stats.wins;
+        totalMatches += stats.wins + stats.losses;
+        const streak = calculateCurrentStreak(t.id);
+        if (streak.type === 'win' && streak.count > bestStreak) bestStreak = streak.count;
+      });
+      
+      if (totalWins >= 1) badges.push('🗡️');
+      if (bestStreak >= 3) badges.push('🔥');
+      if (bestStreak >= 5) badges.push('⚡');
+      if (totalMatches >= 50) badges.push('🎖️');
+      
+      return badges.slice(0, 4);
+    }
+    
+    function getStreakBadge(teamId) {
+      const streak = calculateCurrentStreak(teamId);
+      if (streak.count >= 3 && streak.type === 'win') {
+        return `<span class="streak-badge hot"><i class="fas fa-fire"></i> ${streak.count}W</span>`;
+      } else if (streak.count >= 3 && streak.type === 'loss') {
+        return `<span class="streak-badge cold"><i class="fas fa-snowflake"></i> ${streak.count}L</span>`;
+      }
+      return '';
+    }
+    
+    // ===== LIVE SCORING (Tennis Style) =====
+    function openLiveScoreModal() {
+      populateLiveScoreDropdowns();
+      document.getElementById('liveScoreSetup').classList.remove('hidden');
+      document.getElementById('liveScoreGame').classList.add('hidden');
+      liveMatch = null;
+      openModal('liveScore');
+    }
+    
+    function populateLiveScoreDropdowns() {
+      const venue = getCurrentVenue();
+      const courts = venue?.courts || ['Court 1'];
+      const courtSelect = document.getElementById('liveScoreCourt');
+      courtSelect.innerHTML = courts.map(c => `<option value="${c}">${c}</option>`).join('');
+      
+      const activeTeams = teams.filter(t => t.active !== false);
+      const teamOptions = '<option value="">Select team</option>' + activeTeams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+      document.getElementById('liveScoreTeam1').innerHTML = teamOptions;
+      document.getElementById('liveScoreTeam2').innerHTML = teamOptions;
+    }
+    
+    function startLiveMatch() {
+      const team1Id = parseInt(document.getElementById('liveScoreTeam1').value);
+      const team2Id = parseInt(document.getElementById('liveScoreTeam2').value);
+      const court = document.getElementById('liveScoreCourt').value;
+      const date = document.getElementById('liveScoreDate').value;
+      
+      if (!team1Id || !team2Id) { toast('Select both teams', 'error'); return; }
+      if (team1Id === team2Id) { toast('Select different teams', 'error'); return; }
+      
+      const team1 = getTeam(team1Id);
+      const team2 = getTeam(team2Id);
+      
+      liveMatch = {
+        team1_id: team1Id,
+        team2_id: team2Id,
+        team1_name: team1.name,
+        team2_name: team2.name,
+        court, date,
+        sets: [[0, 0]],
+        games: [0, 0],
+        currentSet: 0,
+        finished: false
+      };
+      liveScoreHistory = [];
+      
+      document.getElementById('liveScoreSetup').classList.add('hidden');
+      document.getElementById('liveScoreGame').classList.remove('hidden');
+      document.getElementById('liveCourtDisplay').textContent = court;
+      document.getElementById('liveTeam1Name').textContent = team1.name;
+      document.getElementById('liveTeam2Name').textContent = team2.name;
+      document.getElementById('scoreBtn1').innerHTML = `<i class="fas fa-plus"></i> ${team1.name}`;
+      document.getElementById('scoreBtn2').innerHTML = `<i class="fas fa-plus"></i> ${team2.name}`;
+      
+      const { p1: t1p1 } = getTeamPlayers(team1);
+      const { p1: t2p1 } = getTeamPlayers(team2);
+      document.getElementById('liveTeam1Avatar').innerHTML = t1p1?.photo ? `<img src="${t1p1.photo}" class="loaded">` : (t1p1?.name?.charAt(0) || '?');
+      document.getElementById('liveTeam2Avatar').innerHTML = t2p1?.photo ? `<img src="${t2p1.photo}" class="loaded">` : (t2p1?.name?.charAt(0) || '?');
+      
+      updateLiveScoreDisplay();
+      addNotification('match_start', `${team1.name} vs ${team2.name} started`, 'fa-play');
+    }
+    
+    function scorePoint(team) {
+      if (!liveMatch || liveMatch.finished) return;
+      
+      liveScoreHistory.push(JSON.stringify(liveMatch));
+      const other = team === 1 ? 2 : 1;
+      
+      // Handle deuce situations
+      if (liveMatch.games[0] === 3 && liveMatch.games[1] === 3) {
+        liveMatch.games[team - 1] = 4; // Advantage
+      } else if (liveMatch.games[team - 1] === 4) {
+        winGame(team); // Had AD, wins game
+      } else if (liveMatch.games[other - 1] === 4) {
+        liveMatch.games = [3, 3]; // Back to deuce
+      } else if (liveMatch.games[team - 1] === 3) {
+        winGame(team); // At 40, wins game
+      } else {
+        liveMatch.games[team - 1]++;
+      }
+      
+      updateLiveScoreDisplay();
+    }
+    
+    function winGame(team) {
+      const si = liveMatch.currentSet;
+      liveMatch.sets[si][team - 1]++;
+      liveMatch.games = [0, 0];
+      
+      const s = liveMatch.sets[si];
+      const other = team === 1 ? 1 : 0;
+      
+      // Check set win (6 with 2+ lead or 7)
+      if ((s[team - 1] >= 6 && s[team - 1] - s[other] >= 2) || s[team - 1] >= 7) {
+        const setsWon = [0, 0];
+        liveMatch.sets.forEach(set => {
+          if (set[0] > set[1]) setsWon[0]++;
+          else if (set[1] > set[0]) setsWon[1]++;
+        });
+        
+        if (setsWon[team - 1] >= 1) { // Best of 1 set for casual play
+          liveMatch.finished = true;
+          liveMatch.winner = team;
+          addNotification('match_end', `${team === 1 ? liveMatch.team1_name : liveMatch.team2_name} wins!`, 'fa-trophy');
+        } else {
+          liveMatch.sets.push([0, 0]);
+          liveMatch.currentSet++;
+        }
+      }
+      
+      updateLiveScoreDisplay();
+    }
+    
+    function updateLiveScoreDisplay() {
+      if (!liveMatch) return;
+      
+      const setsHtml = liveMatch.sets.map((s, i) => 
+        `<div class="live-score-set ${i === liveMatch.currentSet && !liveMatch.finished ? 'current' : ''}">${s[0]}-${s[1]}</div>`
+      ).join('');
+      document.getElementById('liveSetsDisplay').innerHTML = setsHtml;
+      
+      const g1 = TENNIS_POINTS[Math.min(liveMatch.games[0], 4)] || '0';
+      const g2 = TENNIS_POINTS[Math.min(liveMatch.games[1], 4)] || '0';
+      document.getElementById('liveGameScore').textContent = liveMatch.finished ? '🏆 MATCH' : `${g1} - ${g2}`;
+    }
+    
+    function undoPoint() {
+      if (liveScoreHistory.length === 0) { toast('Nothing to undo', 'error'); return; }
+      liveMatch = JSON.parse(liveScoreHistory.pop());
+      updateLiveScoreDisplay();
+      toast('Undone', 'success');
+    }
+    
+    function cancelLiveMatch() {
+      if (!confirm('Cancel match? Progress will be lost.')) return;
+      liveMatch = null;
+      document.getElementById('liveScoreSetup').classList.remove('hidden');
+      document.getElementById('liveScoreGame').classList.add('hidden');
+      closeModal('liveScore');
+    }
+    
+    async function finishLiveMatch() {
+      if (!liveMatch) return;
+      if (!liveMatch.finished && !confirm('Match not complete. Save anyway?')) return;
+      
+      // Convert to match format
+      const scores = liveMatch.sets.map(s => [s[0], s[1]]);
+      const winnerId = liveMatch.winner === 1 ? liveMatch.team1_id : 
+                       liveMatch.winner === 2 ? liveMatch.team2_id :
+                       (scores[0][0] > scores[0][1] ? liveMatch.team1_id : liveMatch.team2_id);
+      
+      const nm = {
+        id: Date.now(),
+        date: liveMatch.date,
+        location: activeMatchday?.venue || '',
+        court: liveMatch.court,
+        team1_id: liveMatch.team1_id,
+        team2_id: liveMatch.team2_id,
+        scores,
+        winner_id: winnerId,
+        created_at: new Date().toISOString()
+      };
+      
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('matches').insert([nm]);
+        } catch (e) { console.error(e); }
+      }
+      
+      matches.unshift(nm);
+      if (!supabaseClient) saveLocal();
+      
+      liveMatch = null;
+      document.getElementById('liveScoreSetup').classList.remove('hidden');
+      document.getElementById('liveScoreGame').classList.add('hidden');
+      closeModal('liveScore');
+      renderAll();
+      toast('Match saved!', 'success');
+      
+      // Check for next match notification
+      checkUpNextNotification();
+    }
+    
+    // ===== NOTIFICATIONS =====
+    function toggleNotifications() {
+      const panel = document.getElementById('notificationsPanel');
+      const overlay = document.getElementById('notificationsOverlay');
+      panel.classList.toggle('open');
+      overlay.classList.toggle('open');
+      
+      // Mark as read
+      if (panel.classList.contains('open')) {
+        notifications.forEach(n => n.read = true);
+        saveNotifications();
+        updateNotificationBadge();
+      }
+    }
+    
+    function addNotification(type, message, icon = 'fa-bell') {
+      const n = {
+        id: Date.now(),
+        type,
+        message,
+        icon,
+        time: new Date().toISOString(),
+        read: false
+      };
+      notifications.unshift(n);
+      if (notifications.length > 50) notifications = notifications.slice(0, 50);
+      saveNotifications();
+      updateNotificationBadge();
+      renderNotifications();
+    }
+    
+    function renderNotifications() {
+      const list = document.getElementById('notificationsList');
+      if (notifications.length === 0) {
+        list.innerHTML = '<div class="empty" style="padding:40px"><p>No notifications yet</p></div>';
+        return;
+      }
+      
+      list.innerHTML = notifications.slice(0, 20).map(n => {
+        const time = new Date(n.time);
+        const timeStr = time.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        return `<div class="notification-item ${n.read ? '' : 'unread'}">
+          <div class="notification-icon"><i class="fas ${n.icon}"></i></div>
+          <div class="notification-content">
+            <div class="notification-title">${n.message}</div>
+            <div class="notification-time">${timeStr}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    
+    function updateNotificationBadge() {
+      const unread = notifications.filter(n => !n.read).length;
+      const badge = document.getElementById('notificationBadge');
+      if (unread > 0) {
+        badge.textContent = unread > 9 ? '9+' : unread;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+    
+    function clearNotifications() {
+      notifications = [];
+      saveNotifications();
+      renderNotifications();
+      updateNotificationBadge();
+      toast('Notifications cleared', 'success');
+    }
+    
+    function loadNotifications() {
+      try {
+        notifications = JSON.parse(localStorage.getItem('pv_notifications') || '[]');
+      } catch (e) { notifications = []; }
+    }
+    
+    function saveNotifications() {
+      localStorage.setItem('pv_notifications', JSON.stringify(notifications));
+    }
+    
+    function checkUpNextNotification() {
+      if (!settings.upNext) return;
+      // This would check ongoing matches and notify when a team is up next
+      // Simplified for now
+    }
+    
+    // ===== SETTINGS =====
+    function loadSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('pv_settings') || '{}');
+        settings = { ...settings, ...saved };
+        const remEl = document.getElementById('settingReminders');
+        const upEl = document.getElementById('settingUpNext');
+        if (remEl) remEl.checked = settings.reminders;
+        if (upEl) upEl.checked = settings.upNext;
+      } catch (e) {}
+    }
+    
+    function saveSettings() {
+      const remEl = document.getElementById('settingReminders');
+      const upEl = document.getElementById('settingUpNext');
+      settings.reminders = remEl?.checked ?? true;
+      settings.upNext = upEl?.checked ?? true;
+      localStorage.setItem('pv_settings', JSON.stringify(settings));
+      toast('Settings saved', 'success');
+    }
+    
+    // ===== PLAYER PROFILE =====
+    function selectPosition(el) {
+      const container = el.closest('.position-selector');
+      container.querySelectorAll('.position-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+    
+    function togglePlayerEditMode() {
+      const profileView = document.getElementById('playerProfileView');
+      const editForm = document.getElementById('playerEditForm');
+      const editBtn = document.getElementById('editPlayerToggle');
+      const saveBtn = document.getElementById('savePlayerBtn');
+      const deleteBtn = document.getElementById('deletePlayerBtn');
+      
+      const isEditing = !editForm.classList.contains('hidden');
+      
+      if (isEditing) {
+        // Switch to view mode
+        profileView.classList.remove('hidden');
+        editForm.classList.add('hidden');
+        editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+        saveBtn.classList.add('hidden');
+        deleteBtn.classList.add('hidden');
+      } else {
+        // Switch to edit mode
+        profileView.classList.add('hidden');
+        editForm.classList.remove('hidden');
+        editBtn.innerHTML = '<i class="fas fa-eye"></i> View';
+        saveBtn.classList.remove('hidden');
+        deleteBtn.classList.remove('hidden');
+      }
+    }
+    
+    function openPlayerProfile(id) {
+      const p = players.find(pl => pl.id === id);
+      if (!p) return;
+      
+      // Reset to view mode
+      document.getElementById('playerProfileView').classList.remove('hidden');
+      document.getElementById('playerEditForm').classList.add('hidden');
+      document.getElementById('editPlayerToggle').innerHTML = '<i class="fas fa-edit"></i> Edit';
+      document.getElementById('savePlayerBtn').classList.add('hidden');
+      document.getElementById('deletePlayerBtn').classList.add('hidden');
+      
+      // Populate profile view
+      document.getElementById('profileName').textContent = p.name;
+      document.getElementById('profileNickname').textContent = p.nickname ? `"${p.nickname}"` : '';
+      document.getElementById('profileBio').textContent = p.bio || '';
+      document.getElementById('profilePosition').textContent = p.position || 'Hybrid';
+      document.getElementById('profileAvatar').innerHTML = p.photo ? `<img src="${p.photo}" class="loaded">` : p.name.charAt(0);
+      
+      // Calculate stats
+      const playerTeams = teams.filter(t => t.player1_id === id || t.player2_id === id);
+      let wins = 0, losses = 0;
+      playerTeams.forEach(t => {
+        const stats = getTeamStats(t.id);
+        wins += stats.wins;
+        losses += stats.losses;
+      });
+      
+      document.getElementById('profileWins').textContent = wins;
+      document.getElementById('profileLosses').textContent = losses;
+      document.getElementById('profileRate').textContent = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) + '%' : '0%';
+      
+      // Badges
+      const badges = getPlayerBadges(id);
+      document.getElementById('profileBadges').innerHTML = badges.map(b => `<span class="profile-badge-item">${b}</span>`).join('');
+      
+      // Streak
+      let bestStreak = { count: 0, type: 'none' };
+      playerTeams.forEach(t => {
+        const s = calculateCurrentStreak(t.id);
+        if (s.count > bestStreak.count) bestStreak = s;
+      });
+      document.getElementById('profileStreak').innerHTML = bestStreak.count >= 2 ? 
+        `<span class="streak-badge ${bestStreak.type === 'win' ? 'hot' : 'cold'}"><i class="fas fa-${bestStreak.type === 'win' ? 'fire' : 'snowflake'}"></i> ${bestStreak.count} ${bestStreak.type === 'win' ? 'Win' : 'Loss'} Streak</span>` : '';
+      
+      // Stats summary
+      const teamsStr = playerTeams.map(t => t.name).join(', ') || 'No teams yet';
+      document.getElementById('profileStats').innerHTML = `
+        <div style="display:grid;gap:8px;font-size:13px">
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Teams:</span><span>${teamsStr}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Total Matches:</span><span>${wins + losses}</span></div>
+        </div>
+      `;
+      
+      // Populate edit form
+      document.getElementById('editPlayerId').value = id;
+      document.getElementById('editPlayerName').value = p.name;
+      document.getElementById('editPlayerNickname').value = p.nickname || '';
+      document.getElementById('editPlayerBio').value = p.bio || '';
+      document.getElementById('editPlayerActive').checked = p.active !== false;
+      
+      // Position
+      const posSelector = document.getElementById('editPlayerPositionSelector');
+      posSelector.querySelectorAll('.position-option').forEach(o => {
+        o.classList.toggle('selected', o.dataset.position === (p.position || 'Hybrid'));
+      });
+      
+      // Photo
+      const preview = document.getElementById('editPlayerPhotoPreview');
+      preview.innerHTML = p.photo ? `<img src="${p.photo}">` : '<i class="fas fa-camera"></i>';
+      tempPhotoData.editPlayer = p.photo || null;
+      
+      openModal('editPlayer');
+    }
+    
+    function sharePlayerProfile() {
+      const name = document.getElementById('profileName').textContent;
+      const wins = document.getElementById('profileWins').textContent;
+      const losses = document.getElementById('profileLosses').textContent;
+      const rate = document.getElementById('profileRate').textContent;
+      
+      const text = `🎾 PADEL VILLAINS\n\n${name}\n📊 ${wins}W - ${losses}L (${rate})\n\npadel-villains.vercel.app`;
+      
+      if (navigator.share) {
+        navigator.share({ title: 'Padel Villains', text });
+      } else {
+        navigator.clipboard.writeText(text);
+        toast('Copied to clipboard!', 'success');
+      }
+    }
+    
+    // ===== SHARING =====
+    function shareMatch(matchId) {
+      const m = matches.find(match => match.id === matchId);
+      if (!m) return;
+      
+      const t1 = getTeam(m.team1_id);
+      const t2 = getTeam(m.team2_id);
+      const winner = getTeam(m.winner_id);
+      const scoreStr = m.scores.map(s => `${s[0]}-${s[1]}`).join(' ');
+      
+      document.getElementById('shareMatchCard').innerHTML = `
+        <div class="share-card-logo">🎾 PADEL VILLAINS</div>
+        <div class="share-card-title">MATCH RESULT</div>
+        <div class="share-card-result">${scoreStr}</div>
+        <div class="share-card-teams">${t1?.name || '?'} vs ${t2?.name || '?'}</div>
+        <div style="color:var(--clay);font-weight:700;margin-top:8px">🏆 ${winner?.name || '?'} Wins!</div>
+        <div class="share-card-date">${new Date(m.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+      `;
+      
+      window.currentShareMatch = m;
+      openModal('shareMatch');
+    }
+    
+    function shareMatchWhatsApp() {
+      const m = window.currentShareMatch;
+      if (!m) return;
+      const t1 = getTeam(m.team1_id)?.name || '?';
+      const t2 = getTeam(m.team2_id)?.name || '?';
+      const winner = getTeam(m.winner_id)?.name || '?';
+      const score = m.scores.map(s => `${s[0]}-${s[1]}`).join(' ');
+      
+      const text = encodeURIComponent(`🎾 PADEL VILLAINS\n\n${t1} vs ${t2}\n📊 ${score}\n🏆 ${winner} Wins!\n\npadel-villains.vercel.app`);
+      window.open(`https://wa.me/?text=${text}`, '_blank');
+    }
+    
+    function shareMatchTwitter() {
+      const m = window.currentShareMatch;
+      if (!m) return;
+      const t1 = getTeam(m.team1_id)?.name || '?';
+      const t2 = getTeam(m.team2_id)?.name || '?';
+      const winner = getTeam(m.winner_id)?.name || '?';
+      const score = m.scores.map(s => `${s[0]}-${s[1]}`).join(' ');
+      
+      const text = encodeURIComponent(`🎾 ${t1} vs ${t2}: ${score} - ${winner} wins! #PadelVillains`);
+      window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+    }
+    
+    function copyMatchText() {
+      const m = window.currentShareMatch;
+      if (!m) return;
+      const t1 = getTeam(m.team1_id)?.name || '?';
+      const t2 = getTeam(m.team2_id)?.name || '?';
+      const winner = getTeam(m.winner_id)?.name || '?';
+      const score = m.scores.map(s => `${s[0]}-${s[1]}`).join(' ');
+      
+      navigator.clipboard.writeText(`🎾 PADEL VILLAINS\n${t1} vs ${t2}\n${score}\n🏆 ${winner} Wins!`);
+      toast('Copied!', 'success');
+    }
+    
+    // Match Day Summary Sharing
+    function openMatchdaySummaryModal() {
+      const md = viewingMatchday || activeMatchday;
+      if (!md) { toast('No match day selected', 'error'); return; }
+      
+      const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      const dayMatches = matches.filter(m => m.date === md.date);
+      const teamsPlayed = new Set();
+      dayMatches.forEach(m => { teamsPlayed.add(m.team1_id); teamsPlayed.add(m.team2_id); });
+      
+      // Get winner
+      const rankings = getDayRankings(md.date);
+      const winner = rankings[0];
+      const winnerTeam = winner ? getTeam(winner.id) : null;
+      
+      document.getElementById('summaryCardContainer').innerHTML = `
+        <div class="summary-card">
+          <div class="summary-header">
+            <div class="summary-logo">🎾 PADEL VILLAINS</div>
+            <div class="summary-date">${dateStr}</div>
+            <div class="summary-venue">📍 ${md.venue || 'Unknown Venue'}</div>
+          </div>
+          <div class="summary-stats">
+            <div class="summary-stat"><div class="summary-stat-value">${dayMatches.length}</div><div class="summary-stat-label">Matches</div></div>
+            <div class="summary-stat"><div class="summary-stat-value">${teamsPlayed.size}</div><div class="summary-stat-label">Teams</div></div>
+            <div class="summary-stat"><div class="summary-stat-value">${dayMatches.reduce((sum, m) => sum + (m.scores?.[0]?.[0] || 0) + (m.scores?.[0]?.[1] || 0), 0)}</div><div class="summary-stat-label">Games</div></div>
+          </div>
+          ${winnerTeam ? `
+          <div class="summary-highlights">
+            <div class="summary-highlight">
+              <div class="summary-highlight-icon">👑</div>
+              <div class="summary-highlight-info">
+                <div class="summary-highlight-label">Day Winner</div>
+                <div class="summary-highlight-value">${winnerTeam.name}</div>
+              </div>
+            </div>
+          </div>` : ''}
+        </div>
+      `;
+      
+      window.currentSummaryMatchday = md;
+      openModal('matchdaySummary');
+    }
+    
+    function shareSummaryWhatsApp() {
+      const md = window.currentSummaryMatchday;
+      if (!md) return;
+      
+      const dayMatches = matches.filter(m => m.date === md.date);
+      const rankings = getDayRankings(md.date);
+      const winner = rankings[0] ? getTeam(rankings[0].id)?.name : 'TBD';
+      
+      const text = encodeURIComponent(`🎾 PADEL VILLAINS\n📅 ${md.date}\n📍 ${md.venue}\n\n🏆 Day Winner: ${winner}\n📊 ${dayMatches.length} Matches\n\npadel-villains.vercel.app`);
+      window.open(`https://wa.me/?text=${text}`, '_blank');
+    }
+    
+    function shareSummaryTwitter() {
+      const md = window.currentSummaryMatchday;
+      if (!md) return;
+      const rankings = getDayRankings(md.date);
+      const winner = rankings[0] ? getTeam(rankings[0].id)?.name : 'TBD';
+      
+      const text = encodeURIComponent(`🎾 Padel match day complete! 🏆 ${winner} takes the crown! #PadelVillains`);
+      window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+    }
+    
+    function copySummaryText() {
+      const md = window.currentSummaryMatchday;
+      if (!md) return;
+      
+      const dayMatches = matches.filter(m => m.date === md.date);
+      const rankings = getDayRankings(md.date);
+      const winner = rankings[0] ? getTeam(rankings[0].id)?.name : 'TBD';
+      
+      navigator.clipboard.writeText(`🎾 PADEL VILLAINS\n📅 ${md.date}\n🏆 Winner: ${winner}\n📊 ${dayMatches.length} Matches`);
+      toast('Copied!', 'success');
+    }
+    
+    function downloadSummaryImage() {
+      toast('Screenshot the card to save!', 'info');
+    }
+    
+    // ===== LAZY LOADING =====
+    function setupLazyLoading() {
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              if (img.dataset.src) {
+                img.src = img.dataset.src;
+                img.classList.add('loaded');
+                observer.unobserve(img);
+              }
+            }
+          });
+        }, { rootMargin: '50px' });
+        
+        window.lazyLoadObserver = observer;
+      }
+    }
+    
+    function lazyLoadImage(img) {
+      if (window.lazyLoadObserver && img.dataset.src) {
+        window.lazyLoadObserver.observe(img);
+      } else if (img.dataset.src) {
+        img.src = img.dataset.src;
+        img.classList.add('loaded');
+      }
     }
   </script>
 </body>
