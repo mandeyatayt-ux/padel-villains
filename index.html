@@ -553,10 +553,23 @@
     .player-streak { margin-top: 8px; }
     .player-nickname { font-size: 12px; color: var(--clay); margin-bottom: 4px; font-style: italic; }
     .player-position-tag { font-size: 10px; color: var(--text-muted); background: var(--cream); padding: 2px 8px; border-radius: 10px; display: inline-block; margin-bottom: 8px; }
+    .player-villain-crown { position: absolute; top: 8px; left: 8px; font-size: 20px; z-index: 2; }
+    .player-card { position: relative; }
     
-    /* Lazy loading images */
-    .avatar img { opacity: 0; transition: opacity 0.3s; }
+    /* Image loading - show immediately */
+    .avatar img { opacity: 1; }
     .avatar img.loaded { opacity: 1; }
+    
+    /* Share Profile Card */
+    .share-profile-card { background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); border-radius: 20px; padding: 24px; color: white; text-align: center; }
+    .share-profile-logo { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 3px; margin-bottom: 16px; opacity: 0.8; }
+    .share-profile-avatar { margin: 0 auto 12px; }
+    .share-profile-name { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; }
+    .share-profile-nickname { font-size: 14px; opacity: 0.85; margin-bottom: 16px; }
+    .share-profile-stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; }
+    .share-profile-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 28px; }
+    .share-profile-stat-label { font-size: 10px; opacity: 0.7; text-transform: uppercase; }
+    .share-profile-badges { display: flex; justify-content: center; gap: 8px; font-size: 20px; }
     
     @media (max-width: 600px) {
       .profile-top { flex-direction: column; text-align: center; }
@@ -931,6 +944,25 @@
           <button class="share-btn whatsapp" onclick="shareMatchWhatsApp()"><i class="fab fa-whatsapp"></i></button>
           <button class="share-btn twitter" onclick="shareMatchTwitter()"><i class="fab fa-twitter"></i></button>
           <button class="share-btn copy" onclick="copyMatchText()"><i class="fas fa-copy"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share Profile Modal -->
+  <div class="modal-overlay" id="shareProfileModal">
+    <div class="modal" style="max-width:400px;padding:0;overflow:hidden">
+      <div class="modal-header" style="background:var(--cream);margin:0;padding:20px 24px;border-radius:0">
+        <h3 class="modal-title">SHARE PROFILE</h3>
+        <button class="modal-close" onclick="closeModal('shareProfile')"><i class="fas fa-times"></i></button>
+      </div>
+      <div style="padding:24px">
+        <div id="shareProfileCard"></div>
+        <p style="text-align:center;color:var(--text-muted);font-size:12px;margin:16px 0">Screenshot this card or share via:</p>
+        <div class="share-buttons">
+          <button class="share-btn whatsapp" onclick="shareProfileWhatsApp()"><i class="fab fa-whatsapp"></i></button>
+          <button class="share-btn twitter" onclick="shareProfileTwitter()"><i class="fab fa-twitter"></i></button>
+          <button class="share-btn copy" onclick="copyProfileText()"><i class="fas fa-copy"></i></button>
         </div>
       </div>
     </div>
@@ -1781,11 +1813,23 @@
     function renderPlayers() {
       document.getElementById('heroPlayers').textContent = activePlayers().length;
       document.getElementById('heroGames').textContent = matches.length;
+      
+      // Get current villains to check which players are on villain team
+      const dayVillain = getDayVillains();
+      const villainPlayerIds = [];
+      if (dayVillain && dayVillain.wins > 0) {
+        const villainTeam = teams.find(t => t.id === dayVillain.id);
+        if (villainTeam) {
+          villainPlayerIds.push(villainTeam.player1_id, villainTeam.player2_id);
+        }
+      }
+      
       const r = rankPlayersByMatches();
       document.getElementById('playersGrid').innerHTML = r.length ? r.map((p, i) => {
         const rc = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
         const top = i === 0 && p.active !== false ? 'top-player' : '';
         const inactive = p.active === false ? 'inactive' : '';
+        const isVillain = villainPlayerIds.includes(p.id);
         const badges = getPlayerBadges(p.id);
         const playerTeams = teams.filter(t => t.player1_id === p.id || t.player2_id === p.id);
         let bestStreak = { count: 0, type: 'none' };
@@ -1796,9 +1840,16 @@
         const streakHtml = bestStreak.count >= 3 ? 
           `<div class="player-streak"><span class="streak-badge ${bestStreak.type === 'win' ? 'hot' : 'cold'}"><i class="fas fa-${bestStreak.type === 'win' ? 'fire' : 'snowflake'}"></i> ${bestStreak.count}</span></div>` : '';
         
+        // Get fresh player data for photo
+        const fullPlayer = players.find(pl => pl.id === p.id) || p;
+        const photoHtml = fullPlayer.photo 
+          ? `<div class="avatar lg"><img src="${fullPlayer.photo}" alt="${fullPlayer.name}" class="loaded"></div>`
+          : `<div class="avatar lg">${fullPlayer.name?.charAt(0).toUpperCase() || '?'}</div>`;
+        
         return `<div class="player-card ${top} ${inactive}" onclick="openPlayerProfile(${p.id})">
+          ${isVillain ? '<div class="player-villain-crown">👑</div>' : ''}
           <div class="player-rank ${rc}">${i + 1}</div>
-          <div class="player-avatar-wrap">${av(p, 'lg')}</div>
+          <div class="player-avatar-wrap">${photoHtml}</div>
           <div class="player-name">${p.name}</div>
           ${p.nickname ? `<div class="player-nickname">"${p.nickname}"</div>` : ''}
           ${p.position ? `<div class="player-position-tag">${p.position}</div>` : ''}
@@ -3534,19 +3585,94 @@
     }
     
     function sharePlayerProfile() {
+      const playerId = parseInt(document.getElementById('editPlayerId').value);
+      const p = players.find(pl => pl.id === playerId);
+      if (!p) return;
+      
       const name = document.getElementById('profileName').textContent;
       const wins = document.getElementById('profileWins').textContent;
       const losses = document.getElementById('profileLosses').textContent;
       const rate = document.getElementById('profileRate').textContent;
+      const position = p.position || 'Hybrid';
+      const badges = getPlayerBadges(playerId);
       
-      const text = `🎾 PADEL VILLAINS\n\n${name}\n📊 ${wins}W - ${losses}L (${rate})\n\npadel-villains.vercel.app`;
+      // Create visual share card
+      const avatarHtml = p.photo 
+        ? `<div class="avatar xl" style="border-color:white;margin:0 auto"><img src="${p.photo}" class="loaded"></div>`
+        : `<div class="avatar xl" style="border-color:white;margin:0 auto">${p.name.charAt(0)}</div>`;
       
-      if (navigator.share) {
-        navigator.share({ title: 'Padel Villains', text });
-      } else {
-        navigator.clipboard.writeText(text);
-        toast('Copied to clipboard!', 'success');
-      }
+      document.getElementById('shareProfileCard').innerHTML = `
+        <div class="share-profile-card">
+          <div class="share-profile-logo">🎾 PADEL VILLAINS</div>
+          <div class="share-profile-avatar">${avatarHtml}</div>
+          <div class="share-profile-name">${name}</div>
+          ${p.nickname ? `<div class="share-profile-nickname">"${p.nickname}"</div>` : '<div style="height:8px"></div>'}
+          <div style="font-size:12px;opacity:0.8;margin-bottom:16px">${position}</div>
+          <div class="share-profile-stats">
+            <div><div class="share-profile-stat-value">${wins}</div><div class="share-profile-stat-label">Wins</div></div>
+            <div><div class="share-profile-stat-value">${losses}</div><div class="share-profile-stat-label">Losses</div></div>
+            <div><div class="share-profile-stat-value">${rate}</div><div class="share-profile-stat-label">Win Rate</div></div>
+          </div>
+          ${badges.length ? `<div class="share-profile-badges">${badges.join(' ')}</div>` : ''}
+          <div style="font-size:11px;opacity:0.6;margin-top:16px">padel-villains.vercel.app</div>
+        </div>
+      `;
+      
+      window.currentSharePlayer = p;
+      closeModal('editPlayer');
+      openModal('shareProfile');
+    }
+    
+    function shareProfileWhatsApp() {
+      const p = window.currentSharePlayer;
+      if (!p) return;
+      
+      const playerTeams = teams.filter(t => t.player1_id === p.id || t.player2_id === p.id);
+      let wins = 0, losses = 0;
+      playerTeams.forEach(t => {
+        const stats = getTeamStats(t.id);
+        wins += stats.wins;
+        losses += stats.losses;
+      });
+      const rate = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
+      const badges = getPlayerBadges(p.id).join(' ');
+      
+      const text = encodeURIComponent(`🎾 PADEL VILLAINS\n\n👤 ${p.name}${p.nickname ? ` "${p.nickname}"` : ''}\n📊 ${wins}W - ${losses}L (${rate}%)\n${badges ? badges + '\n' : ''}\npadel-villains.vercel.app`);
+      window.open(`https://wa.me/?text=${text}`, '_blank');
+    }
+    
+    function shareProfileTwitter() {
+      const p = window.currentSharePlayer;
+      if (!p) return;
+      
+      const playerTeams = teams.filter(t => t.player1_id === p.id || t.player2_id === p.id);
+      let wins = 0, losses = 0;
+      playerTeams.forEach(t => {
+        const stats = getTeamStats(t.id);
+        wins += stats.wins;
+        losses += stats.losses;
+      });
+      const rate = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
+      
+      const text = encodeURIComponent(`🎾 ${p.name}: ${wins}W-${losses}L (${rate}%) on Padel Villains! #PadelVillains`);
+      window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+    }
+    
+    function copyProfileText() {
+      const p = window.currentSharePlayer;
+      if (!p) return;
+      
+      const playerTeams = teams.filter(t => t.player1_id === p.id || t.player2_id === p.id);
+      let wins = 0, losses = 0;
+      playerTeams.forEach(t => {
+        const stats = getTeamStats(t.id);
+        wins += stats.wins;
+        losses += stats.losses;
+      });
+      const rate = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
+      
+      navigator.clipboard.writeText(`🎾 PADEL VILLAINS\n${p.name}\n${wins}W - ${losses}L (${rate}%)\npadel-villains.vercel.app`);
+      toast('Copied!', 'success');
     }
     
     // ===== SHARING =====
