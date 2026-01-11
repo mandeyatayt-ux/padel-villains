@@ -1717,7 +1717,7 @@
       
       const venue = getCurrentVenue();
       const courts = venue?.courts || ['Court 1'];
-      const today = currentMatchDay.date;
+      const today = activeMatchday?.date || new Date().toISOString().split('T')[0];
       
       let queued = 0;
       for (let i = 0; i < generatedRoundRobinMatches.length; i++) {
@@ -2247,7 +2247,7 @@
       const nm = { 
         id: Date.now(), 
         date, 
-        location: currentMatchDay.venue, 
+        location: activeMatchday?.venue || '', 
         court, 
         team1_id: t1, 
         team2_id: t2, 
@@ -2260,7 +2260,7 @@
         try {
           await supabaseClient.from('matches').insert([nm]);
           matches.unshift(nm);
-        } catch (e) { toast('Error', 'error'); return; }
+        } catch (e) { console.error(e); toast('Error saving match', 'error'); return; }
       } else {
         matches.unshift(nm);
         saveLocal();
@@ -2288,7 +2288,7 @@
       const nm = { 
         id: Date.now(), 
         date, 
-        location: currentMatchDay.venue, 
+        location: activeMatchday?.venue || '', 
         court, 
         team1_id: t1, 
         team2_id: t2, 
