@@ -1014,16 +1014,16 @@
       localStorage.setItem('pv_matchdays', JSON.stringify(matchdays));
     }
     
-    // Determine active matchday (current or next upcoming)
+    // Determine active matchday (current, past unclosed, or next upcoming)
     function determineActiveMatchday() {
       const today = new Date().toISOString().split('T')[0];
-      const now = new Date();
       
       // Filter out closed matchdays
       const openMatchdays = matchdays.filter(md => md.status !== 'closed');
       
-      // Find today's matchday or next upcoming
+      // Priority: 1) Today's matchday, 2) Most recent past unclosed, 3) Next upcoming
       activeMatchday = openMatchdays.find(md => md.date === today) || 
+                       openMatchdays.filter(md => md.date < today).sort((a, b) => new Date(b.date) - new Date(a.date))[0] ||
                        openMatchdays.find(md => md.date > today) ||
                        null;
     }
@@ -1761,18 +1761,26 @@
     // ===== SETTINGS =====
     // ===== HISTORY =====
     function renderHistory() {
-      const closedMatchdays = matchdays.filter(md => md.status === 'closed').sort((a, b) => new Date(b.date) - new Date(a.date));
+      // Show all matchdays sorted by date (newest first)
+      const allMatchdays = matchdays.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
       
-      document.getElementById('matchdayHistoryList').innerHTML = closedMatchdays.length ? closedMatchdays.map(md => {
+      document.getElementById('matchdayHistoryList').innerHTML = allMatchdays.length ? allMatchdays.map(md => {
         const dayMatches = matches.filter(m => m.date === md.date);
         const dayRankings = rankTeamsByMatches(md.date);
         const winner = dayRankings.length > 0 ? dayRankings[0] : null;
         const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const isClosed = md.status === 'closed';
+        const statusBadge = isClosed 
+          ? '<span style="background:var(--success);color:white;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600">COMPLETED</span>'
+          : '<span style="background:var(--clay);color:white;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600">OPEN</span>';
         
         return `<div class="matchday-history-card" onclick="viewMatchday(${md.id})">
           <div class="matchday-history-header">
-            <div class="matchday-history-date">${dateStr}</div>
-            <div class="matchday-history-venue"><i class="fas fa-map-marker-alt"></i> ${md.venue}</div>
+            <div>
+              <div class="matchday-history-date">${dateStr}</div>
+              <div class="matchday-history-venue"><i class="fas fa-map-marker-alt"></i> ${md.venue}</div>
+            </div>
+            ${statusBadge}
           </div>
           <div class="matchday-history-stats">
             <div class="matchday-history-stat">
@@ -1789,11 +1797,11 @@
             </div>
           </div>
           ${winner ? `<div class="matchday-history-winner">
-            <span class="matchday-history-winner-label">👑 DAY WINNER:</span>
+            <span class="matchday-history-winner-label">👑 ${isClosed ? 'DAY WINNER' : 'CURRENT LEADER'}:</span>
             <span class="matchday-history-winner-name">${winner.name} (${winner.wins}W - ${winner.losses}L)</span>
           </div>` : ''}
         </div>`;
-      }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Yet</h3><p>Complete a match day to see it here</p></div>';
+      }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Yet</h3><p>Create a match day to see it here</p></div>';
     }
     
     function viewMatchday(id) {
@@ -1816,19 +1824,23 @@
     }
     
     function openMatchdaySelectModal() {
-      const closedMatchdays = matchdays.filter(md => md.status === 'closed').sort((a, b) => new Date(b.date) - new Date(a.date));
+      // Show all matchdays except the currently active one
+      const selectableMatchdays = matchdays
+        .filter(md => !activeMatchday || md.id !== activeMatchday.id)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
       
-      document.getElementById('matchdaySelectList').innerHTML = closedMatchdays.length ? closedMatchdays.map(md => {
+      document.getElementById('matchdaySelectList').innerHTML = selectableMatchdays.length ? selectableMatchdays.map(md => {
         const dayMatches = matches.filter(m => m.date === md.date);
         const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        const isClosed = md.status === 'closed';
         return `<div class="matchday-select-item" onclick="viewMatchday(${md.id})">
           <div class="matchday-select-info">
-            <div class="matchday-select-date">${dateStr}</div>
+            <div class="matchday-select-date">${dateStr} ${!isClosed ? '<span style="color:var(--clay);font-size:11px">(OPEN)</span>' : ''}</div>
             <div class="matchday-select-meta"><i class="fas fa-map-marker-alt"></i> ${md.venue}</div>
           </div>
           <div class="matchday-select-matches">${dayMatches.length} matches</div>
         </div>`;
-      }).join('') : '<div class="empty" style="padding:30px"><p>No past match days</p></div>';
+      }).join('') : '<div class="empty" style="padding:30px"><p>No other match days</p></div>';
       
       openModal('selectMatchday');
     }
