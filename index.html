@@ -928,11 +928,21 @@
     
     function setupTabs() {
       document.querySelectorAll('.nav button').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const tabId = btn.dataset.tab;
+          if (!tabId) return;
+          
+          // Update nav buttons
           document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
+          
+          // Update tab sections
           document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-          document.getElementById(btn.dataset.tab).classList.add('active');
+          const tabEl = document.getElementById(tabId);
+          if (tabEl) {
+            tabEl.classList.add('active');
+          }
         });
       });
     }
@@ -950,25 +960,39 @@
     // ===== DATA =====
     async function fetchData() {
       try {
-        const [p, t, m, v, o, md] = await Promise.all([
+        // Fetch core tables
+        const [p, t, m, v, o] = await Promise.all([
           supabaseClient.from('players').select('*').order('created_at'),
           supabaseClient.from('teams').select('*').order('created_at'),
           supabaseClient.from('matches').select('*').order('date', { ascending: false }),
           supabaseClient.from('venues').select('*').order('name'),
-          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false }),
-          supabaseClient.from('matchdays').select('*').order('date', { ascending: true })
+          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false })
         ]);
+        
         players = p.data || []; 
         teams = t.data || []; 
         matches = m.data || [];
         venues = v.data?.length ? v.data : defaultVenues;
         ongoingMatches = o.data || [];
-        matchdays = md.data || [];
+        
+        // Try to fetch matchdays (table might not exist yet)
+        try {
+          const md = await supabaseClient.from('matchdays').select('*').order('date', { ascending: true });
+          matchdays = md.data || [];
+        } catch (e) {
+          console.log('Matchdays table not found, using local');
+          matchdays = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
+        }
         
         // Set active matchday
         determineActiveMatchday();
         renderAll();
-      } catch (e) { console.error(e); toast('Error loading data', 'error'); loadLocal(); renderAll(); }
+      } catch (e) { 
+        console.error('Fetch error:', e); 
+        toast('Error loading data', 'error'); 
+        loadLocal(); 
+        renderAll(); 
+      }
     }
     
     function loadLocal() {
@@ -1084,17 +1108,21 @@
     
     // ===== RENDER ALL =====
     function renderAll() {
-      renderDashboard();
-      renderPlayers();
-      renderTeams();
-      renderOngoingMatches();
-      renderMatches();
-      renderRankings();
-      renderMatchup();
-      renderHistory();
-      renderSettings();
-      updateDropdowns();
-      setupRankingFilters();
+      try {
+        renderDashboard();
+        renderPlayers();
+        renderTeams();
+        renderOngoingMatches();
+        renderMatches();
+        renderRankings();
+        renderMatchup();
+        renderHistory();
+        renderSettings();
+        updateDropdowns();
+        setupRankingFilters();
+      } catch (e) {
+        console.error('Render error:', e);
+      }
     }
     
     // ===== DASHBOARD =====
