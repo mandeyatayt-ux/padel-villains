@@ -24,6 +24,11 @@
     .app { max-width: 1400px; margin: 0 auto; padding: 0 24px 60px; }
     .hidden { display: none !important; }
     
+    /* Loading State */
+    body.loading::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--clay) 0%, var(--clay-light) 50%, var(--clay) 100%); background-size: 200% 100%; animation: loading-bar 1.5s ease-in-out infinite; z-index: 9999; }
+    @keyframes loading-bar { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    body.loading .app { opacity: 0.7; pointer-events: none; }
+    
     /* Header */
     .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 3px solid var(--clay); margin-bottom: 24px; position: sticky; top: 0; background: rgba(253,246,237,0.97); backdrop-filter: blur(10px); z-index: 100; }
     .logo { display: flex; align-items: center; gap: 16px; }
@@ -1382,41 +1387,160 @@
     }
     
     // ===== DATA =====
+    const CACHE_KEY = 'pv_cache';
+    const CACHE_TIMESTAMP_KEY = 'pv_cache_time';
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    
     async function fetchData() {
       try {
-        // Fetch core tables
-        const [p, t, m, v, o] = await Promise.all([
-          supabaseClient.from('players').select('*').order('created_at'),
-          supabaseClient.from('teams').select('*').order('created_at'),
-          supabaseClient.from('matches').select('*').order('date', { ascending: false }),
-          supabaseClient.from('venues').select('*').order('name'),
-          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false })
-        ]);
+        // Show loading state
+        showLoadingState();
         
-        players = p.data || []; 
-        teams = t.data || []; 
-        matches = m.data || [];
-        venues = v.data?.length ? v.data : defaultVenues;
-        ongoingMatches = o.data || [];
-        
-        // Try to fetch matchdays (table might not exist yet)
-        try {
-          const md = await supabaseClient.from('matchdays').select('*').order('date', { ascending: true });
-          matchdays = md.data || [];
-        } catch (e) {
-          console.log('Matchdays table not found, using local');
-          matchdays = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
+        // Check if we have valid cache
+        const cachedData = getCachedData();
+        if (cachedData) {
+          console.log('Loading from cache...');
+          applyData(cachedData);
+          renderAll();
+          hideLoadingState();
+          
+          // Fetch fresh data in background
+          fetchFreshDataInBackground();
+          return;
         }
         
-        // Set active matchday
-        determineActiveMatchday();
+        // Try bulk fetch first (single query - much faster)
+        try {
+          const { data, error } = await supabaseClient.rpc('get_all_data');
+          if (!error && data) {
+            console.log('Bulk fetch successful!');
+            applyData(data);
+            cacheData(data);
+            renderAll();
+            hideLoadingState();
+            return;
+          }
+        } catch (e) {
+          console.log('Bulk fetch not available, using standard queries');
+        }
+        
+        // Fallback to parallel queries
+        const [p, t, m, v, o, md] = await Promise.all([
+          supabaseClient.from('players').select('*').order('created_at'),
+          supabaseClient.from('teams').select('*').order('created_at'),
+          supabaseClient.from('matches').select('*').order('date', { ascending: false }).limit(500),
+          supabaseClient.from('venues').select('*').order('name'),
+          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false }),
+          supabaseClient.from('matchdays').select('*').order('date', { ascending: true }).catch(() => ({ data: [] }))
+        ]);
+        
+        const data = {
+          players: p.data || [],
+          teams: t.data || [],
+          matches: m.data || [],
+          venues: v.data?.length ? v.data : defaultVenues,
+          ongoing_matches: o.data || [],
+          matchdays: md.data || []
+        };
+        
+        applyData(data);
+        cacheData(data);
         renderAll();
+        hideLoadingState();
+        
       } catch (e) { 
         console.error('Fetch error:', e); 
         toast('Error loading data', 'error'); 
         loadLocal(); 
-        renderAll(); 
+        renderAll();
+        hideLoadingState();
       }
+    }
+    
+    function applyData(data) {
+      players = data.players || [];
+      teams = data.teams || [];
+      matches = data.matches || [];
+      venues = data.venues?.length ? data.venues : defaultVenues;
+      ongoingMatches = data.ongoing_matches || [];
+      matchdays = data.matchdays || [];
+      determineActiveMatchday();
+      
+      // Also save to localStorage as backup
+      saveLocal();
+    }
+    
+    function getCachedData() {
+      try {
+        const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+        if (!timestamp) return null;
+        
+        const age = Date.now() - parseInt(timestamp);
+        if (age > CACHE_DURATION) return null;
+        
+        const cached = localStorage.getItem(CACHE_KEY);
+        return cached ? JSON.parse(cached) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    
+    function cacheData(data) {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+      } catch (e) {
+        console.log('Cache storage failed (likely quota exceeded)');
+      }
+    }
+    
+    async function fetchFreshDataInBackground() {
+      try {
+        // Try bulk fetch
+        try {
+          const { data, error } = await supabaseClient.rpc('get_all_data');
+          if (!error && data) {
+            applyData(data);
+            cacheData(data);
+            renderAll();
+            return;
+          }
+        } catch (e) {}
+        
+        // Fallback to parallel queries
+        const [p, t, m, v, o, md] = await Promise.all([
+          supabaseClient.from('players').select('*').order('created_at'),
+          supabaseClient.from('teams').select('*').order('created_at'),
+          supabaseClient.from('matches').select('*').order('date', { ascending: false }).limit(500),
+          supabaseClient.from('venues').select('*').order('name'),
+          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false }),
+          supabaseClient.from('matchdays').select('*').order('date', { ascending: true }).catch(() => ({ data: [] }))
+        ]);
+        
+        const data = {
+          players: p.data || [],
+          teams: t.data || [],
+          matches: m.data || [],
+          venues: v.data?.length ? v.data : defaultVenues,
+          ongoing_matches: o.data || [],
+          matchdays: md.data || []
+        };
+        
+        applyData(data);
+        cacheData(data);
+        renderAll();
+      } catch (e) {
+        console.log('Background refresh failed:', e);
+      }
+    }
+    
+    function showLoadingState() {
+      // Add loading class to body
+      document.body.classList.add('loading');
+    }
+    
+    function hideLoadingState() {
+      document.body.classList.remove('loading');
     }
     
     function loadLocal() {
