@@ -1396,7 +1396,7 @@
         // Show loading state
         showLoadingState();
         
-        // Check if we have valid cache
+        // Check if we have valid cache first for instant load
         const cachedData = getCachedData();
         if (cachedData) {
           console.log('Loading from cache...');
@@ -1404,49 +1404,13 @@
           renderAll();
           hideLoadingState();
           
-          // Fetch fresh data in background
-          fetchFreshDataInBackground();
+          // Fetch fresh data in background (non-blocking)
+          setTimeout(() => fetchFreshDataInBackground(), 100);
           return;
         }
         
-        // Try bulk fetch first (single query - much faster)
-        try {
-          const { data, error } = await supabaseClient.rpc('get_all_data');
-          if (!error && data) {
-            console.log('Bulk fetch successful!');
-            applyData(data);
-            cacheData(data);
-            renderAll();
-            hideLoadingState();
-            return;
-          }
-        } catch (e) {
-          console.log('Bulk fetch not available, using standard queries');
-        }
-        
-        // Fallback to parallel queries
-        const [p, t, m, v, o, md] = await Promise.all([
-          supabaseClient.from('players').select('*').order('created_at'),
-          supabaseClient.from('teams').select('*').order('created_at'),
-          supabaseClient.from('matches').select('*').order('date', { ascending: false }).limit(500),
-          supabaseClient.from('venues').select('*').order('name'),
-          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false }),
-          supabaseClient.from('matchdays').select('*').order('date', { ascending: true }).catch(() => ({ data: [] }))
-        ]);
-        
-        const data = {
-          players: p.data || [],
-          teams: t.data || [],
-          matches: m.data || [],
-          venues: v.data?.length ? v.data : defaultVenues,
-          ongoing_matches: o.data || [],
-          matchdays: md.data || []
-        };
-        
-        applyData(data);
-        cacheData(data);
-        renderAll();
-        hideLoadingState();
+        // No cache - fetch from database
+        await fetchFromDatabase();
         
       } catch (e) { 
         console.error('Fetch error:', e); 
@@ -1454,6 +1418,60 @@
         loadLocal(); 
         renderAll();
         hideLoadingState();
+      }
+    }
+    
+    async function fetchFromDatabase() {
+      try {
+        // Fetch all tables in parallel
+        const results = await Promise.all([
+          supabaseClient.from('players').select('*').order('created_at'),
+          supabaseClient.from('teams').select('*').order('created_at'),
+          supabaseClient.from('matches').select('*').order('date', { ascending: false }).limit(500),
+          supabaseClient.from('venues').select('*').order('name'),
+          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false })
+        ]);
+        
+        const [p, t, m, v, o] = results;
+        
+        // Check for errors
+        if (p.error) throw new Error('Failed to load players: ' + p.error.message);
+        if (t.error) throw new Error('Failed to load teams: ' + t.error.message);
+        if (m.error) throw new Error('Failed to load matches: ' + m.error.message);
+        
+        // Try to fetch matchdays (may not exist)
+        let matchdaysData = [];
+        try {
+          const md = await supabaseClient.from('matchdays').select('*').order('date', { ascending: true });
+          matchdaysData = md.data || [];
+        } catch (e) {
+          console.log('Matchdays table not available');
+          matchdaysData = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
+        }
+        
+        const data = {
+          players: p.data || [],
+          teams: t.data || [],
+          matches: m.data || [],
+          venues: v.data?.length ? v.data : defaultVenues,
+          ongoing_matches: o.data || [],
+          matchdays: matchdaysData
+        };
+        
+        console.log('Data loaded:', { 
+          players: data.players.length, 
+          teams: data.teams.length, 
+          matches: data.matches.length 
+        });
+        
+        applyData(data);
+        cacheData(data);
+        renderAll();
+        hideLoadingState();
+        
+      } catch (e) {
+        console.error('Database fetch error:', e);
+        throw e;
       }
     }
     
@@ -1496,26 +1514,31 @@
     
     async function fetchFreshDataInBackground() {
       try {
-        // Try bulk fetch
-        try {
-          const { data, error } = await supabaseClient.rpc('get_all_data');
-          if (!error && data) {
-            applyData(data);
-            cacheData(data);
-            renderAll();
-            return;
-          }
-        } catch (e) {}
-        
-        // Fallback to parallel queries
-        const [p, t, m, v, o, md] = await Promise.all([
+        // Fetch all tables in parallel
+        const results = await Promise.all([
           supabaseClient.from('players').select('*').order('created_at'),
           supabaseClient.from('teams').select('*').order('created_at'),
           supabaseClient.from('matches').select('*').order('date', { ascending: false }).limit(500),
           supabaseClient.from('venues').select('*').order('name'),
-          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false }),
-          supabaseClient.from('matchdays').select('*').order('date', { ascending: true }).catch(() => ({ data: [] }))
+          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false })
         ]);
+        
+        const [p, t, m, v, o] = results;
+        
+        // Only update if we got valid data
+        if (p.error || t.error || m.error) {
+          console.log('Background refresh had errors, skipping update');
+          return;
+        }
+        
+        // Try matchdays separately
+        let matchdaysData = [];
+        try {
+          const md = await supabaseClient.from('matchdays').select('*').order('date', { ascending: true });
+          matchdaysData = md.data || [];
+        } catch (e) {
+          matchdaysData = matchdays; // Keep existing
+        }
         
         const data = {
           players: p.data || [],
@@ -1523,12 +1546,13 @@
           matches: m.data || [],
           venues: v.data?.length ? v.data : defaultVenues,
           ongoing_matches: o.data || [],
-          matchdays: md.data || []
+          matchdays: matchdaysData
         };
         
         applyData(data);
         cacheData(data);
         renderAll();
+        console.log('Background refresh complete');
       } catch (e) {
         console.log('Background refresh failed:', e);
       }
