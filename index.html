@@ -622,6 +622,82 @@
     .matchday-log-team { font-weight: 600; color: var(--clay); font-size: 14px; }
     .matchday-log-stats { font-size: 12px; color: var(--text-muted); }
     
+    /* Rules Page Styles */
+    .rules-hero { background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 24px; padding: 40px; color: white; margin-bottom: 32px; text-align: center; }
+    .rules-hero h2 { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 4px; margin-bottom: 8px; }
+    .rules-hero p { opacity: 0.9; font-size: 15px; }
+    
+    .rules-quick-ref { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .quick-ref-item { background: white; border-radius: 12px; padding: 16px; text-align: center; border: 2px solid var(--cream-dark); }
+    .quick-ref-icon { font-size: 24px; margin-bottom: 8px; }
+    .quick-ref-text { font-size: 13px; font-weight: 600; color: var(--brown-dark); }
+    
+    .rules-card { margin-bottom: 24px; }
+    .rules-section-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: var(--brown-dark); }
+    .rules-section-title i { color: var(--clay); }
+    
+    .court-diagram { background: #1e3a5f; border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .court-svg { width: 100%; max-width: 500px; margin: 0 auto; display: block; }
+    .court-legend { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+    .legend-color { width: 16px; height: 16px; border-radius: 4px; }
+    
+    .scoring-visual { background: var(--cream); border-radius: 12px; padding: 20px; margin-bottom: 16px; overflow-x: auto; }
+    .score-sequence { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: max-content; }
+    .score-point { text-align: center; padding: 12px 16px; background: white; border-radius: 10px; border: 2px solid var(--cream-dark); }
+    .score-point.highlight { background: var(--clay); border-color: var(--clay); }
+    .score-point.highlight .score-num, .score-point.highlight .score-label { color: white; }
+    .score-num { display: block; font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--brown-dark); }
+    .score-label { font-size: 11px; color: var(--text-muted); }
+    .score-arrow { font-size: 20px; color: var(--clay); }
+    
+    .rules-info-box { background: rgba(224,120,80,0.1); border-radius: 12px; padding: 16px; }
+    .info-item { padding: 8px 0; border-bottom: 1px solid rgba(224,120,80,0.2); font-size: 14px; }
+    .info-item:last-child { border-bottom: none; }
+    
+    .serve-illustration { background: var(--cream); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .serve-svg { width: 100%; max-width: 400px; margin: 0 auto; display: block; }
+    
+    .rules-list { display: flex; flex-direction: column; gap: 12px; }
+    .rule-item { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; line-height: 1.5; }
+    .rule-number { width: 24px; height: 24px; background: var(--clay); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    
+    .bounce-scenarios { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .bounce-card { padding: 20px; border-radius: 12px; }
+    .bounce-card.valid { background: rgba(76,175,80,0.1); border: 2px solid var(--success); }
+    .bounce-card.invalid { background: rgba(239,68,68,0.1); border: 2px solid var(--danger); }
+    .bounce-icon { font-size: 28px; margin-bottom: 8px; }
+    .bounce-title { font-weight: 700; margin-bottom: 12px; color: var(--brown-dark); }
+    .bounce-list { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8; }
+    
+    .comparison-table { border-radius: 12px; overflow: hidden; border: 2px solid var(--cream-dark); }
+    .comparison-row { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+    .comparison-row.header { background: var(--clay); color: white; font-weight: 700; }
+    .comparison-row:not(.header):nth-child(odd) { background: var(--cream); }
+    .comparison-cell { padding: 12px 16px; font-size: 13px; border-right: 1px solid var(--cream-dark); }
+    .comparison-cell:last-child { border-right: none; }
+    
+    .tips-card { background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(251,191,36,0.05)); }
+    .tips-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .tip-item { display: flex; gap: 14px; padding: 16px; background: white; border-radius: 12px; }
+    .tip-icon { font-size: 28px; }
+    .tip-content strong { display: block; margin-bottom: 4px; color: var(--brown-dark); }
+    .tip-content p { font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.5; }
+    
+    .equipment-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .equipment-item { text-align: center; padding: 20px; background: var(--cream); border-radius: 12px; }
+    .equipment-icon { font-size: 40px; margin-bottom: 12px; }
+    .equipment-name { font-weight: 700; margin-bottom: 8px; color: var(--brown-dark); }
+    .equipment-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    
+    @media (max-width: 600px) {
+      .rules-quick-ref { grid-template-columns: repeat(2, 1fr); }
+      .bounce-scenarios { grid-template-columns: 1fr; }
+      .tips-grid { grid-template-columns: 1fr; }
+      .equipment-grid { grid-template-columns: 1fr; }
+      .comparison-cell { padding: 8px 10px; font-size: 11px; }
+    }
+    
     @media (max-width: 600px) {
       .profile-top { flex-direction: column; text-align: center; }
       .profile-stats-row { justify-content: center; }
@@ -661,6 +737,7 @@
       <button data-tab="rankings"><i class="fas fa-trophy"></i><span>Rankings</span></button>
       <button data-tab="achievements"><i class="fas fa-medal"></i><span>Achievements</span></button>
       <button data-tab="matchup"><i class="fas fa-shuffle"></i><span>Matchup</span></button>
+      <button data-tab="rules"><i class="fas fa-book"></i><span>Rules</span></button>
       <button data-tab="history"><i class="fas fa-clock-rotate-left"></i><span>History</span></button>
       <button data-tab="settings"><i class="fas fa-cog"></i><span>Settings</span></button>
     </nav>
@@ -911,6 +988,256 @@
       </div>
       <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">🎖️ Badges</h3>
       <div class="achievements-grid" id="achievementsGrid"></div>
+    </section>
+
+    <!-- ===== RULES TAB ===== -->
+    <section class="tab" id="rules">
+      <div class="rules-hero">
+        <h2>📖 PADEL RULES</h2>
+        <p>Everything you need to know to play like a pro</p>
+      </div>
+      
+      <!-- Quick Reference -->
+      <div class="rules-quick-ref">
+        <div class="quick-ref-item">
+          <div class="quick-ref-icon">👥</div>
+          <div class="quick-ref-text">4 Players (Doubles Only)</div>
+        </div>
+        <div class="quick-ref-item">
+          <div class="quick-ref-icon">🎾</div>
+          <div class="quick-ref-text">Best of 3 Sets</div>
+        </div>
+        <div class="quick-ref-item">
+          <div class="quick-ref-icon">📊</div>
+          <div class="quick-ref-text">First to 6 Games</div>
+        </div>
+        <div class="quick-ref-item">
+          <div class="quick-ref-icon">🏆</div>
+          <div class="quick-ref-text">Tiebreak at 6-6</div>
+        </div>
+      </div>
+      
+      <!-- Court Diagram -->
+      <div class="card rules-card">
+        <h3 class="rules-section-title"><i class="fas fa-border-all"></i> The Court</h3>
+        <div class="court-diagram">
+          <svg viewBox="0 0 400 240" class="court-svg">
+            <!-- Court outline -->
+            <rect x="10" y="10" width="380" height="220" fill="#2563eb" stroke="#1e40af" stroke-width="3" rx="4"/>
+            <!-- Service boxes -->
+            <line x1="200" y1="10" x2="200" y2="230" stroke="white" stroke-width="2"/>
+            <line x1="10" y1="120" x2="390" y2="120" stroke="white" stroke-width="2"/>
+            <!-- Service lines -->
+            <line x1="70" y1="10" x2="70" y2="230" stroke="white" stroke-width="2" stroke-dasharray="5,5"/>
+            <line x1="330" y1="10" x2="330" y2="230" stroke="white" stroke-width="2" stroke-dasharray="5,5"/>
+            <!-- Net -->
+            <line x1="200" y1="10" x2="200" y2="230" stroke="#fbbf24" stroke-width="4"/>
+            <!-- Glass walls -->
+            <rect x="5" y="5" width="5" height="230" fill="#94a3b8" rx="2"/>
+            <rect x="390" y="5" width="5" height="230" fill="#94a3b8" rx="2"/>
+            <rect x="5" y="5" width="130" height="5" fill="#94a3b8" rx="2"/>
+            <rect x="265" y="5" width="130" height="5" fill="#94a3b8" rx="2"/>
+            <rect x="5" y="230" width="130" height="5" fill="#94a3b8" rx="2"/>
+            <rect x="265" y="230" width="130" height="5" fill="#94a3b8" rx="2"/>
+            <!-- Wire mesh (sides) -->
+            <rect x="135" y="5" width="65" height="5" fill="#64748b" rx="1"/>
+            <rect x="200" y="5" width="65" height="5" fill="#64748b" rx="1"/>
+            <rect x="135" y="230" width="65" height="5" fill="#64748b" rx="1"/>
+            <rect x="200" y="230" width="65" height="5" fill="#64748b" rx="1"/>
+            <!-- Labels -->
+            <text x="105" y="70" fill="white" font-size="11" text-anchor="middle" font-weight="600">SERVICE</text>
+            <text x="105" y="85" fill="white" font-size="11" text-anchor="middle" font-weight="600">BOX</text>
+            <text x="295" y="70" fill="white" font-size="11" text-anchor="middle" font-weight="600">SERVICE</text>
+            <text x="295" y="85" fill="white" font-size="11" text-anchor="middle" font-weight="600">BOX</text>
+            <text x="200" y="125" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="700">NET</text>
+          </svg>
+        </div>
+        <div class="court-legend">
+          <div class="legend-item"><span class="legend-color" style="background:#94a3b8"></span> Glass Walls (Ball can bounce off)</div>
+          <div class="legend-item"><span class="legend-color" style="background:#64748b"></span> Wire Mesh</div>
+          <div class="legend-item"><span class="legend-color" style="background:#fbbf24"></span> Net (88cm center, 92cm sides)</div>
+        </div>
+      </div>
+      
+      <!-- Scoring -->
+      <div class="card rules-card">
+        <h3 class="rules-section-title"><i class="fas fa-calculator"></i> Scoring</h3>
+        <div class="scoring-visual">
+          <div class="score-sequence">
+            <div class="score-point"><span class="score-num">0</span><span class="score-label">Love</span></div>
+            <div class="score-arrow">→</div>
+            <div class="score-point"><span class="score-num">15</span><span class="score-label">First Point</span></div>
+            <div class="score-arrow">→</div>
+            <div class="score-point"><span class="score-num">30</span><span class="score-label">Second Point</span></div>
+            <div class="score-arrow">→</div>
+            <div class="score-point"><span class="score-num">40</span><span class="score-label">Third Point</span></div>
+            <div class="score-arrow">→</div>
+            <div class="score-point highlight"><span class="score-num">🎯</span><span class="score-label">Game!</span></div>
+          </div>
+        </div>
+        <div class="rules-info-box">
+          <div class="info-item">
+            <strong>Deuce (40-40):</strong> Must win by 2 clear points
+          </div>
+          <div class="info-item">
+            <strong>Advantage:</strong> Next point after deuce - win it to take the game
+          </div>
+          <div class="info-item">
+            <strong>Tiebreak at 6-6:</strong> First to 7 points (win by 2)
+          </div>
+        </div>
+      </div>
+      
+      <!-- Serving Rules -->
+      <div class="card rules-card">
+        <h3 class="rules-section-title"><i class="fas fa-hand-point-up"></i> Serving</h3>
+        <div class="serve-illustration">
+          <svg viewBox="0 0 300 150" class="serve-svg">
+            <!-- Player -->
+            <circle cx="50" cy="100" r="15" fill="var(--clay)"/>
+            <line x1="50" y1="115" x2="50" y2="140" stroke="var(--clay)" stroke-width="3"/>
+            <line x1="50" y1="125" x2="35" y2="110" stroke="var(--clay)" stroke-width="3"/>
+            <line x1="50" y1="125" x2="65" y2="135" stroke="var(--clay)" stroke-width="3"/>
+            <!-- Ball trajectory -->
+            <path d="M 65 100 Q 120 30 180 80" stroke="var(--gold)" stroke-width="3" fill="none" stroke-dasharray="8,4"/>
+            <circle cx="180" cy="80" r="8" fill="var(--gold)"/>
+            <!-- Target zone -->
+            <rect x="200" y="50" width="80" height="80" fill="rgba(76,175,80,0.3)" stroke="var(--success)" stroke-width="2" rx="4"/>
+            <text x="240" y="95" fill="var(--success)" font-size="11" text-anchor="middle" font-weight="600">TARGET</text>
+            <!-- Labels -->
+            <text x="50" y="85" fill="var(--brown-dark)" font-size="10" text-anchor="middle">Server</text>
+            <text x="120" y="25" fill="var(--gold)" font-size="10" text-anchor="middle">Underarm serve</text>
+          </svg>
+        </div>
+        <div class="rules-list">
+          <div class="rule-item"><span class="rule-number">1</span> Serve underarm, hitting ball at or below waist height</div>
+          <div class="rule-item"><span class="rule-number">2</span> Stand behind service line, bounce ball then hit</div>
+          <div class="rule-item"><span class="rule-number">3</span> Ball must land in opposite diagonal service box</div>
+          <div class="rule-item"><span class="rule-number">4</span> Two serves allowed (like tennis) - fault on missing both</div>
+          <div class="rule-item"><span class="rule-number">5</span> Let: replay if ball hits net and lands in correct box</div>
+        </div>
+      </div>
+      
+      <!-- Walls & Bounces -->
+      <div class="card rules-card">
+        <h3 class="rules-section-title"><i class="fas fa-arrows-alt"></i> Walls & Bounces</h3>
+        <div class="bounce-scenarios">
+          <div class="bounce-card valid">
+            <div class="bounce-icon">✅</div>
+            <div class="bounce-title">Valid Returns</div>
+            <ul class="bounce-list">
+              <li>Ball bounces on floor, then off back wall</li>
+              <li>Ball bounces on floor, then off side wall</li>
+              <li>Hit ball before or after it hits wall</li>
+              <li>Ball can go out of court via door/gap after bouncing</li>
+            </ul>
+          </div>
+          <div class="bounce-card invalid">
+            <div class="bounce-icon">❌</div>
+            <div class="bounce-title">Faults / Lost Points</div>
+            <ul class="bounce-list">
+              <li>Ball bounces twice on floor</li>
+              <li>Ball hits wall before bouncing on floor (on serve)</li>
+              <li>Ball hits wire fence before crossing net</li>
+              <li>Ball hits you or your partner</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Key Differences from Tennis -->
+      <div class="card rules-card">
+        <h3 class="rules-section-title"><i class="fas fa-exchange-alt"></i> Padel vs Tennis</h3>
+        <div class="comparison-table">
+          <div class="comparison-row header">
+            <div class="comparison-cell">Aspect</div>
+            <div class="comparison-cell">🎾 Tennis</div>
+            <div class="comparison-cell">🏸 Padel</div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-cell">Serve</div>
+            <div class="comparison-cell">Overarm</div>
+            <div class="comparison-cell">Underarm only</div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-cell">Walls</div>
+            <div class="comparison-cell">Out of play</div>
+            <div class="comparison-cell">Part of play!</div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-cell">Court Size</div>
+            <div class="comparison-cell">23.77m × 10.97m</div>
+            <div class="comparison-cell">20m × 10m</div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-cell">Format</div>
+            <div class="comparison-cell">Singles or Doubles</div>
+            <div class="comparison-cell">Doubles only</div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-cell">Racket</div>
+            <div class="comparison-cell">Strung</div>
+            <div class="comparison-cell">Solid with holes</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tips for Beginners -->
+      <div class="card rules-card tips-card">
+        <h3 class="rules-section-title"><i class="fas fa-lightbulb"></i> Pro Tips</h3>
+        <div class="tips-grid">
+          <div class="tip-item">
+            <div class="tip-icon">🎯</div>
+            <div class="tip-content">
+              <strong>Use the Walls</strong>
+              <p>Don't be afraid to let the ball hit the back wall - you often get an easier shot</p>
+            </div>
+          </div>
+          <div class="tip-item">
+            <div class="tip-icon">🤝</div>
+            <div class="tip-content">
+              <strong>Communication is Key</strong>
+              <p>Call "mine" or "yours" to avoid confusion with your partner</p>
+            </div>
+          </div>
+          <div class="tip-item">
+            <div class="tip-icon">📍</div>
+            <div class="tip-content">
+              <strong>Control the Net</strong>
+              <p>The team at the net has the advantage - work your way forward</p>
+            </div>
+          </div>
+          <div class="tip-item">
+            <div class="tip-icon">🎾</div>
+            <div class="tip-content">
+              <strong>Placement Over Power</strong>
+              <p>Accuracy wins points - don't just smash everything</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Equipment -->
+      <div class="card rules-card">
+        <h3 class="rules-section-title"><i class="fas fa-racquet"></i> Equipment</h3>
+        <div class="equipment-grid">
+          <div class="equipment-item">
+            <div class="equipment-icon">🏓</div>
+            <div class="equipment-name">Padel Racket</div>
+            <div class="equipment-desc">Solid face with holes, no strings. Max 45.5cm long.</div>
+          </div>
+          <div class="equipment-item">
+            <div class="equipment-icon">🎾</div>
+            <div class="equipment-name">Padel Ball</div>
+            <div class="equipment-desc">Similar to tennis ball but slightly less pressure.</div>
+          </div>
+          <div class="equipment-item">
+            <div class="equipment-icon">👟</div>
+            <div class="equipment-name">Court Shoes</div>
+            <div class="equipment-desc">Non-marking soles with good grip for quick movements.</div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ===== SETTINGS TAB ===== -->
