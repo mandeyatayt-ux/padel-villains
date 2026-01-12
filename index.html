@@ -1820,7 +1820,8 @@
       if (dayVillain && dayVillain.wins > 0) {
         const villainTeam = teams.find(t => t.id === dayVillain.id);
         if (villainTeam) {
-          villainPlayerIds.push(villainTeam.player1_id, villainTeam.player2_id);
+          // Ensure we're comparing as numbers
+          villainPlayerIds.push(Number(villainTeam.player1_id), Number(villainTeam.player2_id));
         }
       }
       
@@ -1829,15 +1830,19 @@
         const rc = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
         const top = i === 0 && p.active !== false ? 'top-player' : '';
         const inactive = p.active === false ? 'inactive' : '';
-        const isVillain = villainPlayerIds.includes(p.id);
+        const isVillain = villainPlayerIds.includes(Number(p.id));
         const badges = getPlayerBadges(p.id);
+        
+        // Calculate streak from all teams this player is on
         const playerTeams = teams.filter(t => t.player1_id === p.id || t.player2_id === p.id);
         let bestStreak = { count: 0, type: 'none' };
         playerTeams.forEach(t => {
           const s = calculateCurrentStreak(t.id);
           if (s.count > bestStreak.count) bestStreak = s;
         });
-        const streakHtml = bestStreak.count >= 3 ? 
+        
+        // Show streak badge if 2+ (lowered threshold for better visibility)
+        const streakHtml = bestStreak.count >= 2 ? 
           `<div class="player-streak"><span class="streak-badge ${bestStreak.type === 'win' ? 'hot' : 'cold'}"><i class="fas fa-${bestStreak.type === 'win' ? 'fire' : 'snowflake'}"></i> ${bestStreak.count}</span></div>` : '';
         
         // Get fresh player data for photo
@@ -2601,7 +2606,18 @@
     function confirmDeletePlayer() {
       const id = parseInt(document.getElementById('editPlayerId').value);
       const p = getPlayer(id);
-      if ((p?.games_played || 0) > 0) { toast('Cannot delete player with games', 'error'); return; }
+      
+      // Check if player is on any team that has played matches
+      const playerTeams = teams.filter(t => t.player1_id === id || t.player2_id === id);
+      const hasMatches = playerTeams.some(t => {
+        const stats = getTeamStats(t.id);
+        return stats.wins + stats.losses > 0;
+      });
+      
+      if (hasMatches) { 
+        toast('Cannot delete player with match history', 'error'); 
+        return; 
+      }
       
       document.getElementById('confirmTitle').textContent = 'Delete Player';
       document.getElementById('confirmText').textContent = `Are you sure you want to delete ${p?.name}? This cannot be undone.`;
