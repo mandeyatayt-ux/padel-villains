@@ -599,6 +599,29 @@
     .btn-whatsapp { background: #25D366; color: white; }
     .btn-whatsapp:hover { background: #128C7E; }
     
+    /* Player Spotlight */
+    .player-spotlight { background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); border-radius: 16px; padding: 20px; color: white; }
+    .spotlight-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+    .spotlight-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); overflow: hidden; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; }
+    .spotlight-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .spotlight-info h4 { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; margin-bottom: 2px; }
+    .spotlight-info p { font-size: 13px; opacity: 0.85; }
+    .spotlight-stats { display: flex; gap: 20px; justify-content: center; text-align: center; }
+    .spotlight-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 28px; }
+    .spotlight-stat-label { font-size: 11px; opacity: 0.7; text-transform: uppercase; }
+    .spotlight-badges { display: flex; gap: 8px; justify-content: center; margin-top: 12px; font-size: 20px; }
+    .spotlight-streak { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 20px; font-size: 13px; margin-top: 12px; }
+    
+    /* Matchday History Log */
+    .matchday-log-item { display: flex; align-items: center; gap: 16px; padding: 12px; background: var(--cream); border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+    .matchday-log-item:hover { background: #f5efe6; transform: translateX(4px); }
+    .matchday-log-date { font-weight: 700; color: var(--brown-dark); min-width: 80px; }
+    .matchday-log-venue { flex: 1; color: var(--text-muted); font-size: 14px; }
+    .matchday-log-winner { display: flex; align-items: center; gap: 8px; }
+    .matchday-log-crown { font-size: 16px; }
+    .matchday-log-team { font-weight: 600; color: var(--clay); font-size: 14px; }
+    .matchday-log-stats { font-size: 12px; color: var(--text-muted); }
+    
     @media (max-width: 600px) {
       .profile-top { flex-direction: column; text-align: center; }
       .profile-stats-row { justify-content: center; }
@@ -678,9 +701,22 @@
         </div>
         <div class="stats-grid">
           <div class="stat-card"><div class="stat-icon">🎾</div><div class="stat-value" id="statMatches">0</div><div class="stat-label">Matches</div></div>
-          <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Active Players</div></div>
-          <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-value" id="statTeams">0</div><div class="stat-label">Active Teams</div></div>
+          <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Players</div></div>
+          <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="statAvailable">0</div><div class="stat-label">Playing Today</div></div>
           <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-value" id="statVenue">-</div><div class="stat-label">Venue</div></div>
+        </div>
+        
+        <!-- Player Spotlight (rotating profiles) -->
+        <div class="card" id="playerSpotlightSection">
+          <div class="section-header" style="margin-bottom:16px">
+            <div><h3 style="font-size:18px;font-weight:700">⭐ Player Spotlight</h3></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-sm" onclick="prevSpotlightPlayer()" style="padding:6px 10px"><i class="fas fa-chevron-left"></i></button>
+              <span id="spotlightIndicator" style="font-size:12px;color:var(--text-muted)">1/24</span>
+              <button class="btn btn-sm" onclick="nextSpotlightPlayer()" style="padding:6px 10px"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+          <div id="playerSpotlight"></div>
         </div>
         
         <!-- Ongoing Matches on Dashboard -->
@@ -689,21 +725,6 @@
             <div><h3 style="font-size:18px;font-weight:700"><span class="live-dot" style="margin-right:8px"></span>Live Matches</h3></div>
           </div>
           <div id="dashboardOngoing"></div>
-        </div>
-        
-        <!-- Available Players for Matchday -->
-        <div class="card" id="availablePlayersSection" style="display:none">
-          <div class="section-header" style="margin-bottom:16px">
-            <div>
-              <h3 style="font-size:18px;font-weight:700">👥 Available Players</h3>
-              <p style="font-size:12px;color:var(--text-muted)">Tap to toggle availability</p>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-sm" onclick="sendWhatsAppReminder()" title="Send WhatsApp reminder"><i class="fab fa-whatsapp"></i></button>
-              <span id="availableCount" style="background:var(--clay);color:white;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:600">0</span>
-            </div>
-          </div>
-          <div id="availablePlayersList" class="available-players-grid"></div>
         </div>
         
         <div class="card">
@@ -716,6 +737,15 @@
         <div class="card">
           <h3 style="font-size:18px;font-weight:700;margin-bottom:20px">🏆 Today's Rankings</h3>
           <div id="dayRankings"><div class="empty"><p>No matches today yet</p></div></div>
+        </div>
+        
+        <!-- Matchday History Log -->
+        <div class="card">
+          <div class="section-header" style="margin-bottom:16px">
+            <h3 style="font-size:18px;font-weight:700">📜 Matchday History</h3>
+            <button class="btn btn-sm" onclick="openModal('matchdayHistory')">View All</button>
+          </div>
+          <div id="matchdayHistoryLog"></div>
         </div>
       </div>
     </section>
@@ -803,6 +833,22 @@
     <!-- ===== MATCHUP TAB ===== -->
     <section class="tab" id="matchup">
       <div class="matchup-hero"><h2>🎲 MATCHUP GENERATOR</h2><p>Create random teams or round robin tournaments</p></div>
+      
+      <!-- Available Players for Matchday -->
+      <div class="card" id="matchupAvailableSection" style="margin-bottom:24px">
+        <div class="section-header" style="margin-bottom:16px">
+          <div>
+            <h3 style="font-size:18px;font-weight:700">👥 Player Availability</h3>
+            <p style="font-size:12px;color:var(--text-muted)">Mark who's playing today - tap to toggle</p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsAppReminder()" title="Send WhatsApp reminder"><i class="fab fa-whatsapp"></i></button>
+            <button class="btn btn-sm" onclick="selectAllAvailable()" title="Select all available for matchup"><i class="fas fa-check-double"></i> Use Available</button>
+            <span id="availableCount" style="background:var(--clay);color:white;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:600">0</span>
+          </div>
+        </div>
+        <div id="availablePlayersList" class="available-players-grid"></div>
+      </div>
       
       <!-- Player Matchup Section -->
       <div class="card" style="margin-bottom:24px">
@@ -1883,9 +1929,12 @@
       const dayRankings = displayMatchday ? rankTeamsByMatches(displayMatchday.date) : [];
       const villain = dayRankings.length > 0 ? dayRankings[0] : null;
       
+      // Load availability to get count
+      loadAvailability();
+      
       document.getElementById('statMatches').textContent = tm.length;
       document.getElementById('statPlayers').textContent = activePlayers().length;
-      document.getElementById('statTeams').textContent = activeTeams().length;
+      document.getElementById('statAvailable').textContent = availablePlayers.length || '-';
       document.getElementById('statVenue').textContent = displayMatchday?.venue || '-';
       
       // Render villains card based on day rankings
@@ -1963,8 +2012,131 @@
         ongoingSection.style.display = 'none';
       }
       
-      // Render available players section (only for current matchday)
-      renderAvailablePlayers(isViewingPast);
+      // Render player spotlight
+      renderPlayerSpotlight();
+      
+      // Render matchday history log
+      renderMatchdayHistoryLog();
+    }
+    
+    // ===== PLAYER SPOTLIGHT =====
+    let spotlightIndex = 0;
+    let spotlightInterval = null;
+    
+    function renderPlayerSpotlight() {
+      const container = document.getElementById('playerSpotlight');
+      const indicator = document.getElementById('spotlightIndicator');
+      const active = activePlayers();
+      
+      if (active.length === 0) {
+        container.innerHTML = '<div class="empty" style="padding:20px"><p>No players yet</p></div>';
+        return;
+      }
+      
+      // Get player with stats
+      const ranked = rankPlayersByMatches();
+      if (ranked.length === 0) {
+        container.innerHTML = '<div class="empty" style="padding:20px"><p>No player stats yet</p></div>';
+        return;
+      }
+      
+      spotlightIndex = spotlightIndex % ranked.length;
+      const p = ranked[spotlightIndex];
+      const badges = getPlayerBadges(p.id);
+      
+      // Calculate streak
+      const playerTeams = teams.filter(t => t.player1_id === p.id || t.player2_id === p.id);
+      let bestStreak = { count: 0, type: 'none' };
+      playerTeams.forEach(t => {
+        const s = calculateCurrentStreak(t.id);
+        if (s.count > bestStreak.count) bestStreak = s;
+      });
+      
+      indicator.textContent = `${spotlightIndex + 1}/${ranked.length}`;
+      
+      const avatarHtml = p.photo 
+        ? `<img src="${p.photo}" alt="${p.name}">`
+        : p.name.charAt(0).toUpperCase();
+      
+      container.innerHTML = `
+        <div class="player-spotlight">
+          <div class="spotlight-header">
+            <div class="spotlight-avatar">${avatarHtml}</div>
+            <div class="spotlight-info">
+              <h4>${p.name}</h4>
+              <p>${p.position || 'Hybrid'}${p.nickname ? ` • "${p.nickname}"` : ''}</p>
+            </div>
+          </div>
+          <div class="spotlight-stats">
+            <div><div class="spotlight-stat-value">${p.wins}</div><div class="spotlight-stat-label">Wins</div></div>
+            <div><div class="spotlight-stat-value">${p.losses}</div><div class="spotlight-stat-label">Losses</div></div>
+            <div><div class="spotlight-stat-value">${p.rate}%</div><div class="spotlight-stat-label">Win Rate</div></div>
+          </div>
+          ${badges.length ? `<div class="spotlight-badges">${badges.join(' ')}</div>` : ''}
+          ${bestStreak.count >= 2 ? `<div style="text-align:center"><span class="spotlight-streak"><i class="fas fa-${bestStreak.type === 'win' ? 'fire' : 'snowflake'}"></i> ${bestStreak.count} ${bestStreak.type} streak</span></div>` : ''}
+        </div>
+      `;
+      
+      // Auto-rotate every 5 seconds
+      if (spotlightInterval) clearInterval(spotlightInterval);
+      spotlightInterval = setInterval(() => {
+        spotlightIndex = (spotlightIndex + 1) % ranked.length;
+        renderPlayerSpotlight();
+      }, 5000);
+    }
+    
+    function nextSpotlightPlayer() {
+      const ranked = rankPlayersByMatches();
+      if (ranked.length === 0) return;
+      spotlightIndex = (spotlightIndex + 1) % ranked.length;
+      renderPlayerSpotlight();
+    }
+    
+    function prevSpotlightPlayer() {
+      const ranked = rankPlayersByMatches();
+      if (ranked.length === 0) return;
+      spotlightIndex = (spotlightIndex - 1 + ranked.length) % ranked.length;
+      renderPlayerSpotlight();
+    }
+    
+    // ===== MATCHDAY HISTORY LOG =====
+    function renderMatchdayHistoryLog() {
+      const container = document.getElementById('matchdayHistoryLog');
+      const closedMatchdays = matchdays.filter(md => md.status === 'closed').sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      if (closedMatchdays.length === 0) {
+        container.innerHTML = '<div class="empty" style="padding:20px"><p>No completed match days yet</p></div>';
+        return;
+      }
+      
+      container.innerHTML = closedMatchdays.slice(0, 5).map(md => {
+        const dayRankings = rankTeamsByMatches(md.date);
+        const winner = dayRankings.length > 0 ? dayRankings[0] : null;
+        const dayMatches = matches.filter(m => m.date === md.date);
+        const dateStr = new Date(md.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        
+        return `<div class="matchday-log-item" onclick="viewMatchdayHistory('${md.date}')">
+          <div class="matchday-log-date">${dateStr}</div>
+          <div class="matchday-log-venue">${md.venue}</div>
+          ${winner ? `
+            <div class="matchday-log-winner">
+              <span class="matchday-log-crown">👑</span>
+              <span class="matchday-log-team">${winner.name}</span>
+            </div>
+          ` : ''}
+          <div class="matchday-log-stats">${dayMatches.length} matches</div>
+        </div>`;
+      }).join('');
+    }
+    
+    function viewMatchdayHistory(date) {
+      const md = matchdays.find(m => m.date === date);
+      if (md) {
+        viewingMatchday = md;
+        renderDashboard();
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
     
     // ===== PLAYER AVAILABILITY =====
@@ -1998,33 +2170,46 @@
         availablePlayers.splice(idx, 1);
       }
       saveAvailability();
-      renderAvailablePlayers(false);
+      renderAvailablePlayers();
+      // Update dashboard stat
+      const statEl = document.getElementById('statAvailable');
+      if (statEl) statEl.textContent = availablePlayers.length || '-';
     }
     
-    function renderAvailablePlayers(isViewingPast) {
-      const section = document.getElementById('availablePlayersSection');
+    function renderAvailablePlayers() {
+      const section = document.getElementById('matchupAvailableSection');
       const container = document.getElementById('availablePlayersList');
       const countEl = document.getElementById('availableCount');
       
-      if (isViewingPast || !activeMatchday) {
-        section.style.display = 'none';
-        return;
-      }
+      if (!section || !container) return;
       
       loadAvailability();
-      section.style.display = 'block';
       
       const active = activePlayers();
-      countEl.textContent = `${availablePlayers.length}/${active.length}`;
+      if (countEl) countEl.textContent = `${availablePlayers.length}/${active.length}`;
       
       container.innerHTML = active.map(p => {
         const isAvailable = availablePlayers.includes(p.id);
-        return `<div class="available-player-chip ${isAvailable ? 'available' : 'unavailable'}" onclick="togglePlayerAvailability(${p.id})">
+        return `<div class="available-player-chip ${isAvailable ? 'available' : ''}" onclick="togglePlayerAvailability(${p.id})">
           ${av(p, '')}
           <span class="name">${p.name}</span>
           ${isAvailable ? '<i class="fas fa-check check"></i>' : ''}
         </div>`;
       }).join('');
+    }
+    
+    function selectAllAvailable() {
+      // Select all available players in the matchup grid
+      const availableIds = availablePlayers;
+      if (availableIds.length < 4) {
+        toast('Mark at least 4 players as available first', 'error');
+        return;
+      }
+      
+      // Clear current selection and select available players
+      selectedPlayers = [...availableIds];
+      renderMatchup();
+      toast(`Selected ${availableIds.length} available players`, 'success');
     }
     
     // ===== WHATSAPP FUNCTIONS =====
@@ -2453,6 +2638,9 @@
     let selectedTeams = [];
     
     function renderMatchup() {
+      // Render available players first
+      renderAvailablePlayers();
+      
       // Player matchup
       const active = activePlayers();
       document.getElementById('matchupPlayers').innerHTML = active.length ? active.map(p => `<div class="matchup-player ${selectedPlayers.includes(p.id) ? 'selected' : ''}" onclick="togglePlayer(${p.id})">${av(p, 'sm')}<span class="matchup-player-name">${p.name}</span>${selectedPlayers.includes(p.id) ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}</div>`).join('') : '<div class="empty" style="padding:20px"><p>No active players</p></div>';
