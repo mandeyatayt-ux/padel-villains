@@ -576,11 +576,36 @@
     .share-profile-stat-label { font-size: 10px; opacity: 0.7; text-transform: uppercase; }
     .share-profile-badges { display: flex; justify-content: center; gap: 8px; font-size: 20px; }
     
+    /* Available Players Grid */
+    .available-players-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .available-player-chip { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--cream); border: 2px solid transparent; border-radius: 25px; cursor: pointer; transition: all 0.2s; }
+    .available-player-chip:hover { background: #f5efe6; }
+    .available-player-chip.available { background: rgba(76, 175, 80, 0.15); border-color: var(--success); }
+    .available-player-chip.unavailable { opacity: 0.5; }
+    .available-player-chip .avatar { width: 28px; height: 28px; font-size: 12px; }
+    .available-player-chip .name { font-size: 13px; font-weight: 500; }
+    .available-player-chip .check { color: var(--success); font-size: 14px; }
+    
+    /* Dashboard Ongoing Match */
+    .dashboard-ongoing-match { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: linear-gradient(135deg, rgba(224,120,80,0.1), rgba(224,120,80,0.05)); border: 2px solid var(--clay); border-radius: 12px; margin-bottom: 12px; cursor: pointer; }
+    .dashboard-ongoing-match:hover { background: linear-gradient(135deg, rgba(224,120,80,0.15), rgba(224,120,80,0.08)); }
+    .dashboard-ongoing-teams { display: flex; align-items: center; gap: 16px; }
+    .dashboard-ongoing-team { display: flex; align-items: center; gap: 8px; }
+    .dashboard-ongoing-vs { font-weight: 700; color: var(--clay); }
+    .dashboard-ongoing-meta { text-align: right; font-size: 12px; color: var(--text-muted); }
+    .dashboard-ongoing-court { font-weight: 600; color: var(--brown-dark); }
+    
+    /* WhatsApp button */
+    .btn-whatsapp { background: #25D366; color: white; }
+    .btn-whatsapp:hover { background: #128C7E; }
+    
     @media (max-width: 600px) {
       .profile-top { flex-direction: column; text-align: center; }
       .profile-stats-row { justify-content: center; }
       .summary-stats { grid-template-columns: 1fr; }
       .notifications-panel { width: 100vw; }
+      .available-players-grid { gap: 6px; }
+      .available-player-chip { padding: 6px 10px; }
     }
   </style>
 </head>
@@ -657,6 +682,30 @@
           <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-value" id="statTeams">0</div><div class="stat-label">Active Teams</div></div>
           <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-value" id="statVenue">-</div><div class="stat-label">Venue</div></div>
         </div>
+        
+        <!-- Ongoing Matches on Dashboard -->
+        <div class="card" id="dashboardOngoingSection" style="display:none">
+          <div class="section-header" style="margin-bottom:20px">
+            <div><h3 style="font-size:18px;font-weight:700"><span class="live-dot" style="margin-right:8px"></span>Live Matches</h3></div>
+          </div>
+          <div id="dashboardOngoing"></div>
+        </div>
+        
+        <!-- Available Players for Matchday -->
+        <div class="card" id="availablePlayersSection" style="display:none">
+          <div class="section-header" style="margin-bottom:16px">
+            <div>
+              <h3 style="font-size:18px;font-weight:700">👥 Available Players</h3>
+              <p style="font-size:12px;color:var(--text-muted)">Tap to toggle availability</p>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" onclick="sendWhatsAppReminder()" title="Send WhatsApp reminder"><i class="fab fa-whatsapp"></i></button>
+              <span id="availableCount" style="background:var(--clay);color:white;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:600">0</span>
+            </div>
+          </div>
+          <div id="availablePlayersList" class="available-players-grid"></div>
+        </div>
+        
         <div class="card">
           <div class="section-header" style="margin-bottom:20px">
             <div><h3 style="font-size:18px;font-weight:700" id="todayMatchesTitle">Today's Matches</h3></div>
@@ -1887,6 +1936,180 @@
           </div>
         </div>`;
       }).join('') : '<div class="empty" style="padding:20px"><p>No matches</p></div>';
+      
+      // Render ongoing matches on dashboard (only for current matchday)
+      const ongoingSection = document.getElementById('dashboardOngoingSection');
+      const ongoingContainer = document.getElementById('dashboardOngoing');
+      if (!isViewingPast && ongoingMatches.length > 0) {
+        ongoingSection.style.display = 'block';
+        ongoingContainer.innerHTML = ongoingMatches.map(m => {
+          const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+          const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
+          const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
+          const startTime = new Date(m.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          return `<div class="dashboard-ongoing-match" onclick="openFinalizeMatch(${m.id})">
+            <div class="dashboard-ongoing-teams">
+              <div class="dashboard-ongoing-team">${av(t1p1,'sm')}${av(t1p2,'sm')} <span style="font-weight:600;margin-left:4px">${t1?.name || '?'}</span></div>
+              <span class="dashboard-ongoing-vs">VS</span>
+              <div class="dashboard-ongoing-team"><span style="font-weight:600;margin-right:4px">${t2?.name || '?'}</span> ${av(t2p1,'sm')}${av(t2p2,'sm')}</div>
+            </div>
+            <div class="dashboard-ongoing-meta">
+              <div class="dashboard-ongoing-court">${m.court}</div>
+              <div>Started ${startTime}</div>
+            </div>
+          </div>`;
+        }).join('');
+      } else {
+        ongoingSection.style.display = 'none';
+      }
+      
+      // Render available players section (only for current matchday)
+      renderAvailablePlayers(isViewingPast);
+    }
+    
+    // ===== PLAYER AVAILABILITY =====
+    let availablePlayers = []; // Store IDs of players available for the matchday
+    
+    function loadAvailability() {
+      if (activeMatchday) {
+        const key = `pv_available_${activeMatchday.id}`;
+        try {
+          availablePlayers = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (e) {
+          availablePlayers = [];
+        }
+      }
+    }
+    
+    function saveAvailability() {
+      if (activeMatchday) {
+        const key = `pv_available_${activeMatchday.id}`;
+        try {
+          localStorage.setItem(key, JSON.stringify(availablePlayers));
+        } catch (e) {}
+      }
+    }
+    
+    function togglePlayerAvailability(playerId) {
+      const idx = availablePlayers.indexOf(playerId);
+      if (idx === -1) {
+        availablePlayers.push(playerId);
+      } else {
+        availablePlayers.splice(idx, 1);
+      }
+      saveAvailability();
+      renderAvailablePlayers(false);
+    }
+    
+    function renderAvailablePlayers(isViewingPast) {
+      const section = document.getElementById('availablePlayersSection');
+      const container = document.getElementById('availablePlayersList');
+      const countEl = document.getElementById('availableCount');
+      
+      if (isViewingPast || !activeMatchday) {
+        section.style.display = 'none';
+        return;
+      }
+      
+      loadAvailability();
+      section.style.display = 'block';
+      
+      const active = activePlayers();
+      countEl.textContent = `${availablePlayers.length}/${active.length}`;
+      
+      container.innerHTML = active.map(p => {
+        const isAvailable = availablePlayers.includes(p.id);
+        return `<div class="available-player-chip ${isAvailable ? 'available' : 'unavailable'}" onclick="togglePlayerAvailability(${p.id})">
+          ${av(p, '')}
+          <span class="name">${p.name}</span>
+          ${isAvailable ? '<i class="fas fa-check check"></i>' : ''}
+        </div>`;
+      }).join('');
+    }
+    
+    // ===== WHATSAPP FUNCTIONS =====
+    function sendWhatsAppReminder() {
+      if (!activeMatchday) {
+        toast('No matchday scheduled', 'error');
+        return;
+      }
+      
+      const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      const availableNames = availablePlayers.map(id => getPlayer(id)?.name).filter(Boolean);
+      const unavailableCount = activePlayers().length - availablePlayers.length;
+      
+      let message = `🎾 *PADEL VILLAINS*\n\n`;
+      message += `📅 *Match Day: ${dateStr}*\n`;
+      message += `📍 ${activeMatchday.venue}\n`;
+      message += `⏰ ${activeMatchday.start_time} - ${activeMatchday.end_time}\n\n`;
+      
+      if (availableNames.length > 0) {
+        message += `✅ *Confirmed (${availableNames.length}):*\n${availableNames.join(', ')}\n\n`;
+      }
+      
+      if (unavailableCount > 0) {
+        message += `⏳ *Awaiting confirmation:* ${unavailableCount} players\n\n`;
+      }
+      
+      message += `Reply to confirm your attendance! 🏓`;
+      
+      const encoded = encodeURIComponent(message);
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    }
+    
+    function sendMatchResultWhatsApp(matchId) {
+      const m = matches.find(match => match.id === matchId);
+      if (!m) return;
+      
+      const t1 = getTeam(m.team1_id);
+      const t2 = getTeam(m.team2_id);
+      const winner = getTeam(m.winner_id);
+      const scores = (m.scores || []).map(s => `${s[0]}-${s[1]}`).join(', ');
+      
+      let message = `🎾 *PADEL VILLAINS*\n\n`;
+      message += `🏆 *Match Result*\n\n`;
+      message += `${t1?.name || '?'} vs ${t2?.name || '?'}\n`;
+      message += `📊 ${scores}\n\n`;
+      message += `🥇 *Winner: ${winner?.name || '?'}*\n\n`;
+      message += `padel-villains.vercel.app`;
+      
+      const encoded = encodeURIComponent(message);
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    }
+    
+    function sendDaySummaryWhatsApp() {
+      if (!activeMatchday) return;
+      
+      const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      const tm = matches.filter(m => m.date === activeMatchday.date);
+      const dayRankings = rankTeamsByMatches(activeMatchday.date);
+      const villain = dayRankings.length > 0 ? dayRankings[0] : null;
+      
+      let message = `🎾 *PADEL VILLAINS*\n`;
+      message += `📅 ${dateStr} @ ${activeMatchday.venue}\n\n`;
+      
+      if (villain) {
+        message += `👑 *THE VILLAINS*\n`;
+        message += `${villain.name} (${villain.wins}W - ${villain.losses}L)\n\n`;
+      }
+      
+      message += `📊 *Results (${tm.length} matches):*\n`;
+      tm.slice(0, 5).forEach(m => {
+        const t1 = getTeam(m.team1_id);
+        const t2 = getTeam(m.team2_id);
+        const winner = m.winner_id === t1?.id ? t1 : t2;
+        const scores = (m.scores || []).map(s => `${s[0]}-${s[1]}`).join(' ');
+        message += `• ${t1?.name} vs ${t2?.name}: ${scores} ✓${winner?.name}\n`;
+      });
+      
+      if (tm.length > 5) {
+        message += `...and ${tm.length - 5} more matches\n`;
+      }
+      
+      message += `\npadel-villains.vercel.app`;
+      
+      const encoded = encodeURIComponent(message);
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
     }
     
     // ===== MATCHDAY MANAGEMENT =====
