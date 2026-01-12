@@ -19,6 +19,88 @@
       --success: #10B981; --danger: #EF4444; --gold: #F59E0B;
       --purple: #8B5CF6; --blue: #3B82F6;
     }
+    
+    /* Theme: Glowing Horizon */
+    [data-theme="glowing-horizon"] {
+      --clay: #4272FF; --clay-dark: #3361E0; --clay-light: #42EAFF;
+      --cream: #FFF8F0; --cream-dark: #FFE8D4;
+      --brown-dark: #FF7E42; --brown-medium: #FFB343; --brown-light: #FFD084;
+      --text: #1a1a2e; --text-muted: #6B7280;
+      --gold: #FFB343; --purple: #4272FF;
+    }
+    
+    /* Theme: Sunny Day */
+    [data-theme="sunny-day"] {
+      --clay: #007EFF; --clay-dark: #2400FF; --clay-light: #42BFFF;
+      --cream: #FFFDF5; --cream-dark: #FFF5D6;
+      --brown-dark: #807040; --brown-medium: #9A8A5A; --brown-light: #C4B48A;
+      --text: #1a1a2e; --text-muted: #807040;
+      --gold: #FFBF00; --purple: #2400FF;
+    }
+    
+    /* Theme: Retro Sunset */
+    [data-theme="retro-sunset"] {
+      --clay: #BE5103; --clay-dark: #B7410E; --clay-light: #E07830;
+      --cream: #FFF9F0; --cream-dark: #FFE8C8;
+      --brown-dark: #B7410E; --brown-medium: #D4763A; --brown-light: #FFCE1B;
+      --text: #2D2D2D; --text-muted: #8B6914;
+      --gold: #FFCE1B; --success: #069494; --purple: #B7410E;
+    }
+    
+    /* Theme: Bubblegum Pop */
+    [data-theme="bubblegum-pop"] {
+      --clay: #FF69B4; --clay-dark: #E0509A; --clay-light: #FF8FC9;
+      --cream: #F0FFFF; --cream-dark: #D0FFFF;
+      --brown-dark: #069494; --brown-medium: #30A8A8; --brown-light: #00F0FF;
+      --text: #1a1a2e; --text-muted: #069494;
+      --gold: #00F0FF; --success: #069494; --purple: #FF69B4;
+    }
+    
+    /* Theme: Space Berries */
+    [data-theme="space-berries"] {
+      --clay: #FB6A2C; --clay-dark: #8C1946; --clay-light: #FD3DB5;
+      --cream: #FFF5F8; --cream-dark: #FFE4EC;
+      --brown-dark: #8C1946; --brown-medium: #A84070; --brown-light: #FFB8DC;
+      --text: #2D2D2D; --text-muted: #8C1946;
+      --gold: #FB6A2C; --purple: #FD3DB5;
+    }
+    
+    /* Theme: Tropical Punch */
+    [data-theme="tropical-punch"] {
+      --clay: #FF8243; --clay-dark: #E06830; --clay-light: #FFA870;
+      --cream: #FFFFF5; --cream-dark: #FCF0D8;
+      --brown-dark: #069494; --brown-medium: #30A8A8; --brown-light: #FCE883;
+      --text: #2D2D2D; --text-muted: #069494;
+      --gold: #FCE883; --success: #069494; --purple: #FF8243;
+    }
+    
+    /* Theme: Cobalt Sky */
+    [data-theme="cobalt-sky"] {
+      --clay: #0047AB; --clay-dark: #000080; --clay-light: #82C8E5;
+      --cream: #F0F8FF; --cream-dark: #D6ECFF;
+      --brown-dark: #000080; --brown-medium: #6D8196; --brown-light: #82C8E5;
+      --text: #1a1a2e; --text-muted: #6D8196;
+      --gold: #82C8E5; --purple: #000080;
+    }
+    
+    /* Theme: Harvest Moon */
+    [data-theme="harvest-moon"] {
+      --clay: #A52A2A; --clay-dark: #800020; --clay-light: #BE5103;
+      --cream: #FFF8F0; --cream-dark: #FFE8D0;
+      --brown-dark: #800020; --brown-medium: #A52A2A; --brown-light: #BE5103;
+      --text: #2D2D2D; --text-muted: #800020;
+      --gold: #FFCE1B; --purple: #800020;
+    }
+    
+    /* Theme: Summer Breeze */
+    [data-theme="summer-breeze"] {
+      --clay: #F88379; --clay-dark: #E06B62; --clay-light: #FFA5A0;
+      --cream: #FFFFF8; --cream-dark: #F5EED8;
+      --brown-dark: #82C8E5; --brown-medium: #E6D8C4; --brown-light: #FFEB3B;
+      --text: #2D2D2D; --text-muted: #8B8B6B;
+      --gold: #FFEB3B; --success: #82C8E5; --purple: #F88379;
+    }
+    
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Outfit', sans-serif; background: linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%); min-height: 100vh; color: var(--text); }
     .app { max-width: 1400px; margin: 0 auto; padding: 0 24px 60px; }
@@ -698,6 +780,22 @@
       .comparison-cell { padding: 8px 10px; font-size: 11px; }
     }
     
+    /* Theme Selector */
+    .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+    .theme-card { background: white; border: 2px solid var(--cream-dark); border-radius: 12px; padding: 12px; cursor: pointer; transition: all 0.2s; }
+    .theme-card:hover { border-color: var(--clay-light); transform: translateY(-2px); }
+    .theme-card.active { border-color: var(--clay); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .theme-preview { display: flex; gap: 4px; margin-bottom: 10px; border-radius: 8px; overflow: hidden; }
+    .theme-color { flex: 1; height: 40px; }
+    .theme-name { font-size: 12px; font-weight: 600; text-align: center; color: var(--brown-dark); }
+    .theme-card.active .theme-name { color: var(--clay); }
+    .theme-card.active::after { content: '✓'; position: absolute; top: 8px; right: 8px; background: var(--clay); color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .theme-card { position: relative; }
+    
+    @media (max-width: 600px) {
+      .theme-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    
     @media (max-width: 600px) {
       .profile-top { flex-direction: column; text-align: center; }
       .profile-stats-row { justify-content: center; }
@@ -1245,6 +1343,105 @@
       <div class="section-header">
         <div><h2 class="section-title">⚙️ SETTINGS</h2><p class="section-subtitle">Manage venues and app configuration</p></div>
       </div>
+      
+      <!-- Theme Selector -->
+      <div class="settings-section">
+        <div class="settings-section-title"><i class="fas fa-palette"></i> App Theme</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Choose your preferred color scheme</p>
+        <div class="theme-grid" id="themeGrid">
+          <div class="theme-card active" data-theme="default" onclick="setTheme('default')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#E07850"></div>
+              <div class="theme-color" style="background:#FDF6ED"></div>
+              <div class="theme-color" style="background:#8B4513"></div>
+              <div class="theme-color" style="background:#F59E0B"></div>
+            </div>
+            <div class="theme-name">Classic Clay</div>
+          </div>
+          <div class="theme-card" data-theme="glowing-horizon" onclick="setTheme('glowing-horizon')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#FFB343"></div>
+              <div class="theme-color" style="background:#42EAFF"></div>
+              <div class="theme-color" style="background:#4272FF"></div>
+              <div class="theme-color" style="background:#FF7E42"></div>
+            </div>
+            <div class="theme-name">Glowing Horizon</div>
+          </div>
+          <div class="theme-card" data-theme="sunny-day" onclick="setTheme('sunny-day')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#FFBF00"></div>
+              <div class="theme-color" style="background:#807040"></div>
+              <div class="theme-color" style="background:#007EFF"></div>
+              <div class="theme-color" style="background:#2400FF"></div>
+            </div>
+            <div class="theme-name">Sunny Day</div>
+          </div>
+          <div class="theme-card" data-theme="retro-sunset" onclick="setTheme('retro-sunset')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#BE5103"></div>
+              <div class="theme-color" style="background:#FFCE1B"></div>
+              <div class="theme-color" style="background:#069494"></div>
+              <div class="theme-color" style="background:#B7410E"></div>
+            </div>
+            <div class="theme-name">Retro Sunset</div>
+          </div>
+          <div class="theme-card" data-theme="bubblegum-pop" onclick="setTheme('bubblegum-pop')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#FF69B4"></div>
+              <div class="theme-color" style="background:#069494"></div>
+              <div class="theme-color" style="background:#FFFFFF"></div>
+              <div class="theme-color" style="background:#00F0FF"></div>
+            </div>
+            <div class="theme-name">Bubblegum Pop</div>
+          </div>
+          <div class="theme-card" data-theme="space-berries" onclick="setTheme('space-berries')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#FD3DB5"></div>
+              <div class="theme-color" style="background:#FFB8DC"></div>
+              <div class="theme-color" style="background:#FB6A2C"></div>
+              <div class="theme-color" style="background:#8C1946"></div>
+            </div>
+            <div class="theme-name">Space Berries</div>
+          </div>
+          <div class="theme-card" data-theme="tropical-punch" onclick="setTheme('tropical-punch')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#FF8243"></div>
+              <div class="theme-color" style="background:#FFC0CB"></div>
+              <div class="theme-color" style="background:#FCE883"></div>
+              <div class="theme-color" style="background:#069494"></div>
+            </div>
+            <div class="theme-name">Tropical Punch</div>
+          </div>
+          <div class="theme-card" data-theme="cobalt-sky" onclick="setTheme('cobalt-sky')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#0047AB"></div>
+              <div class="theme-color" style="background:#000080"></div>
+              <div class="theme-color" style="background:#82C8E5"></div>
+              <div class="theme-color" style="background:#6D8196"></div>
+            </div>
+            <div class="theme-name">Cobalt Sky</div>
+          </div>
+          <div class="theme-card" data-theme="harvest-moon" onclick="setTheme('harvest-moon')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#800020"></div>
+              <div class="theme-color" style="background:#FFCE1B"></div>
+              <div class="theme-color" style="background:#A52A2A"></div>
+              <div class="theme-color" style="background:#BE5103"></div>
+            </div>
+            <div class="theme-name">Harvest Moon</div>
+          </div>
+          <div class="theme-card" data-theme="summer-breeze" onclick="setTheme('summer-breeze')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#FFEB3B"></div>
+              <div class="theme-color" style="background:#F88379"></div>
+              <div class="theme-color" style="background:#82C8E5"></div>
+              <div class="theme-color" style="background:#E6D8C4"></div>
+            </div>
+            <div class="theme-name">Summer Breeze</div>
+          </div>
+        </div>
+      </div>
+      
       <div class="settings-section">
         <div class="settings-section-title"><i class="fas fa-map-marker-alt"></i> Venues</div>
         <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Click on a venue to edit it</p>
@@ -1748,6 +1945,7 @@
       document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('liveScoreDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('newMatchdayDate').value = new Date().toISOString().split('T')[0];
+      loadTheme();
       loadSettings();
       loadNotifications();
       setupTabs();
@@ -4414,6 +4612,65 @@
       settings.upNext = upEl?.checked ?? true;
       localStorage.setItem('pv_settings', JSON.stringify(settings));
       toast('Settings saved', 'success');
+    }
+    
+    // ===== THEME MANAGEMENT =====
+    function setTheme(themeName) {
+      // Remove theme attribute for default, otherwise set it
+      if (themeName === 'default') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', themeName);
+      }
+      
+      // Update active state on theme cards
+      document.querySelectorAll('.theme-card').forEach(card => {
+        card.classList.remove('active');
+        if (card.dataset.theme === themeName) {
+          card.classList.add('active');
+        }
+      });
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem('pv_theme', themeName);
+      } catch (e) {}
+      
+      toast(`Theme changed to ${getThemeDisplayName(themeName)}`, 'success');
+    }
+    
+    function getThemeDisplayName(themeName) {
+      const names = {
+        'default': 'Classic Clay',
+        'glowing-horizon': 'Glowing Horizon',
+        'sunny-day': 'Sunny Day',
+        'retro-sunset': 'Retro Sunset',
+        'bubblegum-pop': 'Bubblegum Pop',
+        'space-berries': 'Space Berries',
+        'tropical-punch': 'Tropical Punch',
+        'cobalt-sky': 'Cobalt Sky',
+        'harvest-moon': 'Harvest Moon',
+        'summer-breeze': 'Summer Breeze'
+      };
+      return names[themeName] || themeName;
+    }
+    
+    function loadTheme() {
+      try {
+        const savedTheme = localStorage.getItem('pv_theme') || 'default';
+        if (savedTheme !== 'default') {
+          document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+        // Update active state on theme cards (after DOM loads)
+        setTimeout(() => {
+          document.querySelectorAll('.theme-card').forEach(card => {
+            card.classList.remove('active');
+            if (card.dataset.theme === savedTheme) {
+              card.classList.add('active');
+            }
+          });
+        }, 100);
+      } catch (e) {}
     }
     
     // ===== PLAYER PROFILE =====
