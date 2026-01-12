@@ -1484,8 +1484,12 @@
       matchdays = data.matchdays || [];
       determineActiveMatchday();
       
-      // Also save to localStorage as backup
-      saveLocal();
+      // Try to save to localStorage as backup (may fail due to quota)
+      try {
+        saveLocal();
+      } catch (e) {
+        console.warn('Could not save to localStorage:', e);
+      }
     }
     
     function getCachedData() {
@@ -1505,10 +1509,20 @@
     
     function cacheData(data) {
       try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        // Create a lightweight cache without photos
+        const lightData = {
+          ...data,
+          players: data.players.map(p => ({ ...p, photo: undefined })),
+          matches: (data.matches || []).slice(0, 100) // Only cache recent matches
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(lightData));
         localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
       } catch (e) {
-        console.log('Cache storage failed (likely quota exceeded)');
+        console.warn('Cache storage failed, clearing old cache');
+        try {
+          localStorage.removeItem(CACHE_KEY);
+          localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+        } catch (e2) {}
       }
     }
     
@@ -1568,22 +1582,45 @@
     }
     
     function loadLocal() {
-      players = JSON.parse(localStorage.getItem('pv_players') || '[]');
-      teams = JSON.parse(localStorage.getItem('pv_teams') || '[]');
-      matches = JSON.parse(localStorage.getItem('pv_matches') || '[]');
-      venues = JSON.parse(localStorage.getItem('pv_venues') || JSON.stringify(defaultVenues));
-      ongoingMatches = JSON.parse(localStorage.getItem('pv_ongoing') || '[]');
-      matchdays = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
-      determineActiveMatchday();
+      try {
+        players = JSON.parse(localStorage.getItem('pv_players') || '[]');
+        teams = JSON.parse(localStorage.getItem('pv_teams') || '[]');
+        matches = JSON.parse(localStorage.getItem('pv_matches') || '[]');
+        venues = JSON.parse(localStorage.getItem('pv_venues') || JSON.stringify(defaultVenues));
+        ongoingMatches = JSON.parse(localStorage.getItem('pv_ongoing') || '[]');
+        matchdays = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
+        determineActiveMatchday();
+      } catch (e) {
+        console.error('Error loading local data:', e);
+        // Clear corrupted data
+        clearLocalStorage();
+      }
     }
     
     function saveLocal() {
-      localStorage.setItem('pv_players', JSON.stringify(players));
-      localStorage.setItem('pv_teams', JSON.stringify(teams));
-      localStorage.setItem('pv_matches', JSON.stringify(matches));
-      localStorage.setItem('pv_venues', JSON.stringify(venues));
-      localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
-      localStorage.setItem('pv_matchdays', JSON.stringify(matchdays));
+      try {
+        // Save players WITHOUT photos to avoid quota issues
+        const playersWithoutPhotos = players.map(p => ({ ...p, photo: undefined }));
+        localStorage.setItem('pv_players', JSON.stringify(playersWithoutPhotos));
+        localStorage.setItem('pv_teams', JSON.stringify(teams));
+        // Only save last 100 matches to save space
+        localStorage.setItem('pv_matches', JSON.stringify(matches.slice(0, 100)));
+        localStorage.setItem('pv_venues', JSON.stringify(venues));
+        localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
+        localStorage.setItem('pv_matchdays', JSON.stringify(matchdays));
+      } catch (e) {
+        console.warn('localStorage quota exceeded, clearing old data');
+        clearLocalStorage();
+      }
+    }
+    
+    function clearLocalStorage() {
+      // Clear all Padel Villains data from localStorage
+      const keysToRemove = ['pv_players', 'pv_teams', 'pv_matches', 'pv_venues', 'pv_ongoing', 'pv_matchdays', 'pv_cache', 'pv_cache_time', 'pv_notifications', 'pv_settings'];
+      keysToRemove.forEach(key => {
+        try { localStorage.removeItem(key); } catch (e) {}
+      });
+      console.log('localStorage cleared');
     }
     
     // Determine active matchday (current, past unclosed, or next upcoming)
