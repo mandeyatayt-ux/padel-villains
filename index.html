@@ -103,6 +103,121 @@
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Outfit', sans-serif; background: linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%); min-height: 100vh; color: var(--text); }
+    
+    /* Offline Mode Indicator */
+    .offline-banner { display: none; position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 10px 20px; text-align: center; font-weight: 600; z-index: 10001; animation: slideDown 0.3s ease; }
+    .offline-banner.show { display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .offline-banner i { animation: pulse 1.5s infinite; }
+    @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+    
+    /* Page Transitions */
+    .tab { display: none; }
+    .tab.active { display: block; animation: pageSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+    .tab.exiting { animation: pageSlideOut 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    @keyframes pageSlideIn { 
+      from { opacity: 0; transform: translateX(30px); } 
+      to { opacity: 1; transform: translateX(0); } 
+    }
+    @keyframes pageSlideOut { 
+      from { opacity: 1; transform: translateX(0); } 
+      to { opacity: 0; transform: translateX(-30px); } 
+    }
+    
+    /* Card hover transitions */
+    .player-card, .team-card, .match-item, .card { transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+    .player-card:hover, .team-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+    
+    /* Quick Actions Context Menu */
+    .quick-actions-menu { position: fixed; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); padding: 8px; min-width: 200px; z-index: 10000; animation: quickActionsIn 0.2s ease; }
+    .quick-actions-menu.closing { animation: quickActionsOut 0.15s ease forwards; }
+    @keyframes quickActionsIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    @keyframes quickActionsOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.9); } }
+    .quick-actions-menu .qa-header { padding: 12px 16px; border-bottom: 1px solid #eee; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
+    .quick-actions-menu .qa-header .avatar { width: 32px; height: 32px; font-size: 14px; }
+    .quick-actions-menu .qa-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 14px; color: var(--text); }
+    .quick-actions-menu .qa-item:hover { background: var(--cream); }
+    .quick-actions-menu .qa-item i { width: 20px; color: var(--clay); }
+    .quick-actions-menu .qa-item.danger { color: var(--danger); }
+    .quick-actions-menu .qa-item.danger i { color: var(--danger); }
+    .quick-actions-menu .qa-divider { height: 1px; background: #eee; margin: 8px 0; }
+    
+    /* Long press visual feedback */
+    .long-press-active { animation: longPressScale 0.5s ease forwards; }
+    @keyframes longPressScale { 
+      0% { transform: scale(1); }
+      50% { transform: scale(0.95); }
+      100% { transform: scale(0.98); box-shadow: 0 0 0 3px var(--clay); }
+    }
+    
+    /* Weather Widget */
+    .weather-widget { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 20px; padding: 24px; color: white; margin-top: 24px; position: relative; overflow: hidden; }
+    .weather-widget::before { content: ''; position: absolute; top: -50%; right: -20%; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%; }
+    .weather-widget.night { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .weather-widget.cloudy { background: linear-gradient(135deg, #89929b 0%, #596164 100%); }
+    .weather-widget.rainy { background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%); }
+    .weather-widget-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+    .weather-widget-location { font-size: 14px; opacity: 0.9; display: flex; align-items: center; gap: 6px; }
+    .weather-widget-update { font-size: 11px; opacity: 0.7; }
+    .weather-widget-main { display: flex; align-items: center; gap: 20px; margin-bottom: 16px; }
+    .weather-widget-icon { font-size: 64px; line-height: 1; }
+    .weather-widget-temp { font-size: 56px; font-weight: 700; line-height: 1; }
+    .weather-widget-temp span { font-size: 24px; font-weight: 400; vertical-align: top; }
+    .weather-widget-desc { font-size: 18px; font-weight: 500; text-transform: capitalize; }
+    .weather-widget-details { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2); }
+    .weather-detail { text-align: center; }
+    .weather-detail-value { font-size: 18px; font-weight: 600; }
+    .weather-detail-label { font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .weather-widget-offline { text-align: center; padding: 20px; opacity: 0.8; }
+    .weather-widget-offline i { font-size: 32px; margin-bottom: 10px; display: block; }
+    .weather-play-recommendation { background: rgba(255,255,255,0.15); border-radius: 12px; padding: 12px 16px; margin-top: 16px; display: flex; align-items: center; gap: 12px; }
+    .weather-play-recommendation i { font-size: 24px; }
+    .weather-play-recommendation .rec-text { flex: 1; }
+    .weather-play-recommendation .rec-title { font-weight: 600; font-size: 14px; }
+    .weather-play-recommendation .rec-desc { font-size: 12px; opacity: 0.9; }
+    
+    /* Event Calendar */
+    .event-calendar { margin-bottom: 24px; }
+    .event-calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .event-calendar-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .event-calendar-nav { display: flex; gap: 8px; }
+    .event-calendar-nav button { width: 36px; height: 36px; border-radius: 10px; border: none; background: var(--cream-dark); cursor: pointer; transition: all 0.2s; }
+    .event-calendar-nav button:hover { background: var(--clay); color: white; }
+    .event-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .event-calendar-day-header { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 8px 0; text-transform: uppercase; }
+    .event-calendar-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer; transition: all 0.2s; position: relative; font-size: 14px; }
+    .event-calendar-day:hover { background: var(--cream-dark); }
+    .event-calendar-day.other-month { opacity: 0.3; }
+    .event-calendar-day.today { background: var(--clay); color: white; font-weight: 700; }
+    .event-calendar-day.has-event::after { content: ''; position: absolute; bottom: 4px; width: 6px; height: 6px; border-radius: 50%; }
+    .event-calendar-day.has-matchday::after { background: var(--clay); }
+    .event-calendar-day.has-vibes::after { background: var(--purple); }
+    .event-calendar-day.has-training::after { background: var(--success); }
+    .event-calendar-day.has-multiple { position: relative; }
+    .event-calendar-day.has-multiple .event-dots { position: absolute; bottom: 4px; display: flex; gap: 3px; }
+    .event-calendar-day.has-multiple .event-dots span { width: 5px; height: 5px; border-radius: 50%; }
+    .event-calendar-day.selected { box-shadow: 0 0 0 2px var(--clay); }
+    .event-calendar-month { text-align: center; font-weight: 600; font-size: 16px; }
+    
+    /* Event Types Legend */
+    .event-legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+    .event-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+    .event-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .event-legend-dot.matchday { background: var(--clay); }
+    .event-legend-dot.vibes { background: var(--purple); }
+    .event-legend-dot.training { background: var(--success); }
+    
+    /* Event List */
+    .event-list { margin-top: 16px; }
+    .event-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--cream); border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+    .event-item:hover { transform: translateX(4px); background: var(--cream-dark); }
+    .event-item-type { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .event-item-type.matchday { background: rgba(224,120,80,0.2); }
+    .event-item-type.vibes { background: rgba(139,92,246,0.2); }
+    .event-item-type.training { background: rgba(16,185,129,0.2); }
+    .event-item-info { flex: 1; }
+    .event-item-title { font-weight: 600; font-size: 14px; }
+    .event-item-details { font-size: 12px; color: var(--text-muted); }
+    .event-item-time { font-size: 12px; color: var(--text-muted); text-align: right; }
     .app { max-width: 1400px; margin: 0 auto; padding: 0 24px 60px; }
     .hidden { display: none !important; }
     
@@ -816,6 +931,15 @@
   </style>
 </head>
 <body>
+  <!-- Offline Banner -->
+  <div class="offline-banner" id="offlineBanner">
+    <i class="fas fa-wifi-slash"></i>
+    <span>You're offline - Using cached data</span>
+  </div>
+  
+  <!-- Quick Actions Context Menu -->
+  <div class="quick-actions-menu hidden" id="quickActionsMenu"></div>
+  
   <!-- Loading Splash Screen -->
   <div class="loading-splash" id="loadingSplash">
     <img src="data:image/png;base64,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" alt="Padel Villains" class="loading-splash-logo">
@@ -937,6 +1061,33 @@
             <button class="btn btn-sm" onclick="openModal('matchdayHistory')">View All</button>
           </div>
           <div id="matchdayHistoryLog"></div>
+        </div>
+        
+        <!-- Event Calendar -->
+        <div class="card event-calendar" id="eventCalendarSection">
+          <div class="event-calendar-header">
+            <h3 class="event-calendar-title">📅 Event Calendar</h3>
+            <div class="event-calendar-nav">
+              <button onclick="prevMonth()"><i class="fas fa-chevron-left"></i></button>
+              <span class="event-calendar-month" id="calendarMonth">January 2026</span>
+              <button onclick="nextMonth()"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+          <div class="event-calendar-grid" id="calendarGrid"></div>
+          <div class="event-legend">
+            <div class="event-legend-item"><span class="event-legend-dot matchday"></span> Match Day</div>
+            <div class="event-legend-item"><span class="event-legend-dot vibes"></span> Vibes Session</div>
+            <div class="event-legend-item"><span class="event-legend-dot training"></span> Training</div>
+          </div>
+          <div class="event-list" id="upcomingEvents"></div>
+        </div>
+      </div>
+      
+      <!-- Weather Widget at Bottom -->
+      <div class="weather-widget" id="weatherWidget">
+        <div class="weather-widget-offline">
+          <i class="fas fa-cloud-sun"></i>
+          <p>Loading weather data...</p>
         </div>
       </div>
     </section>
@@ -1894,6 +2045,41 @@
     </div>
   </div>
 
+  <!-- Add Event Modal -->
+  <div class="modal-overlay" id="addEventModal">
+    <div class="modal">
+      <div class="modal-header"><h3 class="modal-title">CREATE EVENT</h3><button class="modal-close" onclick="closeModal('addEvent')"><i class="fas fa-times"></i></button></div>
+      <div class="form-group">
+        <label class="form-label">Event Type</label>
+        <div class="position-selector" id="eventTypeSelector">
+          <div class="position-option selected" data-type="matchday" onclick="selectEventType(this)">
+            <div class="position-option-icon">🎾</div>
+            <div class="position-option-label">Match Day</div>
+          </div>
+          <div class="position-option" data-type="vibes" onclick="selectEventType(this)">
+            <div class="position-option-icon">🎉</div>
+            <div class="position-option-label">Vibes</div>
+          </div>
+          <div class="position-option" data-type="training" onclick="selectEventType(this)">
+            <div class="position-option-icon">💪</div>
+            <div class="position-option-label">Training</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Event Title</label><input type="text" class="form-input" id="eventTitle" placeholder="e.g., Saturday Showdown"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="eventDate"></div>
+        <div class="form-group"><label class="form-label">Venue</label><select class="form-select" id="eventVenue"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Start Time</label><input type="time" class="form-input" id="eventStartTime" value="09:00"></div>
+        <div class="form-group"><label class="form-label">End Time</label><input type="time" class="form-input" id="eventEndTime" value="17:00"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Description (optional)</label><textarea class="form-input" id="eventDescription" placeholder="Event details..." style="min-height:60px;resize:vertical"></textarea></div>
+      <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('addEvent')">Cancel</button><button class="btn btn-primary" onclick="addEvent()"><i class="fas fa-plus"></i> Create Event</button></div>
+    </div>
+  </div>
+
   <!-- Confirm Modal -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal" style="max-width:400px">
@@ -1915,6 +2101,9 @@
     
     // ===== STATE =====
     let players = [], teams = [], matches = [], venues = [], ongoingMatches = [], matchdays = [];
+    let events = []; // Calendar events
+    let calendarDate = new Date(); // Current calendar view
+    let isOffline = false;
     let activeMatchday = null;
     let viewingMatchday = null;
     let selectedPlayers = [];
@@ -1961,12 +2150,18 @@
       document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('liveScoreDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('newMatchdayDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
       loadTheme();
       loadSettings();
       loadNotifications();
+      loadEvents();
       setupTabs();
       setupFilters();
       setupLazyLoading();
+      setupOfflineDetection();
+      setupQuickActions();
+      renderCalendar();
+      fetchWeather();
       
       if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         const s = document.createElement('script');
@@ -1998,15 +2193,28 @@
           const tabId = btn.dataset.tab;
           if (!tabId) return;
           
+          // Get current and target tabs
+          const currentTab = document.querySelector('.tab.active');
+          const targetTab = document.getElementById(tabId);
+          
+          if (currentTab === targetTab) return;
+          
           // Update nav buttons
           document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           
-          // Update tab sections
-          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-          const tabEl = document.getElementById(tabId);
-          if (tabEl) {
-            tabEl.classList.add('active');
+          // Animate transition
+          if (currentTab) {
+            currentTab.classList.add('exiting');
+            currentTab.addEventListener('animationend', function handler() {
+              currentTab.classList.remove('active', 'exiting');
+              currentTab.removeEventListener('animationend', handler);
+              if (targetTab) {
+                targetTab.classList.add('active');
+              }
+            }, { once: true });
+          } else if (targetTab) {
+            targetTab.classList.add('active');
           }
         });
       });
@@ -2381,6 +2589,8 @@
         updateDropdowns();
         setupRankingFilters();
         updateNotificationBadge();
+        renderCalendar();
+        saveToOfflineCache(); // Save for offline mode
       } catch (e) {
         console.error('Render error:', e);
       }
@@ -3590,7 +3800,10 @@
       if (liveTeam2) liveTeam2.innerHTML = to;
       
       // Venue dropdowns
+      const venueOptions = venues.map(v => `<option value="${v.name}">${v.name}</option>`).join('');
       document.getElementById('newMatchdayVenue').innerHTML = venues.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+      const eventVenue = document.getElementById('eventVenue');
+      if (eventVenue) eventVenue.innerHTML = '<option value="">Select venue</option>' + venueOptions;
       
       const venue = getCurrentVenue();
       if (venue) {
@@ -5069,6 +5282,563 @@
         img.src = img.dataset.src;
         img.classList.add('loaded');
       }
+    }
+    
+    // ===== OFFLINE MODE =====
+    function setupOfflineDetection() {
+      window.addEventListener('online', () => {
+        isOffline = false;
+        document.getElementById('offlineBanner').classList.remove('show');
+        toast('Back online!', 'success');
+        // Sync data
+        if (supabaseClient) fetchData();
+      });
+      
+      window.addEventListener('offline', () => {
+        isOffline = true;
+        document.getElementById('offlineBanner').classList.add('show');
+        toast('You\'re offline - Using cached data', 'info');
+      });
+      
+      // Check initial state
+      if (!navigator.onLine) {
+        isOffline = true;
+        document.getElementById('offlineBanner').classList.add('show');
+      }
+    }
+    
+    // Enhanced cache for offline mode
+    function saveToOfflineCache() {
+      const offlineData = {
+        players,
+        teams,
+        matches,
+        venues,
+        ongoingMatches,
+        matchdays,
+        events,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('pv_offline_cache', JSON.stringify(offlineData));
+    }
+    
+    function loadFromOfflineCache() {
+      try {
+        const cached = localStorage.getItem('pv_offline_cache');
+        if (cached) {
+          const data = JSON.parse(cached);
+          players = data.players || [];
+          teams = data.teams || [];
+          matches = data.matches || [];
+          venues = data.venues?.length ? data.venues : defaultVenues;
+          ongoingMatches = data.ongoingMatches || [];
+          matchdays = data.matchdays || [];
+          events = data.events || [];
+          return true;
+        }
+      } catch (e) {
+        console.error('Error loading offline cache:', e);
+      }
+      return false;
+    }
+    
+    // ===== EVENT CALENDAR =====
+    function loadEvents() {
+      events = JSON.parse(localStorage.getItem('pv_events') || '[]');
+    }
+    
+    function saveEvents() {
+      localStorage.setItem('pv_events', JSON.stringify(events));
+    }
+    
+    function renderCalendar() {
+      const grid = document.getElementById('calendarGrid');
+      const monthLabel = document.getElementById('calendarMonth');
+      
+      const year = calendarDate.getFullYear();
+      const month = calendarDate.getMonth();
+      
+      monthLabel.textContent = new Date(year, month).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      
+      // Day headers
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      let html = days.map(d => `<div class="event-calendar-day-header">${d}</div>`).join('');
+      
+      // Get first day of month and total days
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const daysInPrevMonth = new Date(year, month, 0).getDate();
+      
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Previous month days
+      for (let i = firstDay - 1; i >= 0; i--) {
+        const day = daysInPrevMonth - i;
+        html += `<div class="event-calendar-day other-month">${day}</div>`;
+      }
+      
+      // Current month days
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const isToday = dateStr === todayStr;
+        const dayEvents = getEventsForDate(dateStr);
+        
+        let eventClasses = '';
+        let dotsHtml = '';
+        
+        if (dayEvents.length === 1) {
+          eventClasses = `has-event has-${dayEvents[0].type}`;
+        } else if (dayEvents.length > 1) {
+          eventClasses = 'has-multiple';
+          const types = [...new Set(dayEvents.map(e => e.type))];
+          dotsHtml = `<div class="event-dots">${types.map(t => `<span style="background:var(--${t === 'matchday' ? 'clay' : t === 'vibes' ? 'purple' : 'success'})"></span>`).join('')}</div>`;
+        }
+        
+        html += `<div class="event-calendar-day ${isToday ? 'today' : ''} ${eventClasses}" onclick="selectCalendarDate('${dateStr}')">${day}${dotsHtml}</div>`;
+      }
+      
+      // Next month days to fill grid
+      const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+      const remaining = totalCells - (firstDay + daysInMonth);
+      for (let i = 1; i <= remaining; i++) {
+        html += `<div class="event-calendar-day other-month">${i}</div>`;
+      }
+      
+      grid.innerHTML = html;
+      renderUpcomingEvents();
+    }
+    
+    function getEventsForDate(dateStr) {
+      // Combine calendar events and matchdays
+      const calEvents = events.filter(e => e.date === dateStr);
+      const mdEvents = matchdays.filter(md => md.date === dateStr).map(md => ({
+        ...md,
+        type: 'matchday',
+        title: `Match Day @ ${md.venue}`
+      }));
+      return [...calEvents, ...mdEvents];
+    }
+    
+    function renderUpcomingEvents() {
+      const container = document.getElementById('upcomingEvents');
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get next 7 days of events
+      const upcoming = [];
+      for (let i = 0; i < 14; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayEvents = getEventsForDate(dateStr);
+        dayEvents.forEach(e => upcoming.push({ ...e, date: dateStr }));
+      }
+      
+      if (upcoming.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px">No upcoming events. <a href="#" onclick="openModal(\'addEvent\');return false" style="color:var(--clay)">Create one!</a></p>';
+        return;
+      }
+      
+      container.innerHTML = upcoming.slice(0, 5).map(e => {
+        const dateObj = new Date(e.date);
+        const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'short' });
+        const dayNum = dateObj.getDate();
+        const timeStr = e.start_time || e.startTime || '09:00';
+        
+        return `<div class="event-item" onclick="viewEvent('${e.id || e.date}')">
+          <div class="event-item-type ${e.type}">${e.type === 'matchday' ? '🎾' : e.type === 'vibes' ? '🎉' : '💪'}</div>
+          <div class="event-item-info">
+            <div class="event-item-title">${e.title || 'Match Day'}</div>
+            <div class="event-item-details"><i class="fas fa-map-marker-alt"></i> ${e.venue || 'TBD'}</div>
+          </div>
+          <div class="event-item-time">${dayName}<br><strong>${dayNum}</strong></div>
+        </div>`;
+      }).join('');
+    }
+    
+    function prevMonth() {
+      calendarDate.setMonth(calendarDate.getMonth() - 1);
+      renderCalendar();
+    }
+    
+    function nextMonth() {
+      calendarDate.setMonth(calendarDate.getMonth() + 1);
+      renderCalendar();
+    }
+    
+    function selectCalendarDate(dateStr) {
+      const dayEvents = getEventsForDate(dateStr);
+      if (dayEvents.length > 0) {
+        // Show events for this date
+        toast(`${dayEvents.length} event(s) on ${new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`, 'info');
+      } else {
+        // Open add event modal with this date
+        document.getElementById('eventDate').value = dateStr;
+        openModal('addEvent');
+      }
+    }
+    
+    function selectEventType(el) {
+      document.querySelectorAll('#eventTypeSelector .position-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+    
+    function addEvent() {
+      const typeEl = document.querySelector('#eventTypeSelector .position-option.selected');
+      const type = typeEl?.dataset.type || 'matchday';
+      const title = document.getElementById('eventTitle').value.trim();
+      const date = document.getElementById('eventDate').value;
+      const venue = document.getElementById('eventVenue').value;
+      const startTime = document.getElementById('eventStartTime').value;
+      const endTime = document.getElementById('eventEndTime').value;
+      const description = document.getElementById('eventDescription').value.trim();
+      
+      if (!date) {
+        toast('Please select a date', 'error');
+        return;
+      }
+      
+      const event = {
+        id: Date.now(),
+        type,
+        title: title || `${type.charAt(0).toUpperCase() + type.slice(1)} Session`,
+        date,
+        venue,
+        startTime,
+        endTime,
+        description,
+        createdAt: new Date().toISOString()
+      };
+      
+      events.push(event);
+      saveEvents();
+      
+      // If it's a matchday, also create a matchday
+      if (type === 'matchday') {
+        const newMatchday = {
+          id: event.id,
+          date,
+          venue,
+          start_time: startTime,
+          end_time: endTime,
+          status: 'scheduled'
+        };
+        matchdays.push(newMatchday);
+        localStorage.setItem('pv_matchdays', JSON.stringify(matchdays));
+      }
+      
+      closeModal('addEvent');
+      renderCalendar();
+      renderDashboard();
+      toast('Event created!', 'success');
+      
+      // Reset form
+      document.getElementById('eventTitle').value = '';
+      document.getElementById('eventDescription').value = '';
+    }
+    
+    function viewEvent(id) {
+      toast('Event details coming soon!', 'info');
+    }
+    
+    // ===== QUICK ACTIONS (Long Press) =====
+    let longPressTimer = null;
+    let longPressTarget = null;
+    
+    function setupQuickActions() {
+      // Delegate touch/mouse events for player cards
+      document.addEventListener('mousedown', handleLongPressStart);
+      document.addEventListener('mouseup', handleLongPressEnd);
+      document.addEventListener('mouseleave', handleLongPressEnd);
+      document.addEventListener('touchstart', handleLongPressStart, { passive: true });
+      document.addEventListener('touchend', handleLongPressEnd);
+      document.addEventListener('touchcancel', handleLongPressEnd);
+      
+      // Close menu on click outside
+      document.addEventListener('click', (e) => {
+        const menu = document.getElementById('quickActionsMenu');
+        if (!menu.classList.contains('hidden') && !menu.contains(e.target)) {
+          closeQuickActionsMenu();
+        }
+      });
+    }
+    
+    function handleLongPressStart(e) {
+      const card = e.target.closest('.player-card');
+      if (!card) return;
+      
+      longPressTarget = card;
+      const playerId = card.getAttribute('onclick')?.match(/\d+/)?.[0];
+      if (!playerId) return;
+      
+      longPressTimer = setTimeout(() => {
+        card.classList.add('long-press-active');
+        showQuickActionsMenu(e, playerId);
+      }, 500); // 500ms long press
+    }
+    
+    function handleLongPressEnd(e) {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      if (longPressTarget) {
+        longPressTarget.classList.remove('long-press-active');
+        longPressTarget = null;
+      }
+    }
+    
+    function showQuickActionsMenu(e, playerId) {
+      const player = players.find(p => p.id == playerId);
+      if (!player) return;
+      
+      // Prevent default click
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const menu = document.getElementById('quickActionsMenu');
+      const photoHtml = player.photo 
+        ? `<img src="${player.photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover">`
+        : `<div class="avatar">${player.name?.charAt(0).toUpperCase() || '?'}</div>`;
+      
+      menu.innerHTML = `
+        <div class="qa-header">${photoHtml}<span>${player.name}</span></div>
+        <div class="qa-item" onclick="quickAction('profile', ${playerId})"><i class="fas fa-user"></i> View Profile</div>
+        <div class="qa-item" onclick="quickAction('availability', ${playerId})"><i class="fas fa-calendar-check"></i> Toggle Availability</div>
+        <div class="qa-item" onclick="quickAction('whatsapp', ${playerId})"><i class="fab fa-whatsapp"></i> Message on WhatsApp</div>
+        <div class="qa-divider"></div>
+        <div class="qa-item" onclick="quickAction('stats', ${playerId})"><i class="fas fa-chart-bar"></i> View Stats</div>
+        <div class="qa-item" onclick="quickAction('teams', ${playerId})"><i class="fas fa-users"></i> View Teams</div>
+        <div class="qa-divider"></div>
+        <div class="qa-item" onclick="quickAction('edit', ${playerId})"><i class="fas fa-edit"></i> Edit Player</div>
+        <div class="qa-item danger" onclick="quickAction('deactivate', ${playerId})"><i class="fas fa-user-slash"></i> ${player.active === false ? 'Activate' : 'Deactivate'}</div>
+      `;
+      
+      // Position menu
+      const x = e.clientX || e.touches?.[0]?.clientX || 100;
+      const y = e.clientY || e.touches?.[0]?.clientY || 100;
+      
+      menu.style.left = Math.min(x, window.innerWidth - 220) + 'px';
+      menu.style.top = Math.min(y, window.innerHeight - 350) + 'px';
+      menu.classList.remove('hidden', 'closing');
+    }
+    
+    function closeQuickActionsMenu() {
+      const menu = document.getElementById('quickActionsMenu');
+      menu.classList.add('closing');
+      setTimeout(() => {
+        menu.classList.add('hidden');
+        menu.classList.remove('closing');
+      }, 150);
+    }
+    
+    function quickAction(action, playerId) {
+      closeQuickActionsMenu();
+      const player = players.find(p => p.id == playerId);
+      if (!player) return;
+      
+      switch(action) {
+        case 'profile':
+          openPlayerProfile(playerId);
+          break;
+        case 'availability':
+          player.available = !player.available;
+          saveLocal();
+          renderAll();
+          toast(`${player.name} ${player.available ? 'available' : 'unavailable'}`, 'success');
+          break;
+        case 'whatsapp':
+          if (player.phone) {
+            window.open(`https://wa.me/${player.phone.replace(/[^0-9]/g, '')}`, '_blank');
+          } else {
+            toast('No phone number set', 'error');
+          }
+          break;
+        case 'stats':
+          openPlayerProfile(playerId);
+          break;
+        case 'teams':
+          const playerTeams = teams.filter(t => t.player1_id == playerId || t.player2_id == playerId);
+          if (playerTeams.length > 0) {
+            toast(`${player.name} is in ${playerTeams.length} team(s)`, 'info');
+          } else {
+            toast(`${player.name} has no teams yet`, 'info');
+          }
+          break;
+        case 'edit':
+          openPlayerProfile(playerId);
+          setTimeout(() => togglePlayerEditMode(), 300);
+          break;
+        case 'deactivate':
+          player.active = player.active === false ? true : false;
+          saveLocal();
+          renderAll();
+          toast(`${player.name} ${player.active ? 'activated' : 'deactivated'}`, 'success');
+          break;
+      }
+    }
+    
+    // ===== WEATHER INTEGRATION =====
+    async function fetchWeather() {
+      const widget = document.getElementById('weatherWidget');
+      
+      // Try to get cached weather first
+      const cached = localStorage.getItem('pv_weather');
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (Date.now() - data.timestamp < 30 * 60 * 1000) { // 30 min cache
+          renderWeather(data);
+          return;
+        }
+      }
+      
+      // Harare coordinates
+      const lat = -17.8292;
+      const lon = 31.0522;
+      
+      try {
+        // Using Open-Meteo API (free, no API key needed)
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Africa%2FHarare`);
+        
+        if (!response.ok) throw new Error('Weather fetch failed');
+        
+        const data = await response.json();
+        const weatherData = {
+          temp: Math.round(data.current.temperature_2m),
+          humidity: data.current.relative_humidity_2m,
+          windSpeed: Math.round(data.current.wind_speed_10m),
+          code: data.current.weather_code,
+          timestamp: Date.now()
+        };
+        
+        localStorage.setItem('pv_weather', JSON.stringify(weatherData));
+        renderWeather(weatherData);
+        
+      } catch (e) {
+        console.error('Weather error:', e);
+        // Show cached if available, otherwise offline message
+        if (cached) {
+          renderWeather(JSON.parse(cached));
+        } else {
+          widget.innerHTML = `<div class="weather-widget-offline">
+            <i class="fas fa-cloud-sun"></i>
+            <p>Weather data unavailable</p>
+          </div>`;
+        }
+      }
+    }
+    
+    function renderWeather(data) {
+      const widget = document.getElementById('weatherWidget');
+      const { temp, humidity, windSpeed, code } = data;
+      
+      // Weather code to description and icon
+      const weatherInfo = getWeatherInfo(code);
+      const hour = new Date().getHours();
+      const isNight = hour < 6 || hour > 18;
+      
+      // Determine widget theme
+      let themeClass = '';
+      if (isNight) themeClass = 'night';
+      else if (code >= 51 && code <= 67) themeClass = 'rainy';
+      else if (code >= 1 && code <= 3) themeClass = 'cloudy';
+      
+      // Play recommendation based on weather
+      const recommendation = getPlayRecommendation(temp, code, windSpeed);
+      
+      widget.className = `weather-widget ${themeClass}`;
+      widget.innerHTML = `
+        <div class="weather-widget-header">
+          <div class="weather-widget-location"><i class="fas fa-map-marker-alt"></i> Harare, Zimbabwe</div>
+          <div class="weather-widget-update">Updated ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
+        <div class="weather-widget-main">
+          <div class="weather-widget-icon">${weatherInfo.icon}</div>
+          <div>
+            <div class="weather-widget-temp">${temp}<span>°C</span></div>
+            <div class="weather-widget-desc">${weatherInfo.desc}</div>
+          </div>
+        </div>
+        <div class="weather-widget-details">
+          <div class="weather-detail">
+            <div class="weather-detail-value">${humidity}%</div>
+            <div class="weather-detail-label">Humidity</div>
+          </div>
+          <div class="weather-detail">
+            <div class="weather-detail-value">${windSpeed} km/h</div>
+            <div class="weather-detail-label">Wind</div>
+          </div>
+          <div class="weather-detail">
+            <div class="weather-detail-value">${isNight ? '🌙' : '☀️'}</div>
+            <div class="weather-detail-label">${isNight ? 'Night' : 'Day'}</div>
+          </div>
+          <div class="weather-detail">
+            <div class="weather-detail-value">${recommendation.score}/10</div>
+            <div class="weather-detail-label">Play Score</div>
+          </div>
+        </div>
+        <div class="weather-play-recommendation">
+          <i class="fas fa-${recommendation.icon}"></i>
+          <div class="rec-text">
+            <div class="rec-title">${recommendation.title}</div>
+            <div class="rec-desc">${recommendation.desc}</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    function getWeatherInfo(code) {
+      const weatherCodes = {
+        0: { icon: '☀️', desc: 'Clear sky' },
+        1: { icon: '🌤️', desc: 'Mainly clear' },
+        2: { icon: '⛅', desc: 'Partly cloudy' },
+        3: { icon: '☁️', desc: 'Overcast' },
+        45: { icon: '🌫️', desc: 'Foggy' },
+        48: { icon: '🌫️', desc: 'Rime fog' },
+        51: { icon: '🌧️', desc: 'Light drizzle' },
+        53: { icon: '🌧️', desc: 'Drizzle' },
+        55: { icon: '🌧️', desc: 'Dense drizzle' },
+        61: { icon: '🌧️', desc: 'Slight rain' },
+        63: { icon: '🌧️', desc: 'Moderate rain' },
+        65: { icon: '🌧️', desc: 'Heavy rain' },
+        80: { icon: '🌦️', desc: 'Rain showers' },
+        81: { icon: '🌧️', desc: 'Moderate showers' },
+        82: { icon: '⛈️', desc: 'Heavy showers' },
+        95: { icon: '⛈️', desc: 'Thunderstorm' },
+        96: { icon: '⛈️', desc: 'Thunderstorm with hail' }
+      };
+      return weatherCodes[code] || { icon: '🌡️', desc: 'Unknown' };
+    }
+    
+    function getPlayRecommendation(temp, code, wind) {
+      let score = 10;
+      let title = 'Perfect conditions!';
+      let desc = 'Ideal weather for padel today.';
+      let icon = 'thumbs-up';
+      
+      // Temperature penalties
+      if (temp > 35) { score -= 3; desc = 'Very hot - stay hydrated!'; icon = 'temperature-high'; }
+      else if (temp > 30) { score -= 1; desc = 'Warm but playable.'; }
+      else if (temp < 15) { score -= 2; desc = 'A bit chilly - warm up well.'; icon = 'temperature-low'; }
+      else if (temp < 10) { score -= 3; desc = 'Cold conditions - dress warm.'; icon = 'temperature-low'; }
+      
+      // Weather code penalties (rain/storms)
+      if (code >= 95) { score = 1; title = 'Dangerous!'; desc = 'Thunderstorms - do not play outdoors.'; icon = 'exclamation-triangle'; }
+      else if (code >= 61) { score = Math.min(score, 3); title = 'Rain expected'; desc = 'Consider indoor courts.'; icon = 'cloud-rain'; }
+      else if (code >= 51) { score -= 2; title = 'Light rain'; desc = 'Courts may be slippery.'; icon = 'cloud-drizzle'; }
+      
+      // Wind penalties
+      if (wind > 30) { score -= 3; desc = 'Very windy - ball control affected.'; icon = 'wind'; }
+      else if (wind > 20) { score -= 1; }
+      
+      score = Math.max(1, Math.min(10, score));
+      
+      if (score >= 8) { title = 'Perfect conditions!'; icon = 'thumbs-up'; }
+      else if (score >= 6) { title = 'Good to play'; icon = 'check-circle'; }
+      else if (score >= 4) { title = 'Playable'; icon = 'exclamation-circle'; }
+      else if (score > 1) { title = 'Not recommended'; icon = 'times-circle'; }
+      
+      return { score, title, desc, icon };
     }
   </script>
 </body>
