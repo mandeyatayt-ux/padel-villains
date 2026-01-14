@@ -1155,20 +1155,74 @@
 
     <!-- ===== RANKINGS TAB ===== -->
     <section class="tab" id="rankings">
-      <div class="rankings-hero"><h2>🏆 TEAM LEADERBOARD</h2><p>Rankings based on match history</p></div>
+      <div class="rankings-hero"><h2>🏆 LEADERBOARDS</h2><p>Team and individual rankings based on match history</p></div>
+      
+      <!-- Toggle between Team and Individual -->
       <div class="card" style="margin-bottom:24px">
-        <div class="matches-filters">
-          <button class="filter-btn active" data-ranking-filter="all">All Time</button>
-          <button class="filter-btn" data-ranking-filter="day">By Match Day</button>
-        </div>
-        <div id="rankingDatePicker" class="hidden" style="margin-top:16px">
-          <label style="font-size:14px;color:var(--text-muted);margin-right:12px">Select Date:</label>
-          <input type="date" id="rankingDate" class="form-input" style="width:auto;display:inline-block" onchange="renderRankings()">
+        <div class="matches-filters" id="rankingTypeFilters">
+          <button class="filter-btn active" data-ranking-type="teams">Team Rankings</button>
+          <button class="filter-btn" data-ranking-type="individual">Individual Rankings</button>
         </div>
       </div>
-      <div class="rankings-table">
-        <div class="rankings-head"><span>Rank</span><span>Team</span><span>Record</span><span>Win Rate</span></div>
-        <div id="rankingsBody"><div class="empty" style="padding:40px"><p>No teams to rank yet</p></div></div>
+      
+      <!-- Team Rankings Section -->
+      <div id="teamRankingsSection">
+        <div class="card" style="margin-bottom:24px">
+          <div class="matches-filters">
+            <button class="filter-btn active" data-ranking-filter="all">All Time</button>
+            <button class="filter-btn" data-ranking-filter="day">By Match Day</button>
+          </div>
+          <div id="rankingDatePicker" class="hidden" style="margin-top:16px">
+            <label style="font-size:14px;color:var(--text-muted);margin-right:12px">Select Date:</label>
+            <input type="date" id="rankingDate" class="form-input" style="width:auto;display:inline-block" onchange="renderRankings()">
+          </div>
+        </div>
+        <div class="rankings-table">
+          <div class="rankings-head"><span>Rank</span><span>Team</span><span>Record</span><span>Win Rate</span></div>
+          <div id="rankingsBody"><div class="empty" style="padding:40px"><p>No teams to rank yet</p></div></div>
+        </div>
+      </div>
+      
+      <!-- Individual Rankings Section -->
+      <div id="individualRankingsSection" class="hidden">
+        <div class="card" style="margin-bottom:24px">
+          <div class="matches-filters">
+            <button class="filter-btn active" data-individual-filter="all">All Time</button>
+            <button class="filter-btn" data-individual-filter="day">By Match Day</button>
+            <button class="filter-btn" data-individual-filter="month">This Month</button>
+          </div>
+          <div id="individualDatePicker" class="hidden" style="margin-top:16px">
+            <label style="font-size:14px;color:var(--text-muted);margin-right:12px">Select Date:</label>
+            <input type="date" id="individualRankingDate" class="form-input" style="width:auto;display:inline-block" onchange="renderIndividualRankings()">
+          </div>
+        </div>
+        
+        <!-- Individual Stats Summary -->
+        <div class="grid-4" style="margin-bottom:24px" id="individualStatsSummary">
+          <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-value" id="indivTopWins">-</div><div class="stat-label">Most Wins</div></div>
+          <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-value" id="indivTopRate">-</div><div class="stat-label">Best Win Rate</div></div>
+          <div class="stat-card"><div class="stat-icon">🎾</div><div class="stat-value" id="indivMostGames">-</div><div class="stat-label">Most Games</div></div>
+          <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-value" id="indivHotStreak">-</div><div class="stat-label">Longest Streak</div></div>
+        </div>
+        
+        <div class="rankings-table">
+          <div class="rankings-head">
+            <span>Rank</span>
+            <span>Player</span>
+            <span>Played</span>
+            <span>W-L</span>
+            <span>Win %</span>
+            <span>Streak</span>
+          </div>
+          <div id="individualRankingsBody"><div class="empty" style="padding:40px"><p>No matches played yet</p></div></div>
+        </div>
+        
+        <!-- Individual Performance Details -->
+        <div class="card" style="margin-top:24px">
+          <h4 style="font-size:16px;font-weight:700;margin-bottom:16px">📊 Performance Breakdown</h4>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Individual stats count each player's contribution in team matches. When your team wins, you get a win - regardless of who your partner was.</p>
+          <div id="individualPerformanceNotes" style="font-size:13px;color:var(--text-muted)"></div>
+        </div>
       </div>
     </section>
 
@@ -3379,8 +3433,223 @@
       }).join('') : '<div class="empty" style="padding:40px"><p>No matches found for this period</p></div>';
     }
     
+    // Individual rankings filter state
+    let individualFilter = 'all';
+    
+    // Render individual player rankings
+    function renderIndividualRankings() {
+      const filterDate = individualFilter === 'day' ? document.getElementById('individualRankingDate').value : null;
+      const filterMonth = individualFilter === 'month';
+      
+      // Get individual stats for all active players
+      const playerStats = getIndividualPlayerStats(filterDate, filterMonth);
+      
+      // Sort by win rate, then wins, then games played
+      playerStats.sort((a, b) => {
+        if (b.rate !== a.rate) return b.rate - a.rate;
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        return b.played - a.played;
+      });
+      
+      // Update summary stats
+      if (playerStats.length > 0) {
+        const topByWins = [...playerStats].sort((a, b) => b.wins - a.wins)[0];
+        const topByRate = playerStats.filter(p => p.played >= 3).sort((a, b) => b.rate - a.rate)[0];
+        const topByGames = [...playerStats].sort((a, b) => b.played - a.played)[0];
+        const topByStreak = [...playerStats].sort((a, b) => b.streak - a.streak)[0];
+        
+        document.getElementById('indivTopWins').textContent = topByWins ? topByWins.name.split(' ')[0] : '-';
+        document.getElementById('indivTopRate').textContent = topByRate ? topByRate.name.split(' ')[0] : '-';
+        document.getElementById('indivMostGames').textContent = topByGames ? topByGames.name.split(' ')[0] : '-';
+        document.getElementById('indivHotStreak').textContent = topByStreak && topByStreak.streak > 0 ? topByStreak.name.split(' ')[0] : '-';
+      }
+      
+      // Render rankings table
+      document.getElementById('individualRankingsBody').innerHTML = playerStats.length ? playerStats.map((p, i) => {
+        const player = getPlayer(p.id);
+        const rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
+        const streakClass = p.streakType === 'win' ? 'hot' : p.streakType === 'loss' ? 'cold' : '';
+        const streakIcon = p.streakType === 'win' ? 'fire' : p.streakType === 'loss' ? 'snowflake' : 'minus';
+        
+        return `<div class="rankings-row ${i < 3 ? 'top-3' : ''}">
+          <span><span class="rank-num ${rc}">${i + 1}</span></span>
+          <span class="rank-team">
+            ${av(player, 'sm')}
+            <div class="rank-info">
+              <h4>${p.name}${p.isVillain ? '<span class="rank-villain-tag">👑</span>' : ''}</h4>
+              <p style="font-size:11px">${p.partners} different partners</p>
+            </div>
+          </span>
+          <span class="rank-record" style="text-align:center">
+            <strong>${p.played}</strong>
+          </span>
+          <span class="rank-record">
+            <span class="rank-record-wins">${p.wins}</span>
+            <span style="color:#DDD;margin:0 4px">-</span>
+            <span class="rank-record-losses">${p.losses}</span>
+          </span>
+          <span class="rank-rate">
+            <div class="rank-rate-bar"><div class="rank-rate-fill" style="width:${p.rate}%"></div></div>
+            <span class="rank-rate-text">${p.rate}%</span>
+          </span>
+          <span style="text-align:center">
+            ${p.streak > 0 ? `<span class="streak-badge ${streakClass}" style="font-size:12px"><i class="fas fa-${streakIcon}"></i> ${p.streak}</span>` : '-'}
+          </span>
+        </div>`;
+      }).join('') : '<div class="empty" style="padding:40px"><p>No matches found for this period</p></div>';
+      
+      // Performance notes
+      const totalMatches = playerStats.reduce((sum, p) => sum + p.played, 0) / 2; // Divide by 2 since each match has 4 players but 2 on each side
+      const avgWinRate = playerStats.length ? Math.round(playerStats.reduce((sum, p) => sum + p.rate, 0) / playerStats.length) : 0;
+      
+      document.getElementById('individualPerformanceNotes').innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:center">
+          <div><strong>${playerStats.length}</strong><br><span style="font-size:11px">Players Ranked</span></div>
+          <div><strong>${Math.round(totalMatches)}</strong><br><span style="font-size:11px">Total Matches</span></div>
+          <div><strong>${avgWinRate}%</strong><br><span style="font-size:11px">Avg Win Rate</span></div>
+        </div>
+      `;
+    }
+    
+    // Get individual player stats from match history
+    function getIndividualPlayerStats(filterDate = null, filterMonth = false) {
+      const stats = {};
+      const dayVillain = getDayVillains();
+      const villainTeam = dayVillain ? teams.find(t => t.id === dayVillain.id) : null;
+      const villainPlayerIds = villainTeam ? [villainTeam.player1_id, villainTeam.player2_id] : [];
+      
+      // Filter matches
+      let filteredMatches = matches;
+      if (filterDate) {
+        filteredMatches = matches.filter(m => m.date === filterDate);
+      } else if (filterMonth) {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        filteredMatches = matches.filter(m => m.date >= monthStart);
+      }
+      
+      // Process each match
+      filteredMatches.forEach(m => {
+        const team1 = getTeam(m.team1_id);
+        const team2 = getTeam(m.team2_id);
+        if (!team1 || !team2) return;
+        
+        const team1Players = [team1.player1_id, team1.player2_id];
+        const team2Players = [team2.player1_id, team2.player2_id];
+        const team1Won = m.winner_id === m.team1_id;
+        
+        // Process team 1 players
+        team1Players.forEach(playerId => {
+          if (!stats[playerId]) {
+            const player = getPlayer(playerId);
+            stats[playerId] = {
+              id: playerId,
+              name: player?.name || 'Unknown',
+              wins: 0,
+              losses: 0,
+              played: 0,
+              rate: 0,
+              streak: 0,
+              streakType: 'none',
+              partners: new Set(),
+              isVillain: villainPlayerIds.includes(playerId),
+              matchHistory: []
+            };
+          }
+          stats[playerId].played++;
+          if (team1Won) {
+            stats[playerId].wins++;
+            stats[playerId].matchHistory.push('W');
+          } else {
+            stats[playerId].losses++;
+            stats[playerId].matchHistory.push('L');
+          }
+          // Track partner
+          const partnerId = team1Players.find(id => id !== playerId);
+          if (partnerId) stats[playerId].partners.add(partnerId);
+        });
+        
+        // Process team 2 players
+        team2Players.forEach(playerId => {
+          if (!stats[playerId]) {
+            const player = getPlayer(playerId);
+            stats[playerId] = {
+              id: playerId,
+              name: player?.name || 'Unknown',
+              wins: 0,
+              losses: 0,
+              played: 0,
+              rate: 0,
+              streak: 0,
+              streakType: 'none',
+              partners: new Set(),
+              isVillain: villainPlayerIds.includes(playerId),
+              matchHistory: []
+            };
+          }
+          stats[playerId].played++;
+          if (!team1Won) {
+            stats[playerId].wins++;
+            stats[playerId].matchHistory.push('W');
+          } else {
+            stats[playerId].losses++;
+            stats[playerId].matchHistory.push('L');
+          }
+          // Track partner
+          const partnerId = team2Players.find(id => id !== playerId);
+          if (partnerId) stats[playerId].partners.add(partnerId);
+        });
+      });
+      
+      // Calculate rates and streaks
+      Object.values(stats).forEach(s => {
+        s.rate = s.played > 0 ? Math.round((s.wins / s.played) * 100) : 0;
+        s.partners = s.partners.size;
+        
+        // Calculate current streak from most recent matches
+        if (s.matchHistory.length > 0) {
+          const lastResult = s.matchHistory[s.matchHistory.length - 1];
+          let streak = 0;
+          for (let i = s.matchHistory.length - 1; i >= 0; i--) {
+            if (s.matchHistory[i] === lastResult) {
+              streak++;
+            } else {
+              break;
+            }
+          }
+          s.streak = streak;
+          s.streakType = lastResult === 'W' ? 'win' : 'loss';
+        }
+      });
+      
+      // Filter to only active players
+      return Object.values(stats).filter(s => {
+        const player = getPlayer(s.id);
+        return player && player.active !== false && s.played > 0;
+      });
+    }
+    
     // Setup ranking filters
     function setupRankingFilters() {
+      // Team/Individual toggle
+      document.querySelectorAll('[data-ranking-type]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-ranking-type]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          const type = btn.dataset.rankingType;
+          if (type === 'teams') {
+            document.getElementById('teamRankingsSection').classList.remove('hidden');
+            document.getElementById('individualRankingsSection').classList.add('hidden');
+          } else {
+            document.getElementById('teamRankingsSection').classList.add('hidden');
+            document.getElementById('individualRankingsSection').classList.remove('hidden');
+            renderIndividualRankings();
+          }
+        });
+      });
+      
+      // Team ranking filters
       document.querySelectorAll('[data-ranking-filter]').forEach(btn => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('[data-ranking-filter]').forEach(b => b.classList.remove('active'));
@@ -3395,6 +3664,24 @@
             datePicker.classList.add('hidden');
           }
           renderRankings();
+        });
+      });
+      
+      // Individual ranking filters
+      document.querySelectorAll('[data-individual-filter]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-individual-filter]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          individualFilter = btn.dataset.individualFilter;
+          
+          const datePicker = document.getElementById('individualDatePicker');
+          if (individualFilter === 'day') {
+            datePicker.classList.remove('hidden');
+            document.getElementById('individualRankingDate').value = activeMatchday?.date || new Date().toISOString().split('T')[0];
+          } else {
+            datePicker.classList.add('hidden');
+          }
+          renderIndividualRankings();
         });
       });
     }
