@@ -2838,6 +2838,9 @@
         const stats = getPlayerStats(p.id, filterDate);
         return { ...p, ...stats, rate: winRate(stats.wins, stats.losses) };
       }).filter(p => p.games > 0 || !filterDate).sort((a, b) => {
+        // Sort active players first, then by win rate
+        if (a.active !== false && b.active === false) return -1;
+        if (a.active === false && b.active !== false) return 1;
         if (b.rate !== a.rate) return b.rate - a.rate;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
@@ -3567,11 +3570,14 @@
         document.getElementById('teamsHeroContent').innerHTML = '<p style="color:#888">No matches played yet</p>';
       }
       
-      // Show all teams with stats from match history
-      const teamsWithStats = activeTeams().map(t => {
+      // Show ALL teams (including inactive) with stats from match history
+      const teamsWithStats = teams.map(t => {
         const stats = getTeamStats(t.id);
         return { ...t, ...stats, rate: winRate(stats.wins, stats.losses) };
       }).sort((a, b) => {
+        // Sort active teams first, then by win rate
+        if (a.active !== false && b.active === false) return -1;
+        if (a.active === false && b.active !== false) return 1;
         if (b.rate !== a.rate) return b.rate - a.rate;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
@@ -4659,8 +4665,26 @@
       teams[idx].active = active;
       
       if (supabaseClient) {
-        try { await supabaseClient.from('teams').update(teams[idx]).eq('id', id); }
-        catch (e) { toast('Error', 'error'); return; }
+        try {
+          // Only send fields that exist in the database schema
+          const updateData = {
+            name,
+            player1_id: p1,
+            player2_id: p2,
+            active,
+            updated_at: new Date().toISOString()
+          };
+          const { error } = await supabaseClient.from('teams').update(updateData).eq('id', id);
+          if (error) {
+            console.error('Team update error:', error);
+            toast('Error: ' + (error.message || 'Could not update team'), 'error');
+            return;
+          }
+        } catch (e) { 
+          console.error('Team save error:', e);
+          toast('Error saving team', 'error'); 
+          return; 
+        }
       } else { saveLocal(); }
       
       closeModal('editTeam');
