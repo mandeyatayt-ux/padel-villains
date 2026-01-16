@@ -218,6 +218,71 @@
     .event-item-title { font-weight: 600; font-size: 14px; }
     .event-item-details { font-size: 12px; color: var(--text-muted); }
     .event-item-time { font-size: 12px; color: var(--text-muted); text-align: right; }
+    
+    /* Court Booking Widget */
+    .court-booking-widget { background: white; border-radius: 20px; padding: 24px; margin-top: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .court-booking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .court-booking-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .court-booking-tabs { display: flex; gap: 8px; background: var(--cream); padding: 4px; border-radius: 12px; }
+    .court-booking-tab { padding: 10px 20px; border-radius: 10px; border: none; background: transparent; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; color: var(--text-muted); }
+    .court-booking-tab.active { background: var(--clay); color: white; }
+    .court-booking-tab:hover:not(.active) { background: rgba(224,120,80,0.1); color: var(--clay); }
+    .venue-card { background: linear-gradient(135deg, var(--cream) 0%, var(--cream-dark) 100%); border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 2px solid transparent; transition: all 0.3s; cursor: pointer; }
+    .venue-card:hover { border-color: var(--clay); transform: translateY(-2px); }
+    .venue-card.selected { border-color: var(--clay); box-shadow: 0 0 0 3px rgba(224,120,80,0.2); }
+    .venue-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .venue-card-name { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .venue-card-name img { height: 24px; }
+    .venue-card-badge { background: var(--clay); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .venue-card-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .venue-info-item { text-align: center; padding: 10px; background: white; border-radius: 10px; }
+    .venue-info-value { font-size: 18px; font-weight: 700; color: var(--clay); }
+    .venue-info-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+    .venue-card-actions { display: flex; gap: 10px; }
+    .venue-card-actions .btn { flex: 1; justify-content: center; }
+    
+    /* Cost Calculator */
+    .cost-calculator { background: var(--cream); border-radius: 16px; padding: 20px; margin-top: 16px; }
+    .cost-calculator-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .cost-calculator-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed rgba(139,115,85,0.2); }
+    .cost-calculator-row:last-child { border-bottom: none; }
+    .cost-calculator-row.total { font-weight: 700; font-size: 16px; padding-top: 12px; margin-top: 8px; border-top: 2px solid var(--clay); border-bottom: none; }
+    .cost-calculator-row.per-person { background: var(--clay); color: white; margin: 12px -20px -20px; padding: 16px 20px; border-radius: 0 0 16px 16px; }
+    .cost-calculator-row.per-person .cost-label { font-size: 14px; }
+    .cost-calculator-row.per-person .cost-value { font-size: 24px; font-weight: 700; }
+    .cost-label { color: var(--text-muted); font-size: 13px; }
+    .cost-value { font-weight: 600; }
+    
+    /* Player count selector */
+    .player-count-selector { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .player-count-selector label { font-size: 14px; font-weight: 600; }
+    .player-count-btns { display: flex; gap: 4px; }
+    .player-count-btn { width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--cream-dark); background: white; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .player-count-btn:hover { border-color: var(--clay); }
+    .player-count-btn.active { background: var(--clay); color: white; border-color: var(--clay); }
+    
+    /* Equipment rental toggle */
+    .equipment-toggle { display: flex; align-items: center; gap: 12px; padding: 12px; background: white; border-radius: 10px; margin-bottom: 12px; }
+    .equipment-toggle label { flex: 1; font-size: 14px; }
+    .equipment-toggle .equipment-price { font-size: 12px; color: var(--text-muted); }
+    .equipment-count { display: flex; align-items: center; gap: 8px; }
+    .equipment-count button { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--cream-dark); background: white; cursor: pointer; font-size: 14px; }
+    .equipment-count button:hover { background: var(--cream); }
+    .equipment-count span { font-weight: 700; min-width: 20px; text-align: center; }
+    
+    /* Courts & Sessions Row */
+    .calc-row-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .calc-input-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: white; border-radius: 10px; }
+    .calc-input-row label { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .calc-input-row label i { color: var(--clay); }
+    .calc-counter { display: flex; align-items: center; gap: 8px; }
+    .calc-counter button { width: 32px; height: 32px; border-radius: 8px; border: 2px solid var(--cream-dark); background: white; cursor: pointer; font-size: 16px; font-weight: 700; transition: all 0.2s; }
+    .calc-counter button:hover { border-color: var(--clay); background: var(--cream); }
+    .calc-counter span { font-weight: 700; font-size: 18px; min-width: 24px; text-align: center; }
+    
+    /* Player count buttons - wrap on mobile */
+    .player-count-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+    .player-count-btn { min-width: 36px; }
     .app { max-width: 1400px; margin: 0 auto; padding: 0 24px 60px; }
     .hidden { display: none !important; }
     
@@ -1061,6 +1126,169 @@
             <button class="btn btn-sm" onclick="openModal('matchdayHistory')">View All</button>
           </div>
           <div id="matchdayHistoryLog"></div>
+        </div>
+        
+        <!-- Court Booking Widget -->
+        <div class="court-booking-widget" id="courtBookingWidget">
+          <div class="court-booking-header">
+            <h3 class="court-booking-title">🏟️ Book a Court</h3>
+          </div>
+          
+          <!-- Venue Cards -->
+          <div id="venueCards">
+            <!-- Padel Zim / The Hub -->
+            <div class="venue-card" id="venueCardHub" onclick="selectVenueCard('hub')">
+              <div class="venue-card-header">
+                <div class="venue-card-name">
+                  <span style="font-size:24px">🎾</span> Padel Zim (The Hub)
+                </div>
+                <span class="venue-card-badge">Highlands</span>
+              </div>
+              <div class="venue-card-info">
+                <div class="venue-info-item">
+                  <div class="venue-info-value">2</div>
+                  <div class="venue-info-label">Courts</div>
+                </div>
+                <div class="venue-info-item">
+                  <div class="venue-info-value">$30</div>
+                  <div class="venue-info-label">Per Session</div>
+                </div>
+                <div class="venue-info-item">
+                  <div class="venue-info-value">$2.50</div>
+                  <div class="venue-info-label">Racket Hire</div>
+                </div>
+              </div>
+              <div class="venue-card-actions">
+                <a href="https://padelzim-zw.matchpoint.com.es/Booking/Grid.aspx" target="_blank" class="btn btn-primary btn-sm" onclick="event.stopPropagation()">
+                  <i class="fas fa-external-link-alt"></i> Book Now
+                </a>
+                <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openCostCalculator('hub')">
+                  <i class="fas fa-calculator"></i> Split Cost
+                </button>
+              </div>
+            </div>
+            
+            <!-- Stables -->
+            <div class="venue-card" id="venueCardStables" onclick="selectVenueCard('stables')">
+              <div class="venue-card-header">
+                <div class="venue-card-name">
+                  <span style="font-size:24px">🐴</span> Stable Sports
+                </div>
+                <span class="venue-card-badge">Borrowdale</span>
+              </div>
+              <div class="venue-card-info">
+                <div class="venue-info-item">
+                  <div class="venue-info-value">6</div>
+                  <div class="venue-info-label">Courts</div>
+                </div>
+                <div class="venue-info-item">
+                  <div class="venue-info-value">$35</div>
+                  <div class="venue-info-label">Per Session</div>
+                </div>
+                <div class="venue-info-item">
+                  <div class="venue-info-value">$2.50</div>
+                  <div class="venue-info-label">Racket Hire</div>
+                </div>
+              </div>
+              <div class="venue-card-actions">
+                <a href="https://stablesports-zw.matchpoint.com.es/Booking/Grid.aspx" target="_blank" class="btn btn-primary btn-sm" onclick="event.stopPropagation()">
+                  <i class="fas fa-external-link-alt"></i> Book Now
+                </a>
+                <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openCostCalculator('stables')">
+                  <i class="fas fa-calculator"></i> Split Cost
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Cost Calculator (hidden by default) -->
+          <div class="cost-calculator hidden" id="costCalculator">
+            <div class="cost-calculator-title">
+              <i class="fas fa-calculator"></i> 
+              <span id="calcVenueName">Cost Calculator</span>
+              <button onclick="closeCostCalculator()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted)">&times;</button>
+            </div>
+            
+            <!-- Courts & Sessions -->
+            <div class="calc-row-group">
+              <div class="calc-input-row">
+                <label><i class="fas fa-th-large"></i> Courts</label>
+                <div class="calc-counter">
+                  <button onclick="adjustCourts(-1)">−</button>
+                  <span id="courtCount">1</span>
+                  <button onclick="adjustCourts(1)">+</button>
+                </div>
+              </div>
+              <div class="calc-input-row">
+                <label><i class="fas fa-clock"></i> Sessions</label>
+                <div class="calc-counter">
+                  <button onclick="adjustSessions(-1)">−</button>
+                  <span id="sessionCount">1</span>
+                  <button onclick="adjustSessions(1)">+</button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Players -->
+            <div class="player-count-selector">
+              <label>Players:</label>
+              <div class="player-count-btns" id="playerCountBtns">
+                <button class="player-count-btn" onclick="setPlayerCount(2)">2</button>
+                <button class="player-count-btn active" onclick="setPlayerCount(4)">4</button>
+                <button class="player-count-btn" onclick="setPlayerCount(6)">6</button>
+                <button class="player-count-btn" onclick="setPlayerCount(8)">8</button>
+                <button class="player-count-btn" onclick="setPlayerCount(10)">10</button>
+                <button class="player-count-btn" onclick="setPlayerCount(12)">12</button>
+                <button class="player-count-btn" onclick="setPlayerCount(16)">16</button>
+                <button class="player-count-btn" onclick="setPlayerCount(20)">20</button>
+              </div>
+            </div>
+            
+            <!-- Racket Hire -->
+            <div class="equipment-toggle">
+              <label>
+                <i class="fas fa-table-tennis"></i> Racket Hire
+                <span class="equipment-price">($2.50 each)</span>
+              </label>
+              <div class="equipment-count">
+                <button onclick="adjustRackets(-1)">−</button>
+                <span id="racketCount">0</span>
+                <button onclick="adjustRackets(1)">+</button>
+              </div>
+            </div>
+            
+            <!-- Cost Breakdown -->
+            <div class="cost-calculator-row">
+              <span class="cost-label">Courts (<span id="calcCourtQty">1</span> × <span id="calcSessionQty">1</span> sessions × $<span id="calcCourtRate">30</span>)</span>
+              <span class="cost-value" id="calcCourtFee">$30.00</span>
+            </div>
+            <div class="cost-calculator-row">
+              <span class="cost-label">Racket Hire (<span id="calcRacketQty">0</span> × $2.50)</span>
+              <span class="cost-value" id="calcRacketFee">$0.00</span>
+            </div>
+            <div class="cost-calculator-row total">
+              <span class="cost-label">Total</span>
+              <span class="cost-value" id="calcTotal">$30.00</span>
+            </div>
+            <div class="cost-calculator-row per-person">
+              <span class="cost-label">Per Person (<span id="calcPlayerCount">4</span> players)</span>
+              <span class="cost-value" id="calcPerPerson">$7.50</span>
+            </div>
+            <button onclick="shareCostSplit()" class="btn btn-sm" style="width:100%;margin-top:16px;background:#25D366;color:white;justify-content:center">
+              <i class="fab fa-whatsapp"></i> Share Cost Split
+            </button>
+          </div>
+          
+          <!-- Quick Links -->
+          <div style="display:flex;gap:10px;margin-top:16px;justify-content:center;flex-wrap:wrap">
+            <a href="https://padelzim-zw.matchpoint.com.es/Booking/Grid.aspx" target="_blank" style="font-size:12px;color:var(--text-muted);text-decoration:none">
+              <i class="fas fa-external-link-alt"></i> Padel Zim Availability
+            </a>
+            <span style="color:var(--cream-dark)">|</span>
+            <a href="https://stablesports-zw.matchpoint.com.es/Booking/Grid.aspx" target="_blank" style="font-size:12px;color:var(--text-muted);text-decoration:none">
+              <i class="fas fa-external-link-alt"></i> Stables Availability
+            </a>
+          </div>
         </div>
         
         <!-- Event Calendar -->
@@ -2194,8 +2422,8 @@
     
     // Default venues
     const defaultVenues = [
-      { id: 1, name: 'The Hub', courts: ['The Hub 1', 'The Hub 2'] },
-      { id: 2, name: 'Stables', courts: ['Stables 1', 'Stables 2', 'Stables 3'] }
+      { id: 1, name: 'The Hub', courts: ['The Hub 1', 'The Hub 2'], bookingUrl: 'https://padelzim-zw.matchpoint.com.es/Booking/Grid.aspx', courtFee: 30, racketHire: 2.50 },
+      { id: 2, name: 'Stables', courts: ['Leopards Leap', 'Haute Cabriere', 'Ernie Els', 'Diemersdal', 'Pickleball 1', 'Pickleball 2', 'Pickleball 3'], bookingUrl: 'https://stablesports-zw.matchpoint.com.es/Booking/Grid.aspx', courtFee: 35, racketHire: 2.50 }
     ];
     
     // ===== INIT =====
@@ -2375,6 +2603,9 @@
         renderAll();
         hideLoadingState();
         
+        // Load events from database after main data
+        loadEventsFromDb();
+        
       } catch (e) {
         // Safely log error message without the full object (avoids DataCloneError)
         console.error('Database fetch error:', e.message || String(e));
@@ -2473,6 +2704,7 @@
         applyData(data);
         cacheData(data);
         renderAll();
+        loadEventsFromDb(); // Also refresh events
         console.log('Background refresh complete');
       } catch (e) {
         console.log('Background refresh failed:', e);
@@ -5638,6 +5870,66 @@
       localStorage.setItem('pv_events', JSON.stringify(events));
     }
     
+    // Supabase-synced event functions
+    async function saveEventToDb(event) {
+      if (!supabaseClient) return;
+      try {
+        const dbEvent = {
+          id: event.id,
+          type: event.type,
+          title: event.title,
+          date: event.date,
+          venue: event.venue,
+          start_time: event.startTime,
+          end_time: event.endTime,
+          description: event.description,
+          created_at: event.createdAt
+        };
+        const { error } = await supabaseClient.from('events').upsert([dbEvent]);
+        if (error) console.error('Error saving event:', error);
+      } catch (e) {
+        console.error('Event sync error:', e);
+      }
+    }
+    
+    async function deleteEventFromDb(id) {
+      if (!supabaseClient) return;
+      try {
+        await supabaseClient.from('events').delete().eq('id', id);
+      } catch (e) {
+        console.error('Event delete error:', e);
+      }
+    }
+    
+    async function loadEventsFromDb() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient.from('events').select('*').order('date', { ascending: true });
+        if (error) {
+          console.error('Error loading events:', error);
+          return;
+        }
+        if (data && data.length > 0) {
+          // Convert DB format to app format
+          events = data.map(e => ({
+            id: e.id,
+            type: e.type,
+            title: e.title,
+            date: e.date,
+            venue: e.venue,
+            startTime: e.start_time,
+            endTime: e.end_time,
+            description: e.description,
+            createdAt: e.created_at
+          }));
+          saveEvents(); // Cache locally
+          renderCalendar();
+        }
+      } catch (e) {
+        console.error('Event load error:', e);
+      }
+    }
+    
     function renderCalendar() {
       const grid = document.getElementById('calendarGrid');
       const monthLabel = document.getElementById('calendarMonth');
@@ -5799,6 +6091,7 @@
       
       events.push(event);
       saveEvents();
+      saveEventToDb(event); // Sync to Supabase
       
       // If it's a matchday, also create a matchday
       if (type === 'matchday') {
@@ -5812,6 +6105,12 @@
         };
         matchdays.push(newMatchday);
         localStorage.setItem('pv_matchdays', JSON.stringify(matchdays));
+        // Also sync matchday to Supabase
+        if (supabaseClient) {
+          supabaseClient.from('matchdays').upsert([newMatchday]).then(({ error }) => {
+            if (error) console.error('Matchday sync error:', error);
+          });
+        }
       }
       
       closeModal('addEvent');
@@ -6126,6 +6425,124 @@
       else if (score > 1) { title = 'Not recommended'; icon = 'times-circle'; }
       
       return { score, title, desc, icon };
+    }
+    
+    // ===== COURT BOOKING & COST CALCULATOR =====
+    const venueData = {
+      hub: {
+        name: 'Padel Zim (The Hub)',
+        courtFee: 30,
+        racketHire: 2.50,
+        courts: 2,
+        bookingUrl: 'https://padelzim-zw.matchpoint.com.es/Booking/Grid.aspx'
+      },
+      stables: {
+        name: 'Stable Sports',
+        courtFee: 35,
+        racketHire: 2.50,
+        courts: 6,
+        bookingUrl: 'https://stablesports-zw.matchpoint.com.es/Booking/Grid.aspx'
+      }
+    };
+    
+    let currentCalcVenue = 'hub';
+    let currentPlayerCount = 4;
+    let currentRacketCount = 0;
+    let currentCourtCount = 1;
+    let currentSessionCount = 1;
+    
+    function selectVenueCard(venue) {
+      document.querySelectorAll('.venue-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById(`venueCard${venue === 'hub' ? 'Hub' : 'Stables'}`).classList.add('selected');
+    }
+    
+    function openCostCalculator(venue) {
+      currentCalcVenue = venue;
+      currentRacketCount = 0;
+      currentCourtCount = 1;
+      currentSessionCount = 1;
+      
+      const data = venueData[venue];
+      document.getElementById('calcVenueName').textContent = data.name + ' - Cost Calculator';
+      document.getElementById('racketCount').textContent = '0';
+      document.getElementById('courtCount').textContent = '1';
+      document.getElementById('sessionCount').textContent = '1';
+      document.getElementById('calcCourtRate').textContent = data.courtFee;
+      
+      // Reset player count buttons
+      document.querySelectorAll('.player-count-btn').forEach(b => b.classList.remove('active'));
+      const btn4 = document.querySelector('.player-count-btn:nth-child(2)');
+      if (btn4) btn4.classList.add('active');
+      currentPlayerCount = 4;
+      
+      document.getElementById('costCalculator').classList.remove('hidden');
+      selectVenueCard(venue);
+      updateCostCalculator();
+    }
+    
+    function closeCostCalculator() {
+      document.getElementById('costCalculator').classList.add('hidden');
+      document.querySelectorAll('.venue-card').forEach(c => c.classList.remove('selected'));
+    }
+    
+    function setPlayerCount(count) {
+      currentPlayerCount = count;
+      document.querySelectorAll('.player-count-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.textContent) === count);
+      });
+      updateCostCalculator();
+    }
+    
+    function adjustRackets(delta) {
+      currentRacketCount = Math.max(0, currentRacketCount + delta);
+      document.getElementById('racketCount').textContent = currentRacketCount;
+      updateCostCalculator();
+    }
+    
+    function adjustCourts(delta) {
+      const maxCourts = venueData[currentCalcVenue].courts;
+      currentCourtCount = Math.max(1, Math.min(maxCourts, currentCourtCount + delta));
+      document.getElementById('courtCount').textContent = currentCourtCount;
+      updateCostCalculator();
+    }
+    
+    function adjustSessions(delta) {
+      currentSessionCount = Math.max(1, Math.min(10, currentSessionCount + delta));
+      document.getElementById('sessionCount').textContent = currentSessionCount;
+      updateCostCalculator();
+    }
+    
+    function updateCostCalculator() {
+      const data = venueData[currentCalcVenue];
+      const courtFee = data.courtFee * currentCourtCount * currentSessionCount;
+      const racketFee = currentRacketCount * data.racketHire;
+      const total = courtFee + racketFee;
+      const perPerson = total / currentPlayerCount;
+      
+      document.getElementById('calcCourtQty').textContent = currentCourtCount;
+      document.getElementById('calcSessionQty').textContent = currentSessionCount;
+      document.getElementById('calcCourtFee').textContent = `$${courtFee.toFixed(2)}`;
+      document.getElementById('calcRacketQty').textContent = currentRacketCount;
+      document.getElementById('calcRacketFee').textContent = `$${racketFee.toFixed(2)}`;
+      document.getElementById('calcTotal').textContent = `$${total.toFixed(2)}`;
+      document.getElementById('calcPlayerCount').textContent = currentPlayerCount;
+      document.getElementById('calcPerPerson').textContent = `$${perPerson.toFixed(2)}`;
+    }
+    
+    // Quick share cost split to WhatsApp
+    function shareCostSplit() {
+      const data = venueData[currentCalcVenue];
+      const courtFee = data.courtFee * currentCourtCount * currentSessionCount;
+      const racketFee = currentRacketCount * data.racketHire;
+      const total = courtFee + racketFee;
+      const perPerson = total / currentPlayerCount;
+      
+      const sessionText = currentSessionCount > 1 ? `${currentSessionCount} sessions` : '1 session';
+      const courtText = currentCourtCount > 1 ? `${currentCourtCount} courts` : '1 court';
+      
+      const message = `🎾 *Padel Cost Split*\n\n📍 ${data.name}\n🏟️ ${courtText} × ${sessionText}\n👥 ${currentPlayerCount} players\n\n💰 Courts: $${courtFee.toFixed(2)} (${currentCourtCount} × ${currentSessionCount} × $${data.courtFee})\n🏸 Rackets: $${racketFee.toFixed(2)} (${currentRacketCount} × $${data.racketHire})\n\n💵 *Total: $${total.toFixed(2)}*\n✅ *Per person: $${perPerson.toFixed(2)}*\n\n🔗 Book here: ${data.bookingUrl}`;
+      
+      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     }
   </script>
 </body>
