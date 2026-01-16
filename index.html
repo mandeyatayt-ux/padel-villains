@@ -3201,6 +3201,30 @@
         } catch (e) {
           availablePlayers = [];
         }
+        // Also try to load from Supabase
+        loadAvailabilityFromDb();
+      }
+    }
+    
+    async function loadAvailabilityFromDb() {
+      if (!supabaseClient || !activeMatchday) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('matchday_availability')
+          .select('player_ids')
+          .eq('matchday_id', activeMatchday.id)
+          .single();
+        
+        if (data && data.player_ids) {
+          availablePlayers = data.player_ids;
+          // Update localStorage cache
+          const key = `pv_available_${activeMatchday.id}`;
+          localStorage.setItem(key, JSON.stringify(availablePlayers));
+          renderAvailablePlayers();
+        }
+      } catch (e) {
+        // Table might not exist yet or no data - that's ok
+        console.log('Availability load:', e.message || 'No data yet');
       }
     }
     
@@ -3210,6 +3234,23 @@
         try {
           localStorage.setItem(key, JSON.stringify(availablePlayers));
         } catch (e) {}
+        // Sync to Supabase
+        saveAvailabilityToDb();
+      }
+    }
+    
+    async function saveAvailabilityToDb() {
+      if (!supabaseClient || !activeMatchday) return;
+      try {
+        await supabaseClient
+          .from('matchday_availability')
+          .upsert([{
+            matchday_id: activeMatchday.id,
+            player_ids: availablePlayers,
+            updated_at: new Date().toISOString()
+          }], { onConflict: 'matchday_id' });
+      } catch (e) {
+        console.error('Availability sync error:', e);
       }
     }
     
@@ -6230,6 +6271,11 @@
         case 'availability':
           player.available = !player.available;
           saveLocal();
+          // Sync to Supabase
+          if (supabaseClient) {
+            supabaseClient.from('players').update({ available: player.available }).eq('id', playerId)
+              .then(({ error }) => { if (error) console.error('Availability sync error:', error); });
+          }
           renderAll();
           toast(`${player.name} ${player.available ? 'available' : 'unavailable'}`, 'success');
           break;
@@ -6258,6 +6304,11 @@
         case 'deactivate':
           player.active = player.active === false ? true : false;
           saveLocal();
+          // Sync to Supabase
+          if (supabaseClient) {
+            supabaseClient.from('players').update({ active: player.active }).eq('id', playerId)
+              .then(({ error }) => { if (error) console.error('Active sync error:', error); });
+          }
           renderAll();
           toast(`${player.name} ${player.active ? 'activated' : 'deactivated'}`, 'success');
           break;
