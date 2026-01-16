@@ -2362,6 +2362,47 @@
     </div>
   </div>
 
+  <!-- Edit Event Modal -->
+  <div class="modal-overlay" id="editEventModal">
+    <div class="modal">
+      <div class="modal-header"><h3 class="modal-title">EDIT EVENT</h3><button class="modal-close" onclick="closeModal('editEvent')"><i class="fas fa-times"></i></button></div>
+      <input type="hidden" id="editEventId">
+      <input type="hidden" id="editEventType">
+      <div class="form-group">
+        <label class="form-label">Event Type</label>
+        <div class="position-selector" id="editEventTypeSelector">
+          <div class="position-option" data-type="matchday" onclick="selectEditEventType(this)">
+            <div class="position-option-icon">🎾</div>
+            <div class="position-option-label">Match Day</div>
+          </div>
+          <div class="position-option" data-type="vibes" onclick="selectEditEventType(this)">
+            <div class="position-option-icon">🎉</div>
+            <div class="position-option-label">Vibes</div>
+          </div>
+          <div class="position-option" data-type="training" onclick="selectEditEventType(this)">
+            <div class="position-option-icon">💪</div>
+            <div class="position-option-label">Training</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Event Title</label><input type="text" class="form-input" id="editEventTitle" placeholder="e.g., Saturday Showdown"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="editEventDate"></div>
+        <div class="form-group"><label class="form-label">Venue</label><select class="form-select" id="editEventVenue"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Start Time</label><input type="time" class="form-input" id="editEventStartTime" value="09:00"></div>
+        <div class="form-group"><label class="form-label">End Time</label><input type="time" class="form-input" id="editEventEndTime" value="17:00"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Description (optional)</label><textarea class="form-input" id="editEventDescription" placeholder="Event details..." style="min-height:60px;resize:vertical"></textarea></div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" onclick="confirmDeleteEvent()"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-secondary" onclick="closeModal('editEvent')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEvent()"><i class="fas fa-save"></i> Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirm Modal -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal" style="max-width:400px">
@@ -2900,6 +2941,10 @@
       const displayMatchday = viewingMatchday || activeMatchday;
       const isViewingPast = viewingMatchday !== null;
       
+      // Get today's events (vibes, training - NOT matchdays since those are handled separately)
+      const today = new Date().toISOString().split('T')[0];
+      const todayEvents = events.filter(e => e.date === today && e.type !== 'matchday');
+      
       // Show/hide past matchday banner
       if (isViewingPast) {
         pastBanner.classList.remove('hidden');
@@ -2928,6 +2973,24 @@
           createBtn.classList.add('hidden');
           closeBtn.classList.remove('hidden');
           queueBtn.disabled = false;
+        } else if (todayEvents.length > 0) {
+          // Show today's non-matchday events (vibes/training)
+          const event = todayEvents[0];
+          header.classList.add('active');
+          const dateStr = new Date(event.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+          const typeEmoji = event.type === 'vibes' ? '🎉' : '💪';
+          const typeLabel = event.type === 'vibes' ? 'VIBES SESSION' : 'TRAINING SESSION';
+          statusEl.innerHTML = `<span style="color:${event.type === 'vibes' ? 'var(--purple)' : 'var(--success)'}">${typeEmoji} ${typeLabel}</span>`;
+          statusEl.className = 'matchday-status';
+          detailsEl.innerHTML = `
+            <span><i class="fas fa-calendar"></i> ${dateStr}</span>
+            <span><i class="fas fa-map-marker-alt"></i> ${event.venue || 'TBD'}</span>
+            <span><i class="fas fa-clock"></i> ${event.startTime || '09:00'} - ${event.endTime || '17:00'}</span>
+            ${event.title ? `<span style="font-weight:600">${event.title}</span>` : ''}
+          `;
+          createBtn.classList.remove('hidden');
+          closeBtn.classList.add('hidden');
+          queueBtn.disabled = true;
         } else {
           header.classList.remove('active');
           statusEl.textContent = 'No Match Day Scheduled';
@@ -2956,7 +3019,6 @@
       const upcomingSection = document.getElementById('upcomingMatchdays');
       if (!isViewingPast) {
         const upcomingList = document.getElementById('upcomingList');
-        const today = new Date().toISOString().split('T')[0];
         const upcoming = matchdays.filter(md => md.status !== 'closed' && md.date > today);
         
         if (upcoming.length > 0) {
@@ -6222,7 +6284,175 @@
     }
     
     function viewEvent(id) {
-      toast('Event details coming soon!', 'info');
+      // Find the event
+      const event = events.find(e => e.id == id);
+      if (!event) {
+        toast('Event not found', 'error');
+        return;
+      }
+      
+      openEditEvent(event);
+    }
+    
+    function openEditEvent(event) {
+      document.getElementById('editEventId').value = event.id;
+      document.getElementById('editEventType').value = event.type;
+      document.getElementById('editEventTitle').value = event.title || '';
+      document.getElementById('editEventDate').value = event.date;
+      document.getElementById('editEventStartTime').value = event.startTime || event.start_time || '09:00';
+      document.getElementById('editEventEndTime').value = event.endTime || event.end_time || '17:00';
+      document.getElementById('editEventDescription').value = event.description || '';
+      
+      // Update venue dropdown
+      const venueSelect = document.getElementById('editEventVenue');
+      venueSelect.innerHTML = venues.map(v => `<option value="${v.name}" ${v.name === event.venue ? 'selected' : ''}>${v.name}</option>`).join('');
+      
+      // Select the event type
+      document.querySelectorAll('#editEventTypeSelector .position-option').forEach(o => {
+        o.classList.toggle('selected', o.dataset.type === event.type);
+      });
+      
+      openModal('editEvent');
+    }
+    
+    function selectEditEventType(el) {
+      document.querySelectorAll('#editEventTypeSelector .position-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+    
+    async function saveEvent() {
+      const id = parseInt(document.getElementById('editEventId').value);
+      const typeEl = document.querySelector('#editEventTypeSelector .position-option.selected');
+      const type = typeEl?.dataset.type || 'matchday';
+      const title = document.getElementById('editEventTitle').value.trim();
+      const date = document.getElementById('editEventDate').value;
+      const venue = document.getElementById('editEventVenue').value;
+      const startTime = document.getElementById('editEventStartTime').value;
+      const endTime = document.getElementById('editEventEndTime').value;
+      const description = document.getElementById('editEventDescription').value.trim();
+      
+      if (!date) {
+        toast('Please select a date', 'error');
+        return;
+      }
+      
+      const idx = events.findIndex(e => e.id === id);
+      if (idx === -1) {
+        toast('Event not found', 'error');
+        return;
+      }
+      
+      const oldType = events[idx].type;
+      
+      // Update event
+      events[idx] = {
+        ...events[idx],
+        type,
+        title: title || `${type.charAt(0).toUpperCase() + type.slice(1)} Session`,
+        date,
+        venue,
+        startTime,
+        endTime,
+        description
+      };
+      
+      saveEvents();
+      
+      // Sync to Supabase
+      if (supabaseClient) {
+        try {
+          const dbEvent = {
+            id: events[idx].id,
+            type: events[idx].type,
+            title: events[idx].title,
+            date: events[idx].date,
+            venue: events[idx].venue,
+            start_time: events[idx].startTime,
+            end_time: events[idx].endTime,
+            description: events[idx].description
+          };
+          await supabaseClient.from('events').upsert([dbEvent]);
+        } catch (e) {
+          console.error('Event update error:', e);
+        }
+      }
+      
+      // Handle matchday sync - if type changed from/to matchday
+      if (oldType === 'matchday' && type !== 'matchday') {
+        // Remove from matchdays
+        matchdays = matchdays.filter(md => md.id !== id);
+        localStorage.setItem('pv_matchdays', JSON.stringify(matchdays));
+        if (supabaseClient) {
+          supabaseClient.from('matchdays').delete().eq('id', id);
+        }
+      } else if (type === 'matchday') {
+        // Update or add matchday
+        const mdIdx = matchdays.findIndex(md => md.id === id);
+        const mdData = {
+          id,
+          date,
+          venue,
+          start_time: startTime,
+          end_time: endTime,
+          status: 'scheduled'
+        };
+        if (mdIdx >= 0) {
+          matchdays[mdIdx] = mdData;
+        } else {
+          matchdays.push(mdData);
+        }
+        localStorage.setItem('pv_matchdays', JSON.stringify(matchdays));
+        if (supabaseClient) {
+          supabaseClient.from('matchdays').upsert([mdData]);
+        }
+      }
+      
+      closeModal('editEvent');
+      renderCalendar();
+      renderDashboard();
+      toast('Event updated!', 'success');
+    }
+    
+    function confirmDeleteEvent() {
+      const id = parseInt(document.getElementById('editEventId').value);
+      const event = events.find(e => e.id === id);
+      
+      document.getElementById('confirmTitle').textContent = 'Delete Event';
+      document.getElementById('confirmText').textContent = `Delete "${event?.title || 'this event'}"? This cannot be undone.`;
+      confirmAction = () => deleteEvent(id);
+      closeModal('editEvent');
+      openModal('confirm');
+    }
+    
+    async function deleteEvent(id) {
+      const event = events.find(e => e.id === id);
+      
+      // Remove from events
+      events = events.filter(e => e.id !== id);
+      saveEvents();
+      
+      // Sync to Supabase
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('events').delete().eq('id', id);
+        } catch (e) {
+          console.error('Event delete error:', e);
+        }
+      }
+      
+      // If it was a matchday, remove from matchdays too
+      if (event?.type === 'matchday') {
+        matchdays = matchdays.filter(md => md.id !== id);
+        localStorage.setItem('pv_matchdays', JSON.stringify(matchdays));
+        if (supabaseClient) {
+          supabaseClient.from('matchdays').delete().eq('id', id);
+        }
+      }
+      
+      closeModal('confirm');
+      renderCalendar();
+      renderDashboard();
+      toast('Event deleted', 'success');
     }
     
     // ===== QUICK ACTIONS (Long Press) =====
