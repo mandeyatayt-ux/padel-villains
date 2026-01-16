@@ -4471,16 +4471,25 @@
         wins: 0, 
         losses: 0, 
         games_played: 0, 
-        active: true, 
+        active: true,
+        available: true,
         created_at: new Date().toISOString() 
       };
       
       if (supabaseClient) {
         try {
           const { data, error } = await supabaseClient.from('players').insert([np]).select().single();
-          if (error) throw error;
+          if (error) {
+            console.error('Add player error:', error);
+            toast('Error: ' + (error.message || 'Could not add player'), 'error');
+            return;
+          }
           players.push(data);
-        } catch (e) { toast('Error', 'error'); return; }
+        } catch (e) { 
+          console.error('Add player exception:', e);
+          toast('Error adding player', 'error'); 
+          return; 
+        }
       } else {
         players.push(np);
         saveLocal();
@@ -4510,6 +4519,7 @@
       const idx = players.findIndex(p => p.id === id);
       if (idx === -1) return;
       
+      // Update local player object
       players[idx].name = name;
       players[idx].active = active;
       players[idx].nickname = nickname;
@@ -4518,9 +4528,32 @@
       if (tempPhotoData.editPlayer !== undefined) players[idx].photo = tempPhotoData.editPlayer;
       
       if (supabaseClient) {
-        try { await supabaseClient.from('players').update(players[idx]).eq('id', id); } 
-        catch (e) { toast('Error', 'error'); return; }
-      } else { saveLocal(); }
+        try {
+          // Only send fields that exist in the database schema
+          const updateData = {
+            name,
+            active,
+            nickname,
+            bio,
+            position,
+            photo: players[idx].photo,
+            updated_at: new Date().toISOString()
+          };
+          
+          const { error } = await supabaseClient.from('players').update(updateData).eq('id', id);
+          if (error) {
+            console.error('Player update error:', error);
+            toast('Error saving: ' + (error.message || 'Unknown'), 'error');
+            return;
+          }
+        } catch (e) { 
+          console.error('Player save error:', e);
+          toast('Error saving player', 'error'); 
+          return; 
+        }
+      } else { 
+        saveLocal(); 
+      }
       
       closeModal('editPlayer');
       renderAll();
