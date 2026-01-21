@@ -2458,7 +2458,9 @@
       devoted: { icon: '💪', name: 'Devoted', desc: 'Attend 25 match days' },
       social: { icon: '🤝', name: 'Social Butterfly', desc: 'Play with 10 different partners' },
       rival: { icon: '⚔️', name: 'Rival', desc: 'Beat the same team 5 times' },
-      giant_slayer: { icon: '🗡️', name: 'Giant Slayer', desc: 'Beat the #1 ranked team' }
+      giant_slayer: { icon: '🗡️', name: 'Giant Slayer', desc: 'Beat the #1 ranked team' },
+      versatile: { icon: '🎭', name: 'Versatile', desc: 'Play on 3+ different teams' },
+      squad_leader: { icon: '🦸', name: 'Squad Leader', desc: 'Play on 5+ different teams' }
     };
     
     // Default venues
@@ -4634,33 +4636,80 @@
       
       // Check if player is on any team that has played matches
       const playerTeams = teams.filter(t => t.player1_id === id || t.player2_id === id);
-      const hasMatches = playerTeams.some(t => {
+      const teamsWithMatches = playerTeams.filter(t => {
         const stats = getTeamStats(t.id);
         return stats.wins + stats.losses > 0;
       });
+      const teamsWithoutMatches = playerTeams.filter(t => {
+        const stats = getTeamStats(t.id);
+        return stats.wins + stats.losses === 0;
+      });
       
-      if (hasMatches) { 
-        toast('Cannot delete player with match history', 'error'); 
+      if (teamsWithMatches.length > 0) { 
+        const teamNames = teamsWithMatches.map(t => t.name).join(', ');
+        toast(`Cannot delete: player has match history with ${teamsWithMatches.length} team(s): ${teamNames}`, 'error'); 
         return; 
       }
       
+      let confirmText = `Are you sure you want to delete ${p?.name}?`;
+      if (teamsWithoutMatches.length > 0) {
+        const teamNames = teamsWithoutMatches.map(t => t.name).join(', ');
+        confirmText += ` This will also delete ${teamsWithoutMatches.length} team${teamsWithoutMatches.length > 1 ? 's' : ''}: ${teamNames}.`;
+      }
+      confirmText += ' This cannot be undone.';
+      
       document.getElementById('confirmTitle').textContent = 'Delete Player';
-      document.getElementById('confirmText').textContent = `Are you sure you want to delete ${p?.name}? This cannot be undone.`;
+      document.getElementById('confirmText').textContent = confirmText;
       confirmAction = () => deletePlayer(id);
       closeModal('editPlayer');
       openModal('confirm');
     }
     
     async function deletePlayer(id) {
+      // Get all teams this player is on
+      const playerTeams = teams.filter(t => t.player1_id === id || t.player2_id === id);
+      
       if (supabaseClient) {
-        try { await supabaseClient.from('players').delete().eq('id', id); } 
+        try { 
+          // First handle associated teams
+          for (const t of playerTeams) {
+            const stats = getTeamStats(t.id);
+            if (stats.wins + stats.losses === 0) {
+              // Delete teams with no match history
+              await supabaseClient.from('teams').delete().eq('id', t.id);
+            }
+            // Teams with match history can't be deleted due to match references
+          }
+          
+          // Then delete the player
+          await supabaseClient.from('players').delete().eq('id', id); 
+        } 
         catch (e) { toast('Error', 'error'); return; }
       }
+      
+      // Update local data - remove teams with no matches
+      playerTeams.forEach(t => {
+        const stats = getTeamStats(t.id);
+        if (stats.wins + stats.losses === 0) {
+          teams = teams.filter(team => team.id !== t.id);
+        }
+      });
+      
       players = players.filter(p => p.id !== id);
       saveLocal();
       closeModal('confirm');
       renderAll();
-      toast('Player deleted', 'success');
+      
+      const removedTeams = playerTeams.filter(t => {
+        const stats = getTeamStats(t.id);
+        return stats.wins + stats.losses === 0;
+      }).length;
+      
+      if (removedTeams > 0) {
+        toast(`Player deleted along with ${removedTeams} team${removedTeams > 1 ? 's' : ''}`, 'success');
+      } else {
+        toast('Player deleted', 'success');
+      }
     }
     
     // ===== TEAM ACTIONS =====
@@ -4687,6 +4736,30 @@
       const p2 = parseInt(document.getElementById('teamPlayer2').value);
       if (!name || !p1 || !p2) { toast('Fill all fields', 'error'); return; }
       if (p1 === p2) { toast('Select different players', 'error'); return; }
+      
+      // Check for duplicate team (same two players in any order)
+      const duplicateTeam = teams.find(t => 
+        (t.player1_id === p1 && t.player2_id === p2) || 
+        (t.player1_id === p2 && t.player2_id === p1)
+      );
+      if (duplicateTeam) {
+        toast(`Team "${duplicateTeam.name}" already exists with these players`, 'error');
+        return;
+      }
+      
+      // Warn if either player is already on 3+ teams
+      const p1Teams = teams.filter(t => t.player1_id === p1 || t.player2_id === p1);
+      const p2Teams = teams.filter(t => t.player1_id === p2 || t.player2_id === p2);
+      const p1Name = getPlayer(p1)?.name || 'Player 1';
+      const p2Name = getPlayer(p2)?.name || 'Player 2';
+      
+      if (p1Teams.length >= 3 || p2Teams.length >= 3) {
+        const warnings = [];
+        if (p1Teams.length >= 3) warnings.push(`${p1Name} is already on ${p1Teams.length} teams`);
+        if (p2Teams.length >= 3) warnings.push(`${p2Name} is already on ${p2Teams.length} teams`);
+        toast(warnings.join('. '), 'info');
+      }
+      
       const nt = { id: Date.now(), name, player1_id: p1, player2_id: p2, wins: 0, losses: 0, active: true, created_at: new Date().toISOString() };
       
       if (supabaseClient) {
@@ -4717,6 +4790,17 @@
       
       if (!name || !p1 || !p2) { toast('Fill all fields', 'error'); return; }
       if (p1 === p2) { toast('Select different players', 'error'); return; }
+      
+      // Check for duplicate team (excluding this team being edited)
+      const duplicateTeam = teams.find(t => 
+        t.id !== id &&
+        ((t.player1_id === p1 && t.player2_id === p2) || 
+         (t.player1_id === p2 && t.player2_id === p1))
+      );
+      if (duplicateTeam) {
+        toast(`Team "${duplicateTeam.name}" already exists with these players`, 'error');
+        return;
+      }
       
       const idx = teams.findIndex(t => t.id === id);
       if (idx === -1) return;
@@ -5232,7 +5316,11 @@
       if (bestStreak >= 5) badges.push('⚡');
       if (totalMatches >= 50) badges.push('🎖️');
       
-      return badges.slice(0, 4);
+      // Versatile player badges - for being on multiple teams
+      if (playerTeams.length >= 5) badges.push('🦸');
+      else if (playerTeams.length >= 3) badges.push('🎭');
+      
+      return badges.slice(0, 5);
     }
     
     function getStreakBadge(teamId) {
@@ -5672,12 +5760,43 @@
       document.getElementById('profileStreak').innerHTML = bestStreak.count >= 2 ? 
         `<span class="streak-badge ${bestStreak.type === 'win' ? 'hot' : 'cold'}"><i class="fas fa-${bestStreak.type === 'win' ? 'fire' : 'snowflake'}"></i> ${bestStreak.count} ${bestStreak.type === 'win' ? 'Win' : 'Loss'} Streak</span>` : '';
       
-      // Stats summary
-      const teamsStr = playerTeams.map(t => t.name).join(', ') || 'No teams yet';
+      // Stats summary with detailed team list
+      let teamsHtml = '';
+      if (playerTeams.length > 0) {
+        teamsHtml = playerTeams.map(t => {
+          const partner = getPlayer(t.player1_id === id ? t.player2_id : t.player1_id);
+          const stats = getTeamStats(t.id);
+          const winRate = (stats.wins + stats.losses) > 0 ? Math.round((stats.wins / (stats.wins + stats.losses)) * 100) : 0;
+          const isActive = t.active !== false;
+          return `
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:white;border-radius:10px;margin-bottom:8px;opacity:${isActive ? '1' : '0.5'}">
+              <div class="avatar sm" style="flex-shrink:0">${partner?.photo ? `<img src="${partner.photo}" class="loaded">` : (partner?.name?.charAt(0) || '?')}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+                <div style="font-size:11px;color:var(--text-muted)">with ${partner?.name || 'Unknown'}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:13px;font-weight:600"><span style="color:var(--success)">${stats.wins}W</span> - <span style="color:var(--danger)">${stats.losses}L</span></div>
+                <div style="font-size:11px;color:var(--clay)">${winRate}%</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        teamsHtml = '<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:12px">No teams yet</div>';
+      }
+      
       document.getElementById('profileStats').innerHTML = `
         <div style="display:grid;gap:8px;font-size:13px">
-          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Teams:</span><span>${teamsStr}</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Total Matches:</span><span>${wins + losses}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="color:var(--text-muted)">Teams:</span>
+            <span style="font-weight:600">${playerTeams.length} team${playerTeams.length !== 1 ? 's' : ''}</span>
+          </div>
+          ${teamsHtml}
+          <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px dashed var(--cream-dark)">
+            <span style="color:var(--text-muted)">Total Matches:</span>
+            <span>${wins + losses}</span>
+          </div>
         </div>
       `;
       
