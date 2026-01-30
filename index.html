@@ -2965,8 +2965,53 @@
         if (activeMatchday) {
           header.classList.add('active');
           const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-          statusEl.innerHTML = `<span class="live">MATCH DAY LIVE</span>`;
-          statusEl.className = 'matchday-status live';
+          
+          // Determine if match day is actually LIVE based on date AND time
+          const now = new Date();
+          const matchdayDate = activeMatchday.date;
+          const isToday = matchdayDate === today;
+          const isFutureDate = matchdayDate > today;
+          const isPastDate = matchdayDate < today;
+          
+          // Parse start/end times
+          const startTime = activeMatchday.start_time || '09:00';
+          const endTime = activeMatchday.end_time || '17:00';
+          const [startHour, startMin] = startTime.split(':').map(Number);
+          const [endHour, endMin] = endTime.split(':').map(Number);
+          
+          const currentHour = now.getHours();
+          const currentMin = now.getMinutes();
+          const currentTimeInMins = currentHour * 60 + currentMin;
+          const startTimeInMins = startHour * 60 + startMin;
+          const endTimeInMins = endHour * 60 + endMin;
+          
+          // LIVE: during the time window (with 30 min buffer after end)
+          // STARTING SOON: within 30 minutes before start
+          // UPCOMING: on today but more than 30 min before start, or future date
+          const isLive = isToday && currentTimeInMins >= startTimeInMins && currentTimeInMins <= (endTimeInMins + 30);
+          const isStartingSoon = isToday && currentTimeInMins >= (startTimeInMins - 30) && currentTimeInMins < startTimeInMins;
+          const isUpcomingToday = isToday && currentTimeInMins < (startTimeInMins - 30);
+          
+          let statusHtml, statusClass;
+          if (isLive) {
+            statusHtml = `<span class="live">MATCH DAY LIVE</span>`;
+            statusClass = 'matchday-status live';
+          } else if (isStartingSoon) {
+            statusHtml = `<span style="color:var(--gold)">⏰ STARTING SOON</span>`;
+            statusClass = 'matchday-status';
+          } else if (isUpcomingToday || isFutureDate) {
+            statusHtml = `<span style="color:var(--clay)">📅 UPCOMING MATCH DAY</span>`;
+            statusClass = 'matchday-status';
+          } else if (isPastDate) {
+            statusHtml = `<span style="color:var(--text-muted)">📋 MATCH DAY (Past)</span>`;
+            statusClass = 'matchday-status';
+          } else {
+            statusHtml = `<span class="live">MATCH DAY LIVE</span>`;
+            statusClass = 'matchday-status live';
+          }
+          
+          statusEl.innerHTML = statusHtml;
+          statusEl.className = statusClass;
           detailsEl.innerHTML = `
             <span><i class="fas fa-calendar"></i> ${dateStr}</span>
             <span><i class="fas fa-map-marker-alt"></i> ${activeMatchday.venue}</span>
