@@ -993,9 +993,158 @@
       .available-players-grid { gap: 6px; }
       .available-player-chip { padding: 6px 10px; }
     }
+    
+    /* ===== AUTH & LOGIN STYLES ===== */
+    .login-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); display: flex; align-items: center; justify-content: center; z-index: 20000; }
+    .login-screen.hidden { display: none; }
+    .login-card { background: white; border-radius: 24px; padding: 48px; width: 100%; max-width: 400px; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .login-logo { text-align: center; margin-bottom: 32px; }
+    .login-logo h1 { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 4px; color: var(--clay); margin-bottom: 4px; }
+    .login-logo p { color: var(--text-muted); font-size: 14px; }
+    .login-form { display: flex; flex-direction: column; gap: 16px; }
+    .login-form .form-group { margin-bottom: 0; }
+    .login-error { background: rgba(239,68,68,0.1); color: var(--danger); padding: 12px 16px; border-radius: 10px; font-size: 13px; display: none; }
+    .login-error.show { display: block; }
+    
+    /* User Menu in Header */
+    .user-menu { position: relative; }
+    .user-menu-btn { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: white; border-radius: 12px; cursor: pointer; transition: all 0.2s; border: 2px solid var(--cream-dark); }
+    .user-menu-btn:hover { border-color: var(--clay); }
+    .user-menu-btn .avatar { width: 32px; height: 32px; font-size: 14px; border-width: 2px; }
+    .user-menu-btn .user-name { font-weight: 600; font-size: 14px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-menu-btn .user-role { font-size: 10px; color: var(--clay); font-weight: 700; text-transform: uppercase; }
+    .user-menu-btn i.fa-chevron-down { font-size: 10px; color: var(--text-muted); transition: transform 0.2s; }
+    .user-menu.open .user-menu-btn i.fa-chevron-down { transform: rotate(180deg); }
+    .user-dropdown { position: absolute; top: 100%; right: 0; margin-top: 8px; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); min-width: 200px; padding: 8px; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s; z-index: 1000; }
+    .user-menu.open .user-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
+    .user-dropdown-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 14px; color: var(--text); }
+    .user-dropdown-item:hover { background: var(--cream); }
+    .user-dropdown-item i { width: 20px; color: var(--clay); }
+    .user-dropdown-item.danger { color: var(--danger); }
+    .user-dropdown-item.danger i { color: var(--danger); }
+    .user-dropdown-divider { height: 1px; background: var(--cream-dark); margin: 8px 0; }
+    
+    /* My Profile Page */
+    .my-profile-header { background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); border-radius: 24px; padding: 40px; color: white; margin-bottom: 32px; position: relative; overflow: hidden; }
+    .my-profile-header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px; background: rgba(255,255,255,0.1); border-radius: 50%; }
+    .my-profile-content { display: flex; align-items: center; gap: 32px; position: relative; z-index: 1; }
+    .my-profile-avatar { position: relative; }
+    .my-profile-avatar .avatar { width: 120px; height: 120px; font-size: 48px; border: 4px solid white; }
+    .my-profile-avatar .edit-avatar-btn { position: absolute; bottom: 0; right: 0; width: 36px; height: 36px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--clay); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .my-profile-info { flex: 1; }
+    .my-profile-name { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 2px; margin-bottom: 4px; }
+    .my-profile-role { display: inline-block; padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+    .my-profile-stats { display: flex; gap: 32px; }
+    .my-profile-stat { text-align: center; }
+    .my-profile-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; }
+    .my-profile-stat-label { font-size: 12px; opacity: 0.8; text-transform: uppercase; }
+    
+    /* Profile Stats Cards */
+    .profile-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 900px) { .profile-stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    .profile-stat-card { background: white; border-radius: 16px; padding: 20px; text-align: center; border: 1px solid rgba(0,0,0,0.04); }
+    .profile-stat-card-icon { font-size: 28px; margin-bottom: 8px; }
+    .profile-stat-card-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--brown-dark); }
+    .profile-stat-card-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
+    
+    /* Gallery */
+    .gallery-section { background: white; border-radius: 20px; padding: 24px; margin-bottom: 24px; }
+    .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .gallery-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+    .gallery-item { aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; position: relative; background: var(--cream); }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+    .gallery-item:hover img { transform: scale(1.05); }
+    .gallery-item.add-photo { display: flex; align-items: center; justify-content: center; border: 2px dashed var(--clay-light); color: var(--clay); font-size: 24px; }
+    .gallery-item.add-photo:hover { background: rgba(224,120,80,0.1); }
+    .gallery-modal-img { max-width: 100%; max-height: 70vh; border-radius: 12px; }
+    
+    /* Messages */
+    .messages-section { background: white; border-radius: 20px; overflow: hidden; }
+    .messages-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--cream-dark); }
+    .messages-list { max-height: 400px; overflow-y: auto; }
+    .message-item { display: flex; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--cream); cursor: pointer; transition: background 0.2s; }
+    .message-item:hover { background: var(--cream); }
+    .message-item.unread { background: rgba(224,120,80,0.05); }
+    .message-item.unread::before { content: ''; position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 8px; height: 8px; background: var(--clay); border-radius: 50%; }
+    .message-avatar { flex-shrink: 0; }
+    .message-content { flex: 1; min-width: 0; }
+    .message-sender { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+    .message-preview { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .message-time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+    .message-badge { background: var(--clay); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+    
+    /* Compose Message Modal */
+    .compose-to { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--cream); border-radius: 10px; margin-bottom: 16px; }
+    .compose-to .avatar { width: 40px; height: 40px; }
+    
+    /* Spotify Widget */
+    .spotify-widget { background: linear-gradient(135deg, #1DB954 0%, #191414 100%); border-radius: 16px; padding: 20px; color: white; margin-top: 16px; }
+    .spotify-widget-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .spotify-widget-header i { font-size: 24px; }
+    .spotify-widget-header span { font-weight: 600; }
+    .spotify-widget-content { display: flex; align-items: center; gap: 16px; }
+    .spotify-widget-art { width: 60px; height: 60px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .spotify-widget-info { flex: 1; }
+    .spotify-widget-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+    .spotify-widget-artist { font-size: 12px; opacity: 0.8; }
+    .spotify-widget-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #1DB954; border-radius: 20px; font-size: 12px; font-weight: 600; color: white; text-decoration: none; margin-top: 12px; }
+    .spotify-widget-link:hover { background: #1ed760; }
+    .spotify-widget-empty { text-align: center; padding: 20px; opacity: 0.8; }
+    .spotify-widget-empty i { font-size: 32px; margin-bottom: 8px; display: block; }
+    
+    /* Admin Badge */
+    .admin-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--gold); color: white; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    
+    /* Admin Only Elements */
+    .admin-only { display: none; }
+    body.is-admin .admin-only { display: flex; }
+    body.is-admin .admin-only-block { display: block; }
+    body.is-admin .admin-only-inline { display: inline; }
+    
+    /* Teams List in Profile */
+    .my-teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .my-team-card { background: white; border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(0,0,0,0.04); transition: all 0.2s; }
+    .my-team-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+    .my-team-partner { display: flex; align-items: center; gap: 12px; flex: 1; }
+    .my-team-info h4 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+    .my-team-info p { font-size: 12px; color: var(--text-muted); }
+    .my-team-stats { text-align: right; }
+    .my-team-record { font-size: 16px; font-weight: 700; }
+    .my-team-rate { font-size: 12px; color: var(--clay); }
   </style>
 </head>
 <body>
+  <!-- ===== LOGIN SCREEN ===== -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">
+        <div style="font-size:48px;margin-bottom:12px">🎾</div>
+        <h1>PADEL VILLAINS</h1>
+        <p>Social League Tracker</p>
+      </div>
+      <div class="login-error" id="loginError">Invalid username or password</div>
+      <form class="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <select class="form-select" id="loginUsername" style="font-size:16px">
+            <option value="">Select your name...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="loginPassword" placeholder="Enter password" style="font-size:16px">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:16px">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+      </form>
+      <p style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)">
+        Don't have an account? Contact an admin.
+      </p>
+    </div>
+  </div>
+
   <!-- Offline Banner -->
   <div class="offline-banner" id="offlineBanner">
     <i class="fas fa-wifi-slash"></i>
@@ -1024,6 +1173,24 @@
           <i class="fas fa-bell"></i>
           <span class="notification-badge hidden" id="notificationBadge">0</span>
         </div>
+        <!-- User Menu -->
+        <div class="user-menu" id="userMenu" onclick="toggleUserMenu()">
+          <div class="user-menu-btn">
+            <div class="avatar sm" id="userMenuAvatar">?</div>
+            <div style="text-align:left">
+              <div class="user-name" id="userMenuName">Guest</div>
+              <div class="user-role" id="userMenuRole">Player</div>
+            </div>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="user-dropdown">
+            <div class="user-dropdown-item" onclick="openMyProfile()"><i class="fas fa-user"></i> My Profile</div>
+            <div class="user-dropdown-item" onclick="openMyMessages()"><i class="fas fa-envelope"></i> Messages <span class="message-badge hidden" id="msgBadge">0</span></div>
+            <div class="user-dropdown-item admin-only" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Settings</div>
+            <div class="user-dropdown-divider"></div>
+            <div class="user-dropdown-item danger" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Sign Out</div>
+          </div>
+        </div>
         <div class="date-badge">
           <div class="label">MATCH DAY</div>
           <div class="date" id="currentDate"></div>
@@ -1034,6 +1201,7 @@
     <!-- NAV -->
     <nav class="nav">
       <button class="active" data-tab="dashboard"><i class="fas fa-home"></i><span>Dashboard</span></button>
+      <button data-tab="myprofile" id="navMyProfile"><i class="fas fa-user-circle"></i><span>My Profile</span></button>
       <button data-tab="players"><i class="fas fa-users"></i><span>Players</span></button>
       <button data-tab="teams"><i class="fas fa-people-group"></i><span>Teams</span></button>
       <button data-tab="matches"><i class="fas fa-list"></i><span>Matches</span></button>
@@ -1042,7 +1210,7 @@
       <button data-tab="matchup"><i class="fas fa-shuffle"></i><span>Matchup</span></button>
       <button data-tab="rules"><i class="fas fa-book"></i><span>Rules</span></button>
       <button data-tab="history"><i class="fas fa-clock-rotate-left"></i><span>History</span></button>
-      <button data-tab="settings"><i class="fas fa-cog"></i><span>Settings</span></button>
+      <button data-tab="settings" class="admin-only"><i class="fas fa-cog"></i><span>Settings</span></button>
     </nav>
     <!-- ===== DASHBOARD TAB ===== -->
     <section class="tab active" id="dashboard">
@@ -1086,6 +1254,20 @@
           <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Players</div></div>
           <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="statAvailable">0</div><div class="stat-label">Playing Today</div></div>
           <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-value" id="statVenue">-</div><div class="stat-label">Venue</div></div>
+        </div>
+        
+        <!-- Spotify Widget -->
+        <div class="spotify-widget" id="spotifyWidget" style="display:none">
+          <div class="spotify-widget-header">
+            <i class="fab fa-spotify"></i>
+            <span>Match Day Playlist</span>
+          </div>
+          <div id="spotifyContent">
+            <div class="spotify-widget-empty">
+              <i class="fas fa-music"></i>
+              <p>No playlist set</p>
+            </div>
+          </div>
         </div>
         
         <!-- Player Spotlight (rotating profiles) -->
@@ -1322,6 +1504,81 @@
       </div>
     </section>
 
+    <!-- ===== MY PROFILE TAB ===== -->
+    <section class="tab" id="myprofile">
+      <div class="my-profile-header">
+        <div class="my-profile-content">
+          <div class="my-profile-avatar">
+            <div class="avatar xl" id="myProfileAvatar">?</div>
+            <div class="edit-avatar-btn" onclick="document.getElementById('myProfilePhotoInput').click()">
+              <i class="fas fa-camera"></i>
+            </div>
+            <input type="file" id="myProfilePhotoInput" accept="image/*" onchange="updateMyProfilePhoto(this)" style="display:none">
+          </div>
+          <div class="my-profile-info">
+            <div class="my-profile-name" id="myProfileName">Player Name</div>
+            <div class="my-profile-role" id="myProfileRole">PLAYER</div>
+            <div class="my-profile-stats">
+              <div class="my-profile-stat"><div class="my-profile-stat-value" id="myProfileWins">0</div><div class="my-profile-stat-label">Wins</div></div>
+              <div class="my-profile-stat"><div class="my-profile-stat-value" id="myProfileLosses">0</div><div class="my-profile-stat-label">Losses</div></div>
+              <div class="my-profile-stat"><div class="my-profile-stat-value" id="myProfileRate">0%</div><div class="my-profile-stat-label">Win Rate</div></div>
+              <div class="my-profile-stat"><div class="my-profile-stat-value" id="myProfileTeams">0</div><div class="my-profile-stat-label">Teams</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Profile Stats Cards -->
+      <div class="profile-stats-grid">
+        <div class="profile-stat-card"><div class="profile-stat-card-icon">🎾</div><div class="profile-stat-card-value" id="myStatMatches">0</div><div class="profile-stat-card-label">Total Matches</div></div>
+        <div class="profile-stat-card"><div class="profile-stat-card-icon">🏆</div><div class="profile-stat-card-value" id="myStatBestStreak">0</div><div class="profile-stat-card-label">Best Win Streak</div></div>
+        <div class="profile-stat-card"><div class="profile-stat-card-icon">👑</div><div class="profile-stat-card-value" id="myStatVillainDays">0</div><div class="profile-stat-card-label">Villain Days</div></div>
+        <div class="profile-stat-card"><div class="profile-stat-card-icon">📅</div><div class="profile-stat-card-value" id="myStatMatchdays">0</div><div class="profile-stat-card-label">Days Played</div></div>
+      </div>
+      
+      <!-- My Teams -->
+      <div class="gallery-section">
+        <div class="gallery-header">
+          <div class="gallery-title"><i class="fas fa-people-group"></i> My Teams</div>
+        </div>
+        <div class="my-teams-grid" id="myTeamsGrid">
+          <p style="color:var(--text-muted);text-align:center;padding:20px">No teams yet</p>
+        </div>
+      </div>
+      
+      <!-- Photo Gallery -->
+      <div class="gallery-section">
+        <div class="gallery-header">
+          <div class="gallery-title"><i class="fas fa-images"></i> Photo Gallery</div>
+          <button class="btn btn-sm btn-secondary" onclick="document.getElementById('galleryUpload').click()">
+            <i class="fas fa-plus"></i> Add Photo
+          </button>
+          <input type="file" id="galleryUpload" accept="image/*" onchange="uploadGalleryPhoto(this)" style="display:none">
+        </div>
+        <div class="gallery-grid" id="myGalleryGrid">
+          <div class="gallery-item add-photo" onclick="document.getElementById('galleryUpload').click()">
+            <i class="fas fa-plus"></i>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Messages -->
+      <div class="messages-section">
+        <div class="messages-header">
+          <div class="gallery-title"><i class="fas fa-envelope"></i> Messages</div>
+          <button class="btn btn-sm btn-primary" onclick="openComposeMessage()">
+            <i class="fas fa-pen"></i> Compose
+          </button>
+        </div>
+        <div class="messages-list" id="myMessagesList">
+          <div style="padding:40px;text-align:center;color:var(--text-muted)">
+            <i class="fas fa-envelope-open" style="font-size:32px;margin-bottom:12px;display:block;opacity:0.5"></i>
+            <p>No messages yet</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== PLAYERS TAB ===== -->
     <section class="tab" id="players">
       <div class="players-hero">
@@ -1336,7 +1593,7 @@
       </div>
       <div class="section-header">
         <div><h2 class="section-title">ALL PLAYERS</h2><p class="section-subtitle">Click on a player card to manage</p></div>
-        <button class="btn btn-primary" onclick="openModal('addPlayer')"><i class="fas fa-plus"></i> Add Player</button>
+        <button class="btn btn-primary admin-only" onclick="openModal('addPlayer')"><i class="fas fa-plus"></i> Add Player</button>
       </div>
       <div class="grid-4" id="playersGrid"><div class="empty"><div class="empty-icon">👥</div><h3>No Players Yet</h3><p>Add your first player to get started</p></div></div>
     </section>
@@ -1914,6 +2171,24 @@
           <label class="toggle"><input type="checkbox" id="settingUpNext" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
         </div>
       </div>
+      
+      <!-- Admin User Management -->
+      <div class="settings-section">
+        <div class="settings-section-title"><i class="fas fa-users-cog"></i> User Management <span class="admin-badge">ADMIN</span></div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Create accounts and manage user permissions</p>
+        <div id="userAccountsList" style="margin-bottom:20px"></div>
+        <button class="btn btn-primary" onclick="openCreateAccountModal()"><i class="fas fa-user-plus"></i> Create Account from Player</button>
+      </div>
+      
+      <!-- Matchday Spotify Link -->
+      <div class="settings-section">
+        <div class="settings-section-title"><i class="fab fa-spotify"></i> Matchday Music</div>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Add a Spotify playlist link for match days</p>
+        <div class="form-group">
+          <input type="text" class="form-input" id="spotifyLinkInput" placeholder="Paste Spotify playlist link...">
+        </div>
+        <button class="btn btn-primary" onclick="saveSpotifyLink()"><i class="fas fa-save"></i> Save Link</button>
+      </div>
     </section>
   </div>
 
@@ -2456,11 +2731,78 @@
     </div>
   </div>
 
+  <!-- Create Account Modal -->
+  <div class="modal-overlay" id="createAccountModal">
+    <div class="modal" style="max-width:450px">
+      <div class="modal-header"><h3 class="modal-title">CREATE ACCOUNT</h3><button class="modal-close" onclick="closeModal('createAccount')"><i class="fas fa-times"></i></button></div>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px">Create a user account for a player. Default password: PVSLT_26</p>
+      <div class="form-group">
+        <label class="form-label">Select Player</label>
+        <select class="form-select" id="createAccountPlayer">
+          <option value="">Choose a player...</option>
+        </select>
+      </div>
+      <div class="toggle-group">
+        <span class="toggle-label">Admin Rights</span>
+        <label class="toggle"><input type="checkbox" id="createAccountAdmin"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('createAccount')">Cancel</button>
+        <button class="btn btn-primary" onclick="createUserAccount()"><i class="fas fa-user-plus"></i> Create Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compose Message Modal -->
+  <div class="modal-overlay" id="composeMessageModal">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header"><h3 class="modal-title">SEND MESSAGE</h3><button class="modal-close" onclick="closeModal('composeMessage')"><i class="fas fa-times"></i></button></div>
+      <div class="form-group">
+        <label class="form-label">To</label>
+        <select class="form-select" id="messageRecipient">
+          <option value="">Select a player...</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message</label>
+        <textarea class="form-input" id="messageText" placeholder="Write your message..." style="min-height:120px;resize:vertical"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('composeMessage')">Cancel</button>
+        <button class="btn btn-primary" onclick="sendMessage()"><i class="fas fa-paper-plane"></i> Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Message Modal -->
+  <div class="modal-overlay" id="viewMessageModal">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header"><h3 class="modal-title">MESSAGE</h3><button class="modal-close" onclick="closeModal('viewMessage')"><i class="fas fa-times"></i></button></div>
+      <div class="compose-to" id="viewMessageFrom"></div>
+      <div id="viewMessageContent" style="padding:16px;background:var(--cream);border-radius:10px;font-size:14px;line-height:1.6"></div>
+      <div id="viewMessageTime" style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:12px"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('viewMessage')">Close</button>
+        <button class="btn btn-primary" onclick="replyToMessage()"><i class="fas fa-reply"></i> Reply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Gallery Photo Modal -->
+  <div class="modal-overlay" id="galleryViewModal">
+    <div class="modal" style="max-width:600px;background:transparent;box-shadow:none">
+      <button class="modal-close" onclick="closeModal('galleryView')" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.5);color:white;border-radius:50%;width:40px;height:40px"><i class="fas fa-times"></i></button>
+      <img id="galleryViewImage" class="gallery-modal-img" src="" alt="Gallery photo">
+      <p id="galleryViewCaption" style="text-align:center;color:white;margin-top:12px"></p>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
   <script>
     // ===== CONFIG =====
     const SUPABASE_URL = 'https://hihujmoapelzuvcrdhfh.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpaHVqbW9hcGVsenV2Y3JkaGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NTM4OTUsImV4cCI6MjA4MzUyOTg5NX0.BjCkaElKR6lj057FLOmryWH7CbCn8Ssg-Agp2BbSJeI';
+    const APP_PASSWORD = 'PVSLT_26';
     let supabaseClient = null;
     
     // ===== STATE =====
@@ -2475,6 +2817,12 @@
     let tempPhotoData = { addPlayer: null, editPlayer: null };
     let notifications = [];
     let settings = { reminders: true, upNext: true };
+    
+    // Auth State
+    let currentUser = null;
+    let userAccounts = [];
+    let messages = [];
+    let gallery = [];
     
     // Live Match State
     let liveMatch = null;
@@ -2690,6 +3038,9 @@
         // Load events from database after main data
         loadEventsFromDb();
         
+        // Now that players are loaded, initialize auth
+        initializeAuth();
+        
       } catch (e) {
         // Safely log error message without the full object (avoids DataCloneError)
         console.error('Database fetch error:', e.message || String(e));
@@ -2818,6 +3169,9 @@
         ongoingMatches = JSON.parse(localStorage.getItem('pv_ongoing') || '[]');
         matchdays = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
         determineActiveMatchday();
+        
+        // Initialize auth after data is loaded
+        setTimeout(() => initializeAuth(), 100);
       } catch (e) {
         console.error('Error loading local data:', e);
         // Clear corrupted data
@@ -7392,6 +7746,774 @@
       const message = `🎾 *Padel Cost Split*\n\n📍 ${data.name}\n🏟️ ${courtText} × ${sessionText}\n👥 ${currentPlayerCount} players\n\n💰 Courts: $${courtFee.toFixed(2)} (${currentCourtCount} × ${currentSessionCount} × $${data.courtFee})\n🏸 Rackets: $${racketFee.toFixed(2)} (${currentRacketCount} × $${data.racketHire})\n\n💵 *Total: $${total.toFixed(2)}*\n✅ *Per person: $${perPerson.toFixed(2)}*\n\n🔗 Book here: ${data.bookingUrl}`;
       
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    }
+    
+    // ===== AUTHENTICATION =====
+    function initializeAuth() {
+      // Load user accounts
+      loadUserAccounts();
+      loadMessages();
+      loadGallery();
+      loadSpotifyLink();
+      
+      // Now check if user is already logged in
+      checkAuth();
+      
+      // Also populate login dropdown in case we need it
+      populateLoginDropdown();
+      
+      // Render user accounts in settings
+      renderUserAccounts();
+    }
+    
+    function checkAuth() {
+      const savedUser = localStorage.getItem('pv_currentUser');
+      if (savedUser) {
+        try {
+          currentUser = JSON.parse(savedUser);
+          showMainApp();
+          updateUserUI();
+          return true;
+        } catch (e) {
+          localStorage.removeItem('pv_currentUser');
+        }
+      }
+      showLoginScreen();
+      return false;
+    }
+    
+    function showLoginScreen() {
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.querySelector('.container').style.display = 'none';
+      populateLoginDropdown();
+    }
+    
+    function showMainApp() {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.querySelector('.container').style.display = 'block';
+      if (currentUser?.is_admin) {
+        document.body.classList.add('is-admin');
+      } else {
+        document.body.classList.remove('is-admin');
+      }
+    }
+    
+    function populateLoginDropdown() {
+      const select = document.getElementById('loginUsername');
+      if (!select) return;
+      
+      // Load accounts from localStorage
+      loadUserAccounts();
+      
+      select.innerHTML = '<option value="">Select your name...</option>';
+      
+      // Show existing accounts
+      userAccounts.forEach(acc => {
+        const player = players.find(p => p.id === acc.player_id);
+        if (player) {
+          select.innerHTML += `<option value="${acc.id}">${player.name}${acc.is_admin ? ' (Admin)' : ''}</option>`;
+        }
+      });
+      
+      // If no accounts exist OR there are players without accounts, show them for initial setup
+      const playersWithAccounts = userAccounts.map(a => a.player_id);
+      const playersWithoutAccounts = players.filter(p => !playersWithAccounts.includes(p.id));
+      
+      if (playersWithoutAccounts.length > 0) {
+        // Add a separator if there are existing accounts
+        if (userAccounts.length > 0) {
+          select.innerHTML += '<option disabled>──── Create New Account ────</option>';
+        }
+        
+        playersWithoutAccounts.forEach(p => {
+          const label = userAccounts.length === 0 ? `${p.name} (First Admin)` : `${p.name} (New Account)`;
+          select.innerHTML += `<option value="new_${p.id}">${label}</option>`;
+        });
+      }
+      
+      // If no players at all, show a message
+      if (players.length === 0) {
+        select.innerHTML = '<option value="">No players found - loading...</option>';
+      }
+    }
+    
+    function handleLogin(e) {
+      e.preventDefault();
+      const usernameSelect = document.getElementById('loginUsername');
+      const password = document.getElementById('loginPassword').value;
+      const selectedValue = usernameSelect.value;
+      
+      if (!selectedValue) {
+        showLoginError('Please select your name');
+        return;
+      }
+      
+      if (password !== APP_PASSWORD) {
+        showLoginError('Invalid password');
+        return;
+      }
+      
+      // Check if creating new account
+      if (selectedValue.startsWith('new_')) {
+        const playerId = parseInt(selectedValue.replace('new_', ''));
+        const player = players.find(p => p.id === playerId);
+        if (player) {
+          // Create new account (first account is admin)
+          const isFirstAccount = userAccounts.length === 0;
+          const newAccount = {
+            id: Date.now(),
+            player_id: playerId,
+            username: player.name.toLowerCase().replace(/\s+/g, ''),
+            is_admin: isFirstAccount,
+            theme: 'default',
+            settings: {},
+            created_at: new Date().toISOString()
+          };
+          userAccounts.push(newAccount);
+          saveUserAccounts();
+          currentUser = newAccount;
+          localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+          showMainApp();
+          updateUserUI();
+          toast(`Welcome, ${player.name}!${isFirstAccount ? ' You are the first admin.' : ''}`, 'success');
+          return;
+        }
+      }
+      
+      // Login to existing account
+      const account = userAccounts.find(acc => acc.id === parseInt(selectedValue));
+      if (account) {
+        currentUser = account;
+        localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+        showMainApp();
+        updateUserUI();
+        const player = players.find(p => p.id === currentUser.player_id);
+        toast(`Welcome back, ${player?.name || 'Player'}!`, 'success');
+      } else {
+        showLoginError('Account not found');
+      }
+    }
+    
+    function showLoginError(msg) {
+      const errorEl = document.getElementById('loginError');
+      errorEl.textContent = msg;
+      errorEl.classList.add('show');
+      setTimeout(() => errorEl.classList.remove('show'), 3000);
+    }
+    
+    function handleLogout() {
+      currentUser = null;
+      localStorage.removeItem('pv_currentUser');
+      document.body.classList.remove('is-admin');
+      showLoginScreen();
+      toast('Signed out successfully', 'info');
+    }
+    
+    function updateUserUI() {
+      if (!currentUser) return;
+      
+      const player = players.find(p => p.id === currentUser.player_id);
+      if (!player) return;
+      
+      // Update header user menu
+      document.getElementById('userMenuName').textContent = player.name;
+      document.getElementById('userMenuRole').textContent = currentUser.is_admin ? 'ADMIN' : 'PLAYER';
+      const avatarEl = document.getElementById('userMenuAvatar');
+      avatarEl.innerHTML = player.photo ? `<img src="${player.photo}" class="loaded">` : player.name.charAt(0);
+      
+      // Load user theme
+      if (currentUser.theme && currentUser.theme !== 'default') {
+        setTheme(currentUser.theme);
+      }
+      
+      // Update unread message count
+      updateMessageBadge();
+    }
+    
+    function toggleUserMenu() {
+      document.getElementById('userMenu').classList.toggle('open');
+    }
+    
+    // Close user menu when clicking outside
+    document.addEventListener('click', (e) => {
+      const userMenu = document.getElementById('userMenu');
+      if (userMenu && !userMenu.contains(e.target)) {
+        userMenu.classList.remove('open');
+      }
+    });
+    
+    // ===== USER ACCOUNTS MANAGEMENT =====
+    function loadUserAccounts() {
+      const saved = localStorage.getItem('pv_userAccounts');
+      if (saved) {
+        try {
+          userAccounts = JSON.parse(saved);
+        } catch (e) {
+          userAccounts = [];
+        }
+      }
+    }
+    
+    function saveUserAccounts() {
+      localStorage.setItem('pv_userAccounts', JSON.stringify(userAccounts));
+    }
+    
+    function renderUserAccounts() {
+      const container = document.getElementById('userAccountsList');
+      if (!container) return;
+      
+      if (userAccounts.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No accounts created yet</p>';
+        return;
+      }
+      
+      container.innerHTML = userAccounts.map(acc => {
+        const player = players.find(p => p.id === acc.player_id);
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--cream);border-radius:10px;margin-bottom:8px">
+            <div class="avatar sm">${player?.photo ? `<img src="${player.photo}" class="loaded">` : (player?.name?.charAt(0) || '?')}</div>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:14px">${player?.name || 'Unknown'}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${acc.is_admin ? '👑 Admin' : 'Player'}</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              ${!acc.is_admin ? `<button class="btn btn-xs btn-secondary" onclick="toggleAdminRights(${acc.id})"><i class="fas fa-crown"></i></button>` : ''}
+              <button class="btn btn-xs btn-danger" onclick="deleteAccount(${acc.id})"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function openCreateAccountModal() {
+      // Populate player dropdown with players who don't have accounts
+      const select = document.getElementById('createAccountPlayer');
+      const existingPlayerIds = userAccounts.map(acc => acc.player_id);
+      
+      select.innerHTML = '<option value="">Choose a player...</option>';
+      players.filter(p => !existingPlayerIds.includes(p.id)).forEach(p => {
+        select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+      });
+      
+      document.getElementById('createAccountAdmin').checked = false;
+      openModal('createAccount');
+    }
+    
+    function createUserAccount() {
+      const playerId = parseInt(document.getElementById('createAccountPlayer').value);
+      const isAdmin = document.getElementById('createAccountAdmin').checked;
+      
+      if (!playerId) {
+        toast('Please select a player', 'error');
+        return;
+      }
+      
+      // Check if account already exists
+      if (userAccounts.some(acc => acc.player_id === playerId)) {
+        toast('Account already exists for this player', 'error');
+        return;
+      }
+      
+      const player = players.find(p => p.id === playerId);
+      const newAccount = {
+        id: Date.now(),
+        player_id: playerId,
+        username: player.name.toLowerCase().replace(/\s+/g, ''),
+        is_admin: isAdmin,
+        theme: 'default',
+        settings: {},
+        created_at: new Date().toISOString()
+      };
+      
+      userAccounts.push(newAccount);
+      saveUserAccounts();
+      
+      closeModal('createAccount');
+      renderUserAccounts();
+      toast(`Account created for ${player.name}`, 'success');
+    }
+    
+    function toggleAdminRights(accountId) {
+      const acc = userAccounts.find(a => a.id === accountId);
+      if (acc) {
+        acc.is_admin = !acc.is_admin;
+        saveUserAccounts();
+        renderUserAccounts();
+        toast(acc.is_admin ? 'Admin rights granted' : 'Admin rights removed', 'success');
+      }
+    }
+    
+    function deleteAccount(accountId) {
+      // Prevent deleting own account
+      if (currentUser && currentUser.id === accountId) {
+        toast('Cannot delete your own account', 'error');
+        return;
+      }
+      
+      userAccounts = userAccounts.filter(acc => acc.id !== accountId);
+      saveUserAccounts();
+      renderUserAccounts();
+      toast('Account deleted', 'success');
+    }
+    
+    // ===== MY PROFILE =====
+    function openMyProfile() {
+      switchTab('myprofile');
+      renderMyProfile();
+    }
+    
+    function renderMyProfile() {
+      if (!currentUser) return;
+      
+      const player = players.find(p => p.id === currentUser.player_id);
+      if (!player) return;
+      
+      // Profile header
+      document.getElementById('myProfileName').textContent = player.name;
+      document.getElementById('myProfileRole').textContent = currentUser.is_admin ? '👑 ADMIN' : 'PLAYER';
+      document.getElementById('myProfileAvatar').innerHTML = player.photo ? `<img src="${player.photo}" class="loaded">` : player.name.charAt(0);
+      
+      // Calculate stats
+      const playerTeams = teams.filter(t => t.player1_id === currentUser.player_id || t.player2_id === currentUser.player_id);
+      let wins = 0, losses = 0;
+      playerTeams.forEach(t => {
+        const stats = getTeamStats(t.id);
+        wins += stats.wins;
+        losses += stats.losses;
+      });
+      
+      document.getElementById('myProfileWins').textContent = wins;
+      document.getElementById('myProfileLosses').textContent = losses;
+      document.getElementById('myProfileRate').textContent = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) + '%' : '0%';
+      document.getElementById('myProfileTeams').textContent = playerTeams.length;
+      
+      // Stats cards
+      document.getElementById('myStatMatches').textContent = wins + losses;
+      
+      // Calculate best streak
+      let bestStreak = 0;
+      playerTeams.forEach(t => {
+        const streak = calculateCurrentStreak(t.id);
+        if (streak.type === 'win' && streak.count > bestStreak) bestStreak = streak.count;
+      });
+      document.getElementById('myStatBestStreak').textContent = bestStreak;
+      
+      // Villain days (match days won)
+      let villainDays = 0;
+      const closedMatchdays = matchdays.filter(md => md.status === 'closed');
+      closedMatchdays.forEach(md => {
+        const dayRankings = rankTeamsByMatches(md.date);
+        if (dayRankings.length > 0) {
+          const winner = dayRankings[0];
+          const team = teams.find(t => t.id === winner.id);
+          if (team && (team.player1_id === currentUser.player_id || team.player2_id === currentUser.player_id)) {
+            villainDays++;
+          }
+        }
+      });
+      document.getElementById('myStatVillainDays').textContent = villainDays;
+      
+      // Days played
+      const playedDates = new Set();
+      matches.forEach(m => {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+        if ((t1 && (t1.player1_id === currentUser.player_id || t1.player2_id === currentUser.player_id)) ||
+            (t2 && (t2.player1_id === currentUser.player_id || t2.player2_id === currentUser.player_id))) {
+          playedDates.add(m.date);
+        }
+      });
+      document.getElementById('myStatMatchdays').textContent = playedDates.size;
+      
+      // Render teams
+      renderMyTeams(playerTeams);
+      
+      // Render gallery
+      renderMyGallery();
+      
+      // Render messages
+      renderMyMessages();
+    }
+    
+    function renderMyTeams(playerTeams) {
+      const container = document.getElementById('myTeamsGrid');
+      
+      if (playerTeams.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">No teams yet. Create one in the Teams tab!</p>';
+        return;
+      }
+      
+      container.innerHTML = playerTeams.map(t => {
+        const partnerId = t.player1_id === currentUser.player_id ? t.player2_id : t.player1_id;
+        const partner = getPlayer(partnerId);
+        const stats = getTeamStats(t.id);
+        const winRate = (stats.wins + stats.losses) > 0 ? Math.round((stats.wins / (stats.wins + stats.losses)) * 100) : 0;
+        
+        return `
+          <div class="my-team-card" onclick="openEditTeam(${t.id})">
+            <div class="my-team-partner">
+              <div class="avatar md">${partner?.photo ? `<img src="${partner.photo}" class="loaded">` : (partner?.name?.charAt(0) || '?')}</div>
+              <div class="my-team-info">
+                <h4>${t.name}</h4>
+                <p>with ${partner?.name || 'Unknown'}</p>
+              </div>
+            </div>
+            <div class="my-team-stats">
+              <div class="my-team-record"><span style="color:var(--success)">${stats.wins}W</span> - <span style="color:var(--danger)">${stats.losses}L</span></div>
+              <div class="my-team-rate">${winRate}% win rate</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function updateMyProfilePhoto(input) {
+      if (!input.files || !input.files[0]) return;
+      
+      const file = input.files[0];
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        const photoData = e.target.result;
+        
+        // Update local player
+        const playerIdx = players.findIndex(p => p.id === currentUser.player_id);
+        if (playerIdx !== -1) {
+          players[playerIdx].photo = photoData;
+          
+          // Sync to Supabase
+          if (supabaseClient) {
+            try {
+              await supabaseClient.from('players').update({ photo: photoData }).eq('id', currentUser.player_id);
+            } catch (e) {
+              console.error('Photo update error:', e);
+            }
+          }
+          
+          saveLocal();
+          renderMyProfile();
+          updateUserUI();
+          renderAll();
+          toast('Profile photo updated!', 'success');
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    }
+    
+    // ===== GALLERY =====
+    function loadGallery() {
+      const saved = localStorage.getItem('pv_gallery');
+      if (saved) {
+        try {
+          gallery = JSON.parse(saved);
+        } catch (e) {
+          gallery = [];
+        }
+      }
+    }
+    
+    function saveGallery() {
+      localStorage.setItem('pv_gallery', JSON.stringify(gallery));
+    }
+    
+    function renderMyGallery() {
+      if (!currentUser) return;
+      
+      loadGallery();
+      const myPhotos = gallery.filter(g => g.player_id === currentUser.player_id);
+      
+      const container = document.getElementById('myGalleryGrid');
+      container.innerHTML = myPhotos.map(photo => `
+        <div class="gallery-item" onclick="viewGalleryPhoto('${photo.id}')">
+          <img src="${photo.image_url}" alt="${photo.caption || 'Gallery photo'}">
+        </div>
+      `).join('');
+      
+      container.innerHTML += `
+        <div class="gallery-item add-photo" onclick="document.getElementById('galleryUpload').click()">
+          <i class="fas fa-plus"></i>
+        </div>
+      `;
+    }
+    
+    function uploadGalleryPhoto(input) {
+      if (!input.files || !input.files[0] || !currentUser) return;
+      
+      const file = input.files[0];
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const photoData = e.target.result;
+        
+        const newPhoto = {
+          id: Date.now(),
+          player_id: currentUser.player_id,
+          image_url: photoData,
+          caption: '',
+          uploaded_by: currentUser.id,
+          created_at: new Date().toISOString()
+        };
+        
+        gallery.push(newPhoto);
+        saveGallery();
+        renderMyGallery();
+        toast('Photo added to gallery!', 'success');
+      };
+      
+      reader.readAsDataURL(file);
+    }
+    
+    function viewGalleryPhoto(photoId) {
+      const photo = gallery.find(g => g.id == photoId);
+      if (!photo) return;
+      
+      document.getElementById('galleryViewImage').src = photo.image_url;
+      document.getElementById('galleryViewCaption').textContent = photo.caption || '';
+      openModal('galleryView');
+    }
+    
+    // ===== MESSAGING =====
+    function loadMessages() {
+      const saved = localStorage.getItem('pv_messages');
+      if (saved) {
+        try {
+          messages = JSON.parse(saved);
+        } catch (e) {
+          messages = [];
+        }
+      }
+    }
+    
+    function saveMessages() {
+      localStorage.setItem('pv_messages', JSON.stringify(messages));
+    }
+    
+    function renderMyMessages() {
+      if (!currentUser) return;
+      
+      loadMessages();
+      const myMessages = messages.filter(m => m.to_player_id === currentUser.player_id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      
+      const container = document.getElementById('myMessagesList');
+      
+      if (myMessages.length === 0) {
+        container.innerHTML = `
+          <div style="padding:40px;text-align:center;color:var(--text-muted)">
+            <i class="fas fa-envelope-open" style="font-size:32px;margin-bottom:12px;display:block;opacity:0.5"></i>
+            <p>No messages yet</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = myMessages.map(m => {
+        const sender = players.find(p => p.id === m.from_player_id);
+        const timeAgo = getTimeAgo(new Date(m.created_at));
+        
+        return `
+          <div class="message-item ${m.read ? '' : 'unread'}" onclick="viewMessage(${m.id})">
+            <div class="avatar sm message-avatar">${sender?.photo ? `<img src="${sender.photo}" class="loaded">` : (sender?.name?.charAt(0) || '?')}</div>
+            <div class="message-content">
+              <div class="message-sender">${sender?.name || 'Unknown'}</div>
+              <div class="message-preview">${m.message.substring(0, 50)}${m.message.length > 50 ? '...' : ''}</div>
+            </div>
+            <div class="message-time">${timeAgo}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function getTimeAgo(date) {
+      const now = new Date();
+      const diff = now - date;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+      
+      if (minutes < 1) return 'Just now';
+      if (minutes < 60) return `${minutes}m`;
+      if (hours < 24) return `${hours}h`;
+      return `${days}d`;
+    }
+    
+    function updateMessageBadge() {
+      loadMessages();
+      const unread = messages.filter(m => m.to_player_id === currentUser?.player_id && !m.read).length;
+      const badge = document.getElementById('msgBadge');
+      if (badge) {
+        badge.textContent = unread;
+        badge.classList.toggle('hidden', unread === 0);
+      }
+    }
+    
+    function openMyMessages() {
+      switchTab('myprofile');
+      setTimeout(() => {
+        const messagesSection = document.querySelector('.messages-section');
+        if (messagesSection) messagesSection.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+    
+    function openComposeMessage(toPlayerId = null) {
+      // Populate recipient dropdown
+      const select = document.getElementById('messageRecipient');
+      select.innerHTML = '<option value="">Select a player...</option>';
+      players.filter(p => p.id !== currentUser?.player_id).forEach(p => {
+        select.innerHTML += `<option value="${p.id}" ${p.id === toPlayerId ? 'selected' : ''}>${p.name}</option>`;
+      });
+      
+      document.getElementById('messageText').value = '';
+      openModal('composeMessage');
+    }
+    
+    function sendMessage() {
+      const recipientId = parseInt(document.getElementById('messageRecipient').value);
+      const messageText = document.getElementById('messageText').value.trim();
+      
+      if (!recipientId) {
+        toast('Please select a recipient', 'error');
+        return;
+      }
+      
+      if (!messageText) {
+        toast('Please enter a message', 'error');
+        return;
+      }
+      
+      const newMessage = {
+        id: Date.now(),
+        from_player_id: currentUser.player_id,
+        to_player_id: recipientId,
+        message: messageText,
+        read: false,
+        created_at: new Date().toISOString()
+      };
+      
+      messages.push(newMessage);
+      saveMessages();
+      
+      closeModal('composeMessage');
+      toast('Message sent!', 'success');
+    }
+    
+    function viewMessage(messageId) {
+      const msg = messages.find(m => m.id === messageId);
+      if (!msg) return;
+      
+      // Mark as read
+      msg.read = true;
+      saveMessages();
+      updateMessageBadge();
+      renderMyMessages();
+      
+      const sender = players.find(p => p.id === msg.from_player_id);
+      
+      document.getElementById('viewMessageFrom').innerHTML = `
+        <div class="avatar sm">${sender?.photo ? `<img src="${sender.photo}" class="loaded">` : (sender?.name?.charAt(0) || '?')}</div>
+        <div>
+          <div style="font-weight:600">${sender?.name || 'Unknown'}</div>
+        </div>
+      `;
+      document.getElementById('viewMessageContent').textContent = msg.message;
+      document.getElementById('viewMessageTime').textContent = new Date(msg.created_at).toLocaleString();
+      
+      // Store current message for reply
+      document.getElementById('viewMessageModal').dataset.replyTo = msg.from_player_id;
+      
+      openModal('viewMessage');
+    }
+    
+    function replyToMessage() {
+      const replyToId = parseInt(document.getElementById('viewMessageModal').dataset.replyTo);
+      closeModal('viewMessage');
+      openComposeMessage(replyToId);
+    }
+    
+    // ===== SPOTIFY =====
+    function loadSpotifyLink() {
+      const link = localStorage.getItem('pv_spotifyLink');
+      if (link) {
+        document.getElementById('spotifyLinkInput')?.setAttribute('value', link);
+        renderSpotifyWidget(link);
+      }
+    }
+    
+    function saveSpotifyLink() {
+      const link = document.getElementById('spotifyLinkInput').value.trim();
+      localStorage.setItem('pv_spotifyLink', link);
+      renderSpotifyWidget(link);
+      toast('Spotify link saved!', 'success');
+    }
+    
+    function renderSpotifyWidget(link) {
+      const widget = document.getElementById('spotifyWidget');
+      const content = document.getElementById('spotifyContent');
+      
+      if (!link) {
+        widget.style.display = 'none';
+        return;
+      }
+      
+      widget.style.display = 'block';
+      
+      // Extract playlist/track ID and create embed
+      let embedUrl = '';
+      if (link.includes('spotify.com/playlist/')) {
+        const playlistId = link.split('playlist/')[1]?.split('?')[0];
+        embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator&theme=0`;
+      } else if (link.includes('spotify.com/track/')) {
+        const trackId = link.split('track/')[1]?.split('?')[0];
+        embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
+      }
+      
+      if (embedUrl) {
+        content.innerHTML = `
+          <iframe style="border-radius:12px;width:100%;height:152px" 
+            src="${embedUrl}" 
+            frameBorder="0" allowfullscreen="" 
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+            loading="lazy"></iframe>
+        `;
+      } else {
+        content.innerHTML = `
+          <div class="spotify-widget-content">
+            <div class="spotify-widget-art"><i class="fas fa-music"></i></div>
+            <div class="spotify-widget-info">
+              <div class="spotify-widget-title">Match Day Playlist</div>
+              <div class="spotify-widget-artist">Click to open in Spotify</div>
+            </div>
+          </div>
+          <a href="${link}" target="_blank" class="spotify-widget-link">
+            <i class="fab fa-spotify"></i> Open in Spotify
+          </a>
+        `;
+      }
+    }
+    
+    // ===== ADMIN PERMISSIONS =====
+    function isAdmin() {
+      return currentUser?.is_admin === true;
+    }
+    
+    function requireAdmin(action) {
+      if (!isAdmin()) {
+        toast('Admin access required', 'error');
+        return false;
+      }
+      return true;
+    }
+    
+    // Override delete match to require admin
+    const originalConfirmDeleteMatch = window.confirmDeleteMatch;
+    window.confirmDeleteMatch = function() {
+      if (!requireAdmin('delete match')) return;
+      if (originalConfirmDeleteMatch) originalConfirmDeleteMatch.apply(this, arguments);
+    };
+    
+    // ===== HELPER: Switch Tab =====
+    function switchTab(tabId) {
+      const btn = document.querySelector(`.nav button[data-tab="${tabId}"]`);
+      if (btn) btn.click();
     }
   </script>
 </body>
