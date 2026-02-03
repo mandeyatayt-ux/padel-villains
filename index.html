@@ -2925,10 +2925,18 @@
               currentTab.removeEventListener('animationend', handler);
               if (targetTab) {
                 targetTab.classList.add('active');
+                // Call render functions for specific tabs
+                if (tabId === 'myprofile' && typeof renderMyProfile === 'function') {
+                  renderMyProfile();
+                }
               }
             }, { once: true });
           } else if (targetTab) {
             targetTab.classList.add('active');
+            // Call render functions for specific tabs
+            if (tabId === 'myprofile' && typeof renderMyProfile === 'function') {
+              renderMyProfile();
+            }
           }
         });
       });
@@ -8073,18 +8081,42 @@
     }
     
     function renderMyProfile() {
-      if (!currentUser) return;
+      if (!currentUser) {
+        console.log('renderMyProfile: No current user');
+        return;
+      }
       
-      const player = players.find(p => p.id === currentUser.player_id);
-      if (!player) return;
+      console.log('renderMyProfile: Current user player_id:', currentUser.player_id);
+      console.log('renderMyProfile: Available players:', players.map(p => ({id: p.id, name: p.name})));
+      
+      // Find player - handle both number and string IDs
+      const playerId = Number(currentUser.player_id);
+      const player = players.find(p => Number(p.id) === playerId);
+      
+      if (!player) {
+        console.log('renderMyProfile: Player not found for ID:', playerId);
+        return;
+      }
+      
+      console.log('renderMyProfile: Found player:', player.name);
       
       // Profile header
       document.getElementById('myProfileName').textContent = player.name;
       document.getElementById('myProfileRole').textContent = currentUser.is_admin ? '👑 ADMIN' : 'PLAYER';
-      document.getElementById('myProfileAvatar').innerHTML = player.photo ? `<img src="${player.photo}" class="loaded">` : player.name.charAt(0);
+      const avatarEl = document.getElementById('myProfileAvatar');
+      if (player.photo) {
+        avatarEl.innerHTML = `<img src="${player.photo}" class="loaded">`;
+      } else {
+        avatarEl.textContent = player.name.charAt(0).toUpperCase();
+      }
       
-      // Calculate stats
-      const playerTeams = teams.filter(t => t.player1_id === currentUser.player_id || t.player2_id === currentUser.player_id);
+      // Calculate stats - handle ID type mismatches
+      const playerTeams = teams.filter(t => 
+        Number(t.player1_id) === playerId || Number(t.player2_id) === playerId
+      );
+      
+      console.log('renderMyProfile: Found teams:', playerTeams.length);
+      
       let wins = 0, losses = 0;
       playerTeams.forEach(t => {
         const stats = getTeamStats(t.id);
@@ -8115,8 +8147,8 @@
         const dayRankings = rankTeamsByMatches(md.date);
         if (dayRankings.length > 0) {
           const winner = dayRankings[0];
-          const team = teams.find(t => t.id === winner.id);
-          if (team && (team.player1_id === currentUser.player_id || team.player2_id === currentUser.player_id)) {
+          const team = teams.find(t => Number(t.id) === Number(winner.id));
+          if (team && (Number(team.player1_id) === playerId || Number(team.player2_id) === playerId)) {
             villainDays++;
           }
         }
@@ -8127,8 +8159,8 @@
       const playedDates = new Set();
       matches.forEach(m => {
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
-        if ((t1 && (t1.player1_id === currentUser.player_id || t1.player2_id === currentUser.player_id)) ||
-            (t2 && (t2.player1_id === currentUser.player_id || t2.player2_id === currentUser.player_id))) {
+        if ((t1 && (Number(t1.player1_id) === playerId || Number(t1.player2_id) === playerId)) ||
+            (t2 && (Number(t2.player1_id) === playerId || Number(t2.player2_id) === playerId))) {
           playedDates.add(m.date);
         }
       });
@@ -8146,6 +8178,7 @@
     
     function renderMyTeams(playerTeams) {
       const container = document.getElementById('myTeamsGrid');
+      const playerId = Number(currentUser.player_id);
       
       if (playerTeams.length === 0) {
         container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">No teams yet. Create one in the Teams tab!</p>';
@@ -8153,7 +8186,8 @@
       }
       
       container.innerHTML = playerTeams.map(t => {
-        const partnerId = t.player1_id === currentUser.player_id ? t.player2_id : t.player1_id;
+        // Get partner ID - the one that's not the current user
+        const partnerId = Number(t.player1_id) === playerId ? t.player2_id : t.player1_id;
         const partner = getPlayer(partnerId);
         const stats = getTeamStats(t.id);
         const winRate = (stats.wins + stats.losses) > 0 ? Math.round((stats.wins / (stats.wins + stats.losses)) * 100) : 0;
