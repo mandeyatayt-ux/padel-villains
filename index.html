@@ -1024,6 +1024,26 @@
     .user-dropdown-item.danger i { color: var(--danger); }
     .user-dropdown-divider { height: 1px; background: var(--cream-dark); margin: 8px 0; }
     
+    /* Login Suggestions */
+    .login-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); max-height: 250px; overflow-y: auto; z-index: 100; display: none; margin-top: 4px; }
+    .login-suggestions.show { display: block; }
+    .login-suggestion { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid var(--cream); }
+    .login-suggestion:last-child { border-bottom: none; }
+    .login-suggestion:hover { background: var(--cream); }
+    .login-suggestion .avatar { width: 36px; height: 36px; font-size: 14px; }
+    .login-suggestion-info { flex: 1; }
+    .login-suggestion-name { font-weight: 600; font-size: 14px; }
+    .login-suggestion-role { font-size: 11px; color: var(--text-muted); }
+    .login-suggestion-new { color: var(--clay); font-size: 11px; font-weight: 600; }
+    
+    /* User Account Card (Admin Panel) */
+    .user-account-card { display: flex; align-items: center; gap: 12px; padding: 16px; background: var(--cream); border-radius: 12px; margin-bottom: 12px; }
+    .user-account-card:last-child { margin-bottom: 0; }
+    .user-account-info { flex: 1; }
+    .user-account-name { font-weight: 600; font-size: 15px; }
+    .user-account-role { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+    .user-account-actions { display: flex; gap: 8px; }
+    
     /* My Profile Page */
     .my-profile-header { background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); border-radius: 24px; padding: 40px; color: white; margin-bottom: 32px; position: relative; overflow: hidden; }
     .my-profile-header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px; background: rgba(255,255,255,0.1); border-radius: 50%; }
@@ -1125,11 +1145,11 @@
       </div>
       <div class="login-error" id="loginError">Invalid username or password</div>
       <form class="login-form" onsubmit="handleLogin(event)">
-        <div class="form-group">
+        <div class="form-group" style="position:relative">
           <label class="form-label">Username</label>
-          <select class="form-select" id="loginUsername" style="font-size:16px">
-            <option value="">Loading players...</option>
-          </select>
+          <input type="text" class="form-input" id="loginUsername" placeholder="Start typing your name..." style="font-size:16px" autocomplete="off" oninput="showLoginSuggestions(this.value)" onfocus="showLoginSuggestions(this.value)">
+          <div class="login-suggestions" id="loginSuggestions"></div>
+          <input type="hidden" id="loginPlayerId">
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
@@ -1211,6 +1231,7 @@
       <button data-tab="rules"><i class="fas fa-book"></i><span>Rules</span></button>
       <button data-tab="history"><i class="fas fa-clock-rotate-left"></i><span>History</span></button>
       <button data-tab="settings" class="admin-only"><i class="fas fa-cog"></i><span>Settings</span></button>
+      <button data-tab="admin" class="admin-only"><i class="fas fa-users-cog"></i><span>Admin</span></button>
     </nav>
     <!-- ===== DASHBOARD TAB ===== -->
     <section class="tab active" id="dashboard">
@@ -2172,14 +2193,6 @@
         </div>
       </div>
       
-      <!-- Admin User Management -->
-      <div class="settings-section">
-        <div class="settings-section-title"><i class="fas fa-users-cog"></i> User Management <span class="admin-badge">ADMIN</span></div>
-        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Create accounts and manage user permissions</p>
-        <div id="userAccountsList" style="margin-bottom:20px"></div>
-        <button class="btn btn-primary" onclick="openCreateAccountModal()"><i class="fas fa-user-plus"></i> Create Account from Player</button>
-      </div>
-      
       <!-- Matchday Spotify Link -->
       <div class="settings-section">
         <div class="settings-section-title"><i class="fab fa-spotify"></i> Matchday Music</div>
@@ -2188,6 +2201,49 @@
           <input type="text" class="form-input" id="spotifyLinkInput" placeholder="Paste Spotify playlist link...">
         </div>
         <button class="btn btn-primary" onclick="saveSpotifyLink()"><i class="fas fa-save"></i> Save Link</button>
+      </div>
+    </section>
+    
+    <!-- ===== ADMIN TAB ===== -->
+    <section class="tab" id="admin">
+      <div class="section-header">
+        <div><h2 class="section-title">👑 ADMIN PANEL</h2><p class="section-subtitle">Manage users, accounts and permissions</p></div>
+      </div>
+      
+      <!-- Password Settings -->
+      <div class="card" style="margin-bottom:24px">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-key" style="color:var(--clay);margin-right:8px"></i>App Password</h3>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Change the password all users use to log in</p>
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">Current Password</label>
+            <input type="text" class="form-input" id="currentAppPassword" readonly>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">New Password</label>
+            <input type="text" class="form-input" id="newAppPassword" placeholder="Enter new password">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="changeAppPassword()"><i class="fas fa-save"></i> Change Password</button>
+      </div>
+      
+      <!-- User Accounts Management -->
+      <div class="card" style="margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h3 style="font-size:16px;font-weight:700"><i class="fas fa-users-cog" style="color:var(--clay);margin-right:8px"></i>User Accounts</h3>
+          <button class="btn btn-sm btn-primary" onclick="openCreateAccountModal()"><i class="fas fa-user-plus"></i> Create Account</button>
+        </div>
+        <div id="userAccountsList"></div>
+      </div>
+      
+      <!-- Danger Zone -->
+      <div class="card" style="border:2px solid var(--danger)">
+        <h3 style="font-size:16px;font-weight:700;color:var(--danger);margin-bottom:16px"><i class="fas fa-exclamation-triangle" style="margin-right:8px"></i>Danger Zone</h3>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">These actions cannot be undone</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-danger" onclick="confirmResetAllAccounts()"><i class="fas fa-user-slash"></i> Reset All Accounts</button>
+          <button class="btn btn-danger" onclick="confirmClearAllData()"><i class="fas fa-trash"></i> Clear All Local Data</button>
+        </div>
       </div>
     </section>
   </div>
@@ -7776,6 +7832,7 @@
       // Render user accounts in settings if admin
       if (currentUser?.is_admin) {
         renderUserAccounts();
+        renderAdminPanel();
       }
     }
     
@@ -7799,7 +7856,10 @@
       document.getElementById('loginScreen').classList.remove('hidden');
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('mainApp').style.display = 'none';
-      populateLoginDropdown();
+      // Clear login form
+      document.getElementById('loginUsername').value = '';
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('loginPlayerId').value = '';
     }
     
     function showMainApp() {
@@ -7813,75 +7873,171 @@
       }
     }
     
-    function populateLoginDropdown() {
-      const select = document.getElementById('loginUsername');
-      if (!select) return;
-      
-      // Load accounts from localStorage
+    // Login autocomplete suggestions
+    function showLoginSuggestions(query) {
+      const container = document.getElementById('loginSuggestions');
       loadUserAccounts();
       
-      // If players haven't loaded yet, show loading state
       if (!players || players.length === 0) {
-        select.innerHTML = '<option value="">Loading players...</option>';
+        container.innerHTML = '<div class="login-suggestion"><span style="color:var(--text-muted)">Loading players...</span></div>';
+        container.classList.add('show');
         return;
       }
       
-      select.innerHTML = '<option value="">Select your name...</option>';
+      query = query.toLowerCase().trim();
       
-      // Show existing accounts
+      // Get all suggestions (accounts + players without accounts)
+      const suggestions = [];
+      
+      // Add existing accounts
       userAccounts.forEach(acc => {
-        const player = players.find(p => p.id === acc.player_id);
-        if (player) {
-          select.innerHTML += `<option value="${acc.id}">${player.name}${acc.is_admin ? ' (Admin)' : ''}</option>`;
+        const player = players.find(p => Number(p.id) === Number(acc.player_id));
+        if (player && (query === '' || player.name.toLowerCase().includes(query))) {
+          suggestions.push({
+            type: 'account',
+            id: acc.id,
+            playerId: acc.player_id,
+            name: player.name,
+            photo: player.photo,
+            isAdmin: acc.is_admin
+          });
         }
       });
       
-      // If no accounts exist OR there are players without accounts, show them for initial setup
-      const playersWithAccounts = userAccounts.map(a => a.player_id);
-      const playersWithoutAccounts = players.filter(p => !playersWithAccounts.includes(p.id));
-      
-      if (playersWithoutAccounts.length > 0) {
-        // Add a separator if there are existing accounts
-        if (userAccounts.length > 0) {
-          select.innerHTML += '<option disabled>──── Create New Account ────</option>';
+      // Add players without accounts
+      const playersWithAccounts = userAccounts.map(a => Number(a.player_id));
+      players.filter(p => !playersWithAccounts.includes(Number(p.id))).forEach(p => {
+        if (query === '' || p.name.toLowerCase().includes(query)) {
+          suggestions.push({
+            type: 'new',
+            playerId: p.id,
+            name: p.name,
+            photo: p.photo,
+            isFirstAccount: userAccounts.length === 0
+          });
         }
-        
-        playersWithoutAccounts.forEach(p => {
-          const label = userAccounts.length === 0 ? `${p.name} (First Admin)` : `${p.name} (New Account)`;
-          select.innerHTML += `<option value="new_${p.id}">${label}</option>`;
-        });
-      }
+      });
       
-      console.log('Login dropdown populated with', players.length, 'players');
-    }
-    
-    function handleLogin(e) {
-      e.preventDefault();
-      const usernameSelect = document.getElementById('loginUsername');
-      const password = document.getElementById('loginPassword').value;
-      const selectedValue = usernameSelect.value;
-      
-      if (!selectedValue) {
-        showLoginError('Please select your name');
+      if (suggestions.length === 0) {
+        container.innerHTML = '<div class="login-suggestion"><span style="color:var(--text-muted)">No matching players found</span></div>';
+        container.classList.add('show');
         return;
       }
       
-      if (password !== APP_PASSWORD) {
+      container.innerHTML = suggestions.slice(0, 8).map(s => {
+        const avatarContent = s.photo ? `<img src="${s.photo}" class="loaded">` : s.name.charAt(0).toUpperCase();
+        const roleText = s.type === 'account' 
+          ? (s.isAdmin ? '<span class="login-suggestion-role">👑 Admin</span>' : '<span class="login-suggestion-role">Player</span>')
+          : `<span class="login-suggestion-new">${s.isFirstAccount ? '✨ First Admin' : '+ Create Account'}</span>`;
+        
+        return `
+          <div class="login-suggestion" onclick="selectLoginSuggestion('${s.type}', ${s.type === 'account' ? s.id : s.playerId}, '${s.name.replace(/'/g, "\\'")}')">
+            <div class="avatar sm">${avatarContent}</div>
+            <div class="login-suggestion-info">
+              <div class="login-suggestion-name">${s.name}</div>
+              ${roleText}
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      container.classList.add('show');
+    }
+    
+    function selectLoginSuggestion(type, id, name) {
+      document.getElementById('loginUsername').value = name;
+      document.getElementById('loginPlayerId').value = type === 'account' ? `acc_${id}` : `new_${id}`;
+      document.getElementById('loginSuggestions').classList.remove('show');
+      document.getElementById('loginPassword').focus();
+    }
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+      const suggestions = document.getElementById('loginSuggestions');
+      const input = document.getElementById('loginUsername');
+      if (suggestions && input && !suggestions.contains(e.target) && e.target !== input) {
+        suggestions.classList.remove('show');
+      }
+    });
+    
+    function handleLogin(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const playerIdValue = document.getElementById('loginPlayerId').value;
+      
+      if (!usernameInput) {
+        showLoginError('Please enter your name');
+        return;
+      }
+      
+      // Get app password
+      const appPassword = localStorage.getItem('pv_appPassword') || APP_PASSWORD;
+      
+      if (password !== appPassword) {
         showLoginError('Invalid password');
         return;
       }
       
-      // Check if creating new account
-      if (selectedValue.startsWith('new_')) {
-        const playerId = parseInt(selectedValue.replace('new_', ''));
-        const player = players.find(p => p.id === playerId);
-        if (player) {
-          // Create new account (first account is admin)
+      // Check if we have a selected player ID
+      if (playerIdValue) {
+        if (playerIdValue.startsWith('new_')) {
+          // Create new account
+          const playerId = parseInt(playerIdValue.replace('new_', ''));
+          const player = players.find(p => Number(p.id) === playerId);
+          if (player) {
+            const isFirstAccount = userAccounts.length === 0;
+            const newAccount = {
+              id: Date.now(),
+              player_id: playerId,
+              username: player.name.toLowerCase().replace(/\s+/g, ''),
+              is_admin: isFirstAccount,
+              theme: 'default',
+              settings: {},
+              created_at: new Date().toISOString()
+            };
+            userAccounts.push(newAccount);
+            saveUserAccounts();
+            currentUser = newAccount;
+            localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+            showMainApp();
+            updateUserUI();
+            toast(`Welcome, ${player.name}!${isFirstAccount ? ' You are the first admin.' : ''}`, 'success');
+            return;
+          }
+        } else if (playerIdValue.startsWith('acc_')) {
+          // Login to existing account
+          const accountId = parseInt(playerIdValue.replace('acc_', ''));
+          const account = userAccounts.find(acc => acc.id === accountId);
+          if (account) {
+            currentUser = account;
+            localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+            showMainApp();
+            updateUserUI();
+            const player = players.find(p => Number(p.id) === Number(currentUser.player_id));
+            toast(`Welcome back, ${player?.name || 'Player'}!`, 'success');
+            return;
+          }
+        }
+      }
+      
+      // Fallback: try to find by name
+      const matchedPlayer = players.find(p => p.name.toLowerCase() === usernameInput.toLowerCase());
+      if (matchedPlayer) {
+        const existingAccount = userAccounts.find(acc => Number(acc.player_id) === Number(matchedPlayer.id));
+        if (existingAccount) {
+          currentUser = existingAccount;
+          localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+          showMainApp();
+          updateUserUI();
+          toast(`Welcome back, ${matchedPlayer.name}!`, 'success');
+        } else {
+          // Create new account
           const isFirstAccount = userAccounts.length === 0;
           const newAccount = {
             id: Date.now(),
-            player_id: playerId,
-            username: player.name.toLowerCase().replace(/\s+/g, ''),
+            player_id: matchedPlayer.id,
+            username: matchedPlayer.name.toLowerCase().replace(/\s+/g, ''),
             is_admin: isFirstAccount,
             theme: 'default',
             settings: {},
@@ -7893,23 +8049,12 @@
           localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
           showMainApp();
           updateUserUI();
-          toast(`Welcome, ${player.name}!${isFirstAccount ? ' You are the first admin.' : ''}`, 'success');
-          return;
+          toast(`Welcome, ${matchedPlayer.name}!${isFirstAccount ? ' You are the first admin.' : ''}`, 'success');
         }
+        return;
       }
       
-      // Login to existing account
-      const account = userAccounts.find(acc => acc.id === parseInt(selectedValue));
-      if (account) {
-        currentUser = account;
-        localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
-        showMainApp();
-        updateUserUI();
-        const player = players.find(p => p.id === currentUser.player_id);
-        toast(`Welcome back, ${player?.name || 'Player'}!`, 'success');
-      } else {
-        showLoginError('Account not found');
-      }
+      showLoginError('Player not found. Please select from suggestions.');
     }
     
     function showLoginError(msg) {
@@ -7981,35 +8126,51 @@
       if (!container) return;
       
       if (userAccounts.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No accounts created yet</p>';
+        container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px">No accounts created yet. Create the first account to become admin!</p>';
         return;
       }
       
       container.innerHTML = userAccounts.map(acc => {
-        const player = players.find(p => p.id === acc.player_id);
+        const player = players.find(p => Number(p.id) === Number(acc.player_id));
+        const avatarContent = player?.photo ? `<img src="${player.photo}" class="loaded">` : (player?.name?.charAt(0)?.toUpperCase() || '?');
+        const isSelf = currentUser && currentUser.id === acc.id;
+        
         return `
-          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--cream);border-radius:10px;margin-bottom:8px">
-            <div class="avatar sm">${player?.photo ? `<img src="${player.photo}" class="loaded">` : (player?.name?.charAt(0) || '?')}</div>
-            <div style="flex:1">
-              <div style="font-weight:600;font-size:14px">${player?.name || 'Unknown'}</div>
-              <div style="font-size:11px;color:var(--text-muted)">${acc.is_admin ? '👑 Admin' : 'Player'}</div>
+          <div class="user-account-card">
+            <div class="avatar md">${avatarContent}</div>
+            <div class="user-account-info">
+              <div class="user-account-name">${player?.name || 'Unknown'}${isSelf ? ' <span style="color:var(--clay);font-size:11px">(You)</span>' : ''}</div>
+              <div class="user-account-role">${acc.is_admin ? '<span style="color:var(--gold)">👑 Admin</span>' : 'Player'}</div>
             </div>
-            <div style="display:flex;gap:8px">
-              ${!acc.is_admin ? `<button class="btn btn-xs btn-secondary" onclick="toggleAdminRights(${acc.id})"><i class="fas fa-crown"></i></button>` : ''}
-              <button class="btn btn-xs btn-danger" onclick="deleteAccount(${acc.id})"><i class="fas fa-trash"></i></button>
+            <div class="user-account-actions">
+              <button class="btn btn-xs btn-secondary" onclick="editUserAccount(${acc.id})" title="Edit"><i class="fas fa-edit"></i></button>
+              ${acc.is_admin 
+                ? `<button class="btn btn-xs btn-warning" onclick="removeAdminRights(${acc.id})" title="Remove Admin" style="background:var(--gold)"><i class="fas fa-crown"></i></button>` 
+                : `<button class="btn btn-xs btn-secondary" onclick="grantAdminRights(${acc.id})" title="Make Admin"><i class="fas fa-crown"></i></button>`
+              }
+              ${!isSelf ? `<button class="btn btn-xs btn-danger" onclick="confirmDeleteAccount(${acc.id})" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
             </div>
           </div>
         `;
       }).join('');
     }
     
+    function renderAdminPanel() {
+      // Show current app password
+      const appPassword = localStorage.getItem('pv_appPassword') || APP_PASSWORD;
+      const passwordInput = document.getElementById('currentAppPassword');
+      if (passwordInput) {
+        passwordInput.value = appPassword;
+      }
+    }
+    
     function openCreateAccountModal() {
       // Populate player dropdown with players who don't have accounts
       const select = document.getElementById('createAccountPlayer');
-      const existingPlayerIds = userAccounts.map(acc => acc.player_id);
+      const existingPlayerIds = userAccounts.map(acc => Number(acc.player_id));
       
       select.innerHTML = '<option value="">Choose a player...</option>';
-      players.filter(p => !existingPlayerIds.includes(p.id)).forEach(p => {
+      players.filter(p => !existingPlayerIds.includes(Number(p.id))).forEach(p => {
         select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
       
@@ -8027,12 +8188,12 @@
       }
       
       // Check if account already exists
-      if (userAccounts.some(acc => acc.player_id === playerId)) {
+      if (userAccounts.some(acc => Number(acc.player_id) === playerId)) {
         toast('Account already exists for this player', 'error');
         return;
       }
       
-      const player = players.find(p => p.id === playerId);
+      const player = players.find(p => Number(p.id) === playerId);
       const newAccount = {
         id: Date.now(),
         player_id: playerId,
@@ -8051,14 +8212,65 @@
       toast(`Account created for ${player.name}`, 'success');
     }
     
-    function toggleAdminRights(accountId) {
+    function editUserAccount(accountId) {
+      const acc = userAccounts.find(a => a.id === accountId);
+      if (!acc) return;
+      
+      const player = players.find(p => Number(p.id) === Number(acc.player_id));
+      toast(`Editing ${player?.name || 'User'} - Feature coming soon`, 'info');
+    }
+    
+    function grantAdminRights(accountId) {
       const acc = userAccounts.find(a => a.id === accountId);
       if (acc) {
-        acc.is_admin = !acc.is_admin;
+        acc.is_admin = true;
         saveUserAccounts();
         renderUserAccounts();
-        toast(acc.is_admin ? 'Admin rights granted' : 'Admin rights removed', 'success');
+        const player = players.find(p => Number(p.id) === Number(acc.player_id));
+        toast(`${player?.name || 'User'} is now an admin`, 'success');
       }
+    }
+    
+    function removeAdminRights(accountId) {
+      const acc = userAccounts.find(a => a.id === accountId);
+      if (!acc) return;
+      
+      // Count admins
+      const adminCount = userAccounts.filter(a => a.is_admin).length;
+      if (adminCount <= 1) {
+        toast('Cannot remove admin rights - at least one admin is required', 'error');
+        return;
+      }
+      
+      // Don't let user remove their own admin rights
+      if (currentUser && currentUser.id === accountId) {
+        toast('Cannot remove your own admin rights', 'error');
+        return;
+      }
+      
+      acc.is_admin = false;
+      saveUserAccounts();
+      renderUserAccounts();
+      const player = players.find(p => Number(p.id) === Number(acc.player_id));
+      toast(`Admin rights removed from ${player?.name || 'User'}`, 'success');
+    }
+    
+    function confirmDeleteAccount(accountId) {
+      const acc = userAccounts.find(a => a.id === accountId);
+      if (!acc) return;
+      
+      const player = players.find(p => Number(p.id) === Number(acc.player_id));
+      
+      document.getElementById('confirmTitle').textContent = 'Delete Account';
+      document.getElementById('confirmText').textContent = `Delete the account for ${player?.name || 'this user'}? They will need to create a new account to log in again.`;
+      document.getElementById('confirmBtn').textContent = 'Delete Account';
+      
+      confirmAction = () => {
+        deleteAccount(accountId);
+        closeModal('confirm');
+      };
+      
+      openModal('confirm');
     }
     
     function deleteAccount(accountId) {
@@ -8072,6 +8284,68 @@
       saveUserAccounts();
       renderUserAccounts();
       toast('Account deleted', 'success');
+    }
+    
+    // Password Change
+    function changeAppPassword() {
+      const newPassword = document.getElementById('newAppPassword').value.trim();
+      
+      if (!newPassword) {
+        toast('Please enter a new password', 'error');
+        return;
+      }
+      
+      if (newPassword.length < 4) {
+        toast('Password must be at least 4 characters', 'error');
+        return;
+      }
+      
+      localStorage.setItem('pv_appPassword', newPassword);
+      document.getElementById('currentAppPassword').value = newPassword;
+      document.getElementById('newAppPassword').value = '';
+      toast('Password changed successfully! All users will use the new password.', 'success');
+    }
+    
+    // Danger Zone functions
+    function confirmResetAllAccounts() {
+      document.getElementById('confirmTitle').textContent = 'Reset All Accounts';
+      document.getElementById('confirmText').textContent = 'This will delete ALL user accounts. Everyone will need to create new accounts. Are you sure?';
+      document.getElementById('confirmBtn').textContent = 'Reset All';
+      
+      confirmAction = () => {
+        userAccounts = [];
+        saveUserAccounts();
+        currentUser = null;
+        localStorage.removeItem('pv_currentUser');
+        closeModal('confirm');
+        showLoginScreen();
+        toast('All accounts have been reset', 'success');
+      };
+      
+      openModal('confirm');
+    }
+    
+    function confirmClearAllData() {
+      document.getElementById('confirmTitle').textContent = 'Clear All Local Data';
+      document.getElementById('confirmText').textContent = 'This will clear all locally stored data including accounts, messages, gallery, and settings. Data in Supabase will remain. Are you sure?';
+      document.getElementById('confirmBtn').textContent = 'Clear All';
+      
+      confirmAction = () => {
+        // Clear all local storage items for this app
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('pv_')) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        
+        closeModal('confirm');
+        location.reload();
+      };
+      
+      openModal('confirm');
     }
     
     // ===== MY PROFILE =====
