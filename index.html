@@ -3040,6 +3040,8 @@
         loadLocal(); 
         renderAll();
         hideLoadingState();
+        // Also initialize auth on error (use local data)
+        initializeAuth();
       }
     }
     
@@ -7874,17 +7876,32 @@
     }
     
     // Login autocomplete suggestions
+    let loginSuggestionsRetryCount = 0;
+    
     function showLoginSuggestions(query) {
       const container = document.getElementById('loginSuggestions');
+      if (!container) return;
+      
       loadUserAccounts();
       
       if (!players || players.length === 0) {
         container.innerHTML = '<div class="login-suggestion"><span style="color:var(--text-muted)">Loading players...</span></div>';
         container.classList.add('show');
+        
+        // Retry after a delay if players haven't loaded
+        if (loginSuggestionsRetryCount < 10) {
+          loginSuggestionsRetryCount++;
+          setTimeout(() => {
+            if (players && players.length > 0) {
+              showLoginSuggestions(document.getElementById('loginUsername')?.value || '');
+            }
+          }, 500);
+        }
         return;
       }
       
-      query = query.toLowerCase().trim();
+      loginSuggestionsRetryCount = 0; // Reset retry count
+      query = (query || '').toLowerCase().trim();
       
       // Get all suggestions (accounts + players without accounts)
       const suggestions = [];
