@@ -1128,14 +1128,14 @@
         <div class="form-group">
           <label class="form-label">Username</label>
           <select class="form-select" id="loginUsername" style="font-size:16px">
-            <option value="">Select your name...</option>
+            <option value="">Loading players...</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
           <input type="password" class="form-input" id="loginPassword" placeholder="Enter password" style="font-size:16px">
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:16px">
+        <button type="submit" class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;padding:16px">
           <i class="fas fa-sign-in-alt"></i> Sign In
         </button>
       </form>
@@ -1161,7 +1161,7 @@
     <div class="loading-splash-bar"><div class="loading-splash-bar-fill"></div></div>
   </div>
 
-  <div class="app">
+  <div class="app" id="mainApp" style="display:none">
     <!-- HEADER -->
     <header class="header">
       <div class="logo">
@@ -7750,20 +7750,25 @@
     
     // ===== AUTHENTICATION =====
     function initializeAuth() {
+      console.log('Initializing auth... Players loaded:', players.length);
+      
       // Load user accounts
       loadUserAccounts();
       loadMessages();
       loadGallery();
       loadSpotifyLink();
       
-      // Now check if user is already logged in
-      checkAuth();
-      
-      // Also populate login dropdown in case we need it
+      // Populate login dropdown first (needs players data)
       populateLoginDropdown();
       
-      // Render user accounts in settings
-      renderUserAccounts();
+      // Now check if user is already logged in
+      const wasLoggedIn = checkAuth();
+      console.log('Auth check result:', wasLoggedIn ? 'Logged in' : 'Not logged in');
+      
+      // Render user accounts in settings if admin
+      if (currentUser?.is_admin) {
+        renderUserAccounts();
+      }
     }
     
     function checkAuth() {
@@ -7784,13 +7789,15 @@
     
     function showLoginScreen() {
       document.getElementById('loginScreen').classList.remove('hidden');
-      document.querySelector('.container').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('mainApp').style.display = 'none';
       populateLoginDropdown();
     }
     
     function showMainApp() {
       document.getElementById('loginScreen').classList.add('hidden');
-      document.querySelector('.container').style.display = 'block';
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
       if (currentUser?.is_admin) {
         document.body.classList.add('is-admin');
       } else {
@@ -7804,6 +7811,12 @@
       
       // Load accounts from localStorage
       loadUserAccounts();
+      
+      // If players haven't loaded yet, show loading state
+      if (!players || players.length === 0) {
+        select.innerHTML = '<option value="">Loading players...</option>';
+        return;
+      }
       
       select.innerHTML = '<option value="">Select your name...</option>';
       
@@ -7831,10 +7844,7 @@
         });
       }
       
-      // If no players at all, show a message
-      if (players.length === 0) {
-        select.innerHTML = '<option value="">No players found - loading...</option>';
-      }
+      console.log('Login dropdown populated with', players.length, 'players');
     }
     
     function handleLogin(e) {
