@@ -2985,6 +2985,10 @@
                 if (tabId === 'myprofile' && typeof renderMyProfile === 'function') {
                   renderMyProfile();
                 }
+                if (tabId === 'admin' && typeof renderUserAccounts === 'function') {
+                  renderUserAccounts();
+                  renderAdminPanel();
+                }
               }
             }, { once: true });
           } else if (targetTab) {
@@ -2992,6 +2996,10 @@
             // Call render functions for specific tabs
             if (tabId === 'myprofile' && typeof renderMyProfile === 'function') {
               renderMyProfile();
+            }
+            if (tabId === 'admin' && typeof renderUserAccounts === 'function') {
+              renderUserAccounts();
+              renderAdminPanel();
             }
           }
         });
@@ -3093,7 +3101,8 @@
         console.log('Data loaded:', { 
           players: data.players.length, 
           teams: data.teams.length, 
-          matches: data.matches.length 
+          matches: data.matches.length,
+          playersWithPhotos: data.players.filter(p => p.photo).length
         });
         
         applyData(data);
@@ -8140,7 +8149,16 @@
     
     function renderUserAccounts() {
       const container = document.getElementById('userAccountsList');
-      if (!container) return;
+      if (!container) {
+        console.log('renderUserAccounts: container not found');
+        return;
+      }
+      
+      // Make sure accounts are loaded
+      loadUserAccounts();
+      
+      console.log('renderUserAccounts: userAccounts count =', userAccounts.length);
+      console.log('renderUserAccounts: players count =', players.length);
       
       if (userAccounts.length === 0) {
         container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px">No accounts created yet. Create the first account to become admin!</p>';
@@ -8149,6 +8167,7 @@
       
       container.innerHTML = userAccounts.map(acc => {
         const player = players.find(p => Number(p.id) === Number(acc.player_id));
+        console.log('renderUserAccounts: player for account', acc.id, '=', player?.name, 'photo:', !!player?.photo);
         const avatarContent = player?.photo ? `<img src="${player.photo}" class="loaded">` : (player?.name?.charAt(0)?.toUpperCase() || '?');
         const isSelf = currentUser && currentUser.id === acc.id;
         
