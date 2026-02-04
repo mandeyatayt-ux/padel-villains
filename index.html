@@ -3132,12 +3132,18 @@
       matchdays = data.matchdays || [];
       determineActiveMatchday();
       
+      // Debug: log photo status
+      console.log('applyData - players with photos:', players.filter(p => p.photo).length, '/', players.length);
+      
       // Try to save to localStorage as backup (may fail due to quota)
       try {
         saveLocal();
       } catch (e) {
         console.warn('Could not save to localStorage:', e);
       }
+      
+      // Verify photos still exist after saveLocal
+      console.log('After saveLocal - players with photos:', players.filter(p => p.photo).length, '/', players.length);
     }
     
     function getCachedData() {
@@ -3176,6 +3182,7 @@
     
     async function fetchFreshDataInBackground() {
       try {
+        console.log('Background fetch starting...');
         // Fetch all tables in parallel
         const results = await Promise.all([
           supabaseClient.from('players').select('*').order('created_at'),
@@ -3211,11 +3218,16 @@
           matchdays: matchdaysData
         };
         
+        console.log('Background fetch complete:', {
+          players: data.players.length,
+          playersWithPhotos: data.players.filter(p => p.photo).length
+        });
+        
         applyData(data);
         cacheData(data);
         renderAll();
         loadEventsFromDb(); // Also refresh events
-        console.log('Background refresh complete');
+        console.log('Background refresh and render complete');
       } catch (e) {
         console.log('Background refresh failed:', e);
       }
@@ -3371,7 +3383,9 @@
     }
     
     const av = (p, size = '') => {
-      if (p?.photo) return `<div class="avatar ${size}"><img src="${p.photo}" alt="${p.name}"></div>`;
+      if (p?.photo) {
+        return `<div class="avatar ${size}"><img src="${p.photo}" alt="${p.name}" onerror="this.parentElement.innerHTML='${p?.name?.charAt(0).toUpperCase() || '?'}'"></div>`;
+      }
       return `<div class="avatar ${size}">${p?.name?.charAt(0).toUpperCase() || '?'}</div>`;
     };
     
