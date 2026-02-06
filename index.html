@@ -8138,7 +8138,7 @@
       }
     }
     
-    function handleLogin(e) {
+    async function handleLogin(e) {
       e.preventDefault();
       const usernameInput = document.getElementById('loginUsername').value.trim();
       const password = document.getElementById('loginPassword').value;
@@ -8164,6 +8164,9 @@
         return;
       }
       
+      // Reload accounts from DB to get latest
+      await loadUserAccounts();
+      
       // Check if account exists for this player
       const existingAccount = userAccounts.find(acc => Number(acc.player_id) === Number(matchedPlayer.id));
       
@@ -8176,23 +8179,26 @@
         toast(`Welcome back, ${matchedPlayer.name}!`, 'success');
       } else {
         // Create new account for this player
+        // Check if Tayt - always make admin
+        const isTayt = matchedPlayer.name.toLowerCase() === 'tayt';
         const isFirstAccount = userAccounts.length === 0;
         const newAccount = {
           id: Date.now(),
           player_id: matchedPlayer.id,
           username: matchedPlayer.name.toLowerCase().replace(/\s+/g, ''),
-          is_admin: isFirstAccount,
+          is_admin: isTayt || isFirstAccount,
           theme: 'default',
           settings: {},
           created_at: new Date().toISOString()
         };
         userAccounts.push(newAccount);
-        saveUserAccounts();
+        await saveUserAccounts();
+        await saveUserAccountToDb(newAccount); // Save to Supabase
         currentUser = newAccount;
         localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
         showMainApp();
         updateUserUI();
-        toast(`Welcome, ${matchedPlayer.name}!${isFirstAccount ? ' You are the first admin.' : ''}`, 'success');
+        toast(`Welcome, ${matchedPlayer.name}!${newAccount.is_admin ? ' You are an admin.' : ''}`, 'success');
       }
     }
     
@@ -8245,7 +8251,8 @@
     });
     
     // ===== USER ACCOUNTS MANAGEMENT =====
-    function loadUserAccounts() {
+    async function loadUserAccounts() {
+      // First load from localStorage for instant access
       const saved = localStorage.getItem('pv_userAccounts');
       if (saved) {
         try {
@@ -8254,10 +8261,78 @@
           userAccounts = [];
         }
       }
+      
+      // Then sync from Supabase if available
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('user_accounts')
+            .select('*')
+            .order('created_at');
+          
+          if (data && !error) {
+            userAccounts = data;
+            localStorage.setItem('pv_userAccounts', JSON.stringify(userAccounts));
+          }
+        } catch (e) {
+          console.log('User accounts sync:', e.message);
+        }
+      }
     }
     
-    function saveUserAccounts() {
+    async function saveUserAccounts() {
       localStorage.setItem('pv_userAccounts', JSON.stringify(userAccounts));
+      
+      // Sync to Supabase if available
+      if (supabaseClient) {
+        try {
+          // Upsert all accounts
+          for (const acc of userAccounts) {
+            await supabaseClient
+              .from('user_accounts')
+              .upsert(acc, { onConflict: 'id' });
+          }
+        } catch (e) {
+          console.log('User accounts save error:', e.message);
+        }
+      }
+    }
+    
+    async function saveUserAccountToDb(account) {
+      if (!supabaseClient) {
+        console.log('No Supabase client - account saved to localStorage only');
+        return;
+      }
+      try {
+        console.log('Saving account to Supabase:', account);
+        const { data, error } = await supabaseClient
+          .from('user_accounts')
+          .upsert(account, { onConflict: 'id' })
+          .select();
+        if (error) {
+          console.error('Account save error:', error);
+          // If table doesn't exist, show helpful message
+          if (error.message?.includes('relation') || error.code === '42P01') {
+            console.error('user_accounts table may not exist. Run the migration SQL.');
+          }
+        } else {
+          console.log('Account saved successfully:', data);
+        }
+      } catch (e) {
+        console.error('Account save exception:', e);
+      }
+    }
+    
+    async function deleteUserAccountFromDb(accountId) {
+      if (!supabaseClient) return;
+      try {
+        await supabaseClient
+          .from('user_accounts')
+          .delete()
+          .eq('id', accountId);
+      } catch (e) {
+        console.error('Account delete error:', e);
+      }
     }
     
     function renderUserAccounts() {
@@ -8374,6 +8449,7 @@
       if (acc) {
         acc.is_admin = true;
         saveUserAccounts();
+        saveUserAccountToDb(acc); // Sync to database
         renderUserAccounts();
         const player = players.find(p => Number(p.id) === Number(acc.player_id));
         toast(`${player?.name || 'User'} is now an admin`, 'success');
@@ -8399,6 +8475,7 @@
       
       acc.is_admin = false;
       saveUserAccounts();
+      saveUserAccountToDb(acc); // Sync to database
       renderUserAccounts();
       const player = players.find(p => Number(p.id) === Number(acc.player_id));
       toast(`Admin rights removed from ${player?.name || 'User'}`, 'success');
@@ -8431,6 +8508,7 @@
       
       userAccounts = userAccounts.filter(acc => acc.id !== accountId);
       saveUserAccounts();
+      deleteUserAccountFromDb(accountId); // Delete from database
       renderUserAccounts();
       toast('Account deleted', 'success');
     }
