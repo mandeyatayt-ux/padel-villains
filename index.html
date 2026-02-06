@@ -8305,19 +8305,8 @@
     async function saveUserAccounts() {
       localStorage.setItem('pv_userAccounts', JSON.stringify(userAccounts));
       
-      // Sync to Supabase if available
-      if (supabaseClient) {
-        try {
-          // Upsert all accounts
-          for (const acc of userAccounts) {
-            await supabaseClient
-              .from('user_accounts')
-              .upsert(acc, { onConflict: 'id' });
-          }
-        } catch (e) {
-          console.log('User accounts save error:', e.message);
-        }
-      }
+      // Sync to Supabase is handled by individual saveUserAccountToDb calls
+      // This function just handles localStorage
     }
     
     async function saveUserAccountToDb(account) {
@@ -8326,19 +8315,50 @@
         return;
       }
       try {
-        console.log('Saving account to Supabase:', account);
-        const { data, error } = await supabaseClient
+        // Prepare account data for Supabase - ensure correct types
+        const dbAccount = {
+          id: Number(account.id),
+          player_id: Number(account.player_id),
+          username: String(account.username || ''),
+          is_admin: Boolean(account.is_admin),
+          theme: String(account.theme || 'default'),
+          settings: account.settings || {},
+          created_at: account.created_at || new Date().toISOString()
+        };
+        
+        console.log('Saving account to Supabase:', dbAccount);
+        
+        // Try insert first, then update if exists
+        const { data: insertData, error: insertError } = await supabaseClient
           .from('user_accounts')
-          .upsert(account, { onConflict: 'id' })
+          .insert(dbAccount)
           .select();
-        if (error) {
-          console.error('Account save error:', error);
-          // If table doesn't exist, show helpful message
-          if (error.message?.includes('relation') || error.code === '42P01') {
-            console.error('user_accounts table may not exist. Run the migration SQL.');
+        
+        if (insertError) {
+          // If duplicate key error, try update instead
+          if (insertError.code === '23505' || insertError.message?.includes('duplicate')) {
+            console.log('Account exists, updating...');
+            const { data: updateData, error: updateError } = await supabaseClient
+              .from('user_accounts')
+              .update({
+                username: dbAccount.username,
+                is_admin: dbAccount.is_admin,
+                theme: dbAccount.theme,
+                settings: dbAccount.settings
+              })
+              .eq('id', dbAccount.id)
+              .select();
+            
+            if (updateError) {
+              console.error('Account update error:', updateError);
+            } else {
+              console.log('Account updated successfully:', updateData);
+            }
+          } else {
+            console.error('Account insert error:', insertError);
           }
         } else {
-          console.log('Account saved successfully:', data);
+          console.log('Account inserted successfully:', insertData);
         }
       } catch (e) {
         console.error('Account save exception:', e);
