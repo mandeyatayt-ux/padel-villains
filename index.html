@@ -3283,6 +3283,12 @@
         applyData(data);
         cacheData(data);
         renderAll();
+        
+        // Also refresh My Profile if user is logged in
+        if (currentUser) {
+          renderMyProfile();
+        }
+        
         loadEventsFromDb(); // Also refresh events
         console.log('Background refresh and render complete');
       } catch (e) {
@@ -8377,27 +8383,29 @@
       }
     }
     
-    function renderUserAccounts() {
+    async function renderUserAccounts() {
       const container = document.getElementById('userAccountsList');
       if (!container) {
-        console.log('renderUserAccounts: container not found');
         return;
       }
       
-      // Make sure accounts are loaded
-      loadUserAccounts();
-      
-      console.log('renderUserAccounts: userAccounts count =', userAccounts.length);
-      console.log('renderUserAccounts: players count =', players.length);
+      // Load accounts from localStorage (sync) for immediate display
+      const saved = localStorage.getItem('pv_userAccounts');
+      if (saved) {
+        try {
+          userAccounts = JSON.parse(saved);
+        } catch (e) {
+          userAccounts = [];
+        }
+      }
       
       if (userAccounts.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px">No accounts created yet. Create the first account to become admin!</p>';
+        container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px">No accounts created yet. Use "Create Account" to add users.</p>';
         return;
       }
       
       container.innerHTML = userAccounts.map(acc => {
         const player = players.find(p => Number(p.id) === Number(acc.player_id));
-        console.log('renderUserAccounts: player for account', acc.id, '=', player?.name, 'photo:', !!player?.photo);
         const avatarContent = player?.photo ? `<img src="${player.photo}" class="loaded">` : (player?.name?.charAt(0)?.toUpperCase() || '?');
         const isSelf = currentUser && currentUser.id === acc.id;
         
