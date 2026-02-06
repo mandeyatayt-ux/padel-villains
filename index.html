@@ -6,9 +6,15 @@
   <title>Padel Villains - Social League Tracker</title>
   <meta name="description" content="Track your padel matches, rankings, and achievements">
   <meta name="theme-color" content="#E07850">
+  <!-- Preconnect to critical domains for faster loading -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://hihujmoapelzuvcrdhfh.supabase.co">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  <!-- Load fonts with display swap for faster text rendering -->
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Preload critical icon font -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root {
@@ -343,7 +349,9 @@
     
     /* Avatar */
     .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--brown-light), var(--brown-medium)); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; border: 3px solid var(--clay); flex-shrink: 0; overflow: hidden; image-rendering: -webkit-optimize-contrast; }
-    .avatar img { width: 100%; height: 100%; object-fit: cover; image-rendering: -webkit-optimize-contrast; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; image-rendering: -webkit-optimize-contrast; transition: opacity 0.2s; }
+    .avatar img[src=""] { display: none; }
+    .avatar img:not([src]) { display: none; }
     .avatar.xl { width: 100px; height: 100px; font-size: 40px; border-width: 4px; }
     .avatar.lg { width: 72px; height: 72px; font-size: 28px; border-width: 3px; }
     .avatar.sm { width: 40px; height: 40px; font-size: 16px; border-width: 2px; }
@@ -1117,10 +1125,15 @@
     .admin-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--gold); color: white; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
     
     /* Admin Only Elements */
-    .admin-only { display: none; }
-    body.is-admin .admin-only { display: flex; }
-    body.is-admin .admin-only-block { display: block; }
-    body.is-admin .admin-only-inline { display: inline; }
+    .admin-only { display: none !important; }
+    body.is-admin .admin-only { display: flex !important; }
+    body.is-admin .admin-only.hidden { display: none !important; }
+    body.is-admin .admin-only-block { display: block !important; }
+    body.is-admin .admin-only-block.hidden { display: none !important; }
+    body.is-admin .admin-only-inline { display: inline !important; }
+    body.is-admin .admin-only-inline.hidden { display: none !important; }
+    body.is-admin button.admin-only { display: inline-flex !important; }
+    body.is-admin button.admin-only.hidden { display: none !important; }
     
     /* Teams List in Profile */
     .my-teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
@@ -1147,8 +1160,7 @@
       <form class="login-form" onsubmit="handleLogin(event)">
         <div class="form-group" style="position:relative">
           <label class="form-label">Username</label>
-          <input type="text" class="form-input" id="loginUsername" placeholder="Start typing your name..." style="font-size:16px" autocomplete="off" oninput="showLoginSuggestions(this.value)" onfocus="showLoginSuggestions(this.value)">
-          <div class="login-suggestions" id="loginSuggestions"></div>
+          <input type="text" class="form-input" id="loginUsername" placeholder="Enter your name" style="font-size:16px" autocomplete="off">
           <input type="hidden" id="loginPlayerId">
         </div>
         <div class="form-group">
@@ -1244,9 +1256,9 @@
         <div class="matchday-actions">
           <button class="btn btn-sm btn-secondary" onclick="openMatchdaySelectModal()"><i class="fas fa-history"></i> View History</button>
           <button class="btn btn-sm btn-secondary" onclick="openModal('createMatchday')" id="createMatchdayBtn"><i class="fas fa-plus"></i> Create Match Day</button>
-          <button class="btn btn-sm btn-secondary hidden" onclick="editActiveMatchday()" id="editMatchdayBtn"><i class="fas fa-edit"></i> Edit</button>
-          <button class="btn btn-sm btn-warning hidden" onclick="cancelMatchday()" id="cancelMatchdayBtn" style="background:var(--gold);color:white"><i class="fas fa-times"></i> Cancel Match Day</button>
-          <button class="btn btn-sm btn-danger hidden" onclick="closeMatchday()" id="closeMatchdayBtn"><i class="fas fa-flag-checkered"></i> Close Match Day</button>
+          <button class="btn btn-sm btn-secondary hidden admin-only" onclick="editActiveMatchday()" id="editMatchdayBtn"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn btn-sm btn-warning hidden admin-only" onclick="cancelMatchday()" id="cancelMatchdayBtn" style="background:var(--gold);color:white"><i class="fas fa-times"></i> Cancel Match Day</button>
+          <button class="btn btn-sm btn-danger hidden admin-only" onclick="closeMatchday()" id="closeMatchdayBtn"><i class="fas fa-flag-checkered"></i> Close Match Day</button>
         </div>
       </div>
       
@@ -1260,6 +1272,23 @@
       <div class="card upcoming-matchdays hidden" id="upcomingMatchdays">
         <h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-muted)"><i class="fas fa-calendar"></i> Upcoming Match Days</h4>
         <div id="upcomingList"></div>
+      </div>
+      
+      <!-- Matchday Countdown (shown when matchday is today but not yet started) -->
+      <div class="card matchday-countdown hidden" id="matchdayCountdown" style="background:linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%);color:white;text-align:center;padding:24px">
+        <div style="font-size:14px;opacity:0.9;margin-bottom:8px">🎾 MATCH DAY STARTS IN</div>
+        <div id="countdownTimer" style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px">--:--:--</div>
+        <div id="countdownVenue" style="font-size:14px;opacity:0.8;margin-top:8px"></div>
+      </div>
+      
+      <!-- Quick Actions for Active Matchday -->
+      <div class="card quick-actions hidden" id="quickActionsCard" style="margin-bottom:24px">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+          <button class="btn btn-primary" onclick="openModal('queueMatch')"><i class="fas fa-plus"></i> Add Match</button>
+          <button class="btn btn-secondary" onclick="switchTab('matchup')"><i class="fas fa-shuffle"></i> Generate Matchup</button>
+          <button class="btn btn-secondary" onclick="sendWhatsAppReminder()"><i class="fab fa-whatsapp"></i> Send Reminder</button>
+          <button class="btn btn-secondary" onclick="shareMatchdayResults()"><i class="fas fa-share"></i> Share Results</button>
+        </div>
       </div>
       
       <div class="grid-2">
@@ -1608,8 +1637,8 @@
           <p style="opacity:0.85">Track individual performance and rankings</p>
         </div>
         <div class="players-hero-stats">
-          <div class="players-hero-stat"><div class="players-hero-stat-value" id="heroPlayers">0</div><div class="players-hero-stat-label">Active</div></div>
-          <div class="players-hero-stat"><div class="players-hero-stat-value" id="heroGames">0</div><div class="players-hero-stat-label">Games</div></div>
+          <div class="players-hero-stat"><div class="players-hero-stat-value" id="heroActivePlayers">0</div><div class="players-hero-stat-label">Active</div></div>
+          <div class="players-hero-stat"><div class="players-hero-stat-value" id="heroTotalPlayers">0</div><div class="players-hero-stat-label">Total</div></div>
         </div>
       </div>
       <div class="section-header">
@@ -1651,7 +1680,7 @@
       <!-- Match History Section -->
       <div class="section-header">
         <div><h2 class="section-title">MATCH HISTORY</h2><p class="section-subtitle">Completed matches</p></div>
-        <button class="btn btn-primary" onclick="openModal('addMatch')"><i class="fas fa-plus"></i> Add Result</button>
+        <button class="btn btn-primary admin-only" onclick="openModal('addMatch')"><i class="fas fa-plus"></i> Add Result</button>
       </div>
       <div class="matches-filters">
         <button class="filter-btn active" data-filter="all">All</button>
@@ -2969,6 +2998,12 @@
           
           if (currentTab === targetTab) return;
           
+          // Check admin permission for admin tab
+          if ((tabId === 'admin' || tabId === 'settings') && !currentUser?.is_admin) {
+            toast('Admin access required', 'error');
+            return;
+          }
+          
           // Update nav buttons
           document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
@@ -3384,7 +3419,9 @@
     
     const av = (p, size = '') => {
       if (p?.photo) {
-        return `<div class="avatar ${size}"><img src="${p.photo}" alt="${p.name}" onerror="this.parentElement.innerHTML='${p?.name?.charAt(0).toUpperCase() || '?'}'"></div>`;
+        const initial = p?.name?.charAt(0).toUpperCase() || '?';
+        // Use loading="lazy" for better performance
+        return `<div class="avatar ${size}" data-initial="${initial}"><img src="${p.photo}" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${initial}'"></div>`;
       }
       return `<div class="avatar ${size}">${p?.name?.charAt(0).toUpperCase() || '?'}</div>`;
     };
@@ -3601,6 +3638,39 @@
         }
       } else {
         upcomingSection.classList.add('hidden');
+      }
+      
+      // Countdown timer and quick actions (only for current matchday)
+      const countdownEl = document.getElementById('matchdayCountdown');
+      const quickActionsEl = document.getElementById('quickActionsCard');
+      
+      if (!isViewingPast && activeMatchday && activeMatchday.date === today) {
+        const now = new Date();
+        const startTime = activeMatchday.start_time || '09:00';
+        const [startHour, startMin] = startTime.split(':').map(Number);
+        const currentHour = now.getHours();
+        const currentMin = now.getMinutes();
+        const currentTimeInMins = currentHour * 60 + currentMin;
+        const startTimeInMins = startHour * 60 + startMin;
+        
+        if (currentTimeInMins < startTimeInMins) {
+          // Show countdown
+          countdownEl.classList.remove('hidden');
+          quickActionsEl.classList.add('hidden');
+          document.getElementById('countdownVenue').textContent = `@ ${activeMatchday.venue}`;
+          updateCountdownTimer();
+        } else {
+          // Matchday is live - show quick actions
+          countdownEl.classList.add('hidden');
+          quickActionsEl.classList.remove('hidden');
+        }
+      } else if (!isViewingPast && activeMatchday && activeMatchday.date > today) {
+        // Future matchday - hide both
+        countdownEl.classList.add('hidden');
+        quickActionsEl.classList.add('hidden');
+      } else {
+        countdownEl.classList.add('hidden');
+        quickActionsEl.classList.add('hidden');
       }
       
       // Get matches for displayed matchday
@@ -3848,6 +3918,9 @@
           // Update localStorage cache
           const key = `pv_available_${activeMatchday.id}`;
           localStorage.setItem(key, JSON.stringify(availablePlayers));
+          // Update dashboard stat
+          const statEl = document.getElementById('statAvailable');
+          if (statEl) statEl.textContent = availablePlayers.length || '-';
           renderAvailablePlayers();
         }
       } catch (e) {
@@ -3883,7 +3956,8 @@
     }
     
     function togglePlayerAvailability(playerId) {
-      const idx = availablePlayers.indexOf(playerId);
+      playerId = Number(playerId); // Ensure consistent type
+      const idx = availablePlayers.findIndex(aid => Number(aid) === playerId);
       if (idx === -1) {
         availablePlayers.push(playerId);
       } else {
@@ -3909,7 +3983,7 @@
       if (countEl) countEl.textContent = `${availablePlayers.length}/${active.length}`;
       
       container.innerHTML = active.map(p => {
-        const isAvailable = availablePlayers.includes(p.id);
+        const isAvailable = availablePlayers.some(aid => Number(aid) === Number(p.id));
         return `<div class="available-player-chip ${isAvailable ? 'available' : ''}" onclick="togglePlayerAvailability(${p.id})">
           ${av(p, '')}
           <span class="name">${p.name}</span>
@@ -3957,6 +4031,88 @@
       }
       
       message += `Reply to confirm your attendance! 🏓`;
+      
+      const encoded = encodeURIComponent(message);
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    }
+    
+    // Countdown timer for matchday
+    let countdownInterval = null;
+    
+    function updateCountdownTimer() {
+      if (!activeMatchday) return;
+      
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      
+      if (activeMatchday.date !== today) {
+        document.getElementById('matchdayCountdown').classList.add('hidden');
+        return;
+      }
+      
+      const startTime = activeMatchday.start_time || '09:00';
+      const [startHour, startMin] = startTime.split(':').map(Number);
+      
+      const startDate = new Date();
+      startDate.setHours(startHour, startMin, 0, 0);
+      
+      const diff = startDate - now;
+      
+      if (diff <= 0) {
+        // Matchday has started
+        document.getElementById('matchdayCountdown').classList.add('hidden');
+        document.getElementById('quickActionsCard').classList.remove('hidden');
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+        }
+        return;
+      }
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      const timerEl = document.getElementById('countdownTimer');
+      if (timerEl) {
+        timerEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+      
+      // Start interval if not already running
+      if (!countdownInterval) {
+        countdownInterval = setInterval(updateCountdownTimer, 1000);
+      }
+    }
+    
+    function shareMatchdayResults() {
+      if (!activeMatchday) {
+        toast('No matchday to share', 'error');
+        return;
+      }
+      
+      const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      const dayMatches = matches.filter(m => m.date === activeMatchday.date);
+      const dayRankings = rankTeamsByMatches(activeMatchday.date);
+      
+      let message = `🎾 *PADEL VILLAINS RESULTS*\n`;
+      message += `📅 ${dateStr} @ ${activeMatchday.venue}\n\n`;
+      
+      if (dayRankings.length > 0) {
+        const winner = dayRankings[0];
+        const { p1, p2 } = getTeamPlayers(winner);
+        message += `👑 *Today's Villains:* ${winner.name}\n`;
+        message += `   ${p1?.name || '?'} & ${p2?.name || '?'}\n`;
+        message += `   Record: ${winner.wins}W - ${winner.losses}L\n\n`;
+      }
+      
+      message += `📊 *Rankings:*\n`;
+      dayRankings.slice(0, 5).forEach((t, i) => {
+        const { p1, p2 } = getTeamPlayers(t);
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+        message += `${medal} ${t.name} (${t.wins}W-${t.losses}L)\n`;
+      });
+      
+      message += `\n🏆 Total Matches: ${dayMatches.length}`;
       
       const encoded = encodeURIComponent(message);
       window.open(`https://wa.me/?text=${encoded}`, '_blank');
@@ -4071,6 +4227,12 @@
     async function closeMatchday() {
       if (!activeMatchday) return;
       
+      // Admin only check
+      if (!currentUser?.is_admin) {
+        toast('Only admins can close a match day', 'error');
+        return;
+      }
+      
       // Confirm before closing
       const tm = todayMatches();
       const dayRankings = rankTeamsByMatches(activeMatchday.date);
@@ -4117,6 +4279,12 @@
     // Edit active matchday
     function editActiveMatchday() {
       if (!activeMatchday) return;
+      
+      // Admin only check
+      if (!currentUser?.is_admin) {
+        toast('Only admins can edit match days', 'error');
+        return;
+      }
       
       document.getElementById('editMatchdayId').value = activeMatchday.id;
       document.getElementById('editMatchdayDate').value = activeMatchday.date;
@@ -4202,6 +4370,12 @@
     async function cancelMatchday() {
       if (!activeMatchday) return;
       
+      // Admin only check
+      if (!currentUser?.is_admin) {
+        toast('Only admins can cancel a match day', 'error');
+        return;
+      }
+      
       // Check if any matches have been played
       const matchdayMatches = matches.filter(m => m.date === activeMatchday.date);
       if (matchdayMatches.length > 0) {
@@ -4262,8 +4436,8 @@
     
     // ===== PLAYERS =====
     function renderPlayers() {
-      document.getElementById('heroPlayers').textContent = activePlayers().length;
-      document.getElementById('heroGames').textContent = matches.length;
+      document.getElementById('heroActivePlayers').textContent = activePlayers().length;
+      document.getElementById('heroTotalPlayers').textContent = players.length;
       
       // Get current villains to check which players are on villain team
       const dayVillain = getDayVillains();
@@ -4735,35 +4909,41 @@
       // Render available players first
       renderAvailablePlayers();
       
-      // Player matchup
+      // Player matchup - use Number() for comparison
       const active = activePlayers();
-      document.getElementById('matchupPlayers').innerHTML = active.length ? active.map(p => `<div class="matchup-player ${selectedPlayers.includes(p.id) ? 'selected' : ''}" onclick="togglePlayer(${p.id})">${av(p, 'sm')}<span class="matchup-player-name">${p.name}</span>${selectedPlayers.includes(p.id) ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}</div>`).join('') : '<div class="empty" style="padding:20px"><p>No active players</p></div>';
+      document.getElementById('matchupPlayers').innerHTML = active.length ? active.map(p => {
+        const isSelected = selectedPlayers.some(pid => Number(pid) === Number(p.id));
+        return `<div class="matchup-player ${isSelected ? 'selected' : ''}" onclick="togglePlayer(${p.id})">${av(p, 'sm')}<span class="matchup-player-name">${p.name}</span>${isSelected ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}</div>`;
+      }).join('') : '<div class="empty" style="padding:20px"><p>No active players</p></div>';
       document.getElementById('selectedCount').textContent = selectedPlayers.length;
       
-      // Team round robin
+      // Team round robin - use Number() for comparison
       const activeT = activeTeams();
       document.getElementById('roundRobinTeams').innerHTML = activeT.length ? activeT.map(t => {
         const { p1, p2 } = getTeamPlayers(t);
-        return `<div class="matchup-team ${selectedTeams.includes(t.id) ? 'selected' : ''}" onclick="toggleTeam(${t.id})">
+        const isSelected = selectedTeams.some(tid => Number(tid) === Number(t.id));
+        return `<div class="matchup-team ${isSelected ? 'selected' : ''}" onclick="toggleTeam(${t.id})">
           <div style="display:flex;gap:4px">${av(p1, 'xs')}${av(p2, 'xs')}</div>
           <div class="matchup-team-info">
             <span class="matchup-team-name">${t.name}</span>
             <span class="matchup-team-players">${p1?.name || '?'} & ${p2?.name || '?'}</span>
           </div>
-          ${selectedTeams.includes(t.id) ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}
+          ${isSelected ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}
         </div>`;
       }).join('') : '<div class="empty" style="padding:20px"><p>No active teams</p></div>';
       document.getElementById('selectedTeamCount').textContent = selectedTeams.length;
     }
     
     function togglePlayer(id) {
-      const i = selectedPlayers.indexOf(id);
+      id = Number(id); // Ensure consistent type
+      const i = selectedPlayers.findIndex(pid => Number(pid) === id);
       i > -1 ? selectedPlayers.splice(i, 1) : selectedPlayers.push(id);
       renderMatchup();
     }
     
     function toggleTeam(id) {
-      const i = selectedTeams.indexOf(id);
+      id = Number(id); // Ensure consistent type
+      const i = selectedTeams.findIndex(tid => Number(tid) === id);
       i > -1 ? selectedTeams.splice(i, 1) : selectedTeams.push(id);
       renderMatchup();
     }
@@ -5154,7 +5334,15 @@
     }
     
     // ===== MODALS =====
-    function openModal(t) { document.getElementById(t + 'Modal').classList.add('active'); }
+    function openModal(t) { 
+      // Check admin permission for certain modals
+      const adminOnlyModals = ['addMatch', 'addPlayer'];
+      if (adminOnlyModals.includes(t) && !currentUser?.is_admin) {
+        toast('Admin access required', 'error');
+        return;
+      }
+      document.getElementById(t + 'Modal').classList.add('active'); 
+    }
     function closeModal(t) { document.getElementById(t + 'Modal').classList.remove('active'); tempPhotoData[t] = null; }
     
     function previewPhoto(input, modalType) {
@@ -5207,6 +5395,16 @@
     function openEditPlayer(id) {
       const p = getPlayer(id);
       if (!p) return;
+      
+      // Check permissions: non-admins can only edit their own profile
+      if (currentUser && !currentUser.is_admin) {
+        const userPlayerId = Number(currentUser.player_id);
+        if (Number(id) !== userPlayerId) {
+          toast('You can only edit your own profile', 'error');
+          return;
+        }
+      }
+      
       document.getElementById('editPlayerId').value = id;
       document.getElementById('editPlayerName').value = p.name;
       document.getElementById('editPlayerActive').checked = p.active !== false;
@@ -5214,8 +5412,8 @@
       preview.innerHTML = p.photo ? `<img src="${p.photo}" alt="${p.name}">` : '<i class="fas fa-camera"></i>';
       tempPhotoData.editPlayer = p.photo || null;
       
-      // Show/hide delete button based on games
-      const canDelete = (p.games_played || 0) === 0;
+      // Show/hide delete button based on games and admin status
+      const canDelete = (p.games_played || 0) === 0 && currentUser?.is_admin;
       document.getElementById('deletePlayerBtn').style.display = canDelete ? 'flex' : 'none';
       
       openModal('editPlayer');
@@ -5568,6 +5766,12 @@
     
     // ===== MATCH ACTIONS =====
     async function addMatch() {
+      // Admin only check
+      if (!currentUser?.is_admin) {
+        toast('Only admins can add match results', 'error');
+        return;
+      }
+      
       const date = document.getElementById('matchDate').value;
       const court = document.getElementById('matchCourt').value;
       const t1 = parseInt(document.getElementById('matchTeam1').value);
@@ -6389,6 +6593,9 @@
       el.classList.add('selected');
     }
     
+    // Store current profile player ID for permission checks
+    let currentProfilePlayerId = null;
+    
     function togglePlayerEditMode() {
       const profileView = document.getElementById('playerProfileView');
       const editForm = document.getElementById('playerEditForm');
@@ -6406,12 +6613,28 @@
         saveBtn.classList.add('hidden');
         deleteBtn.classList.add('hidden');
       } else {
+        // Check permissions before switching to edit mode
+        if (currentUser && !currentUser.is_admin) {
+          const userPlayerId = Number(currentUser.player_id);
+          if (Number(currentProfilePlayerId) !== userPlayerId) {
+            toast('You can only edit your own profile', 'error');
+            return;
+          }
+        }
+        
         // Switch to edit mode
         profileView.classList.add('hidden');
         editForm.classList.remove('hidden');
         editBtn.innerHTML = '<i class="fas fa-eye"></i> View';
         saveBtn.classList.remove('hidden');
-        deleteBtn.classList.remove('hidden');
+        // Only show delete for admins
+        if (currentUser?.is_admin) {
+          const p = players.find(pl => Number(pl.id) === Number(currentProfilePlayerId));
+          const canDelete = (p?.games_played || 0) === 0;
+          deleteBtn.classList.toggle('hidden', !canDelete);
+        } else {
+          deleteBtn.classList.add('hidden');
+        }
       }
     }
     
@@ -6419,12 +6642,29 @@
       const p = players.find(pl => pl.id === id);
       if (!p) return;
       
+      // Store the current profile player ID for permission checks
+      currentProfilePlayerId = id;
+      
       // Reset to view mode
       document.getElementById('playerProfileView').classList.remove('hidden');
       document.getElementById('playerEditForm').classList.add('hidden');
       document.getElementById('editPlayerToggle').innerHTML = '<i class="fas fa-edit"></i> Edit';
       document.getElementById('savePlayerBtn').classList.add('hidden');
       document.getElementById('deletePlayerBtn').classList.add('hidden');
+      
+      // Show/hide Edit button based on permissions
+      const editBtn = document.getElementById('editPlayerToggle');
+      if (currentUser?.is_admin) {
+        // Admins can edit anyone
+        editBtn.style.display = '';
+      } else if (currentUser) {
+        // Non-admins can only edit their own profile
+        const userPlayerId = Number(currentUser.player_id);
+        editBtn.style.display = (Number(id) === userPlayerId) ? '' : 'none';
+      } else {
+        // No user logged in - hide edit
+        editBtn.style.display = 'none';
+      }
       
       // Populate profile view
       document.getElementById('profileName').textContent = p.name;
@@ -7898,113 +8138,10 @@
       }
     }
     
-    // Login autocomplete suggestions
-    let loginSuggestionsRetryCount = 0;
-    
-    function showLoginSuggestions(query) {
-      const container = document.getElementById('loginSuggestions');
-      if (!container) return;
-      
-      loadUserAccounts();
-      
-      if (!players || players.length === 0) {
-        container.innerHTML = '<div class="login-suggestion"><span style="color:var(--text-muted)">Loading players...</span></div>';
-        container.classList.add('show');
-        
-        // Retry after a delay if players haven't loaded
-        if (loginSuggestionsRetryCount < 10) {
-          loginSuggestionsRetryCount++;
-          setTimeout(() => {
-            if (players && players.length > 0) {
-              showLoginSuggestions(document.getElementById('loginUsername')?.value || '');
-            }
-          }, 500);
-        }
-        return;
-      }
-      
-      loginSuggestionsRetryCount = 0; // Reset retry count
-      query = (query || '').toLowerCase().trim();
-      
-      // Get all suggestions (accounts + players without accounts)
-      const suggestions = [];
-      
-      // Add existing accounts
-      userAccounts.forEach(acc => {
-        const player = players.find(p => Number(p.id) === Number(acc.player_id));
-        if (player && (query === '' || player.name.toLowerCase().includes(query))) {
-          suggestions.push({
-            type: 'account',
-            id: acc.id,
-            playerId: acc.player_id,
-            name: player.name,
-            photo: player.photo,
-            isAdmin: acc.is_admin
-          });
-        }
-      });
-      
-      // Add players without accounts
-      const playersWithAccounts = userAccounts.map(a => Number(a.player_id));
-      players.filter(p => !playersWithAccounts.includes(Number(p.id))).forEach(p => {
-        if (query === '' || p.name.toLowerCase().includes(query)) {
-          suggestions.push({
-            type: 'new',
-            playerId: p.id,
-            name: p.name,
-            photo: p.photo,
-            isFirstAccount: userAccounts.length === 0
-          });
-        }
-      });
-      
-      if (suggestions.length === 0) {
-        container.innerHTML = '<div class="login-suggestion"><span style="color:var(--text-muted)">No matching players found</span></div>';
-        container.classList.add('show');
-        return;
-      }
-      
-      container.innerHTML = suggestions.slice(0, 8).map(s => {
-        const avatarContent = s.photo ? `<img src="${s.photo}" class="loaded">` : s.name.charAt(0).toUpperCase();
-        const roleText = s.type === 'account' 
-          ? (s.isAdmin ? '<span class="login-suggestion-role">👑 Admin</span>' : '<span class="login-suggestion-role">Player</span>')
-          : `<span class="login-suggestion-new">${s.isFirstAccount ? '✨ First Admin' : '+ Create Account'}</span>`;
-        
-        return `
-          <div class="login-suggestion" onclick="selectLoginSuggestion('${s.type}', ${s.type === 'account' ? s.id : s.playerId}, '${s.name.replace(/'/g, "\\'")}')">
-            <div class="avatar sm">${avatarContent}</div>
-            <div class="login-suggestion-info">
-              <div class="login-suggestion-name">${s.name}</div>
-              ${roleText}
-            </div>
-          </div>
-        `;
-      }).join('');
-      
-      container.classList.add('show');
-    }
-    
-    function selectLoginSuggestion(type, id, name) {
-      document.getElementById('loginUsername').value = name;
-      document.getElementById('loginPlayerId').value = type === 'account' ? `acc_${id}` : `new_${id}`;
-      document.getElementById('loginSuggestions').classList.remove('show');
-      document.getElementById('loginPassword').focus();
-    }
-    
-    // Hide suggestions when clicking outside
-    document.addEventListener('click', (e) => {
-      const suggestions = document.getElementById('loginSuggestions');
-      const input = document.getElementById('loginUsername');
-      if (suggestions && input && !suggestions.contains(e.target) && e.target !== input) {
-        suggestions.classList.remove('show');
-      }
-    });
-    
     function handleLogin(e) {
       e.preventDefault();
       const usernameInput = document.getElementById('loginUsername').value.trim();
       const password = document.getElementById('loginPassword').value;
-      const playerIdValue = document.getElementById('loginPlayerId').value;
       
       if (!usernameInput) {
         showLoginError('Please enter your name');
@@ -8019,82 +8156,44 @@
         return;
       }
       
-      // Check if we have a selected player ID
-      if (playerIdValue) {
-        if (playerIdValue.startsWith('new_')) {
-          // Create new account
-          const playerId = parseInt(playerIdValue.replace('new_', ''));
-          const player = players.find(p => Number(p.id) === playerId);
-          if (player) {
-            const isFirstAccount = userAccounts.length === 0;
-            const newAccount = {
-              id: Date.now(),
-              player_id: playerId,
-              username: player.name.toLowerCase().replace(/\s+/g, ''),
-              is_admin: isFirstAccount,
-              theme: 'default',
-              settings: {},
-              created_at: new Date().toISOString()
-            };
-            userAccounts.push(newAccount);
-            saveUserAccounts();
-            currentUser = newAccount;
-            localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
-            showMainApp();
-            updateUserUI();
-            toast(`Welcome, ${player.name}!${isFirstAccount ? ' You are the first admin.' : ''}`, 'success');
-            return;
-          }
-        } else if (playerIdValue.startsWith('acc_')) {
-          // Login to existing account
-          const accountId = parseInt(playerIdValue.replace('acc_', ''));
-          const account = userAccounts.find(acc => acc.id === accountId);
-          if (account) {
-            currentUser = account;
-            localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
-            showMainApp();
-            updateUserUI();
-            const player = players.find(p => Number(p.id) === Number(currentUser.player_id));
-            toast(`Welcome back, ${player?.name || 'Player'}!`, 'success');
-            return;
-          }
-        }
-      }
-      
-      // Fallback: try to find by name
+      // Find player by name (case-insensitive)
       const matchedPlayer = players.find(p => p.name.toLowerCase() === usernameInput.toLowerCase());
-      if (matchedPlayer) {
-        const existingAccount = userAccounts.find(acc => Number(acc.player_id) === Number(matchedPlayer.id));
-        if (existingAccount) {
-          currentUser = existingAccount;
-          localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
-          showMainApp();
-          updateUserUI();
-          toast(`Welcome back, ${matchedPlayer.name}!`, 'success');
-        } else {
-          // Create new account
-          const isFirstAccount = userAccounts.length === 0;
-          const newAccount = {
-            id: Date.now(),
-            player_id: matchedPlayer.id,
-            username: matchedPlayer.name.toLowerCase().replace(/\s+/g, ''),
-            is_admin: isFirstAccount,
-            theme: 'default',
-            settings: {},
-            created_at: new Date().toISOString()
-          };
-          userAccounts.push(newAccount);
-          saveUserAccounts();
-          currentUser = newAccount;
-          localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
-          showMainApp();
-          updateUserUI();
-          toast(`Welcome, ${matchedPlayer.name}!${isFirstAccount ? ' You are the first admin.' : ''}`, 'success');
-        }
+      
+      if (!matchedPlayer) {
+        showLoginError('Player not found. Check your spelling.');
         return;
       }
       
-      showLoginError('Player not found. Please select from suggestions.');
+      // Check if account exists for this player
+      const existingAccount = userAccounts.find(acc => Number(acc.player_id) === Number(matchedPlayer.id));
+      
+      if (existingAccount) {
+        // Login to existing account
+        currentUser = existingAccount;
+        localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+        showMainApp();
+        updateUserUI();
+        toast(`Welcome back, ${matchedPlayer.name}!`, 'success');
+      } else {
+        // Create new account for this player
+        const isFirstAccount = userAccounts.length === 0;
+        const newAccount = {
+          id: Date.now(),
+          player_id: matchedPlayer.id,
+          username: matchedPlayer.name.toLowerCase().replace(/\s+/g, ''),
+          is_admin: isFirstAccount,
+          theme: 'default',
+          settings: {},
+          created_at: new Date().toISOString()
+        };
+        userAccounts.push(newAccount);
+        saveUserAccounts();
+        currentUser = newAccount;
+        localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+        showMainApp();
+        updateUserUI();
+        toast(`Welcome, ${matchedPlayer.name}!${isFirstAccount ? ' You are the first admin.' : ''}`, 'success');
+      }
     }
     
     function showLoginError(msg) {
