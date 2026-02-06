@@ -2838,6 +2838,28 @@
     </div>
   </div>
 
+  <!-- Edit Account Modal -->
+  <div class="modal-overlay" id="editAccountModal">
+    <div class="modal" style="max-width:450px">
+      <div class="modal-header"><h3 class="modal-title">EDIT ACCOUNT</h3><button class="modal-close" onclick="closeModal('editAccount')"><i class="fas fa-times"></i></button></div>
+      <input type="hidden" id="editAccountId">
+      <div class="form-group">
+        <label class="form-label">Player</label>
+        <div id="editAccountPlayerName" style="font-size:16px;font-weight:600;padding:12px;background:var(--cream-dark);border-radius:8px"></div>
+      </div>
+      <div class="toggle-group">
+        <span class="toggle-label">Admin Rights</span>
+        <label class="toggle"><input type="checkbox" id="editAccountAdmin"><span class="toggle-slider"></span></label>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Admins can manage matchdays, add results, edit players, and access the Admin panel.</p>
+      <div class="modal-actions" style="margin-top:24px">
+        <button class="btn btn-danger" id="deleteAccountFromEditBtn" onclick="deleteAccountFromEdit()" style="margin-right:auto"><i class="fas fa-trash"></i> Delete</button>
+        <button class="btn btn-secondary" onclick="closeModal('editAccount')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditedAccount()"><i class="fas fa-save"></i> Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Compose Message Modal -->
   <div class="modal-overlay" id="composeMessageModal">
     <div class="modal" style="max-width:500px">
@@ -8402,7 +8424,7 @@
       openModal('createAccount');
     }
     
-    function createUserAccount() {
+    async function createUserAccount() {
       const playerId = parseInt(document.getElementById('createAccountPlayer').value);
       const isAdmin = document.getElementById('createAccountAdmin').checked;
       
@@ -8429,7 +8451,8 @@
       };
       
       userAccounts.push(newAccount);
-      saveUserAccounts();
+      await saveUserAccounts();
+      await saveUserAccountToDb(newAccount); // Save to database
       
       closeModal('createAccount');
       renderUserAccounts();
@@ -8441,7 +8464,78 @@
       if (!acc) return;
       
       const player = players.find(p => Number(p.id) === Number(acc.player_id));
-      toast(`Editing ${player?.name || 'User'} - Feature coming soon`, 'info');
+      
+      // Populate edit modal
+      document.getElementById('editAccountId').value = accountId;
+      document.getElementById('editAccountPlayerName').textContent = player?.name || 'Unknown';
+      document.getElementById('editAccountAdmin').checked = acc.is_admin;
+      
+      // Show/hide delete button (can't delete your own account)
+      const deleteBtn = document.getElementById('deleteAccountFromEditBtn');
+      if (deleteBtn) {
+        deleteBtn.style.display = (currentUser && currentUser.id === accountId) ? 'none' : 'flex';
+      }
+      
+      openModal('editAccount');
+    }
+    
+    async function saveEditedAccount() {
+      const accountId = parseInt(document.getElementById('editAccountId').value);
+      const isAdmin = document.getElementById('editAccountAdmin').checked;
+      
+      const acc = userAccounts.find(a => a.id === accountId);
+      if (!acc) {
+        toast('Account not found', 'error');
+        return;
+      }
+      
+      // Prevent removing your own admin rights if you're the last admin
+      if (!isAdmin && acc.is_admin) {
+        const adminCount = userAccounts.filter(a => a.is_admin).length;
+        if (adminCount <= 1 && currentUser?.id === accountId) {
+          toast('Cannot remove admin rights - you are the only admin', 'error');
+          return;
+        }
+      }
+      
+      acc.is_admin = isAdmin;
+      await saveUserAccounts();
+      await saveUserAccountToDb(acc);
+      
+      // If editing current user, update currentUser
+      if (currentUser && currentUser.id === accountId) {
+        currentUser.is_admin = isAdmin;
+        localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+        updateUserUI();
+      }
+      
+      closeModal('editAccount');
+      renderUserAccounts();
+      
+      const player = players.find(p => Number(p.id) === Number(acc.player_id));
+      toast(`Account updated for ${player?.name || 'User'}`, 'success');
+    }
+    
+    async function deleteAccountFromEdit() {
+      const accountId = parseInt(document.getElementById('editAccountId').value);
+      
+      if (currentUser && currentUser.id === accountId) {
+        toast('Cannot delete your own account', 'error');
+        return;
+      }
+      
+      const acc = userAccounts.find(a => a.id === accountId);
+      const player = players.find(p => Number(p.id) === Number(acc?.player_id));
+      
+      if (confirm(`Delete account for ${player?.name || 'this user'}?`)) {
+        userAccounts = userAccounts.filter(a => a.id !== accountId);
+        await saveUserAccounts();
+        await deleteUserAccountFromDb(accountId);
+        
+        closeModal('editAccount');
+        renderUserAccounts();
+        toast('Account deleted', 'success');
+      }
     }
     
     function grantAdminRights(accountId) {
