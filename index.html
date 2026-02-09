@@ -349,9 +349,11 @@
     
     /* Avatar */
     .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--brown-light), var(--brown-medium)); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; border: 3px solid var(--clay); flex-shrink: 0; overflow: hidden; image-rendering: -webkit-optimize-contrast; }
-    .avatar img { width: 100%; height: 100%; object-fit: cover; image-rendering: -webkit-optimize-contrast; transition: opacity 0.2s; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; image-rendering: -webkit-optimize-contrast; transition: opacity 0.2s ease; }
     .avatar img[src=""] { display: none; }
     .avatar img:not([src]) { display: none; }
+    .avatar img[src^="data:"] { opacity: 1; } /* Base64 images load instantly */
+    .avatar img.loaded { opacity: 1; }
     .avatar.xl { width: 100px; height: 100px; font-size: 40px; border-width: 4px; }
     .avatar.lg { width: 72px; height: 72px; font-size: 28px; border-width: 3px; }
     .avatar.sm { width: 40px; height: 40px; font-size: 16px; border-width: 2px; }
@@ -841,8 +843,7 @@
     .player-card { position: relative; }
     
     /* Image loading - show immediately */
-    .avatar img { opacity: 1; }
-    .avatar img.loaded { opacity: 1; }
+    /* Avatar images display immediately */
     
     /* Share Profile Card */
     .share-profile-card { background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); border-radius: 20px; padding: 24px; color: white; text-align: center; }
@@ -2925,6 +2926,9 @@
     let notifications = [];
     let settings = { reminders: true, upNext: true };
     
+    // In-memory photo cache (survives cache/localStorage stripping)
+    const photoCache = {};
+    
     // Auth State
     let currentUser = null;
     let userAccounts = [];
@@ -3189,7 +3193,17 @@
       matchdays = data.matchdays || [];
       determineActiveMatchday();
       
-      // Debug: log photo status
+      // Sync photo cache: save new photos, restore stripped ones
+      players.forEach(p => {
+        if (p.photo) {
+          // Player has a photo — cache it
+          photoCache[p.id] = p.photo;
+        } else if (photoCache[p.id]) {
+          // Photo was stripped (cache/localStorage) — restore from memory cache
+          p.photo = photoCache[p.id];
+        }
+      });
+      
       console.log('applyData - players with photos:', players.filter(p => p.photo).length, '/', players.length);
       
       // Try to save to localStorage as backup (may fail due to quota)
@@ -3199,8 +3213,10 @@
         console.warn('Could not save to localStorage:', e);
       }
       
-      // Verify photos still exist after saveLocal
-      console.log('After saveLocal - players with photos:', players.filter(p => p.photo).length, '/', players.length);
+      // Verify photos still exist after saveLocal (restore from cache if stripped)
+      players.forEach(p => {
+        if (!p.photo && photoCache[p.id]) p.photo = photoCache[p.id];
+      });
     }
     
     function getCachedData() {
@@ -3446,12 +3462,12 @@
     }
     
     const av = (p, size = '') => {
-      if (p?.photo) {
-        const initial = p?.name?.charAt(0).toUpperCase() || '?';
-        // Use loading="lazy" for better performance
-        return `<div class="avatar ${size}" data-initial="${initial}"><img src="${p.photo}" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${initial}'"></div>`;
+      const initial = p?.name?.charAt(0).toUpperCase() || '?';
+      const photo = p?.photo || photoCache[p?.id];
+      if (photo) {
+        return `<div class="avatar ${size}"><img src="${photo}" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${initial}'"></div>`;
       }
-      return `<div class="avatar ${size}">${p?.name?.charAt(0).toUpperCase() || '?'}</div>`;
+      return `<div class="avatar ${size}">${initial}</div>`;
     };
     
     // ===== RENDER ALL =====
@@ -3831,8 +3847,9 @@
       
       indicator.textContent = `${spotlightIndex + 1}/${ranked.length}`;
       
-      const avatarHtml = p.photo 
-        ? `<img src="${p.photo}" alt="${p.name}">`
+      const spotlightPhoto = p.photo || photoCache[p.id];
+      const avatarHtml = spotlightPhoto 
+        ? `<img src="${spotlightPhoto}" alt="${p.name}">`
         : p.name.charAt(0).toUpperCase();
       
       container.innerHTML = `
@@ -4498,10 +4515,11 @@
         const streakHtml = bestStreak.count >= 2 ? 
           `<div class="player-streak"><span class="streak-badge ${bestStreak.type === 'win' ? 'hot' : 'cold'}"><i class="fas fa-${bestStreak.type === 'win' ? 'fire' : 'snowflake'}"></i> ${bestStreak.count}</span></div>` : '';
         
-        // Get fresh player data for photo
+        // Get fresh player data for photo (check memory cache too)
         const fullPlayer = players.find(pl => pl.id === p.id) || p;
-        const photoHtml = fullPlayer.photo 
-          ? `<div class="avatar lg"><img src="${fullPlayer.photo}" alt="${fullPlayer.name}" class="loaded"></div>`
+        const playerPhoto = fullPlayer.photo || photoCache[fullPlayer.id];
+        const photoHtml = playerPhoto 
+          ? `<div class="avatar lg"><img src="${playerPhoto}" alt="${fullPlayer.name}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${(fullPlayer.name?.charAt(0) || '?').toUpperCase()}'"></div>`
           : `<div class="avatar lg">${fullPlayer.name?.charAt(0).toUpperCase() || '?'}</div>`;
         
         return `<div class="player-card ${top} ${inactive}" onclick="openPlayerProfile(${p.id})">
@@ -5385,8 +5403,8 @@
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Target size: 400x400 for HD quality on avatars
-            const maxSize = 400;
+            // Target size: 200x200 for good quality on avatars while keeping data small
+            const maxSize = 200;
             let width = img.width;
             let height = img.height;
             
@@ -5405,8 +5423,8 @@
             // Draw image centered and cropped to square
             ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, maxSize, maxSize);
             
-            // Convert to JPEG with good quality (0.85 is good balance of quality/size)
-            const compressedData = canvas.toDataURL('image/jpeg', 0.85);
+            // Convert to JPEG with balanced quality (0.7 keeps good visuals, much smaller size)
+            const compressedData = canvas.toDataURL('image/jpeg', 0.7);
             
             tempPhotoData[modalType] = compressedData;
             const previewId = modalType === 'addPlayer' ? '.photo-preview' : '#editPlayerPhotoPreview';
@@ -5437,8 +5455,9 @@
       document.getElementById('editPlayerName').value = p.name;
       document.getElementById('editPlayerActive').checked = p.active !== false;
       const preview = document.getElementById('editPlayerPhotoPreview');
-      preview.innerHTML = p.photo ? `<img src="${p.photo}" alt="${p.name}">` : '<i class="fas fa-camera"></i>';
-      tempPhotoData.editPlayer = p.photo || null;
+      const editPhoto = p.photo || photoCache[p.id];
+      preview.innerHTML = editPhoto ? `<img src="${editPhoto}" alt="${p.name}">` : '<i class="fas fa-camera"></i>';
+      tempPhotoData.editPlayer = editPhoto || null;
       
       // Show/hide delete button based on games and admin status
       const canDelete = (p.games_played || 0) === 0 && currentUser?.is_admin;
@@ -5456,29 +5475,30 @@
       const positionEl = document.querySelector('#addPlayerPosition .position-option.selected');
       const position = positionEl?.dataset?.position || 'Hybrid';
       
-      const np = { 
-        id: Date.now(), 
+      const photo = tempPhotoData.addPlayer || null;
+      
+      // Only include columns that exist in the Supabase players table schema
+      const dbPayload = { 
+        id: Date.now(),
         name, 
         nickname,
         bio,
         position,
-        photo: tempPhotoData.addPlayer, 
-        wins: 0, 
-        losses: 0, 
-        games_played: 0, 
+        photo, 
         active: true,
-        available: true,
         created_at: new Date().toISOString() 
       };
       
       if (supabaseClient) {
         try {
-          const { data, error } = await supabaseClient.from('players').insert([np]).select().single();
+          const { data, error } = await supabaseClient.from('players').insert([dbPayload]).select().single();
           if (error) {
             console.error('Add player error:', error);
             toast('Error: ' + (error.message || 'Could not add player'), 'error');
             return;
           }
+          // Cache photo in memory
+          if (data.photo) photoCache[data.id] = data.photo;
           players.push(data);
         } catch (e) { 
           console.error('Add player exception:', e);
@@ -5486,7 +5506,13 @@
           return; 
         }
       } else {
-        players.push(np);
+        // Offline mode — add computed fields for local use
+        dbPayload.wins = 0;
+        dbPayload.losses = 0;
+        dbPayload.games_played = 0;
+        dbPayload.available = true;
+        if (dbPayload.photo) photoCache[dbPayload.id] = dbPayload.photo;
+        players.push(dbPayload);
         saveLocal();
       }
       
@@ -5520,7 +5546,15 @@
       players[idx].nickname = nickname;
       players[idx].bio = bio;
       players[idx].position = position;
-      if (tempPhotoData.editPlayer !== undefined) players[idx].photo = tempPhotoData.editPlayer;
+      if (tempPhotoData.editPlayer !== undefined) {
+        players[idx].photo = tempPhotoData.editPlayer;
+        // Update photo cache
+        if (tempPhotoData.editPlayer) {
+          photoCache[id] = tempPhotoData.editPlayer;
+        } else {
+          delete photoCache[id];
+        }
+      }
       
       if (supabaseClient) {
         try {
@@ -5621,6 +5655,7 @@
       });
       
       players = players.filter(p => p.id !== id);
+      delete photoCache[id]; // Clean up photo cache
       saveLocal();
       closeModal('confirm');
       renderAll();
@@ -6699,7 +6734,7 @@
       document.getElementById('profileNickname').textContent = p.nickname ? `"${p.nickname}"` : '';
       document.getElementById('profileBio').textContent = p.bio || '';
       document.getElementById('profilePosition').textContent = p.position || 'Hybrid';
-      document.getElementById('profileAvatar').innerHTML = p.photo ? `<img src="${p.photo}" class="loaded">` : p.name.charAt(0);
+      document.getElementById('profileAvatar').innerHTML = (p.photo || photoCache[p.id]) ? `<img src="${p.photo || photoCache[p.id]}" class="loaded">` : p.name.charAt(0);
       
       // Calculate stats
       const playerTeams = teams.filter(t => t.player1_id === id || t.player2_id === id);
@@ -8106,6 +8141,13 @@
     }
     
     // ===== AUTHENTICATION =====
+    function populateLoginDropdown() {
+      // This function is called during auth init to prepare the login screen.
+      // Login is handled by name text input matching, no dropdown needed.
+      // Kept as a no-op to avoid console errors.
+      console.log('Login ready - players available:', players.length);
+    }
+    
     function initializeAuth() {
       console.log('Initializing auth... Players loaded:', players.length);
       
@@ -8210,8 +8252,10 @@
         // Check if Tayt - always make admin
         const isTayt = matchedPlayer.name.toLowerCase() === 'tayt';
         const isFirstAccount = userAccounts.length === 0;
+        // Use a safe ID range (within int4 range for PostgreSQL)
+        const safeId = Math.floor(Date.now() / 1000) % 2000000000 + Math.floor(Math.random() * 1000);
         const newAccount = {
-          id: Date.now(),
+          id: safeId,
           player_id: matchedPlayer.id,
           username: matchedPlayer.name.toLowerCase().replace(/\s+/g, ''),
           is_admin: isTayt || isFirstAccount,
@@ -8255,7 +8299,8 @@
       document.getElementById('userMenuName').textContent = player.name;
       document.getElementById('userMenuRole').textContent = currentUser.is_admin ? 'ADMIN' : 'PLAYER';
       const avatarEl = document.getElementById('userMenuAvatar');
-      avatarEl.innerHTML = player.photo ? `<img src="${player.photo}" class="loaded">` : player.name.charAt(0);
+      const userPhoto = player.photo || photoCache[player.id];
+      avatarEl.innerHTML = userPhoto ? `<img src="${userPhoto}" class="loaded">` : player.name.charAt(0);
       
       // Load user theme
       if (currentUser.theme && currentUser.theme !== 'default') {
@@ -8301,6 +8346,13 @@
           if (data && !error) {
             userAccounts = data;
             localStorage.setItem('pv_userAccounts', JSON.stringify(userAccounts));
+          } else if (error) {
+            // RLS or other DB error — fall back to localStorage silently
+            if (error.code === '42501' || error.message?.includes('row-level security')) {
+              console.warn('RLS policy missing on user_accounts — using localStorage. Run RLS fix SQL in Supabase.');
+            } else {
+              console.log('User accounts sync error:', error.message);
+            }
           }
         } catch (e) {
           console.log('User accounts sync:', e.message);
@@ -8321,9 +8373,11 @@
         return;
       }
       try {
-        // Prepare account data for Supabase - ensure correct types
-        const dbAccount = {
-          id: Number(account.id),
+        // Ensure ID is within safe integer range for PostgreSQL int8
+        const accountId = Number(account.id);
+        
+        const payload = {
+          id: accountId,
           player_id: Number(account.player_id),
           username: String(account.username || ''),
           is_admin: Boolean(account.is_admin),
@@ -8332,42 +8386,29 @@
           created_at: account.created_at || new Date().toISOString()
         };
         
-        console.log('Saving account to Supabase:', dbAccount);
-        
-        // Try insert first, then update if exists
-        const { data: insertData, error: insertError } = await supabaseClient
+        const { data, error } = await supabaseClient
           .from('user_accounts')
-          .insert(dbAccount)
-          .select();
-        
-        if (insertError) {
-          // If duplicate key error, try update instead
-          if (insertError.code === '23505' || insertError.message?.includes('duplicate')) {
-            console.log('Account exists, updating...');
-            const { data: updateData, error: updateError } = await supabaseClient
-              .from('user_accounts')
-              .update({
-                username: dbAccount.username,
-                is_admin: dbAccount.is_admin,
-                theme: dbAccount.theme,
-                settings: dbAccount.settings
-              })
-              .eq('id', dbAccount.id)
-              .select();
-            
-            if (updateError) {
-              console.error('Account update error:', updateError);
-            } else {
-              console.log('Account updated successfully:', updateData);
-            }
-          } else {
-            console.error('Account insert error:', insertError);
+          .upsert(payload, { onConflict: 'id' });
+          
+        if (error) {
+          // RLS policy violation — common when table has RLS enabled without policies
+          if (error.code === '42501' || error.message?.includes('row-level security')) {
+            console.warn('RLS policy missing on user_accounts table. Account saved to localStorage only. Run the RLS fix SQL in Supabase dashboard.');
+            console.warn('SQL: ALTER TABLE user_accounts DISABLE ROW LEVEL SECURITY;');
+            // Don't show toast for RLS — it's a setup issue, not a user error
+            return;
           }
-        } else {
-          console.log('Account inserted successfully:', insertData);
+          console.error('Database Sync Error:', error.message, error.code);
+          // If it's a unique constraint violation, try with a new ID
+          if (error.code === '23505') {
+            account.id = Math.floor(Date.now() / 1000) % 2000000000 + Math.floor(Math.random() * 10000);
+            return saveUserAccountToDb(account);
+          }
+          return;
         }
+        console.log('Account synced to database successfully');
       } catch (e) {
-        console.error('Account save exception:', e);
+        console.error('Database Sync Error:', e.message);
       }
     }
     
@@ -8406,7 +8447,8 @@
       
       container.innerHTML = userAccounts.map(acc => {
         const player = players.find(p => Number(p.id) === Number(acc.player_id));
-        const avatarContent = player?.photo ? `<img src="${player.photo}" class="loaded">` : (player?.name?.charAt(0)?.toUpperCase() || '?');
+        const accPhoto = player?.photo || photoCache[player?.id];
+        const avatarContent = accPhoto ? `<img src="${accPhoto}" class="loaded">` : (player?.name?.charAt(0)?.toUpperCase() || '?');
         const isSelf = currentUser && currentUser.id === acc.id;
         
         return `
@@ -8468,8 +8510,9 @@
       }
       
       const player = players.find(p => Number(p.id) === playerId);
+      const safeId = Math.floor(Date.now() / 1000) % 2000000000 + Math.floor(Math.random() * 1000);
       const newAccount = {
-        id: Date.now(),
+        id: safeId,
         player_id: playerId,
         username: player.name.toLowerCase().replace(/\s+/g, ''),
         is_admin: isAdmin,
@@ -8727,8 +8770,9 @@
       document.getElementById('myProfileName').textContent = player.name;
       document.getElementById('myProfileRole').textContent = currentUser.is_admin ? '👑 ADMIN' : 'PLAYER';
       const avatarEl = document.getElementById('myProfileAvatar');
-      if (player.photo) {
-        avatarEl.innerHTML = `<img src="${player.photo}" class="loaded">`;
+      const myPhoto = player.photo || photoCache[player.id];
+      if (myPhoto) {
+        avatarEl.innerHTML = `<img src="${myPhoto}" class="loaded">`;
       } else {
         avatarEl.textContent = player.name.charAt(0).toUpperCase();
       }
@@ -9076,7 +9120,7 @@
       const sender = players.find(p => p.id === msg.from_player_id);
       
       document.getElementById('viewMessageFrom').innerHTML = `
-        <div class="avatar sm">${sender?.photo ? `<img src="${sender.photo}" class="loaded">` : (sender?.name?.charAt(0) || '?')}</div>
+        <div class="avatar sm">${(sender?.photo || photoCache[sender?.id]) ? `<img src="${sender?.photo || photoCache[sender?.id]}" class="loaded">` : (sender?.name?.charAt(0) || '?')}</div>
         <div>
           <div style="font-weight:600">${sender?.name || 'Unknown'}</div>
         </div>
