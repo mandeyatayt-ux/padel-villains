@@ -1716,7 +1716,7 @@
           </div>
         </div>
         <div class="rankings-table">
-          <div class="rankings-head"><span>Rank</span><span>Team</span><span>Record</span><span>Win Rate</span></div>
+          <div class="rankings-head"><span>Rank</span><span>Team</span><span>Record</span><span>Rating</span></div>
           <div id="rankingsBody"><div class="empty" style="padding:40px"><p>No teams to rank yet</p></div></div>
         </div>
       </div>
@@ -1749,7 +1749,7 @@
             <span>Player</span>
             <span>Played</span>
             <span>W-L</span>
-            <span>Win %</span>
+            <span>Rating</span>
             <span>Streak</span>
           </div>
           <div id="individualRankingsBody"><div class="empty" style="padding:40px"><p>No matches played yet</p></div></div>
@@ -3390,6 +3390,14 @@
     const getTeam = id => teams.find(t => t.id === id);
     const getTeamPlayers = t => t ? { p1: getPlayer(t.player1_id), p2: getPlayer(t.player2_id) } : { p1: null, p2: null };
     const winRate = (w, l) => (w + l) > 0 ? Math.round((w / (w + l)) * 100) : 0;
+    
+    // Bayesian ranking score: adds phantom games at 50% to penalize small sample sizes
+    // C = confidence parameter (phantom games to add). Higher C = more games needed to prove ranking.
+    const RANK_CONFIDENCE = 3;
+    function rankScore(wins, games) {
+      if (games === 0) return 0;
+      return Math.round(((wins + RANK_CONFIDENCE * 0.5) / (games + RANK_CONFIDENCE)) * 1000);
+    }
     const activePlayers = () => players.filter(p => p.active !== false);
     const activeTeams = () => teams.filter(t => t.active !== false);
     const getCurrentVenue = () => activeMatchday ? venues.find(v => v.name === activeMatchday.venue) : venues[0];
@@ -3428,9 +3436,10 @@
     function rankTeamsByMatches(filterDate = null) {
       return activeTeams().map(t => {
         const stats = getTeamStats(t.id, filterDate);
-        return { ...t, ...stats, rate: winRate(stats.wins, stats.losses) };
+        const rating = rankScore(stats.wins, stats.matches);
+        return { ...t, ...stats, rate: winRate(stats.wins, stats.losses), rating };
       }).filter(t => t.matches > 0 || !filterDate).sort((a, b) => {
-        if (b.rate !== a.rate) return b.rate - a.rate;
+        if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
       });
@@ -3440,12 +3449,13 @@
     function rankPlayersByMatches(filterDate = null) {
       return players.map(p => {
         const stats = getPlayerStats(p.id, filterDate);
-        return { ...p, ...stats, rate: winRate(stats.wins, stats.losses) };
+        const rating = rankScore(stats.wins, stats.games);
+        return { ...p, ...stats, rate: winRate(stats.wins, stats.losses), rating };
       }).filter(p => p.games > 0 || !filterDate).sort((a, b) => {
-        // Sort active players first, then by win rate
+        // Sort active players first, then by rating
         if (a.active !== false && b.active === false) return -1;
         if (a.active === false && b.active !== false) return 1;
-        if (b.rate !== a.rate) return b.rate - a.rate;
+        if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
       });
@@ -4556,12 +4566,13 @@
       // Show ALL teams (including inactive) with stats from match history
       const teamsWithStats = teams.map(t => {
         const stats = getTeamStats(t.id);
-        return { ...t, ...stats, rate: winRate(stats.wins, stats.losses) };
+        const rating = rankScore(stats.wins, stats.matches);
+        return { ...t, ...stats, rate: winRate(stats.wins, stats.losses), rating };
       }).sort((a, b) => {
-        // Sort active teams first, then by win rate
+        // Sort active teams first, then by rating
         if (a.active !== false && b.active === false) return -1;
         if (a.active === false && b.active !== false) return 1;
-        if (b.rate !== a.rate) return b.rate - a.rate;
+        if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
       });
@@ -4688,8 +4699,8 @@
             <span class="rank-record-losses">${t.losses}</span>
           </span>
           <span class="rank-rate">
-            <div class="rank-rate-bar"><div class="rank-rate-fill" style="width:${t.rate}%"></div></div>
-            <span class="rank-rate-text">${t.rate}%</span>
+            <div class="rank-rate-bar"><div class="rank-rate-fill" style="width:${t.rating / 10}%"></div></div>
+            <span class="rank-rate-text">${t.rating}<span style="font-size:10px;opacity:0.6;margin-left:2px">(${t.rate}%)</span></span>
           </span>
         </div>`;
       }).join('') : '<div class="empty" style="padding:40px"><p>No matches found for this period</p></div>';
@@ -4706,9 +4717,9 @@
       // Get individual stats for all active players
       const playerStats = getIndividualPlayerStats(filterDate, filterMonth);
       
-      // Sort by win rate, then wins, then games played
+      // Sort by rating (Bayesian adjusted), then wins, then games played
       playerStats.sort((a, b) => {
-        if (b.rate !== a.rate) return b.rate - a.rate;
+        if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return b.played - a.played;
       });
@@ -4716,7 +4727,7 @@
       // Update summary stats
       if (playerStats.length > 0) {
         const topByWins = [...playerStats].sort((a, b) => b.wins - a.wins)[0];
-        const topByRate = playerStats.filter(p => p.played >= 3).sort((a, b) => b.rate - a.rate)[0];
+        const topByRate = playerStats.filter(p => p.played >= 3).sort((a, b) => b.rating - a.rating)[0];
         const topByGames = [...playerStats].sort((a, b) => b.played - a.played)[0];
         const topByStreak = [...playerStats].sort((a, b) => b.streak - a.streak)[0];
         
@@ -4751,8 +4762,8 @@
             <span class="rank-record-losses">${p.losses}</span>
           </span>
           <span class="rank-rate">
-            <div class="rank-rate-bar"><div class="rank-rate-fill" style="width:${p.rate}%"></div></div>
-            <span class="rank-rate-text">${p.rate}%</span>
+            <div class="rank-rate-bar"><div class="rank-rate-fill" style="width:${p.rating / 10}%"></div></div>
+            <span class="rank-rate-text">${p.rating}<span style="font-size:10px;opacity:0.6;margin-left:2px">(${p.rate}%)</span></span>
           </span>
           <span style="text-align:center">
             ${p.streak > 0 ? `<span class="streak-badge ${streakClass}" style="font-size:12px"><i class="fas fa-${streakIcon}"></i> ${p.streak}</span>` : '-'}
@@ -4863,9 +4874,10 @@
         });
       });
       
-      // Calculate rates and streaks
+      // Calculate rates, ratings, and streaks
       Object.values(stats).forEach(s => {
         s.rate = s.played > 0 ? Math.round((s.wins / s.played) * 100) : 0;
+        s.rating = rankScore(s.wins, s.played);
         s.partners = s.partners.size;
         
         // Calculate current streak from most recent matches
