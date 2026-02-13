@@ -6,6 +6,11 @@
   <title>Padel Villains - Social League Tracker</title>
   <meta name="description" content="Track your padel matches, rankings, and achievements">
   <meta name="theme-color" content="#E07850">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Padel Villains">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <!-- Preconnect to critical domains for faster loading -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1173,7 +1178,7 @@
         </button>
       </form>
       <p style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)">
-        Don't have an account? Contact an admin.
+        Don't have an account? Contact an admin to get set up.
       </p>
     </div>
   </div>
@@ -1628,9 +1633,25 @@
           </div>
         </div>
       </div>
+      
+      <!-- Account Settings -->
+      <div class="card" style="margin-top:24px">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-key" style="color:var(--clay);margin-right:8px"></i>Change My Password</h3>
+        <div class="form-group">
+          <label class="form-label">Current Password</label>
+          <input type="password" class="form-input" id="myCurrentPassword" placeholder="Enter current password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <input type="password" class="form-input" id="myNewPassword" placeholder="Enter new password (min 4 chars)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm New Password</label>
+          <input type="password" class="form-input" id="myConfirmPassword" placeholder="Confirm new password">
+        </div>
+        <button class="btn btn-primary" onclick="changeMyPassword()"><i class="fas fa-save"></i> Update Password</button>
+      </div>
     </section>
-
-    <!-- ===== PLAYERS TAB ===== -->
     <section class="tab" id="players">
       <div class="players-hero">
         <div>
@@ -2240,21 +2261,13 @@
         <div><h2 class="section-title">👑 ADMIN PANEL</h2><p class="section-subtitle">Manage users, accounts and permissions</p></div>
       </div>
       
-      <!-- Password Settings -->
+      <!-- Password Info -->
       <div class="card" style="margin-bottom:24px">
-        <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-key" style="color:var(--clay);margin-right:8px"></i>App Password</h3>
-        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Change the password all users use to log in</p>
-        <div class="form-row">
-          <div class="form-group" style="flex:1">
-            <label class="form-label">Current Password</label>
-            <input type="text" class="form-input" id="currentAppPassword" readonly>
-          </div>
-          <div class="form-group" style="flex:1">
-            <label class="form-label">New Password</label>
-            <input type="text" class="form-input" id="newAppPassword" placeholder="Enter new password">
-          </div>
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-key" style="color:var(--clay);margin-right:8px"></i>User Passwords</h3>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Each user has their own password. Use the <i class="fas fa-key"></i> button next to each account to set or reset a user's password.</p>
+        <div style="padding:12px 16px;background:var(--cream);border-radius:12px;font-size:13px">
+          <strong>Default password for new accounts:</strong> <code id="defaultPasswordDisplay" style="background:var(--cream-dark);padding:2px 8px;border-radius:4px;font-family:monospace">PVSLT_26</code>
         </div>
-        <button class="btn btn-primary" onclick="changeAppPassword()"><i class="fas fa-save"></i> Change Password</button>
       </div>
       
       <!-- User Accounts Management -->
@@ -2821,12 +2834,16 @@
   <div class="modal-overlay" id="createAccountModal">
     <div class="modal" style="max-width:450px">
       <div class="modal-header"><h3 class="modal-title">CREATE ACCOUNT</h3><button class="modal-close" onclick="closeModal('createAccount')"><i class="fas fa-times"></i></button></div>
-      <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px">Create a user account for a player. Default password: PVSLT_26</p>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px">Create a user account for a player</p>
       <div class="form-group">
         <label class="form-label">Select Player</label>
         <select class="form-select" id="createAccountPlayer">
           <option value="">Choose a player...</option>
         </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="text" class="form-input" id="createAccountPassword" placeholder="Set password for this user" value="PVSLT_26">
       </div>
       <div class="toggle-group">
         <span class="toggle-label">Admin Rights</span>
@@ -2853,6 +2870,11 @@
         <label class="toggle"><input type="checkbox" id="editAccountAdmin"><span class="toggle-slider"></span></label>
       </div>
       <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Admins can manage matchdays, add results, edit players, and access the Admin panel.</p>
+      <div class="form-group" style="margin-top:16px">
+        <label class="form-label">Reset Password</label>
+        <input type="text" class="form-input" id="editAccountPassword" placeholder="Leave blank to keep current password">
+        <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Only fill in to change this user's password</p>
+      </div>
       <div class="modal-actions" style="margin-top:24px">
         <button class="btn btn-danger" id="deleteAccountFromEditBtn" onclick="deleteAccountFromEdit()" style="margin-right:auto"><i class="fas fa-trash"></i> Delete</button>
         <button class="btn btn-secondary" onclick="closeModal('editAccount')">Cancel</button>
@@ -2911,6 +2933,20 @@
     const SUPABASE_URL = 'https://hihujmoapelzuvcrdhfh.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpaHVqbW9hcGVsenV2Y3JkaGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NTM4OTUsImV4cCI6MjA4MzUyOTg5NX0.BjCkaElKR6lj057FLOmryWH7CbCn8Ssg-Agp2BbSJeI';
     const APP_PASSWORD = 'PVSLT_26';
+    
+    // SHA-256 password hashing using Web Crypto API
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password + '_pv_salt_2026');
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    
+    // Check if a string looks like a SHA-256 hash (64 hex chars)
+    function isHashed(str) {
+      return typeof str === 'string' && /^[a-f0-9]{64}$/.test(str);
+    }
     let supabaseClient = null;
     
     // ===== STATE =====
@@ -2985,6 +3021,24 @@
       setupLazyLoading();
       setupOfflineDetection();
       setupQuickActions();
+      
+      // Register PWA service worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => {
+            console.log('SW registered, scope:', reg.scope);
+            // Check for updates
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                  toast('App updated! Refresh for latest version.', 'info');
+                }
+              });
+            });
+          })
+          .catch(err => console.warn('SW registration failed:', err));
+      }
       renderCalendar();
       fetchWeather();
       
@@ -8327,14 +8381,6 @@
         return;
       }
       
-      // Get app password
-      const appPassword = localStorage.getItem('pv_appPassword') || APP_PASSWORD;
-      
-      if (password !== appPassword) {
-        showLoginError('Invalid password');
-        return;
-      }
-      
       // Find player by name (case-insensitive)
       const matchedPlayer = players.find(p => p.name.toLowerCase() === usernameInput.toLowerCase());
       
@@ -8350,6 +8396,32 @@
       const existingAccount = userAccounts.find(acc => Number(acc.player_id) === Number(matchedPlayer.id));
       
       if (existingAccount) {
+        // Get stored password
+        const storedPassword = existingAccount.settings?.password || APP_PASSWORD;
+        const inputHash = await hashPassword(password);
+        
+        // Compare: check against hash first, then plaintext for migration
+        let passwordMatch = false;
+        if (isHashed(storedPassword)) {
+          // Already hashed — compare hashes
+          passwordMatch = (inputHash === storedPassword);
+        } else {
+          // Still plaintext — compare directly, then auto-migrate
+          passwordMatch = (password === storedPassword);
+          if (passwordMatch) {
+            // Auto-migrate to hashed password
+            if (!existingAccount.settings) existingAccount.settings = {};
+            existingAccount.settings.password = inputHash;
+            await saveUserAccounts();
+            await saveUserAccountToDb(existingAccount);
+            console.log('Password auto-migrated to hash for', existingAccount.username);
+          }
+        }
+        
+        if (!passwordMatch) {
+          showLoginError('Invalid password');
+          return;
+        }
         // Login to existing account
         currentUser = existingAccount;
         localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
@@ -8357,29 +8429,8 @@
         updateUserUI();
         toast(`Welcome back, ${matchedPlayer.name}!`, 'success');
       } else {
-        // Create new account for this player
-        // Check if Tayt - always make admin
-        const isTayt = matchedPlayer.name.toLowerCase() === 'tayt';
-        const isFirstAccount = userAccounts.length === 0;
-        // Use a safe ID range (within int4 range for PostgreSQL)
-        const safeId = Math.floor(Date.now() / 1000) % 2000000000 + Math.floor(Math.random() * 1000);
-        const newAccount = {
-          id: safeId,
-          player_id: matchedPlayer.id,
-          username: matchedPlayer.name.toLowerCase().replace(/\s+/g, ''),
-          is_admin: isTayt || isFirstAccount,
-          theme: 'default',
-          settings: {},
-          created_at: new Date().toISOString()
-        };
-        userAccounts.push(newAccount);
-        await saveUserAccounts();
-        await saveUserAccountToDb(newAccount); // Save to Supabase
-        currentUser = newAccount;
-        localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
-        showMainApp();
-        updateUserUI();
-        toast(`Welcome, ${matchedPlayer.name}!${newAccount.is_admin ? ' You are an admin.' : ''}`, 'success');
+        showLoginError('No account found. Contact an admin.');
+        return;
       }
     }
     
@@ -8569,6 +8620,7 @@
             </div>
             <div class="user-account-actions">
               <button class="btn btn-xs btn-secondary" onclick="editUserAccount(${acc.id})" title="Edit"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-xs btn-secondary" onclick="promptSetPassword(${acc.id})" title="Set Password"><i class="fas fa-key"></i></button>
               ${acc.is_admin 
                 ? `<button class="btn btn-xs btn-warning" onclick="removeAdminRights(${acc.id})" title="Remove Admin" style="background:var(--gold)"><i class="fas fa-crown"></i></button>` 
                 : `<button class="btn btn-xs btn-secondary" onclick="grantAdminRights(${acc.id})" title="Make Admin"><i class="fas fa-crown"></i></button>`
@@ -8581,12 +8633,27 @@
     }
     
     function renderAdminPanel() {
-      // Show current app password
-      const appPassword = localStorage.getItem('pv_appPassword') || APP_PASSWORD;
-      const passwordInput = document.getElementById('currentAppPassword');
-      if (passwordInput) {
-        passwordInput.value = appPassword;
+      // Admin panel now uses per-user passwords — no shared password to display
+    }
+    
+    async function promptSetPassword(accountId) {
+      const acc = userAccounts.find(a => a.id === accountId);
+      if (!acc) return;
+      const player = players.find(p => Number(p.id) === Number(acc.player_id));
+      const name = player?.name || 'this user';
+      
+      const newPassword = prompt(`Set new password for ${name}:\n(min 4 characters)`);
+      if (newPassword === null) return;
+      if (!newPassword.trim() || newPassword.trim().length < 4) {
+        toast('Password must be at least 4 characters', 'error');
+        return;
       }
+      
+      if (!acc.settings) acc.settings = {};
+      acc.settings.password = await hashPassword(newPassword.trim());
+      await saveUserAccounts();
+      await saveUserAccountToDb(acc);
+      toast(`Password updated for ${name}`, 'success');
     }
     
     function openCreateAccountModal() {
@@ -8600,15 +8667,22 @@
       });
       
       document.getElementById('createAccountAdmin').checked = false;
+      document.getElementById('createAccountPassword').value = APP_PASSWORD;
       openModal('createAccount');
     }
     
     async function createUserAccount() {
       const playerId = parseInt(document.getElementById('createAccountPlayer').value);
       const isAdmin = document.getElementById('createAccountAdmin').checked;
+      const passwordRaw = document.getElementById('createAccountPassword').value.trim() || APP_PASSWORD;
       
       if (!playerId) {
         toast('Please select a player', 'error');
+        return;
+      }
+      
+      if (passwordRaw.length < 4) {
+        toast('Password must be at least 4 characters', 'error');
         return;
       }
       
@@ -8618,6 +8692,7 @@
         return;
       }
       
+      const hashedPw = await hashPassword(passwordRaw);
       const player = players.find(p => Number(p.id) === playerId);
       const safeId = Math.floor(Date.now() / 1000) % 2000000000 + Math.floor(Math.random() * 1000);
       const newAccount = {
@@ -8626,13 +8701,13 @@
         username: player.name.toLowerCase().replace(/\s+/g, ''),
         is_admin: isAdmin,
         theme: 'default',
-        settings: {},
+        settings: { password: hashedPw },
         created_at: new Date().toISOString()
       };
       
       userAccounts.push(newAccount);
       await saveUserAccounts();
-      await saveUserAccountToDb(newAccount); // Save to database
+      await saveUserAccountToDb(newAccount);
       
       closeModal('createAccount');
       renderUserAccounts();
@@ -8649,6 +8724,7 @@
       document.getElementById('editAccountId').value = accountId;
       document.getElementById('editAccountPlayerName').textContent = player?.name || 'Unknown';
       document.getElementById('editAccountAdmin').checked = acc.is_admin;
+      document.getElementById('editAccountPassword').value = '';
       
       // Show/hide delete button (can't delete your own account)
       const deleteBtn = document.getElementById('deleteAccountFromEditBtn');
@@ -8662,10 +8738,17 @@
     async function saveEditedAccount() {
       const accountId = parseInt(document.getElementById('editAccountId').value);
       const isAdmin = document.getElementById('editAccountAdmin').checked;
+      const newPassword = document.getElementById('editAccountPassword').value.trim();
       
       const acc = userAccounts.find(a => a.id === accountId);
       if (!acc) {
         toast('Account not found', 'error');
+        return;
+      }
+      
+      // Validate new password if provided
+      if (newPassword && newPassword.length < 4) {
+        toast('Password must be at least 4 characters', 'error');
         return;
       }
       
@@ -8679,6 +8762,13 @@
       }
       
       acc.is_admin = isAdmin;
+      
+      // Update password if provided
+      if (newPassword) {
+        if (!acc.settings) acc.settings = {};
+        acc.settings.password = await hashPassword(newPassword);
+      }
+      
       await saveUserAccounts();
       await saveUserAccountToDb(acc);
       
@@ -8787,24 +8877,68 @@
       toast('Account deleted', 'success');
     }
     
-    // Password Change
-    function changeAppPassword() {
-      const newPassword = document.getElementById('newAppPassword').value.trim();
+    // Per-user passwords are managed via promptSetPassword() and the edit account modal
+    
+    // Self-service password change from My Profile
+    async function changeMyPassword() {
+      if (!currentUser) return;
       
-      if (!newPassword) {
-        toast('Please enter a new password', 'error');
+      const currentPw = document.getElementById('myCurrentPassword').value;
+      const newPw = document.getElementById('myNewPassword').value.trim();
+      const confirmPw = document.getElementById('myConfirmPassword').value.trim();
+      
+      if (!currentPw || !newPw || !confirmPw) {
+        toast('Please fill in all password fields', 'error');
         return;
       }
       
-      if (newPassword.length < 4) {
-        toast('Password must be at least 4 characters', 'error');
+      if (newPw.length < 4) {
+        toast('New password must be at least 4 characters', 'error');
         return;
       }
       
-      localStorage.setItem('pv_appPassword', newPassword);
-      document.getElementById('currentAppPassword').value = newPassword;
-      document.getElementById('newAppPassword').value = '';
-      toast('Password changed successfully! All users will use the new password.', 'success');
+      if (newPw !== confirmPw) {
+        toast('New passwords do not match', 'error');
+        return;
+      }
+      
+      // Verify current password
+      const storedPassword = currentUser.settings?.password || APP_PASSWORD;
+      const currentHash = await hashPassword(currentPw);
+      let verified = false;
+      
+      if (isHashed(storedPassword)) {
+        verified = (currentHash === storedPassword);
+      } else {
+        verified = (currentPw === storedPassword);
+      }
+      
+      if (!verified) {
+        toast('Current password is incorrect', 'error');
+        return;
+      }
+      
+      // Set new hashed password
+      if (!currentUser.settings) currentUser.settings = {};
+      currentUser.settings.password = await hashPassword(newPw);
+      
+      // Update in accounts array
+      const acc = userAccounts.find(a => a.id === currentUser.id);
+      if (acc) {
+        if (!acc.settings) acc.settings = {};
+        acc.settings.password = currentUser.settings.password;
+      }
+      
+      localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+      await saveUserAccounts();
+      await saveUserAccountToDb(acc || currentUser);
+      
+      // Clear fields
+      document.getElementById('myCurrentPassword').value = '';
+      document.getElementById('myNewPassword').value = '';
+      document.getElementById('myConfirmPassword').value = '';
+      
+      toast('Password changed successfully!', 'success');
     }
     
     // Danger Zone functions
