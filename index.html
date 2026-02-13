@@ -9745,23 +9745,72 @@
     }
     
     async function shareFifaCard() {
-      // Use html2canvas-style approach: create a canvas from the card
       const card = document.getElementById('fifaCard');
+      const shareBtn = document.querySelector('.fifa-card-share');
+      const origText = shareBtn.innerHTML;
+      shareBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Capturing...';
+      shareBtn.disabled = true;
+      
       try {
-        // Try native share API with screenshot
-        if (navigator.share) {
+        // Lazy-load html2canvas
+        if (!window.html2canvas) {
+          await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+          });
+        }
+        
+        // Capture the card as canvas
+        const canvas = await html2canvas(card, {
+          backgroundColor: null,
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false
+        });
+        
+        // Convert to blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const file = new File([blob], 'padel-villains-card.png', { type: 'image/png' });
+        
+        // Try native share with image file
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             title: 'Padel Villains Player Card',
-            text: 'Check out my player card on Padel Villains! 🏆',
-            url: window.location.href
+            text: '🏆 Check out my player card!',
+            files: [file]
           });
         } else {
-          // Fallback: copy link
-          await navigator.clipboard.writeText(window.location.href);
-          toast('Link copied! Share it with your group', 'success');
+          // Fallback: download the image
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'padel-villains-card.png';
+          a.click();
+          URL.revokeObjectURL(url);
+          toast('Card saved! Share it on WhatsApp 🎉', 'success');
         }
       } catch (e) {
-        toast('Share cancelled', 'info');
+        if (e.name !== 'AbortError') {
+          // Final fallback: download
+          try {
+            const canvas = await html2canvas(card, { backgroundColor: null, scale: 2, useCORS: true, allowTaint: true });
+            const url = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'padel-villains-card.png';
+            a.click();
+            toast('Card saved! Share it on WhatsApp 🎉', 'success');
+          } catch (e2) {
+            toast('Could not capture card', 'error');
+          }
+        }
+      } finally {
+        shareBtn.innerHTML = origText;
+        shareBtn.disabled = false;
       }
     }
     
