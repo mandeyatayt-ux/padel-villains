@@ -9863,7 +9863,12 @@
           ctx.beginPath();
           ctx.arc(cx, cy, photoSize / 2, 0, Math.PI * 2);
           ctx.clip();
-          ctx.drawImage(photoLoaded, cx - photoSize / 2, cy - photoSize / 2, photoSize, photoSize);
+          // object-fit: cover — crop to fill circle
+          const iw = photoLoaded.naturalWidth || photoLoaded.width;
+          const ih = photoLoaded.naturalHeight || photoLoaded.height;
+          const scale = Math.max(photoSize / iw, photoSize / ih);
+          const sw = iw * scale, sh = ih * scale;
+          ctx.drawImage(photoLoaded, cx - sw / 2, cy - sh / 2, sw, sh);
           ctx.restore();
         } else {
           ctx.beginPath();
