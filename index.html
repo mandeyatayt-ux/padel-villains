@@ -9745,68 +9745,243 @@
     }
     
     async function shareFifaCard() {
-      const card = document.getElementById('fifaCard');
       const shareBtn = document.querySelector('.fifa-card-share');
       const origText = shareBtn.innerHTML;
       shareBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Capturing...';
       shareBtn.disabled = true;
       
       try {
-        // Lazy-load html2canvas
-        if (!window.html2canvas) {
-          await new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
-          });
+        // Get player data from the card
+        const content = document.getElementById('fifaCardContent');
+        const ratingEl = content.querySelector('.fifa-card-rating');
+        const nameEl = content.querySelector('.fifa-card-name');
+        const posEl = content.querySelector('.fifa-card-position');
+        const nicknameEl = content.querySelector('.fifa-card-nickname');
+        const statValues = content.querySelectorAll('.fifa-card-stat-value');
+        const statLabels = content.querySelectorAll('.fifa-card-stat-label');
+        const barRows = content.querySelectorAll('.fifa-card-bar-row');
+        const photoImg = content.querySelector('.fifa-card-photo img');
+        
+        const rating = ratingEl?.textContent || '0';
+        const name = nameEl?.textContent || 'PLAYER';
+        const position = posEl?.textContent || 'HYB';
+        const nickname = nicknameEl?.textContent || '';
+        
+        // Helper: draw rounded rect (iOS compatible)
+        function roundedRect(ctx, x, y, w, h, r) {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x + w - r, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+          ctx.lineTo(x + w, y + h - r);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+          ctx.lineTo(x + r, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+          ctx.lineTo(x, y + r);
+          ctx.quadraticCurveTo(x, y, x + r, y);
+          ctx.closePath();
         }
         
-        // Capture the card as canvas
-        const canvas = await html2canvas(card, {
-          backgroundColor: null,
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          logging: false
+        // Load photo as data URL to avoid cross-origin taint
+        let photoLoaded = null;
+        if (photoImg && photoImg.src) {
+          try {
+            const resp = await fetch(photoImg.src, { mode: 'cors' });
+            const blob = await resp.blob();
+            const dataUrl = await new Promise(resolve => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.readAsDataURL(blob);
+            });
+            photoLoaded = await new Promise((resolve, reject) => {
+              const img = new Image();
+              img.onload = () => resolve(img);
+              img.onerror = () => resolve(null);
+              img.src = dataUrl;
+            });
+          } catch(e) {
+            photoLoaded = null;
+          }
+        }
+        
+        // Create canvas
+        const W = 640, H = 920;
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        
+        // Background gradient
+        const bg = ctx.createLinearGradient(0, 0, W, H);
+        bg.addColorStop(0, '#1a1a2e');
+        bg.addColorStop(0.3, '#16213e');
+        bg.addColorStop(0.7, '#0f3460');
+        bg.addColorStop(1, '#e94560');
+        ctx.fillStyle = bg;
+        roundedRect(ctx, 0, 0, W, H, 48);
+        ctx.fill();
+        
+        // Glow effect
+        const glow = ctx.createRadialGradient(W * 0.7, H * 0.2, 0, W * 0.7, H * 0.2, 400);
+        glow.addColorStop(0, 'rgba(233,69,96,0.25)');
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+        
+        // Rating
+        ctx.font = 'bold 144px sans-serif';
+        ctx.fillStyle = '#FFD700';
+        ctx.shadowColor = 'rgba(255,215,0,0.4)';
+        ctx.shadowBlur = 30;
+        ctx.textAlign = 'left';
+        ctx.fillText(rating, 48, 150);
+        ctx.shadowBlur = 0;
+        
+        // Position + League
+        ctx.textAlign = 'right';
+        ctx.font = 'bold 48px sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.fillText(position, W - 48, 100);
+        ctx.font = '22px sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillText('PADEL VILLAINS', W - 48, 130);
+        ctx.textAlign = 'left';
+        
+        // Player photo
+        const photoY = 180, photoSize = 240;
+        const cx = W / 2, cy = photoY + photoSize / 2;
+        
+        // Photo ring
+        ctx.beginPath();
+        ctx.arc(cx, cy, photoSize / 2 + 6, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,215,0,0.5)';
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        
+        if (photoLoaded) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(cx, cy, photoSize / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(photoLoaded, cx - photoSize / 2, cy - photoSize / 2, photoSize, photoSize);
+          ctx.restore();
+        } else {
+          ctx.beginPath();
+          ctx.arc(cx, cy, photoSize / 2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.05)';
+          ctx.fill();
+          ctx.font = 'bold 96px sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.textAlign = 'center';
+          ctx.fillText(name.charAt(0), cx, cy + 35);
+          ctx.textAlign = 'left';
+        }
+        
+        // Name
+        let nameY = photoY + photoSize + 60;
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 56px sans-serif';
+        ctx.fillStyle = 'white';
+        ctx.fillText(name, cx, nameY);
+        
+        // Nickname
+        if (nickname) {
+          nameY += 30;
+          ctx.font = 'italic 24px sans-serif';
+          ctx.fillStyle = '#FFD700';
+          ctx.fillText(nickname, cx, nameY);
+        }
+        
+        // Divider
+        nameY += 24;
+        const divGrad = ctx.createLinearGradient(W * 0.1, 0, W * 0.9, 0);
+        divGrad.addColorStop(0, 'transparent');
+        divGrad.addColorStop(0.5, 'rgba(255,215,0,0.5)');
+        divGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = divGrad;
+        ctx.fillRect(W * 0.1, nameY, W * 0.8, 2);
+        
+        // Stats row
+        nameY += 40;
+        const statsData = [];
+        statValues.forEach((el, i) => {
+          statsData.push({ value: el.textContent, label: statLabels[i]?.textContent || '' });
+        });
+        const statSpacing = W / (statsData.length + 1);
+        statsData.forEach((s, i) => {
+          const sx = statSpacing * (i + 1);
+          ctx.font = 'bold 52px sans-serif';
+          ctx.fillStyle = 'white';
+          ctx.fillText(s.value, sx, nameY);
+          ctx.font = '18px sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          ctx.fillText(s.label.toUpperCase(), sx, nameY + 24);
         });
         
-        // Convert to blob
+        // Stat bars
+        nameY += 56;
+        ctx.textAlign = 'left';
+        const barData = [];
+        barRows.forEach(row => {
+          const label = row.querySelector('.fifa-card-bar-label')?.textContent || '';
+          const fill = row.querySelector('.fifa-card-bar-fill');
+          const val = row.querySelector('.fifa-card-bar-val')?.textContent || '0';
+          const width = fill ? parseFloat(fill.style.width) : 0;
+          const color = fill ? (fill.style.background || fill.style.backgroundColor || '#FFD700') : '#FFD700';
+          barData.push({ label, val, width, color });
+        });
+        
+        const barX = 100, barW = W - 200, barH = 12;
+        barData.forEach((b, i) => {
+          const by = nameY + i * 36;
+          ctx.font = '18px sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          ctx.textAlign = 'right';
+          ctx.fillText(b.label.toUpperCase(), barX - 12, by + 10);
+          // Track
+          ctx.fillStyle = 'rgba(255,255,255,0.1)';
+          roundedRect(ctx, barX, by, barW, barH, 6);
+          ctx.fill();
+          // Fill
+          if (b.width > 0) {
+            ctx.fillStyle = b.color;
+            roundedRect(ctx, barX, by, Math.max(barH, barW * (b.width / 100)), barH, 6);
+            ctx.fill();
+          }
+          // Value
+          ctx.textAlign = 'left';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.fillStyle = 'white';
+          ctx.fillText(b.val, barX + barW + 12, by + 12);
+        });
+        
+        ctx.textAlign = 'left';
+        
+        // Convert to blob and share
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
         const file = new File([blob], 'padel-villains-card.png', { type: 'image/png' });
         
-        // Try native share with image file
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
+            files: [file],
             title: 'Padel Villains Player Card',
-            text: '🏆 Check out my player card!',
-            files: [file]
+            text: '🏆 Check out this player card!'
           });
         } else {
-          // Fallback: download the image
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
           a.download = 'padel-villains-card.png';
+          document.body.appendChild(a);
           a.click();
+          document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          toast('Card saved! Share it on WhatsApp 🎉', 'success');
+          toast('Card saved to downloads! 🎉', 'success');
         }
       } catch (e) {
+        console.error('Share error:', e);
         if (e.name !== 'AbortError') {
-          // Final fallback: download
-          try {
-            const canvas = await html2canvas(card, { backgroundColor: null, scale: 2, useCORS: true, allowTaint: true });
-            const url = canvas.toDataURL('image/png');
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'padel-villains-card.png';
-            a.click();
-            toast('Card saved! Share it on WhatsApp 🎉', 'success');
-          } catch (e2) {
-            toast('Could not capture card', 'error');
-          }
+          toast('Could not share card — try taking a screenshot instead', 'error');
         }
       } finally {
         shareBtn.innerHTML = origText;
