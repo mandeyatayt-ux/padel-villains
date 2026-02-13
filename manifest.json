@@ -1,0 +1,24 @@
+{
+  "name": "Padel Villains - Social League Tracker",
+  "short_name": "Padel Villains",
+  "description": "Track your padel matches, rankings, and achievements",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FDF6ED",
+  "theme_color": "#E07850",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
