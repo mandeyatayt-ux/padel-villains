@@ -3759,6 +3759,13 @@
         const comp = computeTeamRating(t.wins, t.matches, t.id, maxWins);
         return { ...t, ...comp };
       }).sort((a, b) => {
+        if (filterDate) {
+          // Day rankings: most wins first, then win rate as tiebreaker
+          if (b.wins !== a.wins) return b.wins - a.wins;
+          if (b.rating !== a.rating) return b.rating - a.rating;
+          return a.losses - b.losses;
+        }
+        // Overall rankings: rating first, then wins
         if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
@@ -3783,6 +3790,13 @@
       }).sort((a, b) => {
         if (a.active !== false && b.active === false) return -1;
         if (a.active === false && b.active !== false) return 1;
+        if (filterDate) {
+          // Day rankings: most wins first, then win rate as tiebreaker
+          if (b.wins !== a.wins) return b.wins - a.wins;
+          if (b.rating !== a.rating) return b.rating - a.rating;
+          return a.losses - b.losses;
+        }
+        // Overall rankings: rating first, then wins
         if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
