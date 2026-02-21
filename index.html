@@ -555,6 +555,19 @@
     .filter-btn.active { background: var(--clay); border-color: var(--clay); color: white; }
     
     .match-card { background: white; border-radius: 20px; padding: 28px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.04); }
+    .match-team-stats { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 2px solid var(--clay-light); }
+    .match-team-stats-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .match-team-stats-name { font-size: 18px; font-weight: 700; }
+    .match-team-stats-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .match-team-stat { flex: 1; min-width: 70px; text-align: center; padding: 12px 8px; background: var(--cream); border-radius: 12px; }
+    .match-team-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 28px; line-height: 1; }
+    .match-team-stat-value.wins { color: #16a34a; }
+    .match-team-stat-value.losses { color: #dc2626; }
+    .match-team-stat-value.rate { color: var(--clay); }
+    .match-team-stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+    .match-team-stats-streak { display: inline-block; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; margin-left: auto; }
+    .match-team-stats-streak.hot { background: #dcfce7; color: #16a34a; }
+    .match-team-stats-streak.cold { background: #fee2e2; color: #dc2626; }
     .match-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--cream-dark); }
     .match-date { font-size: 16px; font-weight: 700; color: var(--brown-dark); }
     .match-location { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
@@ -1824,6 +1837,7 @@
             <p style="font-size:13px;color:var(--text-muted)">Matches in progress - click to enter final score</p>
           </div>
           <button class="btn btn-primary btn-sm" onclick="openModal('queueMatch')"><i class="fas fa-plus"></i> Queue Match</button>
+          <button class="btn btn-sm btn-whatsapp" onclick="shareQueuedMatchesWhatsApp()" title="Share today's results & upcoming matches on WhatsApp"><i class="fab fa-whatsapp"></i> Share Today</button>
         </div>
         <div id="ongoingMatches"><div class="empty" style="padding:30px"><p>No ongoing matches</p></div></div>
       </div>
@@ -1838,6 +1852,12 @@
         <button class="filter-btn" data-filter="today">Today</button>
         <button class="filter-btn" data-filter="week">This Week</button>
       </div>
+      <div style="margin-bottom:20px">
+        <select id="matchTeamFilter" onchange="renderMatches()" style="width:100%;padding:12px 16px;border-radius:12px;border:2px solid var(--cream-dark);font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;background:white;color:var(--text);cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22><path fill=%22%23888%22 d=%22M6 8L1 3h10z%22/></svg>');background-repeat:no-repeat;background-position:right 14px center">
+          <option value="">All Teams</option>
+        </select>
+      </div>
+      <div id="matchTeamStats" style="display:none"></div>
       <div id="matchesList"><div class="empty"><div class="empty-icon">📋</div><h3>No Matches Yet</h3><p>Log your first match</p></div></div>
     </section>
 
@@ -4137,7 +4157,7 @@
       const ongoingContainer = document.getElementById('dashboardOngoing');
       if (!isViewingPast && ongoingMatches.length > 0) {
         ongoingSection.style.display = 'block';
-        ongoingContainer.innerHTML = ongoingMatches.map(m => {
+        ongoingContainer.innerHTML = ongoingMatches.slice().sort((a, b) => new Date(a.started_at) - new Date(b.started_at)).map(m => {
           const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
           const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
           const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
@@ -4538,6 +4558,66 @@
     
     function sendDaySummaryWhatsApp() {
       if (!activeMatchday) return;
+    }
+    
+    function shareQueuedMatchesWhatsApp() {
+      const today = activeMatchday?.date || new Date().toISOString().split('T')[0];
+      const dayMatches = matches.filter(m => m.date === today);
+      const sorted = ongoingMatches.slice().sort((a, b) => new Date(a.started_at) - new Date(b.started_at));
+      
+      if (sorted.length === 0 && dayMatches.length === 0) {
+        toast('No matches today', 'error');
+        return;
+      }
+      
+      const dateStr = activeMatchday ? new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Today';
+      const venue = activeMatchday?.venue || '';
+      
+      let message = `🎾 *PADEL VILLAINS*\n`;
+      message += `📅 ${dateStr}${venue ? ` @ ${venue}` : ''}\n\n`;
+      
+      // Completed results
+      if (dayMatches.length > 0) {
+        message += `✅ *Results So Far (${dayMatches.length}):*\n\n`;
+        dayMatches.forEach(m => {
+          const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+          const winner = getTeam(m.winner_id);
+          const scores = (m.scores || []).map(s => `${s[0]}-${s[1]}`).join(', ');
+          const w1 = m.winner_id === t1?.id;
+          message += `${w1 ? '🏆' : '  '}  *${t1?.name || '?'}* vs *${t2?.name || '?'}*  ${!w1 ? '🏆' : ''}\n`;
+          message += `   📊 ${scores}\n\n`;
+        });
+        
+        // Day rankings so far
+        const dayRankings = rankTeamsByMatches(today);
+        if (dayRankings.length > 0) {
+          message += `📊 *Standings:*\n`;
+          dayRankings.slice(0, 5).forEach((t, i) => {
+            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+            message += `${medal} ${t.name} (${t.wins}W-${t.losses}L)\n`;
+          });
+          message += `\n`;
+        }
+      }
+      
+      // Queued matches
+      if (sorted.length > 0) {
+        message += `⏳ *Up Next (${sorted.length}):*\n\n`;
+        sorted.forEach((m, i) => {
+          const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+          const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
+          const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
+          message += `*${i + 1}. ${t1?.name || '?'} vs ${t2?.name || '?'}*\n`;
+          message += `   ${t1p1?.name || '?'} & ${t1p2?.name || '?'} vs ${t2p1?.name || '?'} & ${t2p2?.name || '?'}\n`;
+          message += `   🏟 ${m.court}\n\n`;
+        });
+      }
+      
+      message += `🏓 padel-villains.vercel.app`;
+      
+      const encoded = encodeURIComponent(message);
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    }
       
       const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
       const tm = matches.filter(m => m.date === activeMatchday.date);
@@ -4953,7 +5033,7 @@
         return;
       }
       
-      container.innerHTML = ongoingMatches.map(m => {
+      container.innerHTML = ongoingMatches.slice().sort((a, b) => new Date(a.started_at) - new Date(b.started_at)).map((m, i) => {
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
         const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
         const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
@@ -4961,7 +5041,7 @@
         
         return `<div class="ongoing-match" onclick="openFinalizeMatch(${m.id})">
           <div class="ongoing-match-header">
-            <div class="ongoing-match-status"><span class="live-dot"></span> ONGOING</div>
+            <div class="ongoing-match-status"><span class="live-dot"></span> MATCH ${i + 1}</div>
             <span class="ongoing-match-court">${m.court}</span>
           </div>
           <div class="ongoing-match-teams">
@@ -4981,12 +5061,84 @@
     }
     
     // ===== MATCHES =====
-    function renderMatches(filter = 'all') {
+    function renderMatches(filter) {
+      // Get active time filter from button if not passed
+      if (!filter) {
+        const activeBtn = document.querySelector('.matches-filters .filter-btn[data-filter].active');
+        filter = activeBtn?.dataset.filter || 'all';
+      }
+      
       let filtered = [...matches];
       const today = new Date().toISOString().split('T')[0];
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       if (filter === 'today') filtered = filtered.filter(m => m.date === today);
       else if (filter === 'week') filtered = filtered.filter(m => m.date >= weekAgo);
+      
+      // Populate team filter dropdown
+      const teamSelect = document.getElementById('matchTeamFilter');
+      const currentTeamId = parseInt(teamSelect.value) || '';
+      const teamOptions = activeTeams().filter(t => {
+        const stats = getTeamStats(t.id);
+        return stats.matches > 0;
+      }).sort((a, b) => a.name.localeCompare(b.name));
+      
+      const optionsHtml = '<option value="">All Teams</option>' + teamOptions.map(t => 
+        `<option value="${t.id}" ${t.id == currentTeamId ? 'selected' : ''}>${t.name}</option>`
+      ).join('');
+      if (teamSelect.innerHTML !== optionsHtml) teamSelect.innerHTML = optionsHtml;
+      if (currentTeamId) teamSelect.value = currentTeamId;
+      
+      // Apply team filter
+      const statsContainer = document.getElementById('matchTeamStats');
+      if (currentTeamId) {
+        filtered = filtered.filter(m => m.team1_id == currentTeamId || m.team2_id == currentTeamId);
+        
+        // Calculate stats for filtered matches
+        const team = getTeam(currentTeamId);
+        const { p1, p2 } = getTeamPlayers(team);
+        let wins = 0, losses = 0;
+        filtered.forEach(m => {
+          if (m.winner_id == currentTeamId) wins++;
+          else losses++;
+        });
+        const rate = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
+        
+        // Calculate current streak
+        const sorted = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
+        let streakType = '', streakCount = 0;
+        for (const m of sorted) {
+          const won = m.winner_id == currentTeamId;
+          const type = won ? 'W' : 'L';
+          if (!streakType) streakType = type;
+          if (type === streakType) streakCount++;
+          else break;
+        }
+        const streakText = streakCount > 0 ? `${streakCount}${streakType}` : '-';
+        const isHot = streakType === 'W' && streakCount >= 2;
+        const isCold = streakType === 'L' && streakCount >= 2;
+        
+        statsContainer.style.display = 'block';
+        statsContainer.innerHTML = `
+          <div class="match-team-stats">
+            <div class="match-team-stats-header">
+              <div style="display:flex;gap:4px">${av(p1, 'sm')}${av(p2, 'sm')}</div>
+              <div>
+                <div class="match-team-stats-name">${team?.name || '?'}</div>
+                <div style="font-size:12px;color:var(--text-muted)">${p1?.name || '?'} & ${p2?.name || '?'}</div>
+              </div>
+              ${streakCount >= 2 ? `<span class="match-team-stats-streak ${isHot ? 'hot' : isCold ? 'cold' : ''}">🔥 ${streakText} streak</span>` : ''}
+            </div>
+            <div class="match-team-stats-row">
+              <div class="match-team-stat"><div class="match-team-stat-value">${wins + losses}</div><div class="match-team-stat-label">Played</div></div>
+              <div class="match-team-stat"><div class="match-team-stat-value wins">${wins}</div><div class="match-team-stat-label">Wins</div></div>
+              <div class="match-team-stat"><div class="match-team-stat-value losses">${losses}</div><div class="match-team-stat-label">Losses</div></div>
+              <div class="match-team-stat"><div class="match-team-stat-value rate">${rate}%</div><div class="match-team-stat-label">Win Rate</div></div>
+            </div>
+          </div>`;
+      } else {
+        statsContainer.style.display = 'none';
+        statsContainer.innerHTML = '';
+      }
       
       document.getElementById('matchesList').innerHTML = filtered.length ? filtered.map(m => {
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id), w1 = m.winner_id === t1?.id;
