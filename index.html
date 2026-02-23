@@ -4618,38 +4618,6 @@
       const encoded = encodeURIComponent(message);
       window.open(`https://wa.me/?text=${encoded}`, '_blank');
     }
-      
-      const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-      const tm = matches.filter(m => m.date === activeMatchday.date);
-      const dayRankings = rankTeamsByMatches(activeMatchday.date);
-      const villain = dayRankings.length > 0 ? dayRankings[0] : null;
-      
-      let message = `🎾 *PADEL VILLAINS*\n`;
-      message += `📅 ${dateStr} @ ${activeMatchday.venue}\n\n`;
-      
-      if (villain) {
-        message += `👑 *THE VILLAINS*\n`;
-        message += `${villain.name} (${villain.wins}W - ${villain.losses}L)\n\n`;
-      }
-      
-      message += `📊 *Results (${tm.length} matches):*\n`;
-      tm.slice(0, 5).forEach(m => {
-        const t1 = getTeam(m.team1_id);
-        const t2 = getTeam(m.team2_id);
-        const winner = m.winner_id === t1?.id ? t1 : t2;
-        const scores = (m.scores || []).map(s => `${s[0]}-${s[1]}`).join(' ');
-        message += `• ${t1?.name} vs ${t2?.name}: ${scores} ✓${winner?.name}\n`;
-      });
-      
-      if (tm.length > 5) {
-        message += `...and ${tm.length - 5} more matches\n`;
-      }
-      
-      message += `\npadel-villains.vercel.app`;
-      
-      const encoded = encodeURIComponent(message);
-      window.open(`https://wa.me/?text=${encoded}`, '_blank');
-    }
     
     // ===== MATCHDAY MANAGEMENT =====
     async function createMatchday() {
