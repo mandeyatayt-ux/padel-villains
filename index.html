@@ -3367,6 +3367,9 @@
           renderAll();
           hideLoadingState();
           
+          // Initialize auth so login works immediately
+          initializeAuth();
+          
           // Fetch fresh data in background (non-blocking)
           setTimeout(() => fetchFreshDataInBackground(), 100);
           return;
@@ -8684,13 +8687,17 @@
     }
     
     function showLoginScreen() {
-      document.getElementById('loginScreen').classList.remove('hidden');
-      document.getElementById('loginScreen').style.display = 'flex';
+      const loginScreen = document.getElementById('loginScreen');
+      const alreadyVisible = !loginScreen.classList.contains('hidden') && loginScreen.style.display !== 'none';
+      loginScreen.classList.remove('hidden');
+      loginScreen.style.display = 'flex';
       document.getElementById('mainApp').style.display = 'none';
-      // Clear login form
-      document.getElementById('loginUsername').value = '';
-      document.getElementById('loginPassword').value = '';
-      document.getElementById('loginPlayerId').value = '';
+      // Only clear form if login screen wasn't already showing (e.g. logout)
+      if (!alreadyVisible) {
+        document.getElementById('loginUsername').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginPlayerId').value = '';
+      }
     }
     
     function showMainApp() {
