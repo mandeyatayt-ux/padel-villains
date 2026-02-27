@@ -1489,7 +1489,7 @@
       
       <!-- Matchday Countdown (shown when matchday is today but not yet started) -->
       <div class="card matchday-countdown hidden" id="matchdayCountdown" style="background:linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%);color:white;text-align:center;padding:24px">
-        <div style="font-size:14px;opacity:0.9;margin-bottom:8px">🎾 MATCH DAY STARTS IN</div>
+        <div id="countdownLabel" style="font-size:14px;opacity:0.9;margin-bottom:8px">🎾 MATCH DAY STARTS IN</div>
         <div id="countdownTimer" style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px">--:--:--</div>
         <div id="countdownVenue" style="font-size:14px;opacity:0.8;margin-top:8px"></div>
       </div>
@@ -3945,6 +3945,7 @@
         updateNotificationBadge();
         renderCalendar();
         saveToOfflineCache(); // Save for offline mode
+        startDashboardAutoRefresh(); // Auto-refresh for event status transitions
         try { generateCommentary(); } catch(e) {} // Live commentary feed
       } catch (e) {
         console.error('Render error:', e);
@@ -4072,23 +4073,68 @@
         } else if (todayEvents.length > 0) {
           // Show today's non-matchday events (vibes/training)
           const event = todayEvents[0];
-          header.classList.add('active');
           const dateStr = new Date(event.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
           const typeEmoji = event.type === 'vibes' ? '🎉' : '💪';
           const typeLabel = event.type === 'vibes' ? 'VIBES SESSION' : 'TRAINING SESSION';
-          statusEl.innerHTML = `<span style="color:${event.type === 'vibes' ? 'var(--purple)' : 'var(--success)'}">${typeEmoji} ${typeLabel}</span>`;
-          statusEl.className = 'matchday-status';
-          detailsEl.innerHTML = `
-            <span><i class="fas fa-calendar"></i> ${dateStr}</span>
-            <span><i class="fas fa-map-marker-alt"></i> ${event.venue || 'TBD'}</span>
-            <span><i class="fas fa-clock"></i> ${event.startTime || '09:00'} - ${event.endTime || '17:00'}</span>
-            ${event.title ? `<span style="font-weight:600">${event.title}</span>` : ''}
-          `;
-          createBtn.classList.remove('hidden');
-          closeBtn.classList.add('hidden');
-          document.getElementById('editMatchdayBtn').classList.add('hidden');
-          document.getElementById('cancelMatchdayBtn').classList.add('hidden');
-          queueBtn.disabled = true;
+          const typeColor = event.type === 'vibes' ? 'var(--purple)' : 'var(--success)';
+          
+          // Determine vibes/training event time status
+          const now = new Date();
+          const evStartTime = event.startTime || '09:00';
+          const evEndTime = event.endTime || '17:00';
+          const [evStartH, evStartM] = evStartTime.split(':').map(Number);
+          const [evEndH, evEndM] = evEndTime.split(':').map(Number);
+          const currentMins = now.getHours() * 60 + now.getMinutes();
+          const evStartMins = evStartH * 60 + evStartM;
+          const evEndMins = evEndH * 60 + evEndM;
+          
+          const isEventLive = currentMins >= evStartMins && currentMins <= evEndMins;
+          const isEventStartingSoon = currentMins >= (evStartMins - 30) && currentMins < evStartMins;
+          const isEventUpcoming = currentMins < (evStartMins - 30);
+          const isEventEnded = currentMins > evEndMins;
+          
+          // Auto-close: if event has ended, show as ended and don't feature it
+          if (isEventEnded) {
+            header.classList.remove('active');
+            statusEl.innerHTML = `<span style="color:var(--text-muted)">${typeEmoji} ${typeLabel} — Ended</span>`;
+            statusEl.className = 'matchday-status';
+            detailsEl.innerHTML = `
+              <span><i class="fas fa-calendar"></i> ${dateStr}</span>
+              <span><i class="fas fa-map-marker-alt"></i> ${event.venue || 'TBD'}</span>
+              <span><i class="fas fa-clock"></i> ${evStartTime} - ${evEndTime}</span>
+              <span style="color:var(--text-muted);font-weight:600">Session complete ✓</span>
+            `;
+            createBtn.classList.remove('hidden');
+            closeBtn.classList.add('hidden');
+            document.getElementById('editMatchdayBtn').classList.add('hidden');
+            document.getElementById('cancelMatchdayBtn').classList.add('hidden');
+            queueBtn.disabled = true;
+          } else {
+            header.classList.add('active');
+            
+            let evStatusHtml;
+            if (isEventLive) {
+              evStatusHtml = `<span style="color:${typeColor};display:flex;align-items:center;gap:12px"><span class="live-dot" style="background:${typeColor}"></span>${typeEmoji} ${typeLabel} — LIVE</span>`;
+            } else if (isEventStartingSoon) {
+              evStatusHtml = `<span style="color:${typeColor}">⏰ ${typeLabel} — STARTING SOON</span>`;
+            } else {
+              evStatusHtml = `<span style="color:${typeColor}">${typeEmoji} ${typeLabel} — UPCOMING</span>`;
+            }
+            
+            statusEl.innerHTML = evStatusHtml;
+            statusEl.className = 'matchday-status';
+            detailsEl.innerHTML = `
+              <span><i class="fas fa-calendar"></i> ${dateStr}</span>
+              <span><i class="fas fa-map-marker-alt"></i> ${event.venue || 'TBD'}</span>
+              <span><i class="fas fa-clock"></i> ${evStartTime} - ${evEndTime}</span>
+              ${event.title ? `<span style="font-weight:600">${event.title}</span>` : ''}
+            `;
+            createBtn.classList.remove('hidden');
+            closeBtn.classList.add('hidden');
+            document.getElementById('editMatchdayBtn').classList.add('hidden');
+            document.getElementById('cancelMatchdayBtn').classList.add('hidden');
+            queueBtn.disabled = true;
+          }
         } else {
           header.classList.remove('active');
           statusEl.textContent = 'No Match Day Scheduled';
@@ -4157,14 +4203,46 @@
         
         if (currentTimeInMins < startTimeInMins) {
           // Show countdown
+          countdownEl.style.background = 'linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%)';
           countdownEl.classList.remove('hidden');
           quickActionsEl.classList.add('hidden');
+          document.getElementById('countdownLabel').textContent = '🎾 MATCH DAY STARTS IN';
           document.getElementById('countdownVenue').textContent = `@ ${activeMatchday.venue}`;
           updateCountdownTimer();
         } else {
           // Matchday is live - show quick actions
           countdownEl.classList.add('hidden');
           quickActionsEl.classList.remove('hidden');
+        }
+      } else if (!isViewingPast && !activeMatchday && todayEvents.length > 0) {
+        // Show countdown for vibes/training events
+        const event = todayEvents[0];
+        const now = new Date();
+        const evStartTime = event.startTime || '09:00';
+        const [evSH, evSM] = evStartTime.split(':').map(Number);
+        const currentMinsNow = now.getHours() * 60 + now.getMinutes();
+        const evStartMinsNow = evSH * 60 + evSM;
+        const evEndTime = event.endTime || '17:00';
+        const [evEH, evEM] = evEndTime.split(':').map(Number);
+        const evEndMinsNow = evEH * 60 + evEM;
+        
+        if (currentMinsNow < evStartMinsNow) {
+          // Show countdown for vibes/training
+          const typeLabel = event.type === 'vibes' ? '🎉 VIBES' : '💪 TRAINING';
+          const bgColor = event.type === 'vibes' ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)' : 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+          countdownEl.style.background = bgColor;
+          countdownEl.classList.remove('hidden');
+          quickActionsEl.classList.add('hidden');
+          document.getElementById('countdownLabel').textContent = `${typeLabel} STARTS IN`;
+          document.getElementById('countdownVenue').textContent = `@ ${event.venue || 'TBD'}`;
+          updateEventCountdownTimer(evStartTime);
+        } else if (currentMinsNow <= evEndMinsNow) {
+          // Vibes/training is live - no queue actions needed, just hide both
+          countdownEl.classList.add('hidden');
+          quickActionsEl.classList.add('hidden');
+        } else {
+          countdownEl.classList.add('hidden');
+          quickActionsEl.classList.add('hidden');
         }
       } else if (!isViewingPast && activeMatchday && activeMatchday.date > today) {
         // Future matchday - hide both
@@ -4562,13 +4640,15 @@
       const diff = startDate - now;
       
       if (diff <= 0) {
-        // Matchday has started
+        // Matchday has started — auto-transition to live
         document.getElementById('matchdayCountdown').classList.add('hidden');
         document.getElementById('quickActionsCard').classList.remove('hidden');
         if (countdownInterval) {
           clearInterval(countdownInterval);
           countdownInterval = null;
         }
+        // Re-render dashboard to update status to LIVE
+        renderDashboard();
         return;
       }
       
@@ -4585,6 +4665,55 @@
       if (!countdownInterval) {
         countdownInterval = setInterval(updateCountdownTimer, 1000);
       }
+    }
+    
+    // Countdown timer for vibes/training events
+    let eventCountdownInterval = null;
+    function updateEventCountdownTimer(targetStartTime) {
+      const now = new Date();
+      const [targetH, targetM] = targetStartTime.split(':').map(Number);
+      const targetDate = new Date();
+      targetDate.setHours(targetH, targetM, 0, 0);
+      
+      const diff = targetDate - now;
+      
+      if (diff <= 0) {
+        // Event has started
+        document.getElementById('matchdayCountdown').classList.add('hidden');
+        if (eventCountdownInterval) {
+          clearInterval(eventCountdownInterval);
+          eventCountdownInterval = null;
+        }
+        // Re-render to show LIVE status
+        renderDashboard();
+        return;
+      }
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      const timerEl = document.getElementById('countdownTimer');
+      if (timerEl) {
+        timerEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+      
+      if (!eventCountdownInterval) {
+        eventCountdownInterval = setInterval(() => updateEventCountdownTimer(targetStartTime), 1000);
+      }
+    }
+    
+    // Auto-refresh dashboard every 60 seconds to catch status transitions
+    // (vibes/training auto-close, matchday auto-start, etc.)
+    let dashboardAutoRefresh = null;
+    function startDashboardAutoRefresh() {
+      if (dashboardAutoRefresh) clearInterval(dashboardAutoRefresh);
+      dashboardAutoRefresh = setInterval(() => {
+        const activeTab = document.querySelector('.tab.active');
+        if (activeTab && activeTab.id === 'dashboard') {
+          renderDashboard();
+        }
+      }, 60000); // Every 60 seconds
     }
     
     function shareMatchdayResults() {
@@ -4717,6 +4846,11 @@
         return;
       }
       
+      if (endTime && startTime && endTime <= startTime) {
+        toast('End time must be after start time', 'error');
+        return;
+      }
+      
       // Check if matchday already exists for this date
       if (matchdays.some(md => md.date === date && md.status !== 'closed')) {
         toast('A match day already exists for this date', 'error');
@@ -4841,6 +4975,11 @@
       
       if (!date || !venue) {
         toast('Please fill all fields', 'error');
+        return;
+      }
+      
+      if (endTime && startTime && endTime <= startTime) {
+        toast('End time must be after start time', 'error');
         return;
       }
       
@@ -8067,6 +8206,11 @@
         return;
       }
       
+      if (endTime && startTime && endTime <= startTime) {
+        toast('End time must be after start time', 'error');
+        return;
+      }
+      
       const event = {
         id: Date.now(),
         type,
@@ -8179,6 +8323,11 @@
       
       if (!date) {
         toast('Please select a date', 'error');
+        return;
+      }
+      
+      if (endTime && startTime && endTime <= startTime) {
+        toast('End time must be after start time', 'error');
         return;
       }
       
