@@ -458,7 +458,14 @@
     @media (max-width: 900px) { .stats-grid { grid-column: span 1; grid-template-columns: repeat(2, 1fr); } }
     .stat-card { background: var(--bg-card); border-radius: var(--radius-md); padding: 20px; text-align: center; transition: all 0.2s; border: 1px solid var(--border); }
     .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-    .stat-icon { font-size: 32px; margin-bottom: 10px; }
+    .stat-icon { font-size: 20px; margin-bottom: 12px; width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; }
+    .stat-icon.clay { background: rgba(224,120,80,0.1); color: var(--clay); }
+    .stat-icon.teal { background: rgba(20,184,166,0.1); color: #14B8A6; }
+    .stat-icon.violet { background: rgba(124,58,237,0.1); color: #7C3AED; }
+    .stat-icon.amber { background: rgba(217,119,6,0.1); color: #D97706; }
+    .stat-icon.emerald { background: rgba(5,150,105,0.1); color: #059669; }
+    .stat-icon.rose { background: rgba(225,29,72,0.1); color: #E11D48; }
+    .stat-icon.sky { background: rgba(14,165,233,0.1); color: #0EA5E9; }
     .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--brown-dark); letter-spacing: 1px; }
     .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
     
@@ -1106,7 +1113,7 @@
     .profile-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
     @media (max-width: 900px) { .profile-stats-grid { grid-template-columns: repeat(2, 1fr); } }
     .profile-stat-card { background: var(--bg-card); border-radius: var(--radius-md); padding: 20px; text-align: center; border: 1px solid var(--border); }
-    .profile-stat-card-icon { font-size: 28px; margin-bottom: 8px; }
+    .profile-stat-card-icon { font-size: 18px; margin-bottom: 10px; width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; }
     .profile-stat-card-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--brown-dark); }
     .profile-stat-card-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
     
@@ -1506,10 +1513,10 @@
           </div>
         </div>
         <div class="stats-grid">
-          <div class="stat-card"><div class="stat-icon">🎾</div><div class="stat-value" id="statMatches">0</div><div class="stat-label">Matches</div></div>
-          <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Players</div></div>
-          <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="statAvailable">0</div><div class="stat-label">Playing Today</div></div>
-          <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-value" id="statVenue">-</div><div class="stat-label">Venue</div></div>
+          <div class="stat-card"><div class="stat-icon clay"><i class="fas fa-table-tennis-paddle-ball"></i></div><div class="stat-value" id="statMatches">0</div><div class="stat-label">Matches</div></div>
+          <div class="stat-card"><div class="stat-icon violet"><i class="fas fa-users"></i></div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Players</div></div>
+          <div class="stat-card"><div class="stat-icon emerald"><i class="fas fa-circle-check"></i></div><div class="stat-value" id="statAvailable">0</div><div class="stat-label">Playing Today</div></div>
+          <div class="stat-card"><div class="stat-icon rose"><i class="fas fa-location-dot"></i></div><div class="stat-value" id="statVenue">-</div><div class="stat-label">Venue</div></div>
         </div>
         
         <!-- Spotify Widget -->
@@ -1803,10 +1810,10 @@
       
       <!-- Profile Stats Cards -->
       <div class="profile-stats-grid">
-        <div class="profile-stat-card"><div class="profile-stat-card-icon">🎾</div><div class="profile-stat-card-value" id="myStatMatches">0</div><div class="profile-stat-card-label">Total Matches</div></div>
-        <div class="profile-stat-card"><div class="profile-stat-card-icon">🏆</div><div class="profile-stat-card-value" id="myStatBestStreak">0</div><div class="profile-stat-card-label">Best Win Streak</div></div>
-        <div class="profile-stat-card"><div class="profile-stat-card-icon">👑</div><div class="profile-stat-card-value" id="myStatVillainDays">0</div><div class="profile-stat-card-label">Villain Days</div></div>
-        <div class="profile-stat-card"><div class="profile-stat-card-icon">📅</div><div class="profile-stat-card-value" id="myStatMatchdays">0</div><div class="profile-stat-card-label">Days Played</div></div>
+        <div class="profile-stat-card"><div class="profile-stat-card-icon stat-icon clay"><i class="fas fa-table-tennis-paddle-ball"></i></div><div class="profile-stat-card-value" id="myStatMatches">0</div><div class="profile-stat-card-label">Total Matches</div></div>
+        <div class="profile-stat-card"><div class="profile-stat-card-icon stat-icon amber"><i class="fas fa-bolt"></i></div><div class="profile-stat-card-value" id="myStatBestStreak">0</div><div class="profile-stat-card-label">Best Win Streak</div></div>
+        <div class="profile-stat-card"><div class="profile-stat-card-icon stat-icon rose"><i class="fas fa-crown"></i></div><div class="profile-stat-card-value" id="myStatVillainDays">0</div><div class="profile-stat-card-label">Villain Days</div></div>
+        <div class="profile-stat-card"><div class="profile-stat-card-icon stat-icon teal"><i class="fas fa-calendar-check"></i></div><div class="profile-stat-card-value" id="myStatMatchdays">0</div><div class="profile-stat-card-label">Days Played</div></div>
       </div>
       
       <!-- My Teams -->
@@ -1982,10 +1989,10 @@
         
         <!-- Individual Stats Summary -->
         <div class="grid-4" style="margin-bottom:24px" id="individualStatsSummary">
-          <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-value" id="indivTopWins">-</div><div class="stat-label">Most Wins</div></div>
-          <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-value" id="indivTopRate">-</div><div class="stat-label">Best Win Rate</div></div>
-          <div class="stat-card"><div class="stat-icon">🎾</div><div class="stat-value" id="indivMostGames">-</div><div class="stat-label">Most Games</div></div>
-          <div class="stat-card"><div class="stat-icon">🔥</div><div class="stat-value" id="indivHotStreak">-</div><div class="stat-label">Longest Streak</div></div>
+          <div class="stat-card"><div class="stat-icon amber"><i class="fas fa-medal"></i></div><div class="stat-value" id="indivTopWins">-</div><div class="stat-label">Most Wins</div></div>
+          <div class="stat-card"><div class="stat-icon emerald"><i class="fas fa-bullseye"></i></div><div class="stat-value" id="indivTopRate">-</div><div class="stat-label">Best Win Rate</div></div>
+          <div class="stat-card"><div class="stat-icon clay"><i class="fas fa-table-tennis-paddle-ball"></i></div><div class="stat-value" id="indivMostGames">-</div><div class="stat-label">Most Games</div></div>
+          <div class="stat-card"><div class="stat-icon rose"><i class="fas fa-fire"></i></div><div class="stat-value" id="indivHotStreak">-</div><div class="stat-label">Longest Streak</div></div>
         </div>
         
         <div class="rankings-table">
