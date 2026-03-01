@@ -641,38 +641,90 @@
     .rank-rate-fill { height: 100%; background: var(--clay); border-radius: 4px; }
     .rank-rate-text { font-size: 16px; font-weight: 700; color: var(--brown-dark); min-width: 45px; }
     
-    /* ===== MATCHUP PAGE ===== */
-    .matchup-hero { background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); border-radius: 24px; padding: 40px; color: white; margin-bottom: 32px; text-align: center; }
-    .matchup-hero h2 { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 4px; margin-bottom: 8px; }
-    .matchup-hero p { opacity: 0.9; font-size: 15px; }
-    
-    .matchup-players { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
-    .matchup-player { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; position: relative; }
-    .matchup-player:hover { border-color: var(--clay-light); transform: translateY(-2px); }
-    .matchup-player.selected { border-color: var(--clay); background: rgba(224,120,80,0.05); }
-    .matchup-player-name { font-size: 15px; font-weight: 600; }
-    .matchup-check { position: absolute; top: -8px; right: -8px; width: 26px; height: 26px; background: var(--clay); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 8px rgba(224,120,80,0.4); }
-    .matchup-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
-    .selected-count { font-size: 15px; color: var(--text-muted); }
-    .selected-count strong { color: var(--clay); }
-    .generated-section { background: var(--bg-card); border-radius: var(--radius-lg); padding: 28px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-    .generated-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; margin-bottom: 24px; color: var(--brown-dark); }
-    .generated-match { display: flex; align-items: center; justify-content: space-between; padding: 24px; background: var(--cream); border-radius: 16px; margin-bottom: 16px; }
-    @media (max-width: 600px) { .generated-match { flex-direction: column; gap: 16px; text-align: center; } }
-    .generated-team { display: flex; align-items: center; gap: 12px; flex: 1; }
-    .generated-team-avatars { display: flex; gap: 6px; }
-    .generated-team-names { font-size: 15px; font-weight: 600; }
-    .generated-vs { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--clay); padding: 0 24px; letter-spacing: 2px; }
-    
-    /* Round Robin */
-    .matchup-team { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; position: relative; }
-    .matchup-team:hover { border-color: var(--clay-light); transform: translateY(-2px); }
-    .matchup-team.selected { border-color: var(--clay); background: rgba(224,120,80,0.05); }
-    .matchup-team-info { display: flex; flex-direction: column; }
-    .matchup-team-name { font-size: 15px; font-weight: 700; }
-    .matchup-team-players { font-size: 12px; color: var(--text-muted); }
-    .round-label { display: inline-block; padding: 8px 16px; background: var(--clay); color: white; border-radius: 10px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; margin-bottom: 16px; margin-top: 24px; }
-    .round-label:first-child { margin-top: 0; }
+    /* ===== MATCH DAY PAGE ===== */
+    .md-hero { background: linear-gradient(135deg, #E07850 0%, #C2623D 100%); border-radius: var(--radius-xl); padding: 28px 24px; color: white; margin-bottom: 24px; position: relative; overflow: hidden; }
+    .md-hero::before { content: ''; position: absolute; top: -60px; right: -40px; width: 200px; height: 200px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+    .md-hero-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 3px; }
+    .md-hero-sub { opacity: 0.9; font-size: 14px; margin-top: 4px; }
+    .md-mode-toggle { display: flex; gap: 8px; margin-top: 16px; }
+    .md-mode-btn { flex: 1; padding: 10px 12px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3); background: transparent; color: white; cursor: pointer; text-align: left; font-family: inherit; transition: all 0.2s; }
+    .md-mode-btn.active { border-color: white; background: rgba(255,255,255,0.2); }
+    .md-mode-btn-title { font-weight: 700; font-size: 14px; }
+    .md-mode-btn-desc { font-size: 11px; opacity: 0.8; }
+    .md-config { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    .md-config-card { flex: 1; min-width: 140px; background: var(--bg-card); border-radius: var(--radius-md); padding: 14px 16px; border: 1px solid var(--border); }
+    .md-config-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; }
+    .md-config-btns { display: flex; gap: 6px; }
+    .md-config-btn { flex: 1; padding: 8px 0; border-radius: 8px; border: none; font-weight: 700; font-size: 16px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .md-config-btn.active { background: var(--clay); color: white; }
+    .md-config-btn:not(.active) { background: var(--cream); color: var(--brown-dark); }
+    .md-est { font-size: 22px; font-weight: 700; }
+    .md-est.over { color: var(--danger); }
+    .md-est.ok { color: var(--success); }
+    .md-est-detail { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
+    .md-teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+    .md-team-btn { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--border); background: var(--cream); cursor: pointer; text-align: left; font-family: inherit; transition: all 0.2s; position: relative; width: 100%; }
+    .md-team-btn.active { border-color: var(--clay); background: rgba(224,120,80,0.06); }
+    .md-team-btn:hover { border-color: var(--clay-light); }
+    .md-team-check { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; background: var(--clay); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+    .md-team-name { font-weight: 700; font-size: 14px; color: var(--text); }
+    .md-team-players { font-size: 11px; color: var(--text-muted); }
+    .md-team-avatars { display: flex; }
+    .md-team-avatars .avatar { width: 32px; height: 32px; font-size: 13px; margin-right: -6px; }
+    .md-generate-btn { width: 100%; margin-top: 16px; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); color: white; font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s; }
+    .md-generate-btn:hover { transform: translateY(-1px); }
+    .md-generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .md-round-label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 16px; }
+    .md-round-badge { background: var(--clay); color: white; padding: 2px 10px; border-radius: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+    .md-round-line { height: 1px; flex: 1; background: var(--divider); }
+    .md-schedule-match { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; background: var(--cream); margin-bottom: 6px; transition: all 0.2s; }
+    .md-schedule-match.new-team { background: rgba(124,58,237,0.04); border: 1px dashed rgba(124,58,237,0.2); }
+    .md-schedule-court { font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 2px 8px; background: var(--divider); border-radius: 6px; min-width: 28px; text-align: center; }
+    .md-schedule-team { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .md-schedule-team-name { font-weight: 700; font-size: 14px; }
+    .md-schedule-vs { color: var(--text-muted); font-size: 11px; font-weight: 700; }
+    .md-sitting { font-size: 11px; color: var(--text-muted); margin-top: 4px; margin-bottom: 8px; }
+    .md-live-card { background: var(--bg-card); border-radius: 16px; padding: 20px; border: 2px solid var(--clay); margin-bottom: 12px; box-shadow: 0 4px 20px rgba(224,120,80,0.12); }
+    .md-live-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .md-live-badge { background: rgba(225,29,72,0.1); color: var(--danger); padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+    .md-live-teams { display: flex; align-items: center; justify-content: space-between; }
+    .md-live-team { display: flex; align-items: center; gap: 10px; }
+    .md-live-team-right { flex-direction: row-reverse; text-align: right; }
+    .md-live-team-name { font-weight: 700; font-size: 16px; }
+    .md-live-team-players { font-size: 12px; color: var(--text-muted); }
+    .md-live-vs { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--text-muted); }
+    .md-next-match { background: var(--bg-card); border-radius: var(--radius-md); padding: 14px 18px; border: 1px solid var(--border); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+    .md-progress { height: 6px; background: var(--divider); border-radius: 3px; overflow: hidden; }
+    .md-progress-bar { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--clay), var(--gold)); transition: width 0.5s; }
+    .md-late-add { background: var(--bg-card); border-radius: 16px; padding: 16px 20px; border: 1px dashed var(--border-hover); margin-bottom: 24px; }
+    .md-late-add-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .md-late-btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--cream); cursor: pointer; font-family: inherit; font-weight: 600; font-size: 13px; transition: all 0.2s; }
+    .md-late-btn:hover { border-color: var(--clay-light); }
+    .md-team-view { background: var(--bg-card); border-radius: 16px; padding: 20px; border: 2px solid var(--clay); margin-bottom: 24px; box-shadow: 0 4px 20px rgba(224,120,80,0.1); }
+    .md-team-view-match { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 10px; background: var(--cream); margin-bottom: 6px; }
+    .md-team-view-status { padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+    .md-team-view-status.live { background: rgba(225,29,72,0.1); color: var(--danger); }
+    .md-team-view-status.upcoming { background: rgba(120,113,108,0.1); color: var(--text-muted); }
+    .md-team-view-status.completed { background: rgba(5,150,105,0.1); color: var(--success); }
+    .md-confirm-bar { display: flex; gap: 10px; margin-top: 20px; }
+    .md-confirm-bar .btn { flex: 1; padding: 14px; font-size: 14px; }
+    .md-confirm-bar .btn-confirm { flex: 2; background: linear-gradient(135deg, var(--success) 0%, #047857 100%); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .md-americano-players { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .md-americano-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--border); background: var(--cream); cursor: pointer; font-family: inherit; position: relative; transition: all 0.2s; width: 100%; }
+    .md-americano-btn.active { border-color: #7C3AED; background: rgba(124,58,237,0.06); }
+    .md-americano-check { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: #7C3AED; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; }
+    .md-americano-name { font-weight: 600; font-size: 13px; }
+    @media (max-width: 480px) {
+      .md-hero { padding: 20px 16px; border-radius: 16px; }
+      .md-hero-title { font-size: 24px; }
+      .md-config { gap: 8px; }
+      .md-config-card { min-width: 100px; padding: 12px; }
+      .md-teams-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .md-team-btn { padding: 10px; }
+      .md-team-avatars .avatar { width: 28px; height: 28px; font-size: 11px; }
+      .md-live-team-name { font-size: 14px; }
+      .md-americano-players { grid-template-columns: 1fr 1fr; }
+    }
     
     /* ===== SETTINGS PAGE ===== */
     .settings-section { background: var(--bg-card); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
@@ -1276,29 +1328,6 @@
     .commentary-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .commentary-empty { text-align: center; padding: 32px; color: var(--text-muted); }
 
-    /* ===== PLAYOFF BRACKET ===== */
-    .playoff-hero { background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #e94560 100%); border-radius: 24px; padding: 32px; color: white; text-align: center; margin-bottom: 24px; position: relative; overflow: hidden; }
-    .playoff-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 70% 30%, rgba(255,215,0,0.15) 0%, transparent 50%); }
-    .playoff-hero h2 { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 6px; position: relative; }
-    .playoff-hero p { opacity: 0.7; font-size: 14px; position: relative; }
-    .playoff-bracket { display: flex; gap: 24px; overflow-x: auto; padding: 20px 0; min-height: 300px; }
-    .playoff-round { display: flex; flex-direction: column; justify-content: space-around; min-width: 200px; gap: 16px; }
-    .playoff-round-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--text-muted); letter-spacing: 2px; text-align: center; margin-bottom: 8px; }
-    .playoff-match { background: var(--bg-card); border-radius: var(--radius-sm); padding: 12px; border: 1px solid var(--border); position: relative; }
-    .playoff-match.active { border: 2px solid var(--clay); box-shadow: 0 4px 20px rgba(224,120,80,0.2); }
-    .playoff-match.completed { opacity: 0.8; }
-    .playoff-team-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
-    .playoff-team-row.winner { font-weight: 700; }
-    .playoff-team-row.loser { opacity: 0.4; }
-    .playoff-team-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .playoff-team-seed { font-size: 11px; color: var(--text-muted); width: 20px; }
-    .playoff-team-score { font-weight: 700; font-size: 14px; color: var(--clay); width: 20px; text-align: right; }
-    .playoff-separator { height: 1px; background: var(--cream-dark); }
-    .playoff-setup { max-width: 500px; margin: 0 auto; }
-    .playoff-seed-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
-    .playoff-seed-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border); }
-    .playoff-seed-num { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--clay); width: 24px; }
-    .playoff-seed-name { flex: 1; font-weight: 600; }
     /* ===== FUNPARQUE-INSPIRED DECORATIVE ELEMENTS ===== */
     
     /* Background organic blobs */
@@ -1818,8 +1847,7 @@
       <button data-tab="matches"><i class="fas fa-list"></i><span>Matches</span></button>
       <button data-tab="rankings"><i class="fas fa-trophy"></i><span>Rankings</span></button>
       <button data-tab="achievements"><i class="fas fa-medal"></i><span>Achievements</span></button>
-      <button data-tab="playoffs"><i class="fas fa-sitemap"></i><span>Playoffs</span></button>
-      <button data-tab="matchup"><i class="fas fa-shuffle"></i><span>Matchup</span></button>
+      <button data-tab="matchday"><i class="fas fa-gamepad"></i><span>Match Day</span></button>
       <button data-tab="rules"><i class="fas fa-book"></i><span>Rules</span></button>
       <button data-tab="history"><i class="fas fa-clock-rotate-left"></i><span>History</span></button>
       <button data-tab="settings" class="admin-only"><i class="fas fa-cog"></i><span>Settings</span></button>
@@ -1865,7 +1893,7 @@
       <div class="card quick-actions hidden" id="quickActionsCard" style="margin-bottom:24px">
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
           <button class="btn btn-primary" onclick="openModal('queueMatch')"><i class="fas fa-plus"></i> Add Match</button>
-          <button class="btn btn-secondary" onclick="switchTab('matchup')"><i class="fas fa-shuffle"></i> Generate Matchup</button>
+          <button class="btn btn-secondary" onclick="switchTab('matchday')"><i class="fas fa-gamepad"></i> Match Day</button>
           <button class="btn btn-secondary" onclick="sendWhatsAppReminder()"><i class="fab fa-whatsapp"></i> Send Reminder</button>
           <button class="btn btn-secondary" onclick="shareMatchdayResults()"><i class="fas fa-share"></i> Share Results</button>
         </div>
@@ -2139,7 +2167,7 @@
       <!-- Quick Actions: Player Card & H2H -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
         <button class="btn btn-primary" onclick="openH2H()" style="padding:16px;border-radius:16px;font-size:14px"><i class="fas fa-bolt" style="margin-right:6px"></i> Head-to-Head</button>
-        <button class="btn btn-secondary" onclick="openPlayoffs()" style="padding:16px;border-radius:16px;font-size:14px"><i class="fas fa-sitemap" style="margin-right:6px"></i> Playoffs</button>
+        <button class="btn btn-secondary" onclick="switchTab('matchday')" style="padding:16px;border-radius:16px;font-size:14px"><i class="fas fa-gamepad" style="margin-right:6px"></i> Match Day</button>
       </div>
       
       <!-- Weather Widget at Bottom -->
@@ -2383,64 +2411,152 @@
       </div>
     </section>
 
-    <!-- ===== MATCHUP TAB ===== -->
-    <section class="tab" id="matchup">
-      <div class="matchup-hero"><h2>🎲 MATCHUP GENERATOR</h2><p>Create random teams or round robin tournaments</p></div>
-      
-      <!-- Available Players for Matchday -->
-      <div class="card" id="matchupAvailableSection" style="margin-bottom:24px">
-        <div class="section-header" style="margin-bottom:16px">
-          <div>
-            <h3 style="font-size:18px;font-weight:700">👥 Player Availability</h3>
-            <p style="font-size:12px;color:var(--text-muted)">Mark who's playing today - tap to toggle</p>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsAppReminder()" title="Send WhatsApp reminder"><i class="fab fa-whatsapp"></i></button>
-            <button class="btn btn-sm" onclick="selectAllAvailable()" title="Select all available for matchup"><i class="fas fa-check-double"></i> Use Available</button>
-            <span id="availableCount" style="background:var(--clay);color:white;padding:4px 12px;border-radius:20px;font-size:14px;font-weight:600">0</span>
-          </div>
-        </div>
-        <div id="availablePlayersList" class="available-players-grid"></div>
-      </div>
-      
-      <!-- Player Matchup Section -->
-      <div class="card" style="margin-bottom:24px">
-        <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">🎯 Random Player Matchup</h3>
-        <p style="color:var(--text-muted);margin-bottom:24px;font-size:14px">Select players to randomly pair into teams</p>
-        <div class="matchup-players" id="matchupPlayers"></div>
-        <div class="matchup-actions">
-          <span class="selected-count"><strong id="selectedCount">0</strong> players selected (min 4)</span>
-          <button class="btn btn-primary" onclick="generateMatchups()"><i class="fas fa-shuffle"></i> Generate Teams</button>
+    <!-- ===== MATCH DAY TAB ===== -->
+    <section class="tab" id="matchday">
+      <!-- Hero -->
+      <div class="md-hero">
+        <div class="md-hero-title">⚔️ MATCH DAY</div>
+        <div class="md-hero-sub" id="mdHeroSub"></div>
+        <div class="md-mode-toggle">
+          <button class="md-mode-btn active" id="mdModeRR" onclick="setMatchDayMode('roundrobin')">
+            <div class="md-mode-btn-title">🏆 Round Robin</div>
+            <div class="md-mode-btn-desc">All teams play each other</div>
+          </button>
+          <button class="md-mode-btn" id="mdModeAM" onclick="setMatchDayMode('americano')">
+            <div class="md-mode-btn-title">🎲 Americano</div>
+            <div class="md-mode-btn-desc">Rotating partners</div>
+          </button>
         </div>
       </div>
-      <div class="generated-section hidden" id="generatedSection">
-        <div class="generated-title">🎯 GENERATED PLAYER MATCHUPS</div>
-        <div id="matchupResults"></div>
-        <button class="btn btn-secondary" onclick="generateMatchups()" style="margin-top:20px"><i class="fas fa-refresh"></i> Regenerate</button>
+
+      <!-- Configuration -->
+      <div class="md-config">
+        <div class="md-config-card">
+          <div class="md-config-label">Courts</div>
+          <div class="md-config-btns">
+            <button class="md-config-btn active" onclick="setMDCourts(1)">1</button>
+            <button class="md-config-btn" onclick="setMDCourts(2)">2</button>
+          </div>
+        </div>
+        <div class="md-config-card">
+          <div class="md-config-label">Duration</div>
+          <div class="md-config-btns">
+            <button class="md-config-btn" onclick="setMDDuration(2)">2h</button>
+            <button class="md-config-btn active" onclick="setMDDuration(3)">3h</button>
+            <button class="md-config-btn" onclick="setMDDuration(4)">4h</button>
+          </div>
+        </div>
+        <div class="md-config-card">
+          <div class="md-config-label">Estimate</div>
+          <div id="mdEstimate" class="md-est ok">—</div>
+        </div>
       </div>
-      
-      <!-- Team Round Robin Section -->
-      <div class="card" style="margin-top:32px">
-        <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">🏆 Team Round Robin</h3>
-        <p style="color:var(--text-muted);margin-bottom:24px;font-size:14px">Select teams for a round robin tournament - every team plays each other</p>
-        <div class="matchup-players" id="roundRobinTeams"></div>
-        <div class="matchup-actions">
-          <span class="selected-count"><strong id="selectedTeamCount">0</strong> teams selected (min 2)</span>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-secondary" onclick="resetRoundRobin()"><i class="fas fa-times"></i> Reset</button>
-            <button class="btn btn-primary" onclick="generateRoundRobin()"><i class="fas fa-trophy"></i> Generate</button>
+
+      <!-- Round Robin: Team Selection -->
+      <div id="mdRoundRobinSection">
+        <div class="card" style="margin-bottom:24px">
+          <div class="section-header" style="margin-bottom:16px">
+            <div>
+              <h3 style="font-size:18px;font-weight:700">Active Teams</h3>
+              <p style="font-size:12px;color:var(--text-muted)" id="mdTeamSummary">Select teams for today's matches</p>
+            </div>
+            <span id="mdActiveCount" style="background:var(--clay);color:white;padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
+          </div>
+          <div class="md-teams-grid" id="mdTeamsGrid"></div>
+          <button class="md-generate-btn" id="mdGenerateBtn" onclick="mdGenerate()" disabled>🎲 Generate Schedule</button>
+        </div>
+      </div>
+
+      <!-- Americano: Player Selection -->
+      <div id="mdAmericanoSection" style="display:none">
+        <div class="card" style="margin-bottom:24px">
+          <div class="section-header" style="margin-bottom:16px">
+            <div>
+              <h3 style="font-size:18px;font-weight:700">Select Players</h3>
+              <p style="font-size:12px;color:var(--text-muted)">Pick players for Americano (multiples of 4 ideal)</p>
+            </div>
+            <span id="mdAmericanoCount" style="background:#7C3AED;color:white;padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
+          </div>
+          <div class="md-americano-players" id="mdAmericanoPlayers"></div>
+          <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
+            <span style="font-size:13px;font-weight:600;color:var(--text-muted)">Rounds:</span>
+            <button class="md-config-btn" onclick="setMDAmericanoRounds(4)" style="padding:6px 14px;min-width:40px">4</button>
+            <button class="md-config-btn active" onclick="setMDAmericanoRounds(6)" style="padding:6px 14px;min-width:40px">6</button>
+            <button class="md-config-btn" onclick="setMDAmericanoRounds(8)" style="padding:6px 14px;min-width:40px">8</button>
+          </div>
+          <button class="md-generate-btn" id="mdAmericanoGenBtn" onclick="mdGenerate()" disabled style="background:linear-gradient(135deg,#7C3AED 0%,#6D28D9 100%)">🎲 Generate Americano</button>
+        </div>
+      </div>
+
+      <!-- Preview Section (generated schedule before confirm) -->
+      <div id="mdPreviewSection" style="display:none">
+        <div class="card" style="margin-bottom:24px">
+          <div class="section-header" style="margin-bottom:16px">
+            <div>
+              <h3 style="font-size:18px;font-weight:700">📋 Schedule Preview</h3>
+              <p style="font-size:12px;color:var(--text-muted)" id="mdPreviewSummary"></p>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="mdGenerate()"><i class="fas fa-shuffle"></i> Shuffle</button>
+          </div>
+          <div id="mdPreviewMatches"></div>
+          <div class="md-confirm-bar">
+            <button class="btn btn-secondary" onclick="mdBackToSetup()">← Back</button>
+            <button class="btn md-confirm-bar btn-confirm" onclick="mdConfirmSchedule()">✅ Confirm & Start</button>
           </div>
         </div>
       </div>
-      <div class="generated-section hidden" id="roundRobinSection">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:16px">
-          <div class="generated-title" style="margin-bottom:0">🏆 ROUND ROBIN SCHEDULE</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-secondary btn-sm" onclick="generateRoundRobin()"><i class="fas fa-refresh"></i> Regenerate</button>
-            <button class="btn btn-primary btn-sm" onclick="queueAllRoundRobin()"><i class="fas fa-play"></i> Queue All Matches</button>
+
+      <!-- Live Match Day Section -->
+      <div id="mdLiveSection" style="display:none">
+        <!-- Progress -->
+        <div class="card" style="margin-bottom:16px;padding:16px 20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-weight:700;font-size:14px">Match Day Progress</span>
+            <span style="font-size:13px;color:var(--text-muted)" id="mdProgressText">0 / 0</span>
           </div>
+          <div class="md-progress"><div class="md-progress-bar" id="mdProgressBar" style="width:0%"></div></div>
         </div>
-        <div id="roundRobinResults"></div>
+
+        <!-- On Court Now -->
+        <div style="margin-bottom:24px">
+          <div style="font-weight:700;font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+            <span class="pulse-dot"></span> On Court Now
+          </div>
+          <div id="mdOnCourt"><div class="empty" style="padding:20px"><p>No matches on court</p></div></div>
+        </div>
+
+        <!-- Up Next -->
+        <div style="margin-bottom:24px">
+          <div style="font-weight:700;font-size:16px;margin-bottom:12px">⏭️ Up Next</div>
+          <div id="mdUpNext"></div>
+        </div>
+
+        <!-- Team View -->
+        <div id="mdTeamView" style="display:none"></div>
+
+        <!-- Full Queue -->
+        <div class="card" style="margin-bottom:24px">
+          <div class="section-header" style="margin-bottom:12px">
+            <div>
+              <h3 style="font-size:16px;font-weight:700">📋 Full Schedule</h3>
+              <p style="font-size:11px;color:var(--text-muted)">Tap a team name to view their matches</p>
+            </div>
+          </div>
+          <div id="mdFullSchedule"></div>
+        </div>
+
+        <!-- Completed Matches -->
+        <div class="card" style="margin-bottom:24px" id="mdCompletedCard" style="display:none">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:12px">✅ Completed</h3>
+          <div id="mdCompletedList"></div>
+        </div>
+
+        <!-- Add Late Team -->
+        <div class="md-late-add" id="mdLateAdd">
+          <div style="font-weight:700;font-size:14px;margin-bottom:8px">➕ Add Team (Late Arrival)</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">New matches will be generated for the added team</div>
+          <div class="md-late-add-btns" id="mdLateTeams"></div>
+        </div>
       </div>
     </section>
 
@@ -2464,46 +2580,6 @@
       </div>
       <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">🎖️ Badges</h3>
       <div class="achievements-grid" id="achievementsGrid"></div>
-    </section>
-
-    <!-- ===== PLAYOFFS TAB ===== -->
-    <section class="tab" id="playoffs">
-      <div class="playoff-hero">
-        <h2>🏆 PLAYOFFS</h2>
-        <p>Single elimination bracket — win or go home</p>
-      </div>
-      
-      <div id="playoffContent">
-        <!-- Setup Phase -->
-        <div id="playoffSetup" class="playoff-setup">
-          <div class="card">
-            <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">Create Playoff Bracket</h3>
-            <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Top teams by rating are auto-seeded. Select bracket size to begin.</p>
-            <div style="display:flex;gap:8px;margin-bottom:20px">
-              <button class="btn btn-secondary" onclick="setupPlayoff(4)" id="playoffBtn4">4 Teams</button>
-              <button class="btn btn-secondary" onclick="setupPlayoff(8)" id="playoffBtn8">8 Teams</button>
-            </div>
-            <div class="playoff-seed-list" id="playoffSeedList"></div>
-            <button class="btn btn-primary" id="startPlayoffBtn" onclick="startPlayoff()" style="display:none;margin-top:16px;width:100%"><i class="fas fa-trophy"></i> Start Playoffs</button>
-          </div>
-        </div>
-        
-        <!-- Active Bracket -->
-        <div id="playoffBracketContainer" style="display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-            <h3 style="font-size:18px;font-weight:700">Bracket</h3>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-sm btn-secondary" onclick="resetPlayoff()"><i class="fas fa-undo"></i> Reset</button>
-            </div>
-          </div>
-          <div class="playoff-bracket" id="playoffBracket"></div>
-          <div id="playoffChampion" style="display:none;text-align:center;padding:32px">
-            <div style="font-size:64px;margin-bottom:8px">🏆</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:4px;color:var(--brown-dark)" id="championName"></div>
-            <div style="color:var(--text-muted);font-size:14px">PLAYOFF CHAMPIONS</div>
-          </div>
-        </div>
-      </div>
     </section>
 
     <!-- ===== RULES TAB ===== -->
@@ -4304,7 +4380,7 @@
         renderMatches();
         renderRankings();
         renderAchievements();
-        renderMatchup();
+        renderMatchDay();
         renderHistory();
         renderSettings();
         updateDropdowns();
@@ -4950,7 +5026,7 @@
       
       // Clear current selection and select available players
       selectedPlayers = [...availableIds];
-      renderMatchup();
+      renderMatchDay();
       toast(`Selected ${availableIds.length} available players`, 'success');
     }
     
@@ -6043,194 +6119,595 @@
       });
     }
     
-    // ===== MATCHUP =====
-    let selectedTeams = [];
-    
-    function renderMatchup() {
-      // Render available players first
-      renderAvailablePlayers();
-      
-      // Player matchup - use Number() for comparison
-      const active = activePlayers();
-      document.getElementById('matchupPlayers').innerHTML = active.length ? active.map(p => {
-        const isSelected = selectedPlayers.some(pid => Number(pid) === Number(p.id));
-        return `<div class="matchup-player ${isSelected ? 'selected' : ''}" onclick="togglePlayer(${p.id})">${av(p, 'sm')}<span class="matchup-player-name">${p.name}</span>${isSelected ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}</div>`;
-      }).join('') : '<div class="empty" style="padding:20px"><p>No active players</p></div>';
-      document.getElementById('selectedCount').textContent = selectedPlayers.length;
-      
-      // Team round robin - use Number() for comparison
-      const activeT = activeTeams();
-      document.getElementById('roundRobinTeams').innerHTML = activeT.length ? activeT.map(t => {
-        const { p1, p2 } = getTeamPlayers(t);
-        const isSelected = selectedTeams.some(tid => Number(tid) === Number(t.id));
-        return `<div class="matchup-team ${isSelected ? 'selected' : ''}" onclick="toggleTeam(${t.id})">
-          <div style="display:flex;gap:4px">${av(p1, 'xs')}${av(p2, 'xs')}</div>
-          <div class="matchup-team-info">
-            <span class="matchup-team-name">${t.name}</span>
-            <span class="matchup-team-players">${p1?.name || '?'} & ${p2?.name || '?'}</span>
-          </div>
-          ${isSelected ? '<span class="matchup-check"><i class="fas fa-check"></i></span>' : ''}
-        </div>`;
-      }).join('') : '<div class="empty" style="padding:20px"><p>No active teams</p></div>';
-      document.getElementById('selectedTeamCount').textContent = selectedTeams.length;
+    // ===== MATCH DAY =====
+    let mdMode = 'roundrobin'; // roundrobin | americano
+    let mdCourts = 1;
+    let mdDuration = 3;
+    let mdActiveTeamIds = [];
+    let mdAmericanoPlayerIds = [];
+    let mdAmericanoRounds = 6;
+    let mdGeneratedSchedule = null; // [{t1, t2, round, court, isNew?}] for RR; [{team1:[], team2:[], round, court}] for Americano
+    let mdStep = 'setup'; // setup | preview | live
+    let mdCompletedGames = []; // matches completed during this session
+    let mdCurrentRound = 1;
+    let mdViewTeamId = null;
+
+    function setMatchDayMode(mode) {
+      mdMode = mode;
+      mdStep = 'setup';
+      mdGeneratedSchedule = null;
+      document.getElementById('mdModeRR').classList.toggle('active', mode === 'roundrobin');
+      document.getElementById('mdModeAM').classList.toggle('active', mode === 'americano');
+      document.getElementById('mdRoundRobinSection').style.display = mode === 'roundrobin' ? '' : 'none';
+      document.getElementById('mdAmericanoSection').style.display = mode === 'americano' ? '' : 'none';
+      document.getElementById('mdPreviewSection').style.display = 'none';
+      document.getElementById('mdLiveSection').style.display = 'none';
+      mdUpdateEstimate();
     }
-    
-    function togglePlayer(id) {
-      id = Number(id); // Ensure consistent type
-      const i = selectedPlayers.findIndex(pid => Number(pid) === id);
-      i > -1 ? selectedPlayers.splice(i, 1) : selectedPlayers.push(id);
-      renderMatchup();
+
+    function setMDCourts(n) {
+      mdCourts = n;
+      mdGeneratedSchedule = null;
+      document.querySelectorAll('.md-config-card:first-child .md-config-btn').forEach(b => b.classList.toggle('active', parseInt(b.textContent) === n));
+      mdUpdateEstimate();
     }
-    
-    function toggleTeam(id) {
-      id = Number(id); // Ensure consistent type
-      const i = selectedTeams.findIndex(tid => Number(tid) === id);
-      i > -1 ? selectedTeams.splice(i, 1) : selectedTeams.push(id);
-      renderMatchup();
+
+    function setMDDuration(h) {
+      mdDuration = h;
+      document.querySelectorAll('.md-config-card:nth-child(2) .md-config-btn').forEach(b => b.classList.toggle('active', b.textContent === h + 'h'));
+      mdUpdateEstimate();
     }
-    
-    function generateMatchups() {
-      if (selectedPlayers.length < 4) { toast('Select at least 4 players', 'error'); return; }
-      const sel = [...selectedPlayers], matchups = [];
-      for (let i = sel.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [sel[i], sel[j]] = [sel[j], sel[i]]; }
-      for (let i = 0; i < sel.length - 3; i += 4) matchups.push({ t1: [getPlayer(sel[i]), getPlayer(sel[i+1])], t2: [getPlayer(sel[i+2]), getPlayer(sel[i+3])] });
-      document.getElementById('matchupResults').innerHTML = matchups.map(m => `<div class="generated-match"><div class="generated-team"><div class="generated-team-avatars">${av(m.t1[0], 'sm')}${av(m.t1[1], 'sm')}</div><span class="generated-team-names">${m.t1[0]?.name} & ${m.t1[1]?.name}</span></div><span class="generated-vs">VS</span><div class="generated-team"><div class="generated-team-avatars">${av(m.t2[0], 'sm')}${av(m.t2[1], 'sm')}</div><span class="generated-team-names">${m.t2[0]?.name} & ${m.t2[1]?.name}</span></div></div>`).join('');
-      document.getElementById('generatedSection').classList.remove('hidden');
+
+    function setMDAmericanoRounds(r) {
+      mdAmericanoRounds = r;
+      mdGeneratedSchedule = null;
+      document.querySelectorAll('#mdAmericanoSection .md-config-btn').forEach(b => b.classList.toggle('active', parseInt(b.textContent) === r));
+      mdUpdateEstimate();
     }
-    
-    // Store generated round robin matches for queuing
-    let generatedRoundRobinMatches = [];
-    
-    function resetRoundRobin() {
-      selectedTeams = [];
-      generatedRoundRobinMatches = [];
-      document.getElementById('roundRobinSection').classList.add('hidden');
-      renderMatchup();
-      toast('Selection cleared', 'success');
+
+    function mdToggleTeam(id) {
+      if (mdStep === 'live') return;
+      const idx = mdActiveTeamIds.indexOf(id);
+      idx > -1 ? mdActiveTeamIds.splice(idx, 1) : mdActiveTeamIds.push(id);
+      mdGeneratedSchedule = null;
+      renderMatchDay();
     }
-    
-    function generateRoundRobin() {
-      if (selectedTeams.length < 2) { toast('Select at least 2 teams', 'error'); return; }
-      
-      const teamsList = selectedTeams.map(id => getTeam(id)).filter(t => t);
-      const n = teamsList.length;
-      
-      // Generate all matches using proper round robin algorithm
-      const allMatches = [];
-      for (let i = 0; i < n; i++) {
-        for (let j = i + 1; j < n; j++) {
-          allMatches.push({ t1: teamsList[i], t2: teamsList[j] });
+
+    function mdToggleAmericanoPlayer(id) {
+      if (mdStep === 'live') return;
+      const idx = mdAmericanoPlayerIds.indexOf(id);
+      idx > -1 ? mdAmericanoPlayerIds.splice(idx, 1) : mdAmericanoPlayerIds.push(id);
+      mdGeneratedSchedule = null;
+      renderMatchDay();
+    }
+
+    function mdUpdateEstimate() {
+      let totalMatches, totalRounds;
+      if (mdMode === 'roundrobin') {
+        const n = mdActiveTeamIds.length;
+        totalMatches = (n * (n - 1)) / 2;
+        totalRounds = Math.ceil(totalMatches / mdCourts);
+      } else {
+        const n = mdAmericanoPlayerIds.length;
+        totalMatches = mdAmericanoRounds * Math.floor(n / 4);
+        totalRounds = mdAmericanoRounds;
+      }
+      const estMins = totalRounds * 15;
+      const el = document.getElementById('mdEstimate');
+      if (!el) return;
+      if (totalMatches === 0 || isNaN(totalMatches)) { el.innerHTML = '—'; return; }
+      const hrs = Math.floor(estMins / 60);
+      const mins = estMins % 60;
+      const isOver = estMins > mdDuration * 60;
+      el.className = 'md-est ' + (isOver ? 'over' : 'ok');
+      el.innerHTML = `${hrs}h ${mins}m<span class="md-est-detail">(${totalMatches} games, ${totalRounds} rds)</span>`;
+    }
+
+    // --- ROUND ROBIN SCHEDULING ---
+    function mdGenerateRoundRobin(teamIds, existingPairs) {
+      const pairs = [];
+      const played = new Set((existingPairs || []).map(p => `${Math.min(p[0],p[1])}-${Math.max(p[0],p[1])}`));
+      for (let i = 0; i < teamIds.length; i++) {
+        for (let j = i + 1; j < teamIds.length; j++) {
+          const key = `${Math.min(teamIds[i],teamIds[j])}-${Math.max(teamIds[i],teamIds[j])}`;
+          if (!played.has(key)) pairs.push([teamIds[i], teamIds[j]]);
         }
       }
-      
-      // Fisher-Yates shuffle for proper randomization
-      for (let i = allMatches.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [allMatches[i], allMatches[j]] = [allMatches[j], allMatches[i]];
-      }
-      
-      // Organize into rounds using circle method for proper distribution
-      const rounds = [];
-      const usedMatches = new Set();
-      
-      while (usedMatches.size < allMatches.length) {
-        const round = [];
-        const teamsInRound = new Set();
-        
-        for (let i = 0; i < allMatches.length; i++) {
-          if (usedMatches.has(i)) continue;
-          const match = allMatches[i];
-          if (!teamsInRound.has(match.t1.id) && !teamsInRound.has(match.t2.id)) {
-            round.push(match);
-            teamsInRound.add(match.t1.id);
-            teamsInRound.add(match.t2.id);
-            usedMatches.add(i);
+      return pairs;
+    }
+
+    function mdScheduleMatches(pairs, courts, teamIds) {
+      const scheduled = [];
+      const remaining = pairs.map(p => ({t1: p[0], t2: p[1]}));
+      const lastPlayed = {};
+      teamIds.forEach(id => lastPlayed[id] = -1);
+      let round = 0;
+      while (remaining.length > 0) {
+        // Sort by longest wait (prioritize teams sitting out)
+        remaining.sort((a, b) => {
+          const maxWaitA = Math.max(round - lastPlayed[a.t1], round - lastPlayed[a.t2]);
+          const maxWaitB = Math.max(round - lastPlayed[b.t1], round - lastPlayed[b.t2]);
+          return maxWaitB - maxWaitA;
+        });
+        const roundMatches = [];
+        const playing = new Set();
+        for (let i = 0; i < remaining.length && roundMatches.length < courts; i++) {
+          const m = remaining[i];
+          if (!playing.has(m.t1) && !playing.has(m.t2)) {
+            roundMatches.push({...m, round: round + 1, court: roundMatches.length + 1});
+            playing.add(m.t1);
+            playing.add(m.t2);
+            remaining.splice(i, 1);
+            i--;
           }
         }
-        if (round.length > 0) rounds.push(round);
+        roundMatches.forEach(m => { lastPlayed[m.t1] = round; lastPlayed[m.t2] = round; });
+        scheduled.push(...roundMatches);
+        round++;
+        if (round > 200) break;
       }
-      
-      // Store for queuing later
-      generatedRoundRobinMatches = allMatches;
-      
-      // Render results
-      let html = '';
-      rounds.forEach((round, idx) => {
-        html += `<div class="round-label">ROUND ${idx + 1}</div>`;
-        round.forEach(m => {
-          const { p1: t1p1, p2: t1p2 } = getTeamPlayers(m.t1);
-          const { p1: t2p1, p2: t2p2 } = getTeamPlayers(m.t2);
-          html += `<div class="generated-match">
-            <div class="generated-team">
-              <div class="generated-team-avatars">${av(t1p1, 'sm')}${av(t1p2, 'sm')}</div>
-              <span class="generated-team-names">${m.t1.name}</span>
-            </div>
-            <span class="generated-vs">VS</span>
-            <div class="generated-team">
-              <div class="generated-team-avatars">${av(t2p1, 'sm')}${av(t2p2, 'sm')}</div>
-              <span class="generated-team-names">${m.t2.name}</span>
-            </div>
-          </div>`;
-        });
-      });
-      
-      html += `<div style="margin-top:24px;padding:16px;background:var(--cream);border-radius:12px;text-align:center">
-        <strong>Total Matches:</strong> ${allMatches.length} | <strong>Rounds:</strong> ${rounds.length}
-      </div>`;
-      
-      document.getElementById('roundRobinResults').innerHTML = html;
-      document.getElementById('roundRobinSection').classList.remove('hidden');
+      return scheduled;
     }
-    
-    async function queueAllRoundRobin() {
-      if (generatedRoundRobinMatches.length === 0) {
-        toast('Generate round robin first', 'error');
-        return;
-      }
-      
-      const venue = getCurrentVenue();
-      const courts = venue?.courts || ['Court 1'];
-      const today = activeMatchday?.date || new Date().toISOString().split('T')[0];
-      
-      let queued = 0;
-      for (let i = 0; i < generatedRoundRobinMatches.length; i++) {
-        const m = generatedRoundRobinMatches[i];
-        const courtIndex = i % courts.length;
-        
-        const nm = { 
-          id: Date.now() + i, 
-          date: today, 
-          location: venue?.name || '', 
-          court: courts[courtIndex], 
-          team1_id: m.t1.id, 
-          team2_id: m.t2.id, 
-          status: 'ongoing',
-          started_at: new Date().toISOString()
-        };
-        
-        if (supabaseClient) {
-          try {
-            const { data, error } = await supabaseClient.from('ongoing_matches').insert([nm]).select().single();
-            if (!error) {
-              ongoingMatches.unshift(data);
-              queued++;
-            }
-          } catch (e) { console.error(e); }
-        } else {
-          ongoingMatches.unshift(nm);
-          queued++;
+
+    // --- AMERICANO SCHEDULING ---
+    function mdGenerateAmericano(playerIds, rounds) {
+      const schedule = [];
+      const shuffled = [...playerIds];
+      const usable = shuffled.length - (shuffled.length % 4); // only use multiples of 4
+      for (let r = 0; r < rounds; r++) {
+        for (let i = usable - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        for (let i = 0; i < usable; i += 4) {
+          schedule.push({
+            team1: [shuffled[i], shuffled[i+1]],
+            team2: [shuffled[i+2], shuffled[i+3]],
+            round: r + 1,
+            court: Math.floor(i / 4) + 1
+          });
         }
       }
-      
-      if (!supabaseClient) saveLocal();
-      
-      generatedRoundRobinMatches = [];
-      selectedTeams = [];
-      document.getElementById('roundRobinSection').classList.add('hidden');
-      renderAll();
-      toast(`${queued} matches queued!`, 'success');
+      return schedule;
     }
-    
+
+    // --- GENERATE ---
+    function mdGenerate() {
+      if (mdMode === 'roundrobin') {
+        if (mdActiveTeamIds.length < 2) { toast('Select at least 2 teams', 'error'); return; }
+        const existingPairs = mdCompletedGames.map(m => [m.t1, m.t2]);
+        const pairs = mdGenerateRoundRobin(mdActiveTeamIds, existingPairs);
+        mdGeneratedSchedule = mdScheduleMatches(pairs, mdCourts, mdActiveTeamIds);
+      } else {
+        if (mdAmericanoPlayerIds.length < 4) { toast('Select at least 4 players', 'error'); return; }
+        mdGeneratedSchedule = mdGenerateAmericano(mdAmericanoPlayerIds, mdAmericanoRounds);
+      }
+      mdStep = 'preview';
+      renderMatchDay();
+    }
+
+    function mdBackToSetup() {
+      mdStep = 'setup';
+      mdGeneratedSchedule = null;
+      renderMatchDay();
+    }
+
+    function mdConfirmSchedule() {
+      if (!mdGeneratedSchedule || mdGeneratedSchedule.length === 0) return;
+      mdStep = 'live';
+      mdCurrentRound = 1;
+      // Queue round 1 matches into the existing ongoing matches system
+      mdQueueRoundMatches(1);
+      renderMatchDay();
+      toast('Match Day started! 🎮', 'success');
+    }
+
+    function mdQueueRoundMatches(roundNum) {
+      const roundMatches = mdGeneratedSchedule.filter(m => m.round === roundNum);
+      roundMatches.forEach(async (m) => {
+        const matchData = mdMode === 'roundrobin' ? {
+          id: Date.now() + Math.random(),
+          date: activeMatchday?.date || new Date().toISOString().split('T')[0],
+          location: activeMatchday?.venue || '',
+          court: 'Court ' + m.court,
+          team1_id: m.t1,
+          team2_id: m.t2,
+          status: 'ongoing',
+          started_at: new Date().toISOString(),
+          md_round: m.round
+        } : {
+          id: Date.now() + Math.random(),
+          date: activeMatchday?.date || new Date().toISOString().split('T')[0],
+          location: activeMatchday?.venue || '',
+          court: 'Court ' + m.court,
+          team1_players: m.team1,
+          team2_players: m.team2,
+          status: 'ongoing',
+          started_at: new Date().toISOString(),
+          md_round: m.round,
+          is_americano: true
+        };
+
+        if (supabaseClient) {
+          try {
+            const { data, error } = await supabaseClient.from('ongoing_matches').insert([matchData]).select().single();
+            if (!error) ongoingMatches.unshift(data);
+          } catch(e) { console.error(e); }
+        } else {
+          ongoingMatches.unshift(matchData);
+          saveLocal();
+        }
+      });
+      renderDashboard();
+    }
+
+    function mdAddLateTeam(teamId) {
+      if (mdActiveTeamIds.includes(teamId)) return;
+      mdActiveTeamIds.push(teamId);
+      // Generate new matches only for this team
+      const existingPairs = [
+        ...mdCompletedGames.map(m => [m.t1, m.t2]),
+        ...(mdGeneratedSchedule || []).filter(m => m.t1 && m.t2).map(m => [m.t1, m.t2])
+      ];
+      const newPairs = [];
+      mdActiveTeamIds.forEach(id => {
+        if (id !== teamId) {
+          const key = `${Math.min(id, teamId)}-${Math.max(id, teamId)}`;
+          const exists = existingPairs.some(p => `${Math.min(p[0],p[1])}-${Math.max(p[0],p[1])}` === key);
+          if (!exists) newPairs.push([id, teamId]);
+        }
+      });
+      if (newPairs.length > 0) {
+        const maxRound = mdGeneratedSchedule ? Math.max(...mdGeneratedSchedule.map(m => m.round), 0) : 0;
+        const newScheduled = mdScheduleMatches(newPairs, mdCourts, mdActiveTeamIds);
+        const adjusted = newScheduled.map(m => ({...m, round: m.round + maxRound, isNew: true}));
+        mdGeneratedSchedule = [...(mdGeneratedSchedule || []), ...adjusted];
+      }
+      renderMatchDay();
+      toast(`${getTeam(teamId)?.name || 'Team'} added! ${newPairs.length} new matches generated`, 'success');
+    }
+
+    function mdShowTeamView(teamId) {
+      mdViewTeamId = mdViewTeamId === teamId ? null : teamId;
+      renderMatchDay();
+    }
+
+    // --- RENDER ---
+    function renderMatchDay() {
+      const heroSub = document.getElementById('mdHeroSub');
+      if (heroSub && activeMatchday) {
+        const d = new Date(activeMatchday.date);
+        heroSub.textContent = d.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) + (activeMatchday.venue ? ' • ' + activeMatchday.venue : '');
+      } else if (heroSub) {
+        heroSub.textContent = new Date().toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+      }
+
+      mdUpdateEstimate();
+
+      // Show/hide sections based on step
+      const showSetup = mdStep === 'setup';
+      const showPreview = mdStep === 'preview';
+      const showLive = mdStep === 'live';
+
+      if (mdMode === 'roundrobin') {
+        document.getElementById('mdRoundRobinSection').style.display = showSetup ? '' : 'none';
+        document.getElementById('mdAmericanoSection').style.display = 'none';
+      } else {
+        document.getElementById('mdRoundRobinSection').style.display = 'none';
+        document.getElementById('mdAmericanoSection').style.display = showSetup ? '' : 'none';
+      }
+      document.getElementById('mdPreviewSection').style.display = showPreview ? '' : 'none';
+      document.getElementById('mdLiveSection').style.display = showLive ? '' : 'none';
+
+      // Render team grid (Round Robin)
+      if (mdMode === 'roundrobin') {
+        const grid = document.getElementById('mdTeamsGrid');
+        if (grid) {
+          grid.innerHTML = teams.map(t => {
+            const p1 = getPlayer(t.player1_id);
+            const p2 = getPlayer(t.player2_id);
+            const active = mdActiveTeamIds.includes(t.id);
+            return `<button class="md-team-btn ${active ? 'active' : ''}" onclick="mdToggleTeam(${t.id})">
+              <div class="md-team-avatars">
+                <div class="avatar" style="background:${getPlayerColor(t.player1_id)}">${(p1?.name||'?').charAt(0)}</div>
+                <div class="avatar" style="background:${getPlayerColor(t.player2_id)}">${(p2?.name||'?').charAt(0)}</div>
+              </div>
+              <div>
+                <div class="md-team-name">${t.name}</div>
+                <div class="md-team-players">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+              </div>
+              ${active ? '<div class="md-team-check">✓</div>' : ''}
+            </button>`;
+          }).join('');
+        }
+        const countEl = document.getElementById('mdActiveCount');
+        if (countEl) countEl.textContent = mdActiveTeamIds.length;
+        const summaryEl = document.getElementById('mdTeamSummary');
+        if (summaryEl) {
+          const n = mdActiveTeamIds.length;
+          const matches = (n * (n-1)) / 2;
+          summaryEl.textContent = n > 0 ? `${n} teams • ${matches} matches needed` : 'Select teams for today\'s matches';
+        }
+        const genBtn = document.getElementById('mdGenerateBtn');
+        if (genBtn) genBtn.disabled = mdActiveTeamIds.length < 2;
+      }
+
+      // Render player grid (Americano)
+      if (mdMode === 'americano') {
+        const grid = document.getElementById('mdAmericanoPlayers');
+        if (grid) {
+          grid.innerHTML = players.map(p => {
+            const active = mdAmericanoPlayerIds.includes(p.id);
+            return `<button class="md-americano-btn ${active ? 'active' : ''}" onclick="mdToggleAmericanoPlayer(${p.id})">
+              <div class="avatar" style="width:28px;height:28px;font-size:11px;background:${active ? '#7C3AED' : getPlayerColor(p.id)}">${(p.name||'?').charAt(0)}</div>
+              <span class="md-americano-name">${p.name}</span>
+              ${active ? '<div class="md-americano-check">✓</div>' : ''}
+            </button>`;
+          }).join('');
+        }
+        const countEl = document.getElementById('mdAmericanoCount');
+        if (countEl) countEl.textContent = mdAmericanoPlayerIds.length;
+        const genBtn = document.getElementById('mdAmericanoGenBtn');
+        if (genBtn) genBtn.disabled = mdAmericanoPlayerIds.length < 4;
+      }
+
+      // Render preview
+      if (showPreview && mdGeneratedSchedule) {
+        const summaryEl = document.getElementById('mdPreviewSummary');
+        const maxRound = Math.max(...mdGeneratedSchedule.map(m => m.round));
+        if (summaryEl) summaryEl.textContent = `${mdGeneratedSchedule.length} matches across ${maxRound} rounds — review before confirming`;
+        
+        const container = document.getElementById('mdPreviewMatches');
+        if (container) {
+          let html = '';
+          for (let r = 1; r <= maxRound; r++) {
+            const roundMatches = mdGeneratedSchedule.filter(m => m.round === r);
+            html += `<div class="md-round-label"><span class="md-round-badge">Round ${r}</span><span class="md-round-line"></span></div>`;
+            roundMatches.forEach(m => {
+              if (mdMode === 'roundrobin') {
+                const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
+                const p1 = getPlayer(t1?.player1_id);
+                html += `<div class="md-schedule-match ${m.isNew ? 'new-team' : ''}">
+                  <div class="md-schedule-court">C${m.court}</div>
+                  <div class="md-schedule-team"><div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t1?.player1_id)}">${(p1?.name||'?').charAt(0)}</div><span class="md-schedule-team-name">${t1?.name||'?'}</span></div>
+                  <span class="md-schedule-vs">VS</span>
+                  <div class="md-schedule-team" style="justify-content:flex-end"><span class="md-schedule-team-name">${t2?.name||'?'}</span><div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t2?.player1_id)}">${(getPlayer(t2?.player1_id)?.name||'?').charAt(0)}</div></div>
+                </div>`;
+              } else {
+                const names1 = m.team1.map(id => getPlayer(id)?.name || '?');
+                const names2 = m.team2.map(id => getPlayer(id)?.name || '?');
+                html += `<div class="md-schedule-match">
+                  <div class="md-schedule-court">C${m.court}</div>
+                  <div class="md-schedule-team"><span class="md-schedule-team-name">${names1.join(' & ')}</span></div>
+                  <span class="md-schedule-vs">VS</span>
+                  <div class="md-schedule-team" style="justify-content:flex-end"><span class="md-schedule-team-name">${names2.join(' & ')}</span></div>
+                </div>`;
+              }
+            });
+            // Show sitting out teams
+            if (mdMode === 'roundrobin') {
+              const playingIds = new Set(roundMatches.flatMap(m => [m.t1, m.t2]));
+              const sitting = mdActiveTeamIds.filter(id => !playingIds.has(id)).map(id => getTeam(id)?.name || '?');
+              if (sitting.length > 0) html += `<div class="md-sitting">☕ Sitting out: ${sitting.join(', ')}</div>`;
+            }
+          }
+          container.innerHTML = html;
+        }
+      }
+
+      // Render live view
+      if (showLive) {
+        renderMDLive();
+      }
+    }
+
+    function renderMDLive() {
+      if (!mdGeneratedSchedule) return;
+      const allScheduled = mdGeneratedSchedule;
+      const totalGames = allScheduled.length;
+      const completedCount = mdCompletedGames.length;
+      const maxRound = Math.max(...allScheduled.map(m => m.round));
+
+      // Progress
+      document.getElementById('mdProgressText').textContent = `${completedCount} / ${totalGames} matches`;
+      document.getElementById('mdProgressBar').style.width = totalGames > 0 ? (completedCount / totalGames * 100) + '%' : '0%';
+
+      // Find current on-court matches (from ongoing matches that are part of this matchday schedule)
+      const onCourtHtml = ongoingMatches.filter(m => m.md_round).map(m => {
+        if (m.is_americano) {
+          const names1 = (m.team1_players||[]).map(id => getPlayer(id)?.name || '?');
+          const names2 = (m.team2_players||[]).map(id => getPlayer(id)?.name || '?');
+          return `<div class="md-live-card">
+            <div class="md-live-header">
+              <span style="font-size:11px;font-weight:700;color:var(--clay);text-transform:uppercase;letter-spacing:1px">Court ${m.court} • Round ${m.md_round}</span>
+              <span class="md-live-badge">LIVE</span>
+            </div>
+            <div class="md-live-teams">
+              <div class="md-live-team"><div><div class="md-live-team-name">${names1.join(' & ')}</div></div></div>
+              <div class="md-live-vs">VS</div>
+              <div class="md-live-team md-live-team-right"><div><div class="md-live-team-name">${names2.join(' & ')}</div></div></div>
+            </div>
+          </div>`;
+        }
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+        const p1a = getPlayer(t1?.player1_id), p1b = getPlayer(t1?.player2_id);
+        const p2a = getPlayer(t2?.player1_id), p2b = getPlayer(t2?.player2_id);
+        return `<div class="md-live-card">
+          <div class="md-live-header">
+            <span style="font-size:11px;font-weight:700;color:var(--clay);text-transform:uppercase;letter-spacing:1px">${m.court || 'Court'} • Round ${m.md_round || '?'}</span>
+            <span class="md-live-badge">LIVE</span>
+          </div>
+          <div class="md-live-teams">
+            <div class="md-live-team">
+              <div class="avatar" style="width:40px;height:40px;background:${getPlayerColor(t1?.player1_id)}">${(p1a?.name||'?').charAt(0)}</div>
+              <div><div class="md-live-team-name">${t1?.name||'?'}</div><div class="md-live-team-players">${p1a?.name||'?'} & ${p1b?.name||'?'}</div></div>
+            </div>
+            <div class="md-live-vs">VS</div>
+            <div class="md-live-team md-live-team-right">
+              <div class="avatar" style="width:40px;height:40px;background:${getPlayerColor(t2?.player1_id)}">${(p2a?.name||'?').charAt(0)}</div>
+              <div style="text-align:right"><div class="md-live-team-name">${t2?.name||'?'}</div><div class="md-live-team-players">${p2a?.name||'?'} & ${p2b?.name||'?'}</div></div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      document.getElementById('mdOnCourt').innerHTML = onCourtHtml || '<div class="empty" style="padding:20px"><p>No matches on court</p></div>';
+
+      // Up next (next round not yet queued)
+      const queuedRounds = new Set(ongoingMatches.filter(m => m.md_round).map(m => m.md_round));
+      const completedRounds = new Set(mdCompletedGames.map(m => m.round));
+      let nextRound = null;
+      for (let r = 1; r <= maxRound; r++) {
+        if (!queuedRounds.has(r) && !completedRounds.has(r)) { nextRound = r; break; }
+      }
+      const upNextMatches = nextRound ? allScheduled.filter(m => m.round === nextRound) : [];
+      document.getElementById('mdUpNext').innerHTML = upNextMatches.map(m => {
+        if (mdMode === 'americano') {
+          const n1 = (m.team1||[]).map(id => getPlayer(id)?.name || '?').join(' & ');
+          const n2 = (m.team2||[]).map(id => getPlayer(id)?.name || '?').join(' & ');
+          return `<div class="md-next-match"><span style="font-size:10px;font-weight:700;color:var(--text-muted)">C${m.court}</span><span style="font-weight:600;font-size:14px">${n1}</span><span class="md-schedule-vs">VS</span><span style="font-weight:600;font-size:14px">${n2}</span></div>`;
+        }
+        const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
+        return `<div class="md-next-match">
+          <span style="font-size:10px;font-weight:700;color:var(--text-muted)">C${m.court}</span>
+          <div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t1?.player1_id)}">${(getPlayer(t1?.player1_id)?.name||'?').charAt(0)}</div><span style="font-weight:600;font-size:14px">${t1?.name||'?'}</span></div>
+          <span class="md-schedule-vs">VS</span>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;font-size:14px">${t2?.name||'?'}</span><div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t2?.player1_id)}">${(getPlayer(t2?.player1_id)?.name||'?').charAt(0)}</div></div>
+        </div>`;
+      }).join('') || '<div style="font-size:13px;color:var(--text-muted);padding:8px">No more upcoming matches</div>';
+
+      // Full schedule
+      let schedHtml = '';
+      for (let r = 1; r <= maxRound; r++) {
+        const rMatches = allScheduled.filter(m => m.round === r);
+        const isDone = completedRounds.has(r);
+        const isLive = queuedRounds.has(r);
+        schedHtml += `<div class="md-round-label"><span class="md-round-badge" style="${isDone ? 'background:var(--success)' : isLive ? 'background:var(--danger)' : ''}">${isDone ? '✓' : isLive ? '●' : ''} Round ${r}</span><span class="md-round-line"></span></div>`;
+        rMatches.forEach(m => {
+          if (mdMode === 'roundrobin') {
+            const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
+            schedHtml += `<div class="md-schedule-match" style="${isDone ? 'opacity:0.5' : isLive ? 'background:rgba(224,120,80,0.06)' : ''}">
+              <span style="font-size:10px;font-weight:700;color:var(--text-muted)">C${m.court}</span>
+              <span style="font-weight:600;cursor:pointer;${mdViewTeamId===m.t1?'color:var(--clay)':''}" onclick="mdShowTeamView(${m.t1})">${t1?.name||'?'}</span>
+              <span style="color:var(--text-muted);font-size:10px">vs</span>
+              <span style="font-weight:600;cursor:pointer;${mdViewTeamId===m.t2?'color:var(--clay)':''}" onclick="mdShowTeamView(${m.t2})">${t2?.name||'?'}</span>
+            </div>`;
+          } else {
+            const n1 = (m.team1||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
+            const n2 = (m.team2||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
+            schedHtml += `<div class="md-schedule-match" style="${isDone ? 'opacity:0.5' : isLive ? 'background:rgba(124,58,237,0.06)' : ''}">
+              <span style="font-size:10px;font-weight:700;color:var(--text-muted)">C${m.court}</span>
+              <span style="font-weight:600;font-size:13px">${n1}</span>
+              <span style="color:var(--text-muted);font-size:10px">vs</span>
+              <span style="font-weight:600;font-size:13px">${n2}</span>
+            </div>`;
+          }
+        });
+      }
+      document.getElementById('mdFullSchedule').innerHTML = schedHtml;
+
+      // Completed matches
+      const compCard = document.getElementById('mdCompletedCard');
+      const compList = document.getElementById('mdCompletedList');
+      if (compCard && compList) {
+        if (mdCompletedGames.length > 0) {
+          compCard.style.display = '';
+          compList.innerHTML = mdCompletedGames.map(m => {
+            const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
+            return `<div class="md-schedule-match" style="opacity:0.7">
+              <span style="font-size:10px;font-weight:700;color:var(--success)">✓</span>
+              <span style="font-weight:600">${t1?.name||'?'}</span>
+              <span style="font-weight:700;color:var(--clay)">${m.score1 || '?'} - ${m.score2 || '?'}</span>
+              <span style="font-weight:600">${t2?.name||'?'}</span>
+            </div>`;
+          }).join('');
+        } else {
+          compCard.style.display = 'none';
+        }
+      }
+
+      // Late add teams
+      const lateContainer = document.getElementById('mdLateTeams');
+      if (lateContainer && mdMode === 'roundrobin') {
+        const available = teams.filter(t => !mdActiveTeamIds.includes(t.id));
+        if (available.length > 0) {
+          document.getElementById('mdLateAdd').style.display = '';
+          lateContainer.innerHTML = available.map(t => `<button class="md-late-btn" onclick="mdAddLateTeam(${t.id})">+ ${t.name}</button>`).join('');
+        } else {
+          document.getElementById('mdLateAdd').style.display = 'none';
+        }
+      } else if (document.getElementById('mdLateAdd')) {
+        document.getElementById('mdLateAdd').style.display = mdMode === 'americano' ? 'none' : '';
+      }
+
+      // Team view
+      const teamViewEl = document.getElementById('mdTeamView');
+      if (teamViewEl) {
+        if (mdViewTeamId && mdMode === 'roundrobin') {
+          const team = getTeam(mdViewTeamId);
+          const p1 = getPlayer(team?.player1_id), p2 = getPlayer(team?.player2_id);
+          const teamMatches = allScheduled.filter(m => m.t1 === mdViewTeamId || m.t2 === mdViewTeamId);
+          const teamCompleted = mdCompletedGames.filter(m => m.t1 === mdViewTeamId || m.t2 === mdViewTeamId);
+          
+          teamViewEl.style.display = '';
+          teamViewEl.innerHTML = `<div class="md-team-view">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="avatar" style="width:36px;height:36px;background:${getPlayerColor(team?.player1_id)}">${(p1?.name||'?').charAt(0)}</div>
+                <div><div style="font-weight:700;font-size:16px">${team?.name||'?'}'s Games</div><div style="font-size:12px;color:var(--text-muted)">${p1?.name||'?'} & ${p2?.name||'?'}</div></div>
+              </div>
+              <button onclick="mdShowTeamView(null)" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--cream);cursor:pointer;font-size:14px">✕</button>
+            </div>
+            ${teamMatches.map(m => {
+              const opp = m.t1 === mdViewTeamId ? getTeam(m.t2) : getTeam(m.t1);
+              const completed = teamCompleted.find(c => (c.t1 === m.t1 && c.t2 === m.t2) || (c.t1 === m.t2 && c.t2 === m.t1));
+              const isLive = ongoingMatches.some(om => om.md_round === m.round && (om.team1_id === m.t1 || om.team1_id === m.t2));
+              const status = completed ? 'completed' : isLive ? 'live' : 'upcoming';
+              const statusText = completed ? `${completed.score1}-${completed.score2}` : isLive ? 'LIVE' : `Round ${m.round} • C${m.court}`;
+              return `<div class="md-team-view-match">
+                <div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;font-weight:700;color:var(--text-muted)">R${m.round}</span><span style="font-weight:600;font-size:14px">vs ${opp?.name||'?'}</span></div>
+                <span class="md-team-view-status ${status}">${statusText}</span>
+              </div>`;
+            }).join('')}
+          </div>`;
+        } else {
+          teamViewEl.style.display = 'none';
+        }
+      }
+    }
+
+    // Hook into match completion to advance rounds
+    function mdOnMatchComplete(completedMatch) {
+      if (!completedMatch.md_round || mdStep !== 'live') return;
+      mdCompletedGames.push({
+        t1: completedMatch.team1_id,
+        t2: completedMatch.team2_id,
+        score1: completedMatch.score1,
+        score2: completedMatch.score2,
+        round: completedMatch.md_round
+      });
+      // Check if current round is complete
+      const roundMatches = (mdGeneratedSchedule || []).filter(m => m.round === completedMatch.md_round);
+      const roundOngoing = ongoingMatches.filter(m => m.md_round === completedMatch.md_round);
+      if (roundOngoing.length === 0 && roundMatches.length > 0) {
+        // Round complete - auto-queue next
+        const maxRound = Math.max(...(mdGeneratedSchedule || []).map(m => m.round));
+        const nextRound = completedMatch.md_round + 1;
+        if (nextRound <= maxRound) {
+          mdCurrentRound = nextRound;
+          mdQueueRoundMatches(nextRound);
+          toast(`Round ${completedMatch.md_round} complete! Starting Round ${nextRound} 🔥`, 'success');
+        } else {
+          toast('🏆 All matches complete! Match Day is over!', 'success');
+        }
+      }
+      renderMatchDay();
+    }
+
+    function getPlayerColor(id) {
+      const colors = ['#E07850', '#7C3AED', '#059669', '#E11D48', '#D97706', '#14B8A6', '#6366F1', '#EC4899', '#2563EB', '#9333EA'];
+      return colors[(id || 0) % colors.length];
+    }
+
     // ===== SETTINGS =====
     // ===== HISTORY =====
     function renderHistory() {
@@ -7089,6 +7566,10 @@
       }
       
       closeModal('finalizeMatch');
+      // Hook into Match Day system for auto round advancement
+      if (m && m.md_round) {
+        mdOnMatchComplete({team1_id: m.team1_id, team2_id: m.team2_id, md_round: m.md_round, score1: scores, score2: scores});
+      }
       renderAll();
       toast('Match finalized!', 'success');
     }
@@ -11008,202 +11489,6 @@
     // Commentary is called from renderAll() directly
     
     // =============================================
-    // ===== PLAYOFF BRACKET =====
-    // =============================================
-    let playoffData = JSON.parse(localStorage.getItem('pv_playoff') || 'null');
-    
-    function openPlayoffs() {
-      switchTab('playoffs');
-      if (playoffData && playoffData.bracket) {
-        renderPlayoffBracket();
-      }
-    }
-    
-    function setupPlayoff(size) {
-      // Highlight selected button
-      document.querySelectorAll('[id^="playoffBtn"]').forEach(b => b.classList.remove('btn-primary'));
-      document.getElementById(`playoffBtn${size}`)?.classList.add('btn-primary');
-      
-      // Get top teams by rating
-      const ranked = rankTeamsByMatches().filter(t => t.matches > 0);
-      const seedTeams = ranked.slice(0, size);
-      
-      if (seedTeams.length < size) {
-        toast(`Only ${seedTeams.length} teams with matches. Need ${size}.`, 'error');
-        return;
-      }
-      
-      document.getElementById('playoffSeedList').innerHTML = seedTeams.map((t, i) => {
-        const { p1, p2 } = getTeamPlayers(t);
-        return `<div class="playoff-seed-item">
-          <div class="playoff-seed-num">#${i + 1}</div>
-          <div class="playoff-seed-name">${t.name}</div>
-          <div style="font-size:12px;color:var(--text-muted)">${p1?.name?.split(' ')[0] || '?'} & ${p2?.name?.split(' ')[0] || '?'}</div>
-          <div style="font-size:13px;font-weight:600;color:var(--clay)">${t.rating}</div>
-        </div>`;
-      }).join('');
-      
-      document.getElementById('startPlayoffBtn').style.display = 'block';
-      document.getElementById('startPlayoffBtn').onclick = () => startPlayoff(size, seedTeams);
-    }
-    
-    function startPlayoff(size, seedTeams) {
-      // Create bracket with seeding (1v8, 2v7, 3v6, 4v5 etc)
-      const bracket = [];
-      const numRounds = Math.log2(size);
-      
-      // First round matchups
-      const round1 = [];
-      for (let i = 0; i < size / 2; i++) {
-        round1.push({
-          id: `r1m${i}`,
-          team1: { id: seedTeams[i].id, name: seedTeams[i].name, seed: i + 1 },
-          team2: { id: seedTeams[size - 1 - i].id, name: seedTeams[size - 1 - i].name, seed: size - i },
-          winner: null,
-          score1: 0,
-          score2: 0
-        });
-      }
-      bracket.push(round1);
-      
-      // Subsequent rounds (empty)
-      let prevSize = round1.length;
-      for (let r = 1; r < numRounds; r++) {
-        const round = [];
-        for (let i = 0; i < prevSize / 2; i++) {
-          round.push({
-            id: `r${r + 1}m${i}`,
-            team1: null,
-            team2: null,
-            winner: null,
-            score1: 0,
-            score2: 0
-          });
-        }
-        bracket.push(round);
-        prevSize = round.length;
-      }
-      
-      playoffData = { size, bracket, champion: null };
-      localStorage.setItem('pv_playoff', JSON.stringify(playoffData));
-      
-      document.getElementById('playoffSetup').style.display = 'none';
-      document.getElementById('playoffBracketContainer').style.display = 'block';
-      renderPlayoffBracket();
-    }
-    
-    function renderPlayoffBracket() {
-      if (!playoffData || !playoffData.bracket) return;
-      
-      document.getElementById('playoffSetup').style.display = 'none';
-      document.getElementById('playoffBracketContainer').style.display = 'block';
-      
-      const roundNames = ['QUARTERS', 'SEMIS', 'FINAL'];
-      const bracket = playoffData.bracket;
-      const startIdx = bracket.length <= 2 ? 1 : 0;
-      
-      document.getElementById('playoffBracket').innerHTML = bracket.map((round, ri) => {
-        const roundName = bracket.length === 1 ? 'FINAL' : 
-                          bracket.length === 2 ? (ri === 0 ? 'SEMIS' : 'FINAL') :
-                          roundNames[ri] || `ROUND ${ri + 1}`;
-        return `<div class="playoff-round">
-          <div class="playoff-round-title">${roundName}</div>
-          ${round.map(match => {
-            const t1Name = match.team1 ? match.team1.name : 'TBD';
-            const t2Name = match.team2 ? match.team2.name : 'TBD';
-            const isActive = match.team1 && match.team2 && !match.winner;
-            const isComplete = !!match.winner;
-            const t1Winner = match.winner === match.team1?.id ? 'winner' : (isComplete ? 'loser' : '');
-            const t2Winner = match.winner === match.team2?.id ? 'winner' : (isComplete ? 'loser' : '');
-            
-            return `<div class="playoff-match ${isActive ? 'active' : ''} ${isComplete ? 'completed' : ''}">
-              <div class="playoff-team-row ${t1Winner}" ${isActive ? `onclick="setPlayoffWinner('${match.id}', 1)"` : ''} style="${isActive ? 'cursor:pointer' : ''}">
-                <span class="playoff-team-seed">${match.team1?.seed || ''}</span>
-                <span class="playoff-team-name">${t1Name}</span>
-                ${isComplete ? `<span class="playoff-team-score">${match.score1}</span>` : ''}
-              </div>
-              <div class="playoff-separator"></div>
-              <div class="playoff-team-row ${t2Winner}" ${isActive ? `onclick="setPlayoffWinner('${match.id}', 2)"` : ''} style="${isActive ? 'cursor:pointer' : ''}">
-                <span class="playoff-team-seed">${match.team2?.seed || ''}</span>
-                <span class="playoff-team-name">${t2Name}</span>
-                ${isComplete ? `<span class="playoff-team-score">${match.score2}</span>` : ''}
-              </div>
-            </div>`;
-          }).join('')}
-        </div>`;
-      }).join('');
-      
-      // Show champion
-      if (playoffData.champion) {
-        const champ = teams.find(t => t.id === playoffData.champion);
-        document.getElementById('playoffChampion').style.display = 'block';
-        document.getElementById('championName').textContent = champ?.name || 'CHAMPIONS';
-      } else {
-        document.getElementById('playoffChampion').style.display = 'none';
-      }
-    }
-    
-    function setPlayoffWinner(matchId, teamNum) {
-      if (!playoffData) return;
-      
-      // Find the match
-      let matchFound = null, roundIdx = -1, matchIdx = -1;
-      playoffData.bracket.forEach((round, ri) => {
-        round.forEach((match, mi) => {
-          if (match.id === matchId) {
-            matchFound = match;
-            roundIdx = ri;
-            matchIdx = mi;
-          }
-        });
-      });
-      
-      if (!matchFound || !matchFound.team1 || !matchFound.team2) return;
-      
-      const winner = teamNum === 1 ? matchFound.team1 : matchFound.team2;
-      matchFound.winner = winner.id;
-      matchFound.score1 = teamNum === 1 ? 1 : 0;
-      matchFound.score2 = teamNum === 2 ? 1 : 0;
-      
-      // Advance winner to next round
-      const nextRound = playoffData.bracket[roundIdx + 1];
-      if (nextRound) {
-        const nextMatchIdx = Math.floor(matchIdx / 2);
-        const nextMatch = nextRound[nextMatchIdx];
-        if (matchIdx % 2 === 0) {
-          nextMatch.team1 = { ...winner };
-        } else {
-          nextMatch.team2 = { ...winner };
-        }
-      } else {
-        // This was the final — we have a champion!
-        playoffData.champion = winner.id;
-      }
-      
-      localStorage.setItem('pv_playoff', JSON.stringify(playoffData));
-      renderPlayoffBracket();
-      
-      if (playoffData.champion) {
-        const champ = teams.find(t => t.id === playoffData.champion);
-        toast(`🏆 ${champ?.name || 'Team'} wins the PLAYOFFS!`, 'success');
-      }
-    }
-    
-    function resetPlayoff() {
-      if (!confirm('Reset the entire playoff bracket?')) return;
-      playoffData = null;
-      localStorage.removeItem('pv_playoff');
-      document.getElementById('playoffSetup').style.display = 'block';
-      document.getElementById('playoffBracketContainer').style.display = 'none';
-      document.getElementById('playoffSeedList').innerHTML = '';
-      document.getElementById('startPlayoffBtn').style.display = 'none';
-      document.querySelectorAll('[id^="playoffBtn"]').forEach(b => b.classList.remove('btn-primary'));
-    }
-    
-    // On load: restore playoff bracket if exists
-    if (playoffData && playoffData.bracket) {
-      setTimeout(() => renderPlayoffBracket(), 500);
-    }
   </script>
 </body>
 </html>
