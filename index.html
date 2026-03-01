@@ -121,7 +121,8 @@
     }
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Outfit', sans-serif; background: var(--cream); min-height: 100vh; color: var(--text); -webkit-font-smoothing: antialiased; }
+    html { overflow-x: hidden; }
+    body { font-family: 'Outfit', sans-serif; background: var(--cream); min-height: 100vh; color: var(--text); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
     
     /* Offline Mode Indicator */
     .offline-banner { display: none; position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 10px 20px; text-align: center; font-weight: 600; z-index: 10001; animation: slideDown 0.3s ease; }
@@ -302,8 +303,8 @@
     /* Player count buttons - wrap on mobile */
     .player-count-btns { display: flex; flex-wrap: wrap; gap: 6px; }
     .player-count-btn { min-width: 36px; }
-    .app { max-width: 1400px; margin: 0 auto; padding: 0 40px 60px; }
-    @media (max-width: 768px) { .app { padding: 0 16px 60px; } }
+    .app { max-width: 1400px; margin: 0 auto; padding: 0 40px 60px; overflow-x: hidden; position: relative; }
+    @media (max-width: 768px) { .app { padding: 0 16px 60px; max-width: 100vw; } }
     .hidden { display: none !important; }
     
     /* Loading Splash Screen */
@@ -322,7 +323,7 @@
     body.loading .app { opacity: 0.7; pointer-events: none; }
     
     /* Header */
-    .header { display: flex; justify-content: space-between; align-items: center; padding: 0 40px; height: 64px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(250,248,245,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 100; }
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 0 40px; height: 64px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(250,248,245,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 100; max-width: 100%; overflow: hidden; }
     .logo { display: flex; align-items: center; gap: 12px; }
     .logo-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
     .logo h1 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--brown-dark); }
@@ -751,7 +752,7 @@
     .notification-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; background: var(--danger); color: white; border-radius: 10px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
     .notifications-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; opacity: 0; visibility: hidden; transition: all 0.3s; }
     .notifications-overlay.open { opacity: 1; visibility: visible; }
-    .notifications-panel { position: fixed; top: 0; right: -400px; width: 400px; max-width: 100vw; height: 100vh; background: var(--bg-card); box-shadow: -4px 0 30px rgba(28,25,23,0.12); z-index: 1000; transition: right 0.3s; overflow-y: auto; }
+    .notifications-panel { position: fixed; top: 0; right: -400px; width: 400px; max-width: 100%; height: 100vh; background: var(--bg-card); box-shadow: -4px 0 30px rgba(28,25,23,0.12); z-index: 1000; transition: right 0.3s; overflow-y: auto; }
     .notifications-panel.open { right: 0; }
     .notifications-header { padding: 20px 24px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg-card); }
     .notifications-header h3 { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; }
@@ -1039,7 +1040,7 @@
       .profile-top { flex-direction: column; text-align: center; }
       .profile-stats-row { justify-content: center; }
       .summary-stats { grid-template-columns: 1fr; }
-      .notifications-panel { width: 100vw; }
+      .notifications-panel { width: 100%; }
       .available-players-grid { gap: 6px; }
       .available-player-chip { padding: 6px 10px; }
     }
@@ -1305,13 +1306,13 @@
       content: ''; position: fixed; border-radius: 50%; z-index: -1; pointer-events: none; opacity: 0.25;
     }
     .app::before {
-      top: -100px; right: -100px; width: 400px; height: 400px;
+      top: -100px; right: 0; width: 300px; height: 300px;
       background: radial-gradient(circle, rgba(224,120,80,0.15) 0%, transparent 70%);
       border-radius: 60% 40% 50% 70% / 50% 60% 40% 60%;
       animation: blob-float 12s ease-in-out infinite;
     }
     .app::after {
-      bottom: -50px; left: -80px; width: 300px; height: 300px;
+      bottom: -50px; left: 0; width: 250px; height: 250px;
       background: radial-gradient(circle, rgba(217,119,6,0.1) 0%, transparent 70%);
       border-radius: 40% 60% 70% 30% / 60% 40% 50% 50%;
       animation: blob-float 10s ease-in-out infinite reverse;
@@ -1371,11 +1372,15 @@
     
     /* --- Tablet Portrait (768px) --- */
     @media (max-width: 768px) {
-      .app { padding: 0 16px 70px; }
+      .app { padding: 0 16px 70px; max-width: 100%; overflow-x: hidden; }
       .header { padding: 0 16px; height: 56px; }
       .logo-img { width: 34px; height: 34px; }
       .logo h1 { font-size: 18px; letter-spacing: 1.5px; }
       .logo p { font-size: 9px; }
+      
+      /* Hide date badge on mobile - info is in dashboard */
+      .date-badge { display: none; }
+      .header-right { gap: 8px; flex-shrink: 0; }
       
       /* Nav: horizontal scroll, no wrap */
       .nav { flex-wrap: nowrap; overflow-x: auto; gap: 2px; padding: 8px 0; margin-bottom: 20px; -webkit-overflow-scrolling: touch; }
@@ -1586,7 +1591,7 @@
       .event-legend-item { font-size: 10px; }
       
       /* Notifications */
-      .notifications-panel { width: 100vw; }
+      .notifications-panel { width: 100%; }
       .notifications-header { padding: 16px; }
       
       /* Matchday log */
