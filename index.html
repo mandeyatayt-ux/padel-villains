@@ -1344,6 +1344,8 @@
     .live-dot { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
     
+    /* ===== RESPONSIVE ADAPTATION ===== */
+    
     /* Enhanced grid for web layout */
     @media (min-width: 1024px) {
       .grid-2 { grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -1356,6 +1358,366 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--brown-light); }
+    
+    /* --- Tablet Landscape (1024px) --- */
+    @media (max-width: 1024px) {
+      .app { padding: 0 24px 70px; }
+      .header { padding: 0 24px; }
+      .section-title { font-size: 24px; }
+      .stat-value { font-size: 32px; }
+      .villain-card { padding: 32px 24px; }
+      .villain-team { font-size: 28px !important; }
+    }
+    
+    /* --- Tablet Portrait (768px) --- */
+    @media (max-width: 768px) {
+      .app { padding: 0 16px 70px; }
+      .header { padding: 0 16px; height: 56px; }
+      .logo-img { width: 34px; height: 34px; }
+      .logo h1 { font-size: 18px; letter-spacing: 1.5px; }
+      .logo p { font-size: 9px; }
+      
+      /* Nav: horizontal scroll, no wrap */
+      .nav { flex-wrap: nowrap; overflow-x: auto; gap: 2px; padding: 8px 0; margin-bottom: 20px; -webkit-overflow-scrolling: touch; }
+      .nav button { padding: 8px 14px; font-size: 13px; }
+      .nav button i { display: none; }
+      
+      /* User menu compact */
+      .user-menu-btn .user-name { display: none; }
+      .user-menu-btn .user-role { display: none; }
+      .user-menu-btn { padding: 4px 8px; }
+      .notification-bell { width: 36px; height: 36px; }
+      
+      /* Matchday header stack */
+      .matchday-header { padding: 16px 20px; flex-direction: column; align-items: flex-start; border-radius: var(--radius-lg); }
+      .matchday-status { font-size: 20px; }
+      .matchday-details { font-size: 12px; gap: 10px; }
+      .matchday-actions { width: 100%; }
+      .matchday-actions .btn { flex: 1; justify-content: center; font-size: 12px; padding: 10px 14px; }
+      
+      /* Stats 2-col */
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .stat-card { padding: 16px; }
+      .stat-icon { width: 38px; height: 38px; font-size: 16px; border-radius: 10px; }
+      .stat-value { font-size: 28px; }
+      .stat-label { font-size: 10px; }
+      
+      /* Section headers */
+      .section-header { margin-bottom: 20px; gap: 12px; }
+      .section-title { font-size: 22px; }
+      .section-subtitle { font-size: 12px; }
+      
+      /* Cards */
+      .card { padding: 20px; border-radius: var(--radius-md); }
+      
+      /* Villain card */
+      .villain-card { padding: 28px 20px; border-radius: var(--radius-lg); }
+      
+      /* Court booking */
+      .court-booking-widget { padding: 20px; }
+      .court-booking-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+      .court-booking-tabs { width: 100%; overflow-x: auto; }
+      .court-booking-tab { padding: 8px 16px; font-size: 13px; white-space: nowrap; }
+      .venue-card-info { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .venue-card-actions { flex-direction: column; }
+      
+      /* Weather */
+      .weather-widget-details { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .weather-widget-icon { font-size: 48px; }
+      .weather-widget-temp { font-size: 44px; }
+      
+      /* Rankings */
+      .rankings-hero { padding: 28px 20px; border-radius: var(--radius-lg); }
+      .rankings-hero h2 { font-size: 26px; }
+      
+      /* Profile */
+      .profile-header { padding: 24px 20px; border-radius: var(--radius-lg); }
+      .profile-name { font-size: 26px; }
+      .profile-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      
+      /* Teams hero */
+      .teams-hero { padding: 28px 20px; border-radius: var(--radius-lg); }
+      .teams-hero-content { flex-direction: column; text-align: center; }
+      
+      /* Modals */
+      .modal { padding: 24px; border-radius: var(--radius-lg); max-height: 85vh; }
+      .modal-title { font-size: 20px; }
+      
+      /* Matchday history */
+      .matchday-history-card { padding: 20px; }
+      .matchday-history-date { font-size: 18px; }
+      .matchday-history-stat-value { font-size: 22px; }
+      
+      /* Calendar */
+      .event-calendar-day { font-size: 12px; }
+      
+      /* Generated matchup */
+      .generated-section { padding: 20px; }
+      
+      /* Player cards */
+      .player-card { padding: 20px; }
+      .player-name { font-size: 17px; }
+      .player-stat-value { font-size: 18px; }
+    }
+    
+    /* --- Mobile (480px) --- */
+    @media (max-width: 480px) {
+      .app { padding: 0 12px 70px; }
+      .header { padding: 0 12px; height: 52px; }
+      .logo h1 { font-size: 16px; }
+      .logo p { display: none; }
+      .logo-img { width: 30px; height: 30px; }
+      .logo { gap: 8px; }
+      
+      /* Nav: single line scroll */
+      .nav { padding: 6px 0; margin-bottom: 16px; }
+      .nav button { padding: 7px 12px; font-size: 12px; }
+      .nav button.active::after { width: 14px; height: 2px; }
+      
+      /* Matchday header */
+      .matchday-header { padding: 14px 16px; gap: 12px; }
+      .matchday-status { font-size: 17px; }
+      .matchday-details { flex-direction: column; gap: 6px; font-size: 11px; }
+      .matchday-actions .btn { font-size: 11px; padding: 8px 12px; }
+      
+      /* Stats */
+      .stats-grid { gap: 8px; }
+      .stat-card { padding: 14px 10px; }
+      .stat-icon { width: 34px; height: 34px; font-size: 14px; margin-bottom: 8px; }
+      .stat-value { font-size: 24px; }
+      .stat-label { font-size: 9px; letter-spacing: 0.5px; }
+      
+      /* Section */
+      .section-header { margin-bottom: 16px; }
+      .section-title { font-size: 20px; letter-spacing: 1.5px; }
+      
+      /* Cards */
+      .card { padding: 16px; border-radius: 12px; }
+      
+      /* Buttons */
+      .btn { padding: 10px 18px; font-size: 13px; }
+      .btn-sm { padding: 8px 14px; font-size: 12px; }
+      
+      /* Villain card */
+      .villain-card { padding: 24px 16px; border-radius: 16px; }
+      .villain-label { font-size: 10px !important; }
+      .villain-team { font-size: 24px !important; }
+      .villain-names { font-size: 13px !important; }
+      
+      /* Avatar sizing */
+      .avatar { width: 44px; height: 44px; font-size: 18px; }
+      .avatar.lg { width: 60px; height: 60px; font-size: 24px; }
+      .avatar.xl { width: 80px; height: 80px; font-size: 32px; }
+      
+      /* Court booking */
+      .court-booking-widget { padding: 16px; }
+      .court-booking-title { font-size: 16px; }
+      .venue-card { padding: 16px; }
+      .venue-card-info { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+      .venue-info-value { font-size: 14px; }
+      .venue-info-label { font-size: 9px; }
+      .calc-row-group { grid-template-columns: 1fr; }
+      
+      /* Weather */
+      .weather-widget { padding: 18px; border-radius: 16px; }
+      .weather-widget-temp { font-size: 36px; }
+      .weather-widget-temp span { font-size: 18px; }
+      .weather-widget-icon { font-size: 40px; }
+      .weather-widget-desc { font-size: 15px; }
+      .weather-detail-value { font-size: 15px; }
+      .weather-detail-label { font-size: 9px; }
+      
+      /* Rankings */
+      .rankings-hero { padding: 20px 16px; }
+      .rankings-hero h2 { font-size: 22px; }
+      .rankings-head { padding: 12px 14px; font-size: 10px; grid-template-columns: 40px 1fr 70px; }
+      .rankings-row { padding: 12px 14px; grid-template-columns: 40px 1fr 70px; }
+      .rank-num { width: 30px; height: 30px; font-size: 12px; }
+      .rank-info h4 { font-size: 14px; }
+      .rank-team { gap: 10px; }
+      
+      /* Profile */
+      .profile-header { padding: 20px 16px; }
+      .profile-name { font-size: 22px; }
+      .profile-stats-row { gap: 20px; }
+      .profile-stat-value { font-size: 22px; }
+      .profile-stat-card { padding: 14px; }
+      .profile-stat-card-icon { width: 34px; height: 34px; font-size: 14px; }
+      
+      /* Match card */
+      .match-card { padding: 18px; }
+      .match-header { padding-bottom: 12px; margin-bottom: 16px; }
+      .match-date { font-size: 14px; }
+      .match-team-card { padding: 16px; }
+      .match-team-name { font-size: 15px; }
+      .match-score { font-size: 17px; }
+      
+      /* Player card */
+      .player-card { padding: 16px; }
+      .player-name { font-size: 16px; }
+      .player-stats-row { gap: 16px; }
+      
+      /* Team card */
+      .team-card { padding: 20px; }
+      
+      /* Modals full screen on mobile */
+      .modal-overlay { padding: 8px; }
+      .modal { padding: 20px; border-radius: 16px; max-height: 92vh; }
+      .modal-title { font-size: 18px; }
+      .modal-close { width: 36px; height: 36px; }
+      .form-input, .form-select { padding: 12px 14px; font-size: 14px; }
+      .modal-actions { margin-top: 24px; }
+      .modal-actions .btn { padding: 12px 16px; }
+      
+      /* Settings */
+      .settings-section { padding: 18px; }
+      .settings-section-title { font-size: 16px; }
+      
+      /* Achievements */
+      .achievement-card { padding: 14px; }
+      .achievement-icon { font-size: 32px; }
+      .achievement-name { font-size: 12px; }
+      .achievement-desc { font-size: 10px; }
+      
+      /* Calendar */
+      .event-calendar-day { font-size: 11px; }
+      .event-calendar-day-header { font-size: 9px; padding: 4px 0; }
+      .event-legend { gap: 10px; }
+      .event-legend-item { font-size: 10px; }
+      
+      /* Notifications */
+      .notifications-panel { width: 100vw; }
+      .notifications-header { padding: 16px; }
+      
+      /* Matchday log */
+      .matchday-log-item { padding: 10px; gap: 10px; }
+      .matchday-log-date { min-width: 60px; font-size: 12px; }
+      .matchday-log-venue { font-size: 11px; }
+      
+      /* Countdown */
+      #countdownTimer { font-size: 36px !important; letter-spacing: 2px !important; }
+      
+      /* Rules */
+      .rules-hero { padding: 20px 16px; }
+      .rules-hero h2 { font-size: 22px; }
+      
+      /* Quick actions menu */
+      .quick-actions-menu { min-width: 180px; }
+      .quick-actions-menu .qa-item { padding: 10px 14px; font-size: 13px; }
+      
+      /* Player spotlight */
+      .spotlight-card { padding: 16px !important; }
+      
+      /* Empty state */
+      .empty { padding: 40px 16px; }
+      .empty-icon { font-size: 48px; }
+      .empty h3 { font-size: 17px; }
+      
+      /* Commentary */
+      .commentary-feed { padding: 16px; max-height: 300px; }
+      
+      /* Booking WhatsApp share */
+      .cost-calculator { padding: 16px; }
+      .cost-calculator-row.per-person { margin: 12px -16px -16px; padding: 14px 16px; }
+      .cost-calculator-row.per-person .cost-value { font-size: 20px; }
+      
+      /* Login */
+      .login-card { padding: 28px 20px; margin: 12px; }
+      .login-logo h1 { font-size: 26px; }
+    }
+    
+    /* --- Small Phones (375px and below) --- */
+    @media (max-width: 375px) {
+      .app { padding: 0 10px 70px; }
+      .header { padding: 0 10px; }
+      
+      .nav button { padding: 6px 10px; font-size: 11px; }
+      
+      .matchday-status { font-size: 15px; }
+      .matchday-header { padding: 12px 14px; }
+      
+      .stats-grid { gap: 6px; }
+      .stat-card { padding: 12px 8px; }
+      .stat-value { font-size: 22px; }
+      .stat-icon { width: 30px; height: 30px; font-size: 12px; border-radius: 8px; margin-bottom: 6px; }
+      
+      .section-title { font-size: 18px; }
+      
+      .card { padding: 14px; }
+      
+      .villain-card { padding: 20px 14px; }
+      .villain-team { font-size: 20px !important; }
+      
+      .avatar { width: 40px; height: 40px; font-size: 16px; }
+      .avatar.lg { width: 52px; height: 52px; font-size: 20px; }
+      .avatar.xl { width: 68px; height: 68px; font-size: 28px; }
+      
+      .player-name { font-size: 14px; }
+      .player-stats-row { gap: 12px; }
+      .player-stat-value { font-size: 16px; }
+      .player-stat-label { font-size: 9px; }
+      
+      .rankings-head, .rankings-row { padding: 10px 12px; grid-template-columns: 34px 1fr 60px; }
+      .rank-num { width: 26px; height: 26px; font-size: 11px; }
+      .rank-info h4 { font-size: 13px; }
+      .rank-avatars .avatar { width: 28px; height: 28px; font-size: 11px; }
+      
+      .btn { padding: 9px 14px; font-size: 12px; }
+      
+      .weather-widget-details { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .weather-widget-temp { font-size: 32px; }
+      
+      #countdownTimer { font-size: 28px !important; }
+      
+      .modal { padding: 16px; border-radius: 14px; }
+      .modal-title { font-size: 16px; }
+      .form-input, .form-select { padding: 10px 12px; font-size: 13px; }
+      
+      .event-calendar-day { font-size: 10px; }
+      
+      .profile-name { font-size: 20px; }
+      .profile-stat-value { font-size: 20px; }
+    }
+    
+    /* --- Safe area for notched phones --- */
+    @supports (padding: max(0px)) {
+      .header { padding-top: max(0px, env(safe-area-inset-top)); }
+      .app { padding-bottom: max(70px, calc(60px + env(safe-area-inset-bottom))); }
+      .modal-overlay { padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+    }
+    
+    /* --- Touch optimizations --- */
+    @media (hover: none) and (pointer: coarse) {
+      .player-card:hover, .team-card:hover { transform: none; box-shadow: var(--shadow-sm); }
+      .matchday-log-item:hover { transform: none; }
+      .venue-card:hover { transform: none; }
+      .btn-primary:hover { transform: none; }
+      .stat-card:hover { transform: none; }
+      .matchday-history-card:hover { transform: none; }
+      
+      /* Larger tap targets */
+      .nav button { min-height: 44px; }
+      .btn { min-height: 44px; }
+      .modal-close { min-width: 44px; min-height: 44px; }
+      .notification-bell { min-width: 44px; min-height: 44px; }
+      .user-menu-btn { min-height: 44px; }
+      .event-calendar-day { min-height: 36px; }
+    }
+    
+    /* --- Landscape phone --- */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .header { height: 48px; }
+      .nav { padding: 4px 0; margin-bottom: 12px; }
+      .modal { max-height: 95vh; }
+      .villain-card { padding: 20px 16px; }
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    
+    /* --- Dark mode scrollbar --- */
+    @media (prefers-color-scheme: dark) {
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+    }
     
   </style>
 </head>
