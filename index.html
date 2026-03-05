@@ -355,7 +355,7 @@
     .sidebar-user { display: none; }
     @media (min-width: 1024px) {
       .app { padding-left: 250px !important; max-width: 100% !important; }
-      .header { margin-left: -250px; padding-left: 274px !important; }
+      .header { margin-left: 0; padding: 0 32px !important; }
       .nav { 
         position: fixed; left: 0; top: 0; bottom: 0; width: 250px; 
         flex-direction: column; flex-wrap: nowrap; gap: 2px;
@@ -1804,6 +1804,230 @@
     @media (prefers-color-scheme: dark) {
       ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
       ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+    }
+    
+    /* ================================================================
+       PREMIUM REDESIGN - COMPREHENSIVE OVERRIDE
+       Matches the prototype aesthetic across all pages
+       ================================================================ */
+    
+    /* --- Desktop Sidebar Layout (1024px+) --- */
+    @media (min-width: 1024px) {
+      /* Hide redundant top logo on desktop - it's in sidebar */
+      .header .logo { display: none !important; }
+      
+      /* Slim header - just utilities on the right */
+      .header { 
+        height: 56px; padding: 0 32px 0 24px !important; 
+        border-bottom: 1px solid var(--border);
+        justify-content: flex-end !important;
+        background: rgba(248,244,238,0.92); backdrop-filter: blur(16px);
+      }
+      .header-right { gap: 12px; }
+      
+      /* App content area */
+      .app { padding: 0 40px 60px 290px !important; }
+      
+      /* Sidebar refinements */
+      .nav { 
+        width: 250px; padding: 0 14px 24px !important;
+        border-right: 1px solid var(--border);
+        background: #FFFFFF;
+      }
+      .nav button { 
+        padding: 12px 16px !important; border-radius: 12px; gap: 12px !important;
+        font-size: 15px !important; font-weight: 500; color: var(--text-muted);
+        margin-bottom: 1px;
+      }
+      .nav button:hover { background: rgba(224,120,80,0.04); color: var(--text); }
+      .nav button.active { 
+        background: rgba(224,120,80,0.06) !important; 
+        color: var(--clay) !important; font-weight: 600;
+      }
+      .nav button.active::after {
+        left: -14px !important; width: 3px !important; height: 28px !important;
+        border-radius: 0 4px 4px 0 !important;
+      }
+      .nav-icon { width: 24px !important; height: 24px !important; opacity: 0.7; }
+      .nav button.active .nav-icon { opacity: 1; }
+      .sidebar-logo { 
+        padding: 24px 16px 28px !important;
+        border-bottom: 1px solid var(--border); margin-bottom: 16px !important;
+      }
+      .sidebar-logo img { width: 44px; height: 44px; border-radius: 14px; }
+      .sidebar-logo h1 { font-size: 17px !important; letter-spacing: 3.5px; }
+      .sidebar-logo p { font-size: 10px; letter-spacing: 1px; color: var(--clay); font-weight: 600; }
+      .sidebar-user { 
+        padding: 18px 16px !important;
+        border-top: 1px solid var(--border);
+      }
+    }
+    
+    /* --- Global Premium Refinements --- */
+    
+    /* Section titles */
+    .section-title { letter-spacing: 3px !important; margin-bottom: 6px; }
+    
+    /* Stat cards - left aligned with icon+trend row */
+    .stat-card { 
+      text-align: left !important; padding: 20px 22px !important;
+      border-radius: 18px !important;
+    }
+    .stat-value { font-size: 38px !important; line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-size: 10px !important; letter-spacing: 1.8px !important; font-weight: 700 !important; }
+    
+    /* Matchday header */
+    .matchday-header { border-radius: 20px !important; }
+    .matchday-header.active { 
+      border-width: 2px !important;
+      background: linear-gradient(135deg, rgba(61,46,26,0.04) 0%, rgba(224,120,80,0.07) 100%) !important;
+    }
+    
+    /* Hero sections - all use the rich brown→clay gradient */
+    .players-hero, .teams-hero, .md-hero { 
+      border-radius: 20px !important;
+      background: linear-gradient(135deg, var(--brown-dark) 0%, var(--brown) 40%, var(--clay) 100%) !important;
+    }
+    
+    /* Villain banner (No Villains Yet) */
+    .villain-card {
+      border-radius: 20px !important;
+      background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%) !important;
+    }
+    
+    /* Live score display */
+    .live-score-display {
+      border-radius: 20px !important;
+      background: linear-gradient(135deg, var(--brown-dark) 0%, var(--clay) 100%) !important;
+    }
+    
+    /* Ongoing matches */
+    .ongoing-match { 
+      border-radius: 18px !important; border-width: 2px !important;
+      border-color: var(--clay) !important;
+    }
+    .ongoing-match:hover { 
+      transform: translateY(-3px); 
+      box-shadow: 0 12px 32px rgba(224,120,80,0.15) !important; 
+    }
+    .ongoing-match-vs { 
+      font-family: 'DirtyWeather', 'Sublime', sans-serif !important; 
+      font-size: 24px !important; letter-spacing: 6px !important; 
+    }
+    
+    /* Quick match scores */
+    .quick-match-score { 
+      font-family: 'DirtyWeather', sans-serif !important; 
+      font-size: 16px !important; letter-spacing: 2px !important; 
+    }
+    
+    /* Cards - premium hover */
+    .player-card, .team-card { border-radius: 18px !important; }
+    .player-card:hover, .team-card:hover { 
+      box-shadow: 0 12px 32px rgba(224,120,80,0.12) !important; 
+    }
+    
+    /* Match items */
+    .match-item { border-radius: 16px !important; }
+    
+    /* Rankings rows */
+    .rankings-row { transition: all 0.2s; border-radius: 12px; }
+    .rankings-row:hover { background: rgba(224,120,80,0.03); }
+    
+    /* Buttons - premium feel */
+    .btn { border-radius: 12px !important; font-family: 'DM Sans', sans-serif; }
+    .btn-primary { 
+      background: linear-gradient(135deg, var(--clay), var(--clay-dark)) !important;
+      box-shadow: 0 4px 12px rgba(224,120,80,0.25);
+    }
+    .btn-primary:hover { 
+      box-shadow: 0 8px 24px rgba(224,120,80,0.35) !important;
+      transform: translateY(-1px);
+    }
+    
+    /* Match Day config cards */
+    .md-config-card { border-radius: 16px !important; }
+    .md-config-btn.active { 
+      background: var(--clay) !important; color: white !important; 
+      border-radius: 10px !important;
+    }
+    .md-config-btn { border-radius: 10px !important; }
+    
+    /* Team selection in Match Day */
+    .md-team-card { border-radius: 16px !important; }
+    .md-team-card.selected { border-color: var(--clay) !important; border-width: 2px !important; }
+    
+    /* Match Day generate button */
+    .md-generate-btn { 
+      border-radius: 14px !important; padding: 16px !important;
+      font-family: 'Sublime', sans-serif; letter-spacing: 2px; font-size: 15px;
+    }
+    
+    /* Profile stat cards */
+    .profile-stat-card { border-radius: 16px !important; }
+    
+    /* Avatar improvements */
+    .avatar { border-radius: 14px !important; }
+    .avatar.sm { border-radius: 10px !important; }
+    
+    /* Date badge */
+    .date-badge { border-radius: 14px !important; }
+    
+    /* User dropdown */
+    .user-dropdown { border-radius: 16px !important; }
+    
+    /* Notification panel */
+    .notification-panel { border-radius: 16px !important; }
+    
+    /* Forms */
+    .form-input, .form-select, .form-textarea { border-radius: 12px !important; }
+    
+    /* Modals */
+    .modal-content { border-radius: 20px !important; }
+    
+    /* Toast */
+    .toast { border-radius: 14px !important; }
+    
+    /* Comparison table */
+    .comparison-table { border-radius: 16px !important; overflow: hidden; }
+    
+    /* Settings sections */
+    .settings-card { border-radius: 18px !important; }
+    
+    /* History items */
+    .matchday-history-card { border-radius: 18px !important; }
+    
+    /* Achievement cards */
+    .achievement-card { border-radius: 16px !important; }
+    
+    /* Score typography everywhere */
+    .match-team-stat-value { font-family: 'Sublime', sans-serif !important; }
+    
+    /* DirtyWeather for score displays */
+    .live-score-value { font-family: 'DirtyWeather', sans-serif !important; }
+    
+    /* Smooth page transitions */
+    @keyframes pageSlideIn { 
+      from { opacity: 0; transform: translateY(16px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
+    
+    /* All text should use DM Sans as base */
+    body, button, input, select, textarea { font-family: 'DM Sans', 'Outfit', sans-serif !important; }
+    
+    /* Override back for display fonts */
+    .section-title, .stat-value, .villain-label, .players-hero-stat-value,
+    .teams-hero-title, .md-hero-title, .matchday-status,
+    .loading-splash-text, .logo h1, .sidebar-logo h1,
+    .match-team-stat-value, .matchday-history-stat-value,
+    .md-config-estimate-value { 
+      font-family: 'Sublime', sans-serif !important; 
+    }
+    
+    /* DirtyWeather for scores and VS */
+    .ongoing-match-vs, .quick-match-score, .live-score-value,
+    .font-score { 
+      font-family: 'DirtyWeather', 'Sublime', sans-serif !important; 
     }
     
   </style>
