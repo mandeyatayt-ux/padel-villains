@@ -350,6 +350,47 @@
     .nav-icon { display: inline-flex; width: 18px; height: 18px; flex-shrink: 0; }
     .nav-icon svg { width: 100%; height: 100%; }
     
+    /* === SIDEBAR LAYOUT (Desktop 1024px+) === */
+    .sidebar-logo { display: none; }
+    .sidebar-user { display: none; }
+    @media (min-width: 1024px) {
+      .app { padding-left: 250px !important; max-width: 100% !important; }
+      .header { margin-left: -250px; padding-left: 274px !important; }
+      .nav { 
+        position: fixed; left: 0; top: 0; bottom: 0; width: 250px; 
+        flex-direction: column; flex-wrap: nowrap; gap: 2px;
+        padding: 0 12px 24px; margin: 0;
+        background: var(--bg-card); border-right: 1px solid var(--border);
+        z-index: 101; overflow-y: auto; overflow-x: hidden;
+        scrollbar-width: none;
+      }
+      .nav::-webkit-scrollbar { display: none; }
+      .sidebar-logo { 
+        display: flex; align-items: center; gap: 12px; 
+        padding: 20px 14px 24px; border-bottom: 1px solid var(--border); margin-bottom: 12px; 
+      }
+      .sidebar-logo img { width: 40px; height: 40px; border-radius: 12px; }
+      .sidebar-logo h1 { font-family: 'Sublime', sans-serif; font-size: 16px; letter-spacing: 3px; color: var(--brown-dark); line-height: 1; margin: 0; }
+      .sidebar-logo p { font-size: 10px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.5px; margin: 2px 0 0; }
+      .sidebar-user { 
+        display: flex; align-items: center; gap: 10px;
+        padding: 16px 14px; border-top: 1px solid var(--border); margin-top: auto; 
+      }
+      .sidebar-user .avatar { width: 36px; height: 36px; border-radius: 10px; font-size: 13px; }
+      .sidebar-user-name { font-weight: 600; font-size: 13px; }
+      .sidebar-user-role { font-size: 11px; color: var(--text-muted); }
+      .nav button { 
+        width: 100%; padding: 11px 14px; border-radius: 12px; 
+        font-size: 14px; text-align: left; justify-content: flex-start;
+      }
+      .nav button.active { background: rgba(224,120,80,0.08); }
+      .nav button.active::after { 
+        bottom: auto; left: 0; top: 50%; transform: translateY(-50%);
+        width: 3px; height: 24px; border-radius: 0 3px 3px 0; 
+      }
+      .nav-icon { width: 22px; height: 22px; }
+    }
+    
     /* Tabs */
     .tab { display: none; animation: fadeIn 0.4s; }
     .tab.active { display: block; }
@@ -1849,6 +1890,10 @@
     
     <!-- NAV -->
     <nav class="nav">
+      <div class="sidebar-logo">
+        <img src="data:image/png;base64,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" alt="PV" class="logo-img">
+        <div><h1>PADEL VILLAINS</h1><p>HARARE CIRCUIT</p></div>
+      </div>
       <button class="active" data-tab="dashboard"><span class="nav-icon" data-icon="court"></span><span>Dashboard</span></button>
       <button data-tab="myprofile" id="navMyProfile"><span class="nav-icon" data-icon="player"></span><span>My Profile</span></button>
       <button data-tab="players"><span class="nav-icon" data-icon="doubles"></span><span>Players</span></button>
@@ -1861,6 +1906,10 @@
       <button data-tab="history"><span class="nav-icon" data-icon="scoreboard"></span><span>History</span></button>
       <button data-tab="settings" class="admin-only"><span class="nav-icon" data-icon="scorekeeper"></span><span>Settings</span></button>
       <button data-tab="admin" class="admin-only"><span class="nav-icon" data-icon="strategy"></span><span>Admin</span></button>
+      <div class="sidebar-user">
+        <div class="avatar sm" id="sidebarAvatar" style="background:linear-gradient(135deg,var(--clay),var(--clay-dark));color:white;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;font-size:13px;font-weight:700">T</div>
+        <div><div class="sidebar-user-name" id="sidebarName">Tayt M.</div><div class="sidebar-user-role" id="sidebarRole">Admin</div></div>
+      </div>
     </nav>
     <!-- ===== DASHBOARD TAB ===== -->
     <section class="tab active" id="dashboard">
@@ -9947,6 +9996,14 @@
       const avatarEl = document.getElementById('userMenuAvatar');
       const userPhoto = player.photo || photoCache[player.id];
       avatarEl.innerHTML = userPhoto ? `<img src="${userPhoto}" class="loaded">` : player.name.charAt(0);
+      
+      // Update sidebar user info
+      const sn = document.getElementById('sidebarName');
+      const sr = document.getElementById('sidebarRole');
+      const sa = document.getElementById('sidebarAvatar');
+      if (sn) sn.textContent = player.name;
+      if (sr) sr.textContent = currentUser.is_admin ? 'Admin' : 'Player';
+      if (sa) sa.innerHTML = userPhoto ? `<img src="${userPhoto}" style="width:36px;height:36px;border-radius:10px;object-fit:cover">` : player.name.charAt(0);
       
       // Load user theme
       if (currentUser.theme && currentUser.theme !== 'default') {
