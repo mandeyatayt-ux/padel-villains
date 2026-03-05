@@ -411,7 +411,7 @@
     /* Cards */
     .card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
-    .section-title { font-family: 'Sublime', sans-serif; font-size: 28px; letter-spacing: 2px; color: var(--brown-dark); }
+    .section-title { font-family: 'Sublime', sans-serif; font-size: 28px; letter-spacing: 3px; color: var(--brown-dark); }
     .section-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
     
     /* Avatar */
@@ -466,7 +466,7 @@
     
     /* Match Day Header */
     .matchday-header { background: var(--bg-card); border-radius: var(--radius-xl); padding: 24px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-    .matchday-header.active { border-color: var(--clay); background: linear-gradient(135deg, rgba(224,120,80,0.04) 0%, rgba(224,120,80,0.01) 100%); box-shadow: 0 4px 20px rgba(224,120,80,0.08); }
+    .matchday-header.active { border-color: var(--clay); background: linear-gradient(135deg, rgba(61,46,26,0.03) 0%, rgba(224,120,80,0.06) 100%); box-shadow: 0 8px 32px rgba(224,120,80,0.1); }
     .matchday-info { flex: 1; }
     .matchday-status { font-family: 'Sublime', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--brown-dark); }
     .matchday-status.live { color: var(--clay); display: flex; align-items: center; gap: 12px; }
@@ -507,9 +507,9 @@
     
     .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; grid-column: span 2; }
     @media (max-width: 900px) { .stats-grid { grid-column: span 1; grid-template-columns: repeat(2, 1fr); } }
-    .stat-card { background: var(--bg-card); border-radius: var(--radius-md); padding: 20px; text-align: center; transition: all 0.3s cubic-bezier(0.16,1,0.3,1); border: 1px solid var(--border); }
+    .stat-card { background: var(--bg-card); border-radius: var(--radius-md); padding: 20px; text-align: left; transition: all 0.3s cubic-bezier(0.16,1,0.3,1); border: 1px solid var(--border); }
     .stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(224,120,80,0.12); }
-    .stat-icon { font-size: 20px; margin-bottom: 12px; width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; }
+    .stat-icon { font-size: 20px; width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .stat-icon.clay { background: rgba(224,120,80,0.1); color: var(--clay); }
     .stat-icon.teal { background: rgba(20,184,166,0.1); color: #14B8A6; }
     .stat-icon.violet { background: rgba(124,58,237,0.1); color: #7C3AED; }
@@ -518,7 +518,10 @@
     .stat-icon.rose { background: rgba(225,29,72,0.1); color: #E11D48; }
     .stat-icon.sky { background: rgba(14,165,233,0.1); color: #0EA5E9; }
     .stat-value { font-family: 'Sublime', sans-serif; font-size: 36px; color: var(--brown-dark); letter-spacing: 1px; }
-    .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+    .stat-trend { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+    .stat-trend.up { color: #059669; background: rgba(5,150,105,0.08); }
+    .stat-trend.down { color: #E11D48; background: rgba(225,29,72,0.06); }
     
     .quick-match { background: var(--bg-card); border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid var(--border); }
     .quick-match-info { display: flex; align-items: center; gap: 16px; flex: 1; }
@@ -532,13 +535,13 @@
     .win-indicator { width: 24px; height: 24px; background: var(--clay); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
     
     /* ===== PLAYERS PAGE ===== */
-    .players-hero { background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); border-radius: 24px; padding: 40px; color: white; margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; }
+    .players-hero { background: linear-gradient(135deg, var(--brown-dark) 0%, var(--brown) 40%, var(--clay) 100%); border-radius: 24px; padding: 40px; color: white; margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; }
     .players-hero-stats { display: flex; gap: 40px; }
     .players-hero-stat { text-align: center; }
     .players-hero-stat-value { font-family: 'Sublime', sans-serif; font-size: 48px; letter-spacing: 2px; }
     .players-hero-stat-label { font-size: 12px; opacity: 0.85; letter-spacing: 1px; text-transform: uppercase; }
     
-    .player-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 24px; text-align: center; transition: all 0.2s; position: relative; overflow: hidden; border: 1px solid var(--border); }
+    .player-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 24px; text-align: center; transition: all 0.3s cubic-bezier(0.16,1,0.3,1); position: relative; overflow: hidden; border: 1px solid var(--border); }
     .player-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--border-hover); }
     .player-card.inactive { opacity: 0.5; }
     .player-card.top-player { border: 2px solid var(--gold); }
@@ -566,7 +569,7 @@
     .player-actions { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
     
     /* ===== TEAMS PAGE ===== */
-    .teams-hero { background: linear-gradient(135deg, var(--clay-dark) 0%, var(--clay) 50%, var(--clay-light) 100%); border-radius: var(--radius-xl); padding: 36px; color: white; margin-bottom: 28px; position: relative; overflow: hidden; }
+    .teams-hero { background: linear-gradient(135deg, var(--brown-dark) 0%, var(--brown) 40%, var(--clay) 100%); border-radius: var(--radius-xl); padding: 36px; color: white; margin-bottom: 28px; position: relative; overflow: hidden; }
     .teams-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; }
     .teams-hero-title { font-family: 'Sublime', sans-serif; font-size: 26px; letter-spacing: 3px; margin-bottom: 24px; }
     .teams-hero-content { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px; }
@@ -578,7 +581,7 @@
     .teams-hero-stat-value { font-family: 'Sublime', sans-serif; font-size: 28px; }
     .teams-hero-stat-label { font-size: 10px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
     
-    .team-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 24px; text-align: center; transition: all 0.2s; position: relative; overflow: hidden; border: 1px solid var(--border); }
+    .team-card { background: var(--bg-card); border-radius: var(--radius-lg); padding: 24px; text-align: center; transition: all 0.3s cubic-bezier(0.16,1,0.3,1); position: relative; overflow: hidden; border: 1px solid var(--border); }
     .team-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
     .team-card.inactive { opacity: 0.5; }
     .team-card.villain-team { border: 2px solid var(--clay); }
@@ -692,7 +695,7 @@
     .rank-rate-text { font-size: 16px; font-weight: 700; color: var(--brown-dark); min-width: 45px; }
     
     /* ===== MATCH DAY PAGE ===== */
-    .md-hero { background: linear-gradient(135deg, #E07850 0%, #C2623D 100%); border-radius: var(--radius-xl); padding: 28px 24px; color: white; margin-bottom: 24px; position: relative; overflow: hidden; }
+    .md-hero { background: linear-gradient(135deg, var(--brown-dark) 0%, var(--brown) 40%, var(--clay) 100%); border-radius: var(--radius-xl); padding: 28px 24px; color: white; margin-bottom: 24px; position: relative; overflow: hidden; }
     .md-hero::before { content: ''; position: absolute; top: -60px; right: -40px; width: 200px; height: 200px; background: rgba(255,255,255,0.08); border-radius: 50%; }
     .md-hero-title { font-family: 'Sublime', sans-serif; font-size: 28px; letter-spacing: 3px; }
     .md-hero-sub { opacity: 0.9; font-size: 14px; margin-top: 4px; }
@@ -924,7 +927,7 @@
     .position-option-label { font-size: 12px; font-weight: 600; }
     
     /* Live Scoring */
-    .live-score-display { background: linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%); border-radius: 20px; padding: 24px; color: white; margin-bottom: 20px; }
+    .live-score-display { background: linear-gradient(135deg, var(--brown-dark) 0%, var(--clay) 100%); border-radius: 20px; padding: 24px; color: white; margin-bottom: 20px; }
     .live-score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .live-score-court { font-size: 12px; color: var(--clay); font-weight: 600; }
     .live-indicator { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--danger); }
@@ -1966,10 +1969,10 @@
           </div>
         </div>
         <div class="stats-grid">
-          <div class="stat-card"><div class="stat-icon clay" id="statIconMatches"></div><div class="stat-value" id="statMatches">0</div><div class="stat-label">Matches</div></div>
-          <div class="stat-card"><div class="stat-icon violet" id="statIconPlayers"></div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Players</div></div>
-          <div class="stat-card"><div class="stat-icon emerald" id="statIconAvailable"></div><div class="stat-value" id="statAvailable">0</div><div class="stat-label">Playing Today</div></div>
-          <div class="stat-card"><div class="stat-icon rose" id="statIconVenue"></div><div class="stat-value" id="statVenue">-</div><div class="stat-label">Venue</div></div>
+          <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon clay" id="statIconMatches"></div><span id="statTrendMatches" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statMatches">0</div><div class="stat-label">MATCHES PLAYED</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">This season</div></div>
+          <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon violet" id="statIconPlayers"></div><span id="statTrendPlayers" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">ACTIVE PLAYERS</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">In circuit</div></div>
+          <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon emerald" id="statIconAvailable"></div><span id="statTrendAvailable" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statAvailable">0</div><div class="stat-label">PLAYING TODAY</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">Confirmed</div></div>
+          <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon rose" id="statIconVenue"></div><span id="statTrendVenue" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statVenue">-</div><div class="stat-label">VENUE</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">Today's location</div></div>
         </div>
         
         <!-- Spotify Widget -->
