@@ -4239,6 +4239,12 @@
       });
     }
     let players = [], teams = [], matches = [], venues = [], ongoingMatches = [], matchdays = [];
+    
+    // Helper: get local date as YYYY-MM-DD (fixes UTC timezone bug)
+    function getLocalDateStr(d) {
+      const dt = d || new Date();
+      return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+    }
     let events = []; // Calendar events
     let calendarDate = new Date(); // Current calendar view
     let isOffline = false;
@@ -4720,7 +4726,7 @@
     
     // Determine active matchday (current, past unclosed, or next upcoming)
     function determineActiveMatchday() {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateStr();
       
       // Filter out closed matchdays
       const openMatchdays = matchdays.filter(md => md.status !== 'closed');
@@ -4965,7 +4971,7 @@
       const isViewingPast = viewingMatchday !== null;
       
       // Get today's events (vibes, training - NOT matchdays since those are handled separately)
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateStr();
       const todayEvents = events.filter(e => e.date === today && e.type !== 'matchday');
       
       // Show/hide past matchday banner
@@ -5621,10 +5627,21 @@
       if (!activeMatchday) return;
       
       const now = new Date();
-      const today = now.toISOString().split('T')[0];
+      const today = getLocalDateStr(now);
       
       if (activeMatchday.date !== today) {
         document.getElementById('matchdayCountdown').classList.add('hidden');
+        if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+        return;
+      }
+      
+      // Also check if matchday end time has passed
+      const endTime = activeMatchday.end_time || '17:00';
+      const [endH, endM] = endTime.split(':').map(Number);
+      const curMins = now.getHours() * 60 + now.getMinutes();
+      if (curMins > endH * 60 + endM + 30) {
+        document.getElementById('matchdayCountdown').classList.add('hidden');
+        if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
         return;
       }
       
@@ -6258,7 +6275,7 @@
       }
       
       let filtered = [...matches];
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateStr();
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       if (filter === 'today') filtered = filtered.filter(m => m.date === today);
       else if (filter === 'week') filtered = filtered.filter(m => m.date >= weekAgo);
@@ -9360,7 +9377,7 @@
       const daysInPrevMonth = new Date(year, month, 0).getDate();
       
       const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
+      const todayStr = getLocalDateStr(today);
       
       // Previous month days
       for (let i = firstDay - 1; i >= 0; i--) {
@@ -9412,7 +9429,7 @@
     
     function renderUpcomingEvents() {
       const container = document.getElementById('upcomingEvents');
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateStr();
       
       // Get next 7 days of events
       const upcoming = [];
@@ -9458,7 +9475,7 @@
     
     function selectCalendarDate(dateStr) {
       const dayEvents = getEventsForDate(dateStr);
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateStr();
       const isPast = dateStr < today;
       
       if (dayEvents.length > 0) {
@@ -9481,7 +9498,7 @@
     function showEventSummary(event) {
       const dateObj = new Date(event.date);
       const dateStr = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateStr();
       const isPast = event.date < today;
       const isToday = event.date === today;
       
@@ -9602,7 +9619,7 @@
       }
       
       // Prevent creating events on past dates
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateStr();
       if (date < today) {
         toast('Cannot create events on past dates', 'error');
         return;
