@@ -2333,13 +2333,13 @@
         <div><h1>PADEL VILLAINS</h1><p>HARARE CIRCUIT</p></div>
       </div>
       <button class="active" data-tab="dashboard"><span class="nav-icon" data-icon="court"></span><span>Dashboard</span></button>
+      <button data-tab="matchday"><span class="nav-icon" data-icon="strategy"></span><span>Match Day</span></button>
+      <button data-tab="matches"><span class="nav-icon" data-icon="scoreboard"></span><span>Matches</span></button>
       <button data-tab="myprofile" id="navMyProfile"><span class="nav-icon" data-icon="player"></span><span>My Profile</span></button>
       <button data-tab="players"><span class="nav-icon" data-icon="doubles"></span><span>Players</span></button>
       <button data-tab="teams"><span class="nav-icon" data-icon="doubles"></span><span>Teams</span></button>
-      <button data-tab="matches"><span class="nav-icon" data-icon="scoreboard"></span><span>Matches</span></button>
       <button data-tab="rankings"><span class="nav-icon" data-icon="trophy"></span><span>Rankings</span></button>
       <button data-tab="achievements"><span class="nav-icon" data-icon="trophy"></span><span>Achievements</span></button>
-      <button data-tab="matchday"><span class="nav-icon" data-icon="strategy"></span><span>Match Day</span></button>
       <button data-tab="rules"><span class="nav-icon" data-icon="scorekeeper"></span><span>Rules</span></button>
       <button data-tab="history"><span class="nav-icon" data-icon="scoreboard"></span><span>History</span></button>
       <button data-tab="settings" class="admin-only"><span class="nav-icon" data-icon="scorekeeper"></span><span>Settings</span></button>
@@ -6351,7 +6351,10 @@
         const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1), { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
         return `<div class="match-card" onclick="openEditMatch(${m.id})" style="cursor:pointer">
           <div class="match-header">
-            <div><div class="match-date">${new Date(m.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</div></div>
+            <div>
+              <div class="match-date">${new Date(m.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+              ${m.started_at || m.finalized_at ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${m.started_at ? '⏱ ' + new Date(m.started_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : ''}${m.started_at && m.finalized_at ? ' → ' : ''}${m.finalized_at ? '✓ ' + new Date(m.finalized_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : ''}</div>` : ''}
+            </div>
             <div style="display:flex;align-items:center;gap:12px">
               <div class="match-location"><i class="fas fa-map-marker-alt"></i> ${m.court}</div>
               <i class="fas fa-edit" style="color:var(--text-muted);font-size:12px"></i>
@@ -6876,6 +6879,17 @@
     function mdQueueRoundMatches(roundNum) {
       const roundMatches = mdGeneratedSchedule.filter(m => m.round === roundNum);
       roundMatches.forEach(async (m) => {
+        // Duplicate check - don't queue if same teams already in ongoing
+        const t1Id = mdMode === 'roundrobin' ? m.t1 : null;
+        const t2Id = mdMode === 'roundrobin' ? m.t2 : null;
+        if (t1Id && t2Id) {
+          const alreadyQueued = ongoingMatches.some(om => 
+            (om.team1_id === t1Id && om.team2_id === t2Id) || 
+            (om.team1_id === t2Id && om.team2_id === t1Id)
+          );
+          if (alreadyQueued) return; // Skip duplicate
+        }
+        
         const matchData = mdMode === 'roundrobin' ? {
           id: Date.now() + Math.random(),
           date: activeMatchday?.date || new Date().toISOString().split('T')[0],
@@ -7978,6 +7992,11 @@
         return;
       }
       
+      // Prevent double-clicks
+      const btn = document.querySelector('#addMatch .btn-primary, #addMatch [onclick*="addMatch"]');
+      if (btn?.disabled) return;
+      if (btn) btn.disabled = true;
+      
       const date = document.getElementById('matchDate').value;
       const court = document.getElementById('matchCourt').value;
       const t1 = parseInt(document.getElementById('matchTeam1').value);
@@ -7985,9 +8004,9 @@
       const scoreA = parseInt(document.getElementById('scoreA').value) || 0;
       const scoreB = parseInt(document.getElementById('scoreB').value) || 0;
       
-      if (!t1 || !t2) { toast('Select both teams', 'error'); return; }
-      if (t1 === t2) { toast('Select different teams', 'error'); return; }
-      if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); return; }
+      if (!t1 || !t2) { toast('Select both teams', 'error'); if (btn) btn.disabled = false; return; }
+      if (t1 === t2) { toast('Select different teams', 'error'); if (btn) btn.disabled = false; return; }
+      if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); if (btn) btn.disabled = false; return; }
       
       const scores = [[scoreA, scoreB]];
       const wid = scoreA > scoreB ? t1 : t2;
@@ -8019,19 +8038,31 @@
       document.getElementById('matchTeam1').value = '';
       document.getElementById('matchTeam2').value = '';
       closeModal('addMatch');
+      if (btn) btn.disabled = false;
       renderAll();
       toast('Match logged!', 'success');
     }
     
     // ===== QUEUE MATCH (ONGOING) =====
     async function queueMatch() {
+      // Prevent double-clicks
+      const btn = document.querySelector('#queueMatch .btn-primary, #queueMatch [onclick*="queueMatch"]');
+      if (btn?.disabled) return;
+      if (btn) btn.disabled = true;
+      
       const date = document.getElementById('queueMatchDate').value;
       const court = document.getElementById('queueMatchCourt').value;
       const t1 = parseInt(document.getElementById('queueTeam1').value);
       const t2 = parseInt(document.getElementById('queueTeam2').value);
       
-      if (!t1 || !t2) { toast('Select both teams', 'error'); return; }
-      if (t1 === t2) { toast('Select different teams', 'error'); return; }
+      if (!t1 || !t2) { toast('Select both teams', 'error'); if (btn) btn.disabled = false; return; }
+      if (t1 === t2) { toast('Select different teams', 'error'); if (btn) btn.disabled = false; return; }
+      
+      // Check for duplicate - same teams already in queue
+      const isDuplicate = ongoingMatches.some(m => 
+        (m.team1_id === t1 && m.team2_id === t2) || (m.team1_id === t2 && m.team2_id === t1)
+      );
+      if (isDuplicate) { toast('This match is already in the queue', 'error'); if (btn) btn.disabled = false; return; }
       
       const nm = { 
         id: Date.now(), 
@@ -8052,6 +8083,7 @@
         } catch (e) { 
           console.error(e);
           toast('Error', 'error'); 
+          if (btn) btn.disabled = false;
           return; 
         }
       } else {
@@ -8062,6 +8094,7 @@
       document.getElementById('queueTeam1').value = '';
       document.getElementById('queueTeam2').value = '';
       closeModal('queueMatch');
+      if (btn) btn.disabled = false;
       renderAll();
       toast('Match started!', 'success');
     }
@@ -8095,14 +8128,33 @@
     }
     
     async function finalizeMatch() {
+      // Prevent double-clicks
+      const btn = document.querySelector('#finalizeMatch .btn-primary, #finalizeMatch [onclick*="finalizeMatch"]');
+      if (btn?.disabled) return;
+      if (btn) btn.disabled = true;
+      
       const id = parseInt(document.getElementById('finalizeMatchId').value);
       const scoreA = parseInt(document.getElementById('finalScoreA').value) || 0;
       const scoreB = parseInt(document.getElementById('finalScoreB').value) || 0;
       
-      if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); return; }
+      if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); if (btn) btn.disabled = false; return; }
       
       const m = ongoingMatches.find(match => match.id === id);
-      if (!m) return;
+      if (!m) { if (btn) btn.disabled = false; return; }
+      
+      // Check if already finalized (duplicate protection)
+      const alreadyExists = matches.some(em => 
+        em.team1_id === m.team1_id && em.team2_id === m.team2_id && em.date === m.date &&
+        em.started_at === m.started_at
+      );
+      if (alreadyExists) { 
+        toast('This match was already finalized', 'error'); 
+        ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+        if (btn) btn.disabled = false;
+        closeModal('finalizeMatch');
+        renderAll();
+        return; 
+      }
       
       const scores = [[scoreA, scoreB]];
       const wid = scoreA > scoreB ? m.team1_id : m.team2_id;
@@ -8116,6 +8168,8 @@
         team2_id: m.team2_id, 
         scores, 
         winner_id: wid, 
+        started_at: m.started_at || null,
+        finalized_at: new Date().toISOString(),
         created_at: new Date().toISOString() 
       };
       
@@ -8137,6 +8191,7 @@
       }
       
       closeModal('finalizeMatch');
+      if (btn) btn.disabled = false;
       // Hook into Match Day system for auto round advancement
       if (m && m.md_round) {
         mdOnMatchComplete({team1_id: m.team1_id, team2_id: m.team2_id, md_round: m.md_round, score1: scores, score2: scores});
