@@ -7123,10 +7123,11 @@
       if (!mdGeneratedSchedule || mdGeneratedSchedule.length === 0) return;
       mdStep = 'live';
       mdCurrentRound = 1;
-      // Queue round 1 matches into the existing ongoing matches system
-      mdQueueRoundMatches(1);
+      // Queue ALL matches into the ongoing matches system at once
+      const allRounds = [...new Set(mdGeneratedSchedule.map(m => m.round))].sort((a,b) => a-b);
+      allRounds.forEach(r => mdQueueRoundMatches(r));
       renderMatchDay();
-      toast('Match Day started! 🎮', 'success');
+      toast(`Match Day started! ${mdGeneratedSchedule.length} matches queued 🎮`, 'success');
     }
 
     function mdQueueRoundMatches(roundNum) {
