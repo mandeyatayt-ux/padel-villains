@@ -6784,6 +6784,10 @@
       document.getElementById('mdPreviewSection').style.display = 'none';
       document.getElementById('mdLiveSection').style.display = 'none';
       mdUpdateEstimate();
+      // Render KOTC team grid immediately when switching to KOTC
+      if (mode === 'kotc') {
+        kotcRenderTeamGrid();
+      }
     }
 
     function setMDCourts(n) {
