@@ -2276,7 +2276,8 @@
   <!-- Offline Banner -->
   <div class="offline-banner" id="offlineBanner">
     <i class="fas fa-wifi-slash"></i>
-    <span>You're offline - Using cached data</span>
+    <span>You're offline - Changes saved locally</span>
+    <span id="offlinePendingCount" style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px;font-size:12px"></span>
   </div>
   
   <!-- Quick Actions Context Menu -->
@@ -4376,6 +4377,45 @@
     let events = []; // Calendar events
     let calendarDate = new Date(); // Current calendar view
     let isOffline = false;
+    
+    // Offline write queue - stores pending Supabase operations
+    let pendingSync = JSON.parse(localStorage.getItem('pv_pending_sync') || '[]');
+    
+    function addToPendingSync(operation) {
+      pendingSync.push({ ...operation, timestamp: Date.now() });
+      localStorage.setItem('pv_pending_sync', JSON.stringify(pendingSync));
+    }
+    
+    async function processPendingSync() {
+      if (!supabaseClient || pendingSync.length === 0) return;
+      const queue = [...pendingSync];
+      pendingSync = [];
+      localStorage.setItem('pv_pending_sync', '[]');
+      let synced = 0, failed = 0;
+      
+      for (const op of queue) {
+        try {
+          if (op.type === 'insert') {
+            await supabaseClient.from(op.table).insert([op.data]);
+            synced++;
+          } else if (op.type === 'delete') {
+            await supabaseClient.from(op.table).delete().eq('id', op.id);
+            synced++;
+          } else if (op.type === 'upsert') {
+            await supabaseClient.from(op.table).upsert([op.data]);
+            synced++;
+          }
+        } catch (e) {
+          console.error('Sync failed for:', op, e);
+          pendingSync.push(op); // Re-queue failed ops
+          failed++;
+        }
+      }
+      
+      if (failed > 0) localStorage.setItem('pv_pending_sync', JSON.stringify(pendingSync));
+      if (synced > 0) toast(`Synced ${synced} offline change${synced > 1 ? 's' : ''}`, 'success');
+      if (failed > 0) toast(`${failed} change${failed > 1 ? 's' : ''} failed to sync`, 'error');
+    }
     let activeMatchday = null;
     let viewingMatchday = null;
     let selectedPlayers = [];
@@ -8755,14 +8795,21 @@
         created_at: new Date().toISOString() 
       };
       
-      if (supabaseClient) {
+      if (supabaseClient && !isOffline) {
         try {
           await supabaseClient.from('matches').insert([nm]);
           matches.unshift(nm);
-        } catch (e) { console.error(e); toast('Error saving match', 'error'); return; }
+        } catch (e) { 
+          console.warn('Supabase write failed, saving offline:', e);
+          matches.unshift(nm);
+          saveLocal();
+          addToPendingSync({ type: 'insert', table: 'matches', data: nm });
+          toast('Saved offline - will sync when online', 'info');
+        }
       } else {
         matches.unshift(nm);
         saveLocal();
+        if (supabaseClient) addToPendingSync({ type: 'insert', table: 'matches', data: nm });
       }
       
       document.getElementById('scoreA').value = '';
@@ -8807,20 +8854,22 @@
         started_at: new Date().toISOString()
       };
       
-      if (supabaseClient) {
+      if (supabaseClient && !isOffline) {
         try {
           const { data, error } = await supabaseClient.from('ongoing_matches').insert([nm]).select().single();
           if (error) throw error;
           ongoingMatches.unshift(data);
         } catch (e) { 
-          console.error(e);
-          toast('Error', 'error'); 
-          if (btn) btn.disabled = false;
-          return; 
+          console.warn('Supabase write failed, saving offline:', e);
+          ongoingMatches.unshift(nm);
+          saveLocal();
+          addToPendingSync({ type: 'insert', table: 'ongoing_matches', data: nm });
+          toast('Saved offline - will sync when online', 'info');
         }
       } else {
         ongoingMatches.unshift(nm);
         saveLocal();
+        if (supabaseClient) addToPendingSync({ type: 'insert', table: 'ongoing_matches', data: nm });
       }
       
       document.getElementById('queueTeam1').value = '';
@@ -8905,21 +8954,29 @@
         created_at: new Date().toISOString() 
       };
       
-      if (supabaseClient) {
+      if (supabaseClient && !isOffline) {
         try {
           await supabaseClient.from('matches').insert([finalMatch]);
           await supabaseClient.from('ongoing_matches').delete().eq('id', id);
           matches.unshift(finalMatch);
           ongoingMatches = ongoingMatches.filter(match => match.id !== id);
         } catch (e) { 
-          console.error(e);
-          toast('Error', 'error'); 
-          return; 
+          console.warn('Supabase write failed, saving offline:', e);
+          matches.unshift(finalMatch);
+          ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+          saveLocal();
+          addToPendingSync({ type: 'insert', table: 'matches', data: finalMatch });
+          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: id });
+          toast('Saved offline - will sync when online', 'info');
         }
       } else {
         matches.unshift(finalMatch);
         ongoingMatches = ongoingMatches.filter(match => match.id !== id);
         saveLocal();
+        if (supabaseClient) {
+          addToPendingSync({ type: 'insert', table: 'matches', data: finalMatch });
+          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: id });
+        }
       }
       
       closeModal('finalizeMatch');
@@ -8935,14 +8992,19 @@
     async function cancelOngoingMatch() {
       const id = parseInt(document.getElementById('finalizeMatchId').value);
       
-      if (supabaseClient) {
+      if (supabaseClient && !isOffline) {
         try {
           await supabaseClient.from('ongoing_matches').delete().eq('id', id);
           ongoingMatches = ongoingMatches.filter(match => match.id !== id);
-        } catch (e) { toast('Error', 'error'); return; }
+        } catch (e) { 
+          ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+          saveLocal();
+          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: id });
+        }
       } else {
         ongoingMatches = ongoingMatches.filter(match => match.id !== id);
         saveLocal();
+        if (supabaseClient) addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: id });
       }
       
       closeModal('finalizeMatch');
@@ -10024,14 +10086,19 @@
         isOffline = false;
         document.getElementById('offlineBanner').classList.remove('show');
         toast('Back online!', 'success');
-        // Sync data
-        if (supabaseClient) fetchData();
+        // Sync pending offline writes first, then refresh data
+        processPendingSync().then(() => {
+          if (supabaseClient) fetchData();
+        });
       });
       
       window.addEventListener('offline', () => {
         isOffline = true;
         document.getElementById('offlineBanner').classList.add('show');
-        toast('You\'re offline - Using cached data', 'info');
+        const pending = JSON.parse(localStorage.getItem('pv_pending_sync') || '[]');
+        const countEl = document.getElementById('offlinePendingCount');
+        if (countEl) countEl.textContent = pending.length > 0 ? `${pending.length} pending` : '';
+        toast('You\'re offline - Changes will be saved locally', 'info');
       });
       
       // Check initial state
