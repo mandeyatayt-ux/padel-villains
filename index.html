@@ -3000,6 +3000,7 @@
           </div>
           <div class="md-teams-grid" id="mdKOTCTeams"></div>
           <button class="md-generate-btn" id="mdKOTCStartBtn" onclick="kotcStart()" disabled style="background:linear-gradient(135deg,#D4A853 0%,#B8942F 100%);color:var(--brown-dark)">👑 Start King of the Court</button>
+          <button class="btn btn-secondary" onclick="kotcTeamIds=[];kotcRenderTeamGrid();" style="margin-top:8px;width:100%">Clear Selection</button>
         </div>
       </div>
 
@@ -7643,10 +7644,14 @@
     }
 
     function kotcEnd() {
-      if (!confirm('End King of the Court? Final scores will be saved.')) return;
-      kotcState.active = false;
-      toast('👑 King of the Court ended! Check the leaderboard.', 'success');
-      renderMatchDay();
+      if (kotcState.active && !confirm('End King of the Court? Final scores will be saved.')) return;
+      kotcState = { active: false, kingsId: null, streak: 0, challengerId: null, queue: [], scores: {}, matchLog: [], matchCount: 0 };
+      kotcTeamIds = [];
+      mdStep = 'setup';
+      document.getElementById('mdKOTCLiveSection').style.display = 'none';
+      document.getElementById('mdKOTCSection').style.display = '';
+      kotcRenderTeamGrid();
+      toast('👑 King of the Court cleared', 'success');
     }
 
     function viewMatchday(id) {
