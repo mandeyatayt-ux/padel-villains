@@ -2922,6 +2922,10 @@
             <div class="md-mode-btn-title">🎲 Americano</div>
             <div class="md-mode-btn-desc">Rotating partners</div>
           </button>
+          <button class="md-mode-btn" id="mdModeKOTC" onclick="setMatchDayMode('kotc')">
+            <div class="md-mode-btn-title">👑 King of the Court</div>
+            <div class="md-mode-btn-desc">Defend your throne</div>
+          </button>
         </div>
       </div>
 
@@ -2981,6 +2985,66 @@
             <button class="md-config-btn" onclick="setMDAmericanoRounds(8)" style="padding:6px 14px;min-width:40px">8</button>
           </div>
           <button class="md-generate-btn" id="mdAmericanoGenBtn" onclick="mdGenerate()" disabled style="background:linear-gradient(135deg,#7C3AED 0%,#6D28D9 100%)">🎲 Generate Americano</button>
+        </div>
+      </div>
+
+      <!-- KING OF THE COURT Section -->
+      <div id="mdKOTCSection" style="display:none">
+        <div class="card" style="margin-bottom:24px">
+          <div class="section-header" style="margin-bottom:16px">
+            <div>
+              <h3 style="font-size:18px;font-weight:700">👑 Select Teams for King of the Court</h3>
+              <p style="font-size:12px;color:var(--text-muted)">First 2 teams play, winner stays on. Defending earns streak points!</p>
+            </div>
+            <span id="mdKOTCCount" style="background:var(--gold);color:var(--brown-dark);padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
+          </div>
+          <div class="md-teams-grid" id="mdKOTCTeams"></div>
+          <button class="md-generate-btn" id="mdKOTCStartBtn" onclick="kotcStart()" disabled style="background:linear-gradient(135deg,#D4A853 0%,#B8942F 100%);color:var(--brown-dark)">👑 Start King of the Court</button>
+        </div>
+      </div>
+
+      <!-- KOTC Live Section -->
+      <div id="mdKOTCLiveSection" style="display:none">
+        <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,var(--brown-dark) 0%,#5D4E37 40%,var(--gold) 100%);color:white;border:none;text-align:center;padding:28px 20px;border-radius:20px">
+          <div style="font-size:12px;letter-spacing:3px;opacity:0.8;margin-bottom:4px">👑 CURRENT KINGS</div>
+          <div id="kotcKingsDisplay" style="font-family:'Sublime',sans-serif;font-size:32px;letter-spacing:2px">-</div>
+          <div id="kotcStreakDisplay" style="margin-top:8px;font-family:'DirtyWeather',sans-serif;font-size:22px;letter-spacing:2px">0 WINS</div>
+          <div style="margin-top:16px;display:flex;gap:12px;justify-content:center" id="kotcKingsPlayers"></div>
+        </div>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+          <div class="card" style="text-align:center;padding:20px">
+            <div style="font-size:11px;letter-spacing:1.5px;color:var(--text-muted);font-weight:700;text-transform:uppercase">⚔️ Challenger</div>
+            <div id="kotcChallengerDisplay" style="font-family:'Sublime',sans-serif;font-size:20px;margin-top:6px">-</div>
+            <div id="kotcChallengerPlayers" style="margin-top:8px;display:flex;gap:4px;justify-content:center"></div>
+          </div>
+          <div class="card" style="text-align:center;padding:20px">
+            <div style="font-size:11px;letter-spacing:1.5px;color:var(--text-muted);font-weight:700;text-transform:uppercase">🔄 Up Next</div>
+            <div id="kotcNextDisplay" style="font-family:'Sublime',sans-serif;font-size:20px;margin-top:6px">-</div>
+            <div id="kotcQueueCount" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;padding:20px;text-align:center">
+          <div style="font-size:12px;letter-spacing:2px;color:var(--text-muted);font-weight:700;margin-bottom:12px">RECORD RESULT</div>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="kotcRecordWin('kings')" style="padding:12px 24px;border-radius:14px;font-family:'Sublime',sans-serif;letter-spacing:2px">👑 Kings Win</button>
+            <button class="btn" onclick="kotcRecordWin('challenger')" style="padding:12px 24px;border-radius:14px;background:var(--gold);color:var(--brown-dark);font-family:'Sublime',sans-serif;letter-spacing:2px;border:none">⚔️ Challenger Wins</button>
+          </div>
+        </div>
+
+        <div class="card" style="padding:20px">
+          <div style="font-size:14px;font-weight:700;letter-spacing:2px;margin-bottom:12px;font-family:'Sublime',sans-serif">🏆 LEADERBOARD</div>
+          <div id="kotcLeaderboard"></div>
+        </div>
+        
+        <div class="card" style="padding:20px;margin-top:16px">
+          <div style="font-size:14px;font-weight:700;letter-spacing:2px;margin-bottom:12px;font-family:'Sublime',sans-serif">📜 MATCH LOG</div>
+          <div id="kotcMatchLog" style="max-height:300px;overflow-y:auto"></div>
+        </div>
+        
+        <div style="margin-top:16px;text-align:center">
+          <button class="btn btn-secondary" onclick="kotcEnd()">End King of the Court</button>
         </div>
       </div>
 
@@ -6712,8 +6776,11 @@
       mdGeneratedSchedule = null;
       document.getElementById('mdModeRR').classList.toggle('active', mode === 'roundrobin');
       document.getElementById('mdModeAM').classList.toggle('active', mode === 'americano');
+      document.getElementById('mdModeKOTC').classList.toggle('active', mode === 'kotc');
       document.getElementById('mdRoundRobinSection').style.display = mode === 'roundrobin' ? '' : 'none';
       document.getElementById('mdAmericanoSection').style.display = mode === 'americano' ? '' : 'none';
+      document.getElementById('mdKOTCSection').style.display = mode === 'kotc' ? '' : 'none';
+      document.getElementById('mdKOTCLiveSection').style.display = 'none';
       document.getElementById('mdPreviewSection').style.display = 'none';
       document.getElementById('mdLiveSection').style.display = 'none';
       mdUpdateEstimate();
@@ -6977,9 +7044,27 @@
       if (mdMode === 'roundrobin') {
         document.getElementById('mdRoundRobinSection').style.display = showSetup ? '' : 'none';
         document.getElementById('mdAmericanoSection').style.display = 'none';
-      } else {
+        document.getElementById('mdKOTCSection').style.display = 'none';
+        document.getElementById('mdKOTCLiveSection').style.display = 'none';
+      } else if (mdMode === 'americano') {
         document.getElementById('mdRoundRobinSection').style.display = 'none';
         document.getElementById('mdAmericanoSection').style.display = showSetup ? '' : 'none';
+        document.getElementById('mdKOTCSection').style.display = 'none';
+        document.getElementById('mdKOTCLiveSection').style.display = 'none';
+      } else if (mdMode === 'kotc') {
+        document.getElementById('mdRoundRobinSection').style.display = 'none';
+        document.getElementById('mdAmericanoSection').style.display = 'none';
+        document.getElementById('mdKOTCSection').style.display = kotcState.active ? 'none' : (showSetup ? '' : 'none');
+        document.getElementById('mdKOTCLiveSection').style.display = kotcState.active ? '' : 'none';
+        document.getElementById('mdPreviewSection').style.display = 'none';
+        document.getElementById('mdLiveSection').style.display = 'none';
+        // Render KOTC team selection grid
+        if (!kotcState.active) {
+          kotcRenderTeamGrid();
+        } else {
+          kotcRenderLive();
+        }
+        return; // KOTC has its own flow, skip RR/AM rendering below
       }
       document.getElementById('mdPreviewSection').style.display = showPreview ? '' : 'none';
       document.getElementById('mdLiveSection').style.display = showLive ? '' : 'none';
@@ -7339,6 +7424,227 @@
       }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Yet</h3><p>Create a match day to see it here</p></div>';
     }
     
+    // ===== KING OF THE COURT (KOTC) =====
+    let kotcTeamIds = [];
+    let kotcState = {
+      active: false,
+      kingsId: null,
+      streak: 0,
+      challengerId: null,
+      queue: [],      // team IDs waiting
+      scores: {},     // {teamId: {points, wins, losses, defenses, slays, bestStreak}}
+      matchLog: [],   // [{kings, challenger, winner, kingsStreak, points, time}]
+      matchCount: 0
+    };
+
+    function kotcToggleTeam(id) {
+      const idx = kotcTeamIds.indexOf(id);
+      if (idx >= 0) kotcTeamIds.splice(idx, 1);
+      else kotcTeamIds.push(id);
+      document.getElementById('mdKOTCCount').textContent = kotcTeamIds.length;
+      document.getElementById('mdKOTCStartBtn').disabled = kotcTeamIds.length < 3;
+      renderMatchDay();
+    }
+
+    function kotcRenderTeamGrid() {
+      const grid = document.getElementById('mdKOTCTeams');
+      if (!grid) return;
+      grid.innerHTML = teams.map(t => {
+        const p1 = getPlayer(t.player1_id), p2 = getPlayer(t.player2_id);
+        const active = kotcTeamIds.includes(t.id);
+        const stats = getTeamStats(t.id);
+        return `<button class="md-team-btn ${active ? 'active' : ''}" onclick="kotcToggleTeam(${t.id})">
+          <div class="md-team-avatars">
+            <div class="avatar" style="background:${getPlayerColor(t.player1_id)}">${(p1?.name||'?').charAt(0)}</div>
+            <div class="avatar" style="background:${getPlayerColor(t.player2_id)}">${(p2?.name||'?').charAt(0)}</div>
+          </div>
+          <div>
+            <div class="md-team-name">${t.name}</div>
+            <div class="md-team-players">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+          </div>
+          ${active ? '<div class="md-team-check"><i class="fas fa-check"></i></div>' : ''}
+        </button>`;
+      }).join('');
+      document.getElementById('mdKOTCCount').textContent = kotcTeamIds.length;
+      document.getElementById('mdKOTCStartBtn').disabled = kotcTeamIds.length < 3;
+    }
+
+    function kotcStart() {
+      if (kotcTeamIds.length < 3) { toast('Need at least 3 teams', 'error'); return; }
+      // Shuffle and set up
+      const shuffled = [...kotcTeamIds].sort(() => Math.random() - 0.5);
+      kotcState = {
+        active: true,
+        kingsId: shuffled[0],
+        streak: 0,
+        challengerId: shuffled[1],
+        queue: shuffled.slice(2),
+        scores: {},
+        matchLog: [],
+        matchCount: 0
+      };
+      // Init scores
+      kotcTeamIds.forEach(id => {
+        kotcState.scores[id] = { points: 0, wins: 0, losses: 0, defenses: 0, slays: 0, bestStreak: 0 };
+      });
+      renderMatchDay();
+      toast('👑 King of the Court started!', 'success');
+    }
+
+    function kotcRecordWin(side) {
+      if (!kotcState.active) return;
+      const { kingsId, challengerId, streak } = kotcState;
+      const kingsTeam = getTeam(kingsId);
+      const challengerTeam = getTeam(challengerId);
+      kotcState.matchCount++;
+      
+      let pointsAwarded = 0;
+      let logEntry = { time: new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}), matchNum: kotcState.matchCount };
+      
+      if (side === 'kings') {
+        // Kings defend! Streak increases
+        const newStreak = streak + 1;
+        pointsAwarded = newStreak; // Streak = points per defense
+        kotcState.scores[kingsId].points += pointsAwarded;
+        kotcState.scores[kingsId].wins++;
+        kotcState.scores[kingsId].defenses++;
+        if (newStreak > kotcState.scores[kingsId].bestStreak) kotcState.scores[kingsId].bestStreak = newStreak;
+        kotcState.scores[challengerId].losses++;
+        
+        // Challenger goes to back of queue
+        kotcState.queue.push(challengerId);
+        kotcState.streak = newStreak;
+        
+        logEntry.kings = kingsTeam?.name;
+        logEntry.challenger = challengerTeam?.name;
+        logEntry.winner = 'kings';
+        logEntry.kingsStreak = newStreak;
+        logEntry.points = `+${pointsAwarded} to ${kingsTeam?.name}`;
+        logEntry.badge = newStreak >= 3 ? '🔥' : '👑';
+        
+      } else {
+        // Challenger dethrones! Slayer bonus
+        const slayerBonus = streak >= 1 ? streak : 0; // Bonus = old kings' streak
+        const basePoints = 1; // Base win points
+        pointsAwarded = basePoints + slayerBonus;
+        kotcState.scores[challengerId].points += pointsAwarded;
+        kotcState.scores[challengerId].wins++;
+        if (streak >= 1) kotcState.scores[challengerId].slays++;
+        kotcState.scores[kingsId].losses++;
+        
+        // Old kings go to back of queue
+        kotcState.queue.push(kingsId);
+        kotcState.kingsId = challengerId;
+        kotcState.streak = 0; // New kings start fresh
+        
+        logEntry.kings = kingsTeam?.name;
+        logEntry.challenger = challengerTeam?.name;
+        logEntry.winner = 'challenger';
+        logEntry.kingsStreak = streak;
+        logEntry.points = `+${pointsAwarded} to ${challengerTeam?.name}${slayerBonus > 0 ? ` (👑 Slayer +${slayerBonus})` : ''}`;
+        logEntry.badge = slayerBonus >= 3 ? '⚔️' : '🎯';
+      }
+      
+      kotcState.matchLog.unshift(logEntry);
+      
+      // Next challenger from queue
+      if (kotcState.queue.length > 0) {
+        kotcState.challengerId = kotcState.queue.shift();
+      } else {
+        // All teams have played, game over
+        kotcState.active = false;
+        toast('👑 King of the Court complete!', 'success');
+      }
+      
+      // Also save as a real match for history
+      const winnerId = side === 'kings' ? kingsId : challengerId;
+      const matchRecord = {
+        id: Date.now(),
+        date: activeMatchday?.date || getLocalDateStr(),
+        location: activeMatchday?.venue || '',
+        court: 'KOTC',
+        team1_id: kingsId,
+        team2_id: challengerId,
+        scores: [[side === 'kings' ? 1 : 0, side === 'kings' ? 0 : 1]],
+        winner_id: winnerId,
+        started_at: new Date().toISOString(),
+        finalized_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        game_mode: 'kotc'
+      };
+      if (supabaseClient) {
+        supabaseClient.from('matches').insert([matchRecord]).then(({error}) => {
+          if (!error) matches.unshift(matchRecord);
+        });
+      } else {
+        matches.unshift(matchRecord);
+        saveLocal();
+      }
+      
+      renderMatchDay();
+    }
+
+    function kotcRenderLive() {
+      const { kingsId, challengerId, streak, queue, scores, matchLog } = kotcState;
+      const kingsTeam = getTeam(kingsId);
+      const { p1: kp1, p2: kp2 } = getTeamPlayers(kingsTeam);
+      
+      // Kings display
+      document.getElementById('kotcKingsDisplay').textContent = kingsTeam?.name || '?';
+      const streakText = streak === 0 ? 'NEW KINGS' : `${streak} WIN${streak > 1 ? 'S' : ''} STREAK`;
+      const streakEmoji = streak >= 5 ? '🔥🔥🔥' : streak >= 3 ? '🔥🔥' : streak >= 1 ? '🔥' : '👑';
+      document.getElementById('kotcStreakDisplay').textContent = `${streakEmoji} ${streakText}`;
+      document.getElementById('kotcKingsPlayers').innerHTML = `${av(kp1,'sm')}${av(kp2,'sm')}`;
+      
+      // Challenger
+      const challTeam = getTeam(challengerId);
+      if (challTeam) {
+        const { p1: cp1, p2: cp2 } = getTeamPlayers(challTeam);
+        document.getElementById('kotcChallengerDisplay').textContent = challTeam.name;
+        document.getElementById('kotcChallengerPlayers').innerHTML = `${av(cp1,'xs')}${av(cp2,'xs')}`;
+      }
+      
+      // Next in queue
+      const nextId = queue.length > 0 ? queue[0] : null;
+      document.getElementById('kotcNextDisplay').textContent = nextId ? (getTeam(nextId)?.name || '?') : 'None';
+      document.getElementById('kotcQueueCount').textContent = queue.length > 0 ? `${queue.length} team${queue.length > 1 ? 's' : ''} waiting` : '';
+      
+      // Leaderboard
+      const sorted = Object.entries(scores).sort((a, b) => b[1].points - a[1].points);
+      document.getElementById('kotcLeaderboard').innerHTML = sorted.map(([id, s], i) => {
+        const t = getTeam(parseInt(id));
+        const { p1, p2 } = getTeamPlayers(t);
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+        const isKing = parseInt(id) === kingsId;
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+          <span style="font-family:'Sublime',sans-serif;font-size:18px;width:32px;text-align:center">${medal}</span>
+          <div style="display:flex;gap:2px">${av(p1,'xs')}${av(p2,'xs')}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">${t?.name || '?'} ${isKing ? '👑' : ''}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${s.wins}W ${s.losses}L${s.defenses > 0 ? ` · ${s.defenses} defenses` : ''}${s.slays > 0 ? ` · ${s.slays} slays` : ''}${s.bestStreak > 0 ? ` · best: ${s.bestStreak}🔥` : ''}</div>
+          </div>
+          <div style="font-family:'DirtyWeather',sans-serif;font-size:22px;color:var(--clay)">${s.points}</div>
+        </div>`;
+      }).join('');
+      
+      // Match log
+      document.getElementById('kotcMatchLog').innerHTML = matchLog.length ? matchLog.map(l => 
+        `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+          <span style="color:var(--text-muted);font-size:11px;width:40px">${l.time}</span>
+          <span>${l.badge}</span>
+          <span style="flex:1"><strong>${l.winner === 'kings' ? l.kings : l.challenger}</strong> beat ${l.winner === 'kings' ? l.challenger : l.kings}</span>
+          <span style="color:var(--clay);font-weight:600;font-size:12px">${l.points}</span>
+        </div>`
+      ).join('') : '<div style="color:var(--text-muted);text-align:center;padding:20px">No matches yet — record a result above!</div>';
+    }
+
+    function kotcEnd() {
+      if (!confirm('End King of the Court? Final scores will be saved.')) return;
+      kotcState.active = false;
+      toast('👑 King of the Court ended! Check the leaderboard.', 'success');
+      renderMatchDay();
+    }
+
     function viewMatchday(id) {
       const md = matchdays.find(m => m.id === id);
       if (md) {
