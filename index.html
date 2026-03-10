@@ -2415,33 +2415,6 @@
           <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon rose" id="statIconVenue"></div><span id="statTrendVenue" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statVenue">-</div><div class="stat-label">VENUE</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">Today's location</div></div>
         </div>
         
-        <!-- Spotify Widget -->
-        <div class="spotify-widget" id="spotifyWidget" style="display:none">
-          <div class="spotify-widget-header">
-            <i class="fab fa-spotify"></i>
-            <span>Match Day Playlist</span>
-          </div>
-          <div id="spotifyContent">
-            <div class="spotify-widget-empty">
-              <i class="fas fa-music"></i>
-              <p>No playlist set</p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Player Spotlight (rotating profiles) -->
-        <div class="card" id="playerSpotlightSection">
-          <div class="section-header" style="margin-bottom:16px">
-            <div><h3 style="font-size:18px;font-weight:700">⭐ Player Spotlight</h3></div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button class="btn btn-sm" onclick="prevSpotlightPlayer()" style="padding:6px 10px"><i class="fas fa-chevron-left"></i></button>
-              <span id="spotlightIndicator" style="font-size:12px;color:var(--text-muted)">1/24</span>
-              <button class="btn btn-sm" onclick="nextSpotlightPlayer()" style="padding:6px 10px"><i class="fas fa-chevron-right"></i></button>
-            </div>
-          </div>
-          <div id="playerSpotlight"></div>
-        </div>
-        
         <!-- My Match Day - Personal game tracker -->
         <div class="card" id="myMatchDayCard" style="display:none;margin-bottom:16px">
           <div class="section-header" style="margin-bottom:16px">
@@ -5519,11 +5492,14 @@
       const ongoingContainer = document.getElementById('dashboardOngoing');
       if (!isViewingPast && ongoingMatches.length > 0) {
         ongoingSection.style.display = 'block';
-        ongoingContainer.innerHTML = ongoingMatches.slice().sort((a, b) => new Date(a.started_at) - new Date(b.started_at)).map(m => {
+        const sorted = ongoingMatches.slice().sort((a, b) => new Date(a.started_at) - new Date(b.started_at));
+        const queueCount = sorted.length;
+        ongoingContainer.innerHTML = `<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">${queueCount} match${queueCount > 1 ? 'es' : ''} in queue</div>` + sorted.map((m, i) => {
           const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
           const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
           const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
-          const startTime = new Date(m.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          const startTime = m.started_at ? new Date(m.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+          const roundBadge = m.md_round ? `<span style="background:var(--clay);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">R${m.md_round}</span>` : '';
           return `<div class="dashboard-ongoing-match" onclick="openFinalizeMatch(${m.id})">
             <div class="dashboard-ongoing-teams">
               <div class="dashboard-ongoing-team">${av(t1p1,'sm')}${av(t1p2,'sm')} <span style="font-weight:600;margin-left:4px">${t1?.name || '?'}</span></div>
@@ -5531,17 +5507,15 @@
               <div class="dashboard-ongoing-team"><span style="font-weight:600;margin-right:4px">${t2?.name || '?'}</span> ${av(t2p1,'sm')}${av(t2p2,'sm')}</div>
             </div>
             <div class="dashboard-ongoing-meta">
+              ${roundBadge}
               <div class="dashboard-ongoing-court">${m.court}</div>
-              <div>Started ${startTime}</div>
+              ${startTime ? `<div>Queued ${startTime}</div>` : ''}
             </div>
           </div>`;
         }).join('');
       } else {
         ongoingSection.style.display = 'none';
       }
-      
-      // Render player spotlight
-      renderPlayerSpotlight();
       
       // Render My Match Day card
       renderMyMatchDay();
@@ -5551,9 +5525,6 @@
     }
     
     // ===== PLAYER SPOTLIGHT =====
-    let spotlightIndex = 0;
-    let spotlightInterval = null;
-    
     function renderMyMatchDay() {
       const card = document.getElementById('myMatchDayCard');
       const content = document.getElementById('myMatchDayContent');
@@ -5627,83 +5598,6 @@
       content.innerHTML = html;
     }
 
-    function renderPlayerSpotlight() {
-      const container = document.getElementById('playerSpotlight');
-      const indicator = document.getElementById('spotlightIndicator');
-      const active = activePlayers();
-      
-      if (active.length === 0) {
-        container.innerHTML = '<div class="empty" style="padding:20px"><p>No players yet</p></div>';
-        return;
-      }
-      
-      // Get player with stats
-      const ranked = rankPlayersByMatches();
-      if (ranked.length === 0) {
-        container.innerHTML = '<div class="empty" style="padding:20px"><p>No player stats yet</p></div>';
-        return;
-      }
-      
-      spotlightIndex = spotlightIndex % ranked.length;
-      const p = ranked[spotlightIndex];
-      const badges = getPlayerBadges(p.id);
-      
-      // Calculate streak
-      const playerTeams = teams.filter(t => t.player1_id === p.id || t.player2_id === p.id);
-      let bestStreak = { count: 0, type: 'none' };
-      playerTeams.forEach(t => {
-        const s = calculateCurrentStreak(t.id);
-        if (s.count > bestStreak.count) bestStreak = s;
-      });
-      
-      indicator.textContent = `${spotlightIndex + 1}/${ranked.length}`;
-      
-      const spotlightPhoto = p.photo || photoCache[p.id];
-      const avatarHtml = spotlightPhoto 
-        ? `<img src="${spotlightPhoto}" alt="${p.name}">`
-        : p.name.charAt(0).toUpperCase();
-      
-      container.innerHTML = `
-        <div class="player-spotlight">
-          <div class="spotlight-header">
-            <div class="spotlight-avatar">${avatarHtml}</div>
-            <div class="spotlight-info">
-              <h4>${p.name}</h4>
-              <p>${p.position || 'Hybrid'}${p.nickname ? ` • "${p.nickname}"` : ''}</p>
-            </div>
-          </div>
-          <div class="spotlight-stats">
-            <div><div class="spotlight-stat-value">${p.wins}</div><div class="spotlight-stat-label">Wins</div></div>
-            <div><div class="spotlight-stat-value">${p.losses}</div><div class="spotlight-stat-label">Losses</div></div>
-            <div><div class="spotlight-stat-value">${p.rate}%</div><div class="spotlight-stat-label">Win Rate</div></div>
-          </div>
-          ${badges.length ? `<div class="spotlight-badges">${badges.join(' ')}</div>` : ''}
-          ${bestStreak.count >= 2 ? `<div style="text-align:center"><span class="spotlight-streak"><i class="fas fa-${bestStreak.type === 'win' ? 'fire' : 'snowflake'}"></i> ${bestStreak.count} ${bestStreak.type} streak</span></div>` : ''}
-        </div>
-      `;
-      
-      // Auto-rotate every 5 seconds
-      if (spotlightInterval) clearInterval(spotlightInterval);
-      spotlightInterval = setInterval(() => {
-        spotlightIndex = (spotlightIndex + 1) % ranked.length;
-        renderPlayerSpotlight();
-      }, 5000);
-    }
-    
-    function nextSpotlightPlayer() {
-      const ranked = rankPlayersByMatches();
-      if (ranked.length === 0) return;
-      spotlightIndex = (spotlightIndex + 1) % ranked.length;
-      renderPlayerSpotlight();
-    }
-    
-    function prevSpotlightPlayer() {
-      const ranked = rankPlayersByMatches();
-      if (ranked.length === 0) return;
-      spotlightIndex = (spotlightIndex - 1 + ranked.length) % ranked.length;
-      renderPlayerSpotlight();
-    }
-    
     // ===== MATCHDAY HISTORY LOG =====
     function renderMatchdayHistoryLog() {
       const container = document.getElementById('matchdayHistoryLog');
@@ -7075,15 +6969,18 @@
         return;
       }
       
-      container.innerHTML = ongoingMatches.slice().sort((a, b) => new Date(a.started_at) - new Date(b.started_at)).map((m, i) => {
+      const sorted = ongoingMatches.slice().sort((a, b) => new Date(a.started_at) - new Date(b.started_at));
+      container.innerHTML = sorted.map((m, i) => {
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
         const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
         const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
-        const startTime = new Date(m.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        const startTime = m.started_at ? new Date(m.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+        const roundBadge = m.md_round ? `<span style="background:var(--clay);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;margin-left:8px">R${m.md_round}</span>` : '';
+        const modeBadge = m.game_mode === 'kotc' ? ' 👑' : m.game_mode === 'randomiser' ? ' 🎲' : '';
         
         return `<div class="ongoing-match" onclick="openFinalizeMatch(${m.id})">
           <div class="ongoing-match-header">
-            <div class="ongoing-match-status"><span class="live-dot"></span> MATCH ${i + 1}</div>
+            <div class="ongoing-match-status"><span class="live-dot"></span> MATCH ${i + 1}${modeBadge}${roundBadge}</div>
             <span class="ongoing-match-court">${m.court}</span>
           </div>
           <div class="ongoing-match-teams">
@@ -7097,7 +6994,7 @@
               <div class="ongoing-match-team-avatars">${av(t2p1, 'sm')}${av(t2p2, 'sm')}</div>
             </div>
           </div>
-          <div class="ongoing-match-time">Started at ${startTime}</div>
+          <div class="ongoing-match-time">${startTime ? 'Queued ' + startTime : ''}</div>
         </div>`;
       }).join('');
     }
@@ -7192,6 +7089,7 @@
               ${m.started_at || m.finalized_at ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${m.started_at ? '⏱ ' + new Date(m.started_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : ''}${m.started_at && m.finalized_at ? ' → ' : ''}${m.finalized_at ? '✓ ' + new Date(m.finalized_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : ''}</div>` : ''}
             </div>
             <div style="display:flex;align-items:center;gap:12px">
+              ${m.game_mode ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:${m.game_mode === 'kotc' ? 'rgba(212,168,83,0.15);color:#B8942F' : 'rgba(124,58,237,0.1);color:#7C3AED'}">${m.game_mode === 'kotc' ? '👑 KOTC' : '🎲 RANDOM'}</span>` : ''}
               <div class="match-location"><i class="fas fa-map-marker-alt"></i> ${m.court}</div>
               <i class="fas fa-edit" style="color:var(--text-muted);font-size:12px"></i>
             </div>
