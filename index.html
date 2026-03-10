@@ -2031,21 +2031,55 @@
     }
     
     /* ============================================================
-       FULL REDESIGN OVERRIDES - Matches PV Web View Prototype
+       FULL REDESIGN V2 - Glassmorphism + Dreamy Gradient Blur
+       Inspired by: Sidebar Nav, Dreamy Gradient, Weather App UI
        ============================================================ */
     
-    /* === DESKTOP LAYOUT (1024px+): Hide top header, sidebar-only nav === */
+    /* === AMBIENT GRADIENT BLOBS === */
+    body::before, body::after {
+      content: ''; position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+      filter: blur(80px); opacity: 0.6;
+    }
+    body::before {
+      width: 500px; height: 500px; top: -100px; right: -80px;
+      background: radial-gradient(circle, rgba(224,120,80,0.07) 0%, transparent 70%);
+      animation: ambientFloat1 22s ease-in-out infinite;
+    }
+    body::after {
+      width: 400px; height: 400px; bottom: -50px; left: 20%;
+      background: radial-gradient(circle, rgba(212,168,83,0.05) 0%, transparent 70%);
+      animation: ambientFloat2 28s ease-in-out infinite;
+    }
+    @keyframes ambientFloat1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,25px)} }
+    @keyframes ambientFloat2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(25px,-20px)} }
+    
+    /* === GLOBAL CARD GLASSMORPHISM === */
+    .card, .stat-card, .match-card, .player-card, .team-card, .ongoing-match,
+    .matchday-header, .rankings-table, .achievement-card {
+      background: rgba(255,255,255,0.72) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border: 1px solid rgba(245,239,235,0.5) !important;
+      box-shadow: 0 4px 24px rgba(102,37,0,0.04) !important;
+    }
+    
+    /* === DESKTOP LAYOUT (1024px+) === */
     @media (min-width: 1024px) {
       .header { display: none !important; }
       .app { 
-        padding: 0 0 40px 250px !important; 
+        padding: 0 0 40px 260px !important; 
         max-width: 100% !important; 
       }
+      
+      /* GLASSMORPHISM SIDEBAR */
       .nav {
-        position: fixed; left: 0; top: 0; bottom: 0; width: 250px;
+        position: fixed; left: 0; top: 0; bottom: 0; width: 260px;
         flex-direction: column; flex-wrap: nowrap; gap: 0;
         padding: 0; margin: 0;
-        background: #FFFFFF; border-right: 1px solid rgba(93,78,55,0.08);
+        background: rgba(255,237,224,0.48);
+        backdrop-filter: blur(80px); -webkit-backdrop-filter: blur(80px);
+        border-right: 0.5px solid rgba(245,239,235,0.4);
+        box-shadow: 64px 0 64px -32px rgba(102,37,0,0.04);
         z-index: 200; overflow-y: auto; overflow-x: hidden;
         scrollbar-width: none;
       }
@@ -2054,126 +2088,162 @@
       /* Sidebar logo block */
       .sidebar-logo {
         display: flex !important; align-items: center; gap: 12px;
-        padding: 24px 24px 28px; border-bottom: 1px solid rgba(93,78,55,0.08);
-        margin-bottom: 8px;
+        padding: 22px 20px 20px; 
+        border-bottom: none; margin-bottom: 0;
       }
-      .sidebar-logo img { width: 42px; height: 42px; border-radius: 12px; }
+      .sidebar-logo img { 
+        width: 40px; height: 40px; border-radius: 13px; 
+        box-shadow: 0 6px 20px rgba(224,120,80,0.3);
+      }
       .sidebar-logo h1 { 
-        font-family: 'Sublime', sans-serif; font-size: 16px; 
-        letter-spacing: 3px; color: var(--brown-dark); line-height: 1; margin: 0; 
+        font-family: 'Sublime', sans-serif; font-size: 13px; 
+        letter-spacing: 3.5px; color: var(--brown-dark); line-height: 1; margin: 0;
+        font-weight: 800;
       }
       .sidebar-logo p { 
-        font-size: 10px; color: var(--clay); font-weight: 600; 
-        letter-spacing: 1px; margin: 3px 0 0; text-transform: uppercase; 
+        font-size: 9px; color: var(--clay); font-weight: 700; 
+        letter-spacing: 1.2px; margin: 3px 0 0; text-transform: uppercase; 
       }
       
-      /* Nav buttons - clean vertical layout */
-      .nav button {
-        width: 100%; padding: 13px 24px; margin: 1px 0;
-        border-radius: 0; font-size: 15px; font-weight: 500;
-        color: var(--text-muted); text-align: left; justify-content: flex-start;
-        gap: 14px; transition: all 0.2s;
-        background: transparent; border: none; position: relative;
+      /* Radial divider after logo */
+      .sidebar-logo::after {
+        content: ''; display: block; position: absolute; bottom: 0; left: 0; right: 0;
+        height: 1px; background: radial-gradient(ellipse at center, rgba(93,78,55,0.12), transparent);
       }
-      .nav button:hover { 
-        background: rgba(224,120,80,0.04); color: var(--brown-dark); 
-      }
-      .nav button.active {
-        background: rgba(224,120,80,0.06); color: var(--clay);
-        font-weight: 600;
-      }
-      .nav button.active::after {
-        content: ''; position: absolute; left: 0; top: 50%; 
-        transform: translateY(-50%);
-        width: 3px; height: 28px; background: var(--clay); 
-        border-radius: 0 3px 3px 0;
-        bottom: auto;
-      }
-      .nav-icon { width: 24px; height: 24px; }
       
       /* Sidebar user block */
       .sidebar-user {
-        display: flex !important; align-items: center; gap: 12px;
-        padding: 20px 24px; border-top: 1px solid rgba(93,78,55,0.08);
-        margin-top: auto;
+        display: flex !important; align-items: center; gap: 10px;
+        padding: 12px 20px; margin: 14px 14px 16px;
+        border-top: none;
+        background: rgba(224,120,80,0.05); border-radius: 14px;
+        border: 1px solid rgba(224,120,80,0.06);
+      }
+      
+      /* Section labels in sidebar */
+      .nav::before {
+        content: 'NAVIGATION'; display: block;
+        font-size: 9.5px; font-weight: 700; letter-spacing: 2px;
+        color: rgba(93,78,55,0.3); padding: 0 24px 8px; margin-top: 0;
+      }
+      
+      /* Nav buttons */
+      .nav button {
+        width: calc(100% - 28px); margin: 1px 14px;
+        padding: 11px 12px;
+        border-radius: 12px; font-size: 14px; font-weight: 500;
+        color: var(--text-muted); text-align: left; justify-content: flex-start;
+        gap: 13px; transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+        background: transparent; border: none; position: relative;
+        overflow: hidden;
+      }
+      .nav button:hover { 
+        background: rgba(93,78,55,0.03); color: var(--brown-dark); 
+      }
+      .nav button.active {
+        background: rgba(93,78,55,0.06); color: var(--brown-dark);
+        font-weight: 600;
+      }
+      /* Active glow */
+      .nav button.active::before {
+        content: ''; position: absolute; inset: 0; opacity: 0.08;
+        background: radial-gradient(ellipse at 30% 50%, var(--clay), transparent 70%);
+        pointer-events: none; border-radius: 12px;
+      }
+      /* Active left bar */
+      .nav button.active::after {
+        content: ''; position: absolute; left: 0; top: 50%; 
+        transform: translateY(-50%);
+        width: 3px; height: 22px; background: var(--clay); 
+        border-radius: 0 3px 3px 0;
+        bottom: auto;
+        filter: drop-shadow(0 0 6px rgba(224,120,80,0.4));
+      }
+      .nav-icon { width: 22px; height: 22px; }
+      
+      /* Active icon glow */
+      .nav button.active .nav-icon { 
+        filter: drop-shadow(0 0 4px rgba(224,120,80,0.3)); 
       }
       
       /* Main content area */
-      .tab { padding: 0 40px; }
-      .tab.active { padding: 0 40px; }
+      .tab { padding: 0 36px; }
+      .tab.active { padding: 0 36px; }
       
-      /* Section titles */
       .section-title { 
-        font-family: 'Sublime', sans-serif; font-size: 28px; 
-        letter-spacing: 3px; color: var(--brown-dark); 
+        font-family: 'Sublime', sans-serif; font-size: 30px; 
+        letter-spacing: 5px; color: var(--brown-dark);
+        font-weight: 900;
       }
     }
 
     /* === GLOBAL TYPOGRAPHY === */
     body { font-family: 'DM Sans', 'Outfit', sans-serif !important; }
-    .section-title, .matchday-header .matchday-status, .md-hero-title,
-    .players-hero h2, .teams-hero-title, .stat-value, .matchday-history-stat-value,
-    .player-stat-value, .match-team-stat-value { 
-      font-family: 'Sublime', sans-serif !important; 
-    }
     
-    /* === STAT CARDS - Left aligned like prototype === */
+    /* === STAT CARDS — Glassmorphism + hover lift === */
     .stat-card { 
-      text-align: left !important; padding: 22px 20px !important;
-      border-radius: 18px !important;
-      transition: all 0.3s cubic-bezier(0.16,1,0.3,1) !important;
+      text-align: left !important; padding: 20px 18px !important;
+      border-radius: 20px !important;
+      transition: all 0.4s cubic-bezier(0.16,1,0.3,1) !important;
+      position: relative; overflow: hidden;
+      cursor: pointer;
     }
     .stat-card:hover { 
-      transform: translateY(-4px) !important; 
-      box-shadow: 0 12px 32px rgba(224,120,80,0.12) !important; 
+      transform: translateY(-6px) !important; 
+      box-shadow: 0 16px 40px rgba(224,120,80,0.12) !important; 
     }
     .stat-value { 
-      font-size: 36px !important; letter-spacing: 1px; line-height: 1;
-      color: var(--brown-dark) !important; 
+      font-size: 34px !important; letter-spacing: 1px; line-height: 1;
+      color: var(--brown-dark) !important; font-weight: 900 !important;
     }
     .stat-label { 
-      font-size: 10px !important; font-weight: 700 !important; 
-      letter-spacing: 1.5px !important; color: var(--text-muted) !important;
+      font-size: 9.5px !important; font-weight: 700 !important; 
+      letter-spacing: 1.8px !important; color: var(--text-muted) !important;
       text-transform: uppercase !important; margin-top: 4px;
     }
-    .stat-icon {
-      margin-bottom: 0 !important;
-    }
     
-    /* === HERO GRADIENTS - Brown to clay like prototype === */
+    /* === HERO GRADIENTS with inner orbs === */
     .players-hero, .teams-hero, .md-hero, .villain-card {
-      background: linear-gradient(135deg, var(--brown-dark) 0%, #5D4E37 40%, var(--clay) 100%) !important;
-      border-radius: 20px !important;
+      background: linear-gradient(135deg, var(--brown-dark) 0%, #5D4E37 35%, var(--clay) 100%) !important;
+      border-radius: 24px !important;
+      position: relative; overflow: hidden;
+    }
+    .players-hero::after, .teams-hero::after, .md-hero::after, .villain-card::after {
+      content: ''; position: absolute; width: 300px; height: 300px; border-radius: 50%;
+      background: rgba(212,168,83,0.1); top: -80px; right: -40px;
+      filter: blur(50px); pointer-events: none;
     }
     .matchday-header.active {
-      border-color: var(--clay) !important;
-      background: linear-gradient(135deg, rgba(61,46,26,0.04) 0%, rgba(224,120,80,0.06) 100%) !important;
-      box-shadow: 0 8px 32px rgba(224,120,80,0.1) !important;
+      border-color: rgba(224,120,80,0.15) !important;
+      background: rgba(255,255,255,0.72) !important;
+      backdrop-filter: blur(20px) !important;
+      box-shadow: 0 8px 32px rgba(224,120,80,0.08) !important;
       border-radius: 20px !important;
     }
-    .matchday-header {
-      border-radius: 20px !important;
-    }
+    .matchday-header { border-radius: 20px !important; }
     .live-score-display {
       background: linear-gradient(135deg, var(--brown-dark) 0%, var(--clay) 100%) !important;
       border-radius: 20px !important;
+      position: relative; overflow: hidden;
     }
     
-    /* === CARDS - Premium hover everywhere === */
-    .player-card, .team-card, .match-item, .card, .quick-match {
-      transition: all 0.3s cubic-bezier(0.16,1,0.3,1) !important;
-      border-radius: 18px !important;
+    /* === CARDS - Premium glass hover === */
+    .player-card, .team-card, .match-item {
+      transition: all 0.4s cubic-bezier(0.16,1,0.3,1) !important;
+      border-radius: 20px !important;
     }
     .player-card:hover, .team-card:hover, .card:hover {
       transform: translateY(-4px) !important;
-      box-shadow: 0 12px 32px rgba(224,120,80,0.12) !important;
+      box-shadow: 0 16px 40px rgba(224,120,80,0.1) !important;
     }
     
-    /* === ONGOING MATCH - Clay border like prototype === */
+    /* === ONGOING MATCH === */
     .ongoing-match {
       border: 2px solid var(--clay) !important;
       border-radius: 20px !important;
       transition: all 0.3s cubic-bezier(0.16,1,0.3,1) !important;
+      background: rgba(255,255,255,0.72) !important;
+      backdrop-filter: blur(20px) !important;
     }
     .ongoing-match:hover {
       transform: translateY(-3px) !important;
@@ -2184,13 +2254,13 @@
       font-size: 22px !important; color: var(--clay) !important; letter-spacing: 4px !important;
     }
     
-    /* === SCORE DISPLAYS - DirtyWeather font === */
+    /* === SCORE DISPLAYS === */
     .quick-match-score {
       font-family: 'DirtyWeather', sans-serif !important;
       font-size: 16px !important; letter-spacing: 2px !important;
     }
     
-    /* === BUTTONS - Premium styling === */
+    /* === BUTTONS === */
     .btn-primary, .btn[style*="background: var(--clay)"], .btn[style*="background:var(--clay)"] {
       border-radius: 14px !important;
       font-family: 'Sublime', sans-serif !important;
@@ -2199,46 +2269,66 @@
     
     /* === TREND BADGES === */
     .stat-trend { 
-      font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 8px; 
+      font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 7px; 
       display: inline-block;
     }
     .stat-trend.up { color: #059669; background: rgba(5,150,105,0.08); }
     .stat-trend.down { color: #E11D48; background: rgba(225,29,72,0.06); }
     
-    /* === OVERALL SPACING AND CONTAINERS === */
-    .stats-grid { gap: 16px !important; }
+    /* === STATUS PILLS (glassmorphism) === */
+    .matchday-header .matchday-status {
+      font-family: 'Sublime', sans-serif !important;
+    }
     
-    /* === SCROLLBAR STYLING === */
-    ::-webkit-scrollbar { width: 6px; }
+    /* === MODALS — enhanced glass === */
+    .modal {
+      background: rgba(255,255,255,0.92) !important;
+      backdrop-filter: blur(40px) !important;
+      -webkit-backdrop-filter: blur(40px) !important;
+      border: 1px solid rgba(245,239,235,0.5) !important;
+      border-radius: 24px !important;
+    }
+    
+    /* === SCROLLBAR === */
+    ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--cream-dark, #EDE5D8); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: #EDE5D8; border-radius: 2px; }
     
-    /* === LOADING SPLASH - Use Sublime === */
+    /* === LOADING SPLASH === */
     .loading-splash-text { font-family: 'Sublime', sans-serif !important; }
     
-    /* === MOBILE: Ensure horizontal nav still works === */
+    /* === MOBILE FALLBACK === */
     @media (max-width: 1023px) {
       .sidebar-logo { display: none !important; }
       .sidebar-user { display: none !important; }
+      body::before, body::after { display: none; }
       .nav { 
         position: static !important; width: auto !important;
         flex-direction: row !important; border-right: none !important;
         background: transparent !important; height: auto !important;
         overflow-x: auto !important; padding: 8px 0 !important;
+        backdrop-filter: none !important;
       }
       .nav button { 
         padding: 10px 18px !important; border-radius: 10px !important; 
         width: auto !important; white-space: nowrap !important;
+        margin: 0 !important;
       }
+      .nav button.active::before { display: none; }
       .nav button.active::after {
         left: 50% !important; bottom: 0 !important; top: auto !important;
         transform: translateX(-50%) !important;
         width: 20px !important; height: 3px !important;
-        border-radius: 3px !important;
+        border-radius: 3px !important; filter: none !important;
       }
       .header { display: flex !important; }
       .app { padding-left: 0 !important; }
       .tab { padding: 0 !important; }
+      .card, .stat-card, .match-card, .player-card, .team-card {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: white !important;
+      }
     }
 
   </style>
