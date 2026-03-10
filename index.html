@@ -4207,9 +4207,11 @@
         <button class="modal-close" onclick="closeModal('mdSummary')"><i class="fas fa-times"></i></button>
       </div>
       <div id="mdSummaryContent"></div>
-      <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-        <button class="btn btn-primary" onclick="shareSummaryWhatsApp()" style="flex:1;border-radius:14px"><i class="fab fa-whatsapp"></i> Share to WhatsApp</button>
-        <button class="btn btn-secondary" onclick="closeModal('mdSummary')" style="flex:1;border-radius:14px">Close</button>
+      <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="shareSummaryWhatsApp()" style="flex:1;min-width:140px;border-radius:14px"><i class="fab fa-whatsapp"></i> Share to Group</button>
+        <button class="btn" onclick="sendRecapToAllPlayers()" style="flex:1;min-width:140px;border-radius:14px;background:var(--gold);color:var(--brown-dark);border:none"><i class="fas fa-paper-plane"></i> Send to All Players</button>
+        <button class="btn btn-secondary" onclick="copyRecapText()" style="flex:1;min-width:100px;border-radius:14px"><i class="fas fa-copy"></i> Copy</button>
+        <button class="btn btn-secondary" onclick="closeModal('mdSummary')" style="flex:1;min-width:100px;border-radius:14px">Close</button>
       </div>
     </div>
   </div>
@@ -6219,6 +6221,100 @@
       msg += `\n🔗 padel-villains.vercel.app`;
       
       window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+    
+    function getRecapText() {
+      const date = activeMatchday?.date;
+      if (!date) return '';
+      const md = activeMatchday;
+      const dayMatches = matches.filter(m => m.date === date).sort((a, b) => new Date(a.started_at||a.created_at||'') - new Date(b.started_at||b.created_at||''));
+      const dayRankings = rankTeamsByMatches(date);
+      const dateStr = new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      
+      let msg = `🎾 PADEL VILLAINS RECAP\n`;
+      msg += `📅 ${dateStr}${md?.venue ? ' @ ' + md.venue : ''}\n`;
+      msg += `🏟️ ${dayMatches.length} matches played\n\n`;
+      if (dayRankings.length > 0) {
+        const v = dayRankings[0]; const { p1, p2 } = getTeamPlayers(v);
+        msg += `👑 Today's Villains: ${v.name}\n   ${p1?.name||'?'} & ${p2?.name||'?'} (${v.wins}W-${v.losses}L)\n\n`;
+      }
+      msg += `🏆 Standings:\n`;
+      dayRankings.forEach((t, i) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+        msg += `${medal} ${t.name} (${t.wins}W-${t.losses}L)\n`;
+      });
+      msg += `\n📋 Results:\n`;
+      dayMatches.forEach(m => {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+        const w1 = m.winner_id === t1?.id;
+        const score = (m.scores||[]).map(s => `${s[0]}-${s[1]}`).join(', ');
+        const time = m.finalized_at ? new Date(m.finalized_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
+        msg += `${time ? time + ' ' : ''}${w1 ? t1?.name : t1?.name} ${score} ${t2?.name}\n`;
+      });
+      msg += `\n🔗 padel-villains.vercel.app`;
+      return msg;
+    }
+    
+    function sendRecapToAllPlayers() {
+      const date = activeMatchday?.date;
+      if (!date) return;
+      
+      const dayMatches = matches.filter(m => m.date === date);
+      if (dayMatches.length === 0) { toast('No matches to share', 'error'); return; }
+      
+      // Get all players who played today
+      const playedPlayerIds = new Set();
+      dayMatches.forEach(m => {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+        if (t1) { playedPlayerIds.add(t1.player1_id); playedPlayerIds.add(t1.player2_id); }
+        if (t2) { playedPlayerIds.add(t2.player1_id); playedPlayerIds.add(t2.player2_id); }
+      });
+      
+      const playersWithPhone = [...playedPlayerIds]
+        .map(id => getPlayer(id))
+        .filter(p => p && p.phone);
+      
+      if (playersWithPhone.length === 0) {
+        toast('No players have phone numbers saved. Copying text instead...', 'info');
+        copyRecapText();
+        return;
+      }
+      
+      const msg = getRecapText();
+      const encoded = encodeURIComponent(msg);
+      
+      // Open confirmation with player list
+      let sent = 0;
+      const total = playersWithPhone.length;
+      
+      if (!confirm(`Send recap to ${total} player${total > 1 ? 's' : ''} via WhatsApp?\n\n${playersWithPhone.map(p => p.name).join(', ')}\n\nThis will open WhatsApp for each player.`)) return;
+      
+      // Open WhatsApp for each player with a small delay
+      playersWithPhone.forEach((p, i) => {
+        setTimeout(() => {
+          const phone = p.phone.replace(/[^0-9]/g, '');
+          window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank');
+          sent++;
+          if (sent === total) toast(`Opened WhatsApp for ${total} player${total > 1 ? 's' : ''}`, 'success');
+        }, i * 800); // 800ms delay between each to avoid browser blocking
+      });
+    }
+    
+    function copyRecapText() {
+      const text = getRecapText();
+      if (!text) { toast('No recap to copy', 'error'); return; }
+      navigator.clipboard.writeText(text).then(() => {
+        toast('Recap copied to clipboard!', 'success');
+      }).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('Recap copied to clipboard!', 'success');
+      });
     }
     
     function shareQueuedMatchesWhatsApp() {
@@ -10208,39 +10304,7 @@
       openModal('matchdaySummary');
     }
     
-    function shareSummaryWhatsApp() {
-      const md = window.currentSummaryMatchday;
-      if (!md) return;
-      
-      const dayMatches = matches.filter(m => m.date === md.date);
-      const rankings = getDayRankings(md.date);
-      const winner = rankings[0] ? getTeam(rankings[0].id)?.name : 'TBD';
-      
-      const text = encodeURIComponent(`🎾 PADEL VILLAINS\n📅 ${md.date}\n📍 ${md.venue}\n\n🏆 Day Winner: ${winner}\n📊 ${dayMatches.length} Matches\n\npadel-villains.vercel.app`);
-      window.open(`https://wa.me/?text=${text}`, '_blank');
-    }
-    
-    function shareSummaryTwitter() {
-      const md = window.currentSummaryMatchday;
-      if (!md) return;
-      const rankings = getDayRankings(md.date);
-      const winner = rankings[0] ? getTeam(rankings[0].id)?.name : 'TBD';
-      
-      const text = encodeURIComponent(`🎾 Padel match day complete! 🏆 ${winner} takes the crown! #PadelVillains`);
-      window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
-    }
-    
-    function copySummaryText() {
-      const md = window.currentSummaryMatchday;
-      if (!md) return;
-      
-      const dayMatches = matches.filter(m => m.date === md.date);
-      const rankings = getDayRankings(md.date);
-      const winner = rankings[0] ? getTeam(rankings[0].id)?.name : 'TBD';
-      
-      navigator.clipboard.writeText(`🎾 PADEL VILLAINS\n📅 ${md.date}\n🏆 Winner: ${winner}\n📊 ${dayMatches.length} Matches`);
-      toast('Copied!', 'success');
-    }
+    // Legacy share functions removed - using showMatchDaySummary system instead
     
     function downloadSummaryImage() {
       toast('Screenshot the card to save!', 'info');
