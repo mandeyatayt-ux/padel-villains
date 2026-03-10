@@ -3792,6 +3792,7 @@
         <span class="photo-upload-text">Click to upload photo</span>
       </div>
       <div class="form-group"><label class="form-label">Player Name</label><input type="text" class="form-input" id="playerName" placeholder="Enter player name"></div>
+      <div class="form-group"><label class="form-label">Phone (WhatsApp)</label><input type="tel" class="form-input" id="playerPhone" placeholder="e.g. +263771234567"></div>
       <div class="form-group"><label class="form-label">Nickname (optional)</label><input type="text" class="form-input" id="playerNickname" placeholder='e.g., "The Wall"'></div>
       <div class="form-group">
         <label class="form-label">Playing Position</label>
@@ -3832,6 +3833,7 @@
               <div class="profile-name" id="profileName">Player Name</div>
               <div class="profile-nickname" id="profileNickname"></div>
               <div class="profile-bio" id="profileBio"></div>
+              <div id="profilePhone" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px;display:none"><i class="fab fa-whatsapp" style="margin-right:4px"></i><span id="profilePhoneText"></span></div>
               <div class="profile-stats-row">
                 <div class="profile-stat"><div class="profile-stat-value" id="profileWins">0</div><div class="profile-stat-label">Wins</div></div>
                 <div class="profile-stat"><div class="profile-stat-value" id="profileLosses">0</div><div class="profile-stat-label">Losses</div></div>
@@ -3880,6 +3882,7 @@
           </div>
         </div>
         <div class="form-group"><label class="form-label">Bio</label><textarea class="form-input" id="editPlayerBio" placeholder="Short bio..." style="min-height:60px;resize:vertical"></textarea></div>
+        <div class="form-group"><label class="form-label">Phone (WhatsApp)</label><input type="tel" class="form-input" id="editPlayerPhone" placeholder="e.g. +263771234567"></div>
         <div class="toggle-group">
           <span class="toggle-label">Active Status</span>
           <label class="toggle"><input type="checkbox" id="editPlayerActive" checked><span class="toggle-slider"></span></label>
@@ -8673,6 +8676,7 @@
       
       document.getElementById('editPlayerId').value = id;
       document.getElementById('editPlayerName').value = p.name;
+      document.getElementById('editPlayerPhone').value = p.phone || '';
       document.getElementById('editPlayerActive').checked = p.active !== false;
       const preview = document.getElementById('editPlayerPhotoPreview');
       const editPhoto = p.photo || photoCache[p.id];
@@ -8691,6 +8695,7 @@
       if (!name) { toast('Enter a name', 'error'); return; }
       
       const nickname = document.getElementById('playerNickname')?.value?.trim() || '';
+      const phone = document.getElementById('playerPhone')?.value?.trim() || '';
       const bio = document.getElementById('playerBio')?.value?.trim() || '';
       const positionEl = document.querySelector('#addPlayerPosition .position-option.selected');
       const position = positionEl?.dataset?.position || 'Hybrid';
@@ -8702,6 +8707,7 @@
         id: Date.now(),
         name, 
         nickname,
+        phone,
         bio,
         position,
         photo, 
@@ -8752,6 +8758,7 @@
       const active = document.getElementById('editPlayerActive').checked;
       const nickname = document.getElementById('editPlayerNickname')?.value?.trim() || '';
       const bio = document.getElementById('editPlayerBio')?.value?.trim() || '';
+      const phone = document.getElementById('editPlayerPhone')?.value?.trim() || '';
       const positionEl = document.querySelector('#editPlayerPositionSelector .position-option.selected');
       const position = positionEl?.dataset?.position || 'Hybrid';
       
@@ -8765,6 +8772,7 @@
       players[idx].active = active;
       players[idx].nickname = nickname;
       players[idx].bio = bio;
+      players[idx].phone = phone;
       players[idx].position = position;
       if (tempPhotoData.editPlayer !== undefined) {
         players[idx].photo = tempPhotoData.editPlayer;
@@ -8784,6 +8792,7 @@
             active,
             nickname,
             bio,
+            phone,
             position,
             photo: players[idx].photo,
             updated_at: new Date().toISOString()
@@ -10021,6 +10030,10 @@
       document.getElementById('profileNickname').textContent = p.nickname ? `"${p.nickname}"` : '';
       document.getElementById('profileBio').textContent = p.bio || '';
       document.getElementById('profilePosition').textContent = p.position || 'Hybrid';
+      const phoneDisplay = document.getElementById('profilePhone');
+      const phoneText = document.getElementById('profilePhoneText');
+      if (p.phone) { phoneDisplay.style.display = ''; phoneText.textContent = p.phone; }
+      else { phoneDisplay.style.display = 'none'; }
       document.getElementById('profileAvatar').innerHTML = (p.photo || photoCache[p.id]) ? `<img src="${p.photo || photoCache[p.id]}" class="loaded">` : p.name.charAt(0);
       
       // Calculate stats
@@ -10094,6 +10107,7 @@
       document.getElementById('editPlayerName').value = p.name;
       document.getElementById('editPlayerNickname').value = p.nickname || '';
       document.getElementById('editPlayerBio').value = p.bio || '';
+      document.getElementById('editPlayerPhone').value = p.phone || '';
       document.getElementById('editPlayerActive').checked = p.active !== false;
       
       // Position
