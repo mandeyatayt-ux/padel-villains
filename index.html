@@ -2360,6 +2360,7 @@
         </div>
         <div class="matchday-actions">
           <button class="btn btn-sm btn-secondary" onclick="openMatchdaySelectModal()"><i class="fas fa-history"></i> View History</button>
+          <button class="btn btn-sm btn-secondary" onclick="showMatchDaySummary()" id="viewRecapBtn" style="display:none"><i class="fas fa-trophy"></i> View Recap</button>
           <button class="btn btn-sm btn-secondary" onclick="openModal('createMatchday')" id="createMatchdayBtn"><i class="fas fa-plus"></i> Create Match Day</button>
           <button class="btn btn-sm btn-secondary hidden admin-only" onclick="editActiveMatchday()" id="editMatchdayBtn"><i class="fas fa-edit"></i> Edit</button>
           <button class="btn btn-sm btn-warning hidden admin-only" onclick="cancelMatchday()" id="cancelMatchdayBtn" style="background:var(--gold);color:white"><i class="fas fa-times"></i> Cancel Match Day</button>
@@ -4198,6 +4199,21 @@
     </div>
   </div>
 
+  <!-- Match Day Summary Modal -->
+  <div class="modal-overlay" id="mdSummaryModal">
+    <div class="modal" style="max-width:600px;max-height:90vh;overflow-y:auto">
+      <div class="modal-header">
+        <h3 class="modal-title" style="font-family:'Sublime',sans-serif;letter-spacing:3px">MATCH DAY RECAP</h3>
+        <button class="modal-close" onclick="closeModal('mdSummary')"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="mdSummaryContent"></div>
+      <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <button class="btn btn-primary" onclick="shareSummaryWhatsApp()" style="flex:1;border-radius:14px"><i class="fab fa-whatsapp"></i> Share to WhatsApp</button>
+        <button class="btn btn-secondary" onclick="closeModal('mdSummary')" style="flex:1;border-radius:14px">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Create Account Modal -->
   <div class="modal-overlay" id="createAccountModal">
     <div class="modal" style="max-width:450px">
@@ -5240,6 +5256,10 @@
             closeBtn.classList.remove('hidden');
           }
           
+          // Show recap button if any matches have been played
+          const recapBtn = document.getElementById('viewRecapBtn');
+          if (recapBtn) recapBtn.style.display = hasMatches ? '' : 'none';
+          
           queueBtn.disabled = false;
         } else if (todayEvents.length > 0) {
           // Show today's non-matchday events (vibes/training)
@@ -6030,6 +6050,175 @@
     
     function sendDaySummaryWhatsApp() {
       if (!activeMatchday) return;
+      shareSummaryWhatsApp();
+    }
+    
+    function showMatchDaySummary(targetDate) {
+      const date = targetDate || activeMatchday?.date;
+      if (!date) { toast('No match day to show', 'error'); return; }
+      
+      const md = matchdays.find(m => m.date === date) || activeMatchday;
+      const dayMatches = matches.filter(m => m.date === date).sort((a, b) => {
+        const tA = a.started_at || a.created_at || '';
+        const tB = b.started_at || b.created_at || '';
+        return new Date(tA) - new Date(tB);
+      });
+      const dayRankings = rankTeamsByMatches(date);
+      const playerRankings = rankPlayersByMatches(date);
+      
+      if (dayMatches.length === 0) { toast('No matches played yet', 'error'); return; }
+      
+      const dateStr = new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      const venue = md?.venue || '';
+      const villain = dayRankings.length > 0 ? dayRankings[0] : null;
+      const villainPlayers = villain ? getTeamPlayers(villain) : {};
+      
+      let html = '';
+      
+      // Hero banner
+      html += `<div style="background:linear-gradient(135deg,var(--brown-dark) 0%,#5D4E37 40%,var(--clay) 100%);color:white;padding:24px;border-radius:18px;text-align:center;margin-bottom:20px">
+        <div style="font-size:12px;letter-spacing:3px;opacity:0.8">📅 ${dateStr}</div>
+        <div style="font-size:11px;opacity:0.7;margin-top:2px">${venue ? '📍 ' + venue : ''}</div>
+        <div style="font-family:'Sublime',sans-serif;font-size:38px;letter-spacing:3px;margin:12px 0">${dayMatches.length}</div>
+        <div style="font-size:13px;opacity:0.9">MATCHES PLAYED</div>
+      </div>`;
+      
+      // Today's Villains
+      if (villain) {
+        html += `<div style="text-align:center;margin-bottom:20px;padding:20px;background:linear-gradient(135deg,rgba(212,168,83,0.08),rgba(212,168,83,0.02));border-radius:16px;border:1px solid rgba(212,168,83,0.15)">
+          <div style="font-size:32px">👑</div>
+          <div style="font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:700;margin:4px 0">TODAY'S VILLAINS</div>
+          <div style="font-family:'Sublime',sans-serif;font-size:26px;color:var(--brown-dark);letter-spacing:2px">${villain.name}</div>
+          <div style="display:flex;gap:6px;justify-content:center;margin:8px 0">${av(villainPlayers.p1,'sm')}${av(villainPlayers.p2,'sm')}</div>
+          <div style="font-size:13px;color:var(--text-muted)">${villainPlayers.p1?.name||'?'} & ${villainPlayers.p2?.name||'?'}</div>
+          <div style="font-family:'DirtyWeather',sans-serif;font-size:22px;color:var(--clay);margin-top:6px">${villain.wins}W - ${villain.losses}L</div>
+        </div>`;
+      }
+      
+      // Team standings
+      if (dayRankings.length > 1) {
+        html += `<div style="margin-bottom:20px">
+          <div style="font-size:12px;font-weight:700;letter-spacing:2px;color:var(--text-muted);margin-bottom:10px">🏆 TEAM STANDINGS</div>`;
+        dayRankings.forEach((t, i) => {
+          const { p1, p2 } = getTeamPlayers(t);
+          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+          const winRate = t.wins + t.losses > 0 ? Math.round(t.wins / (t.wins + t.losses) * 100) : 0;
+          html += `<div style="display:flex;align-items:center;gap:10px;padding:10px;${i < dayRankings.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+            <span style="font-family:'Sublime',sans-serif;font-size:18px;width:32px;text-align:center">${medal}</span>
+            <div style="display:flex;gap:2px">${av(p1,'xs')}${av(p2,'xs')}</div>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:14px">${t.name}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:'DirtyWeather',sans-serif;font-size:18px;color:var(--brown-dark)">${t.wins}W ${t.losses}L</div>
+              <div style="font-size:11px;color:var(--text-muted)">${winRate}%</div>
+            </div>
+          </div>`;
+        });
+        html += `</div>`;
+      }
+      
+      // All match results
+      html += `<div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;letter-spacing:2px;color:var(--text-muted);margin-bottom:10px">📋 ALL RESULTS</div>`;
+      
+      dayMatches.forEach((m, i) => {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+        const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
+        const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
+        const w1 = m.winner_id === t1?.id;
+        const score = (m.scores || []).map(s => `${s[0]}-${s[1]}`).join(', ');
+        const time = m.finalized_at ? new Date(m.finalized_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : 
+                     m.started_at ? new Date(m.started_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
+        const mode = m.game_mode === 'kotc' ? '👑' : m.game_mode === 'randomiser' ? '🎲' : '';
+        
+        html += `<div style="display:flex;align-items:center;gap:8px;padding:12px 10px;${i < dayMatches.length - 1 ? 'border-bottom:1px solid var(--border)' : ''};border-radius:8px">
+          <span style="font-size:11px;color:var(--text-muted);width:40px;text-align:center;flex-shrink:0">${time}</span>
+          <div style="flex:1;display:flex;align-items:center;gap:6px">
+            <div style="display:flex;gap:1px">${av(t1p1,'xs')}${av(t1p2,'xs')}</div>
+            <span style="font-weight:${w1 ? '700' : '400'};font-size:13px;${w1 ? 'color:var(--brown-dark)' : 'color:var(--text-muted)'}">${t1?.name || '?'}</span>
+          </div>
+          <div style="text-align:center;min-width:50px">
+            <div style="font-family:'DirtyWeather',sans-serif;font-size:18px;color:var(--clay)">${score}</div>
+            ${mode ? `<div style="font-size:10px">${mode}</div>` : ''}
+          </div>
+          <div style="flex:1;display:flex;align-items:center;gap:6px;justify-content:flex-end">
+            <span style="font-weight:${!w1 ? '700' : '400'};font-size:13px;${!w1 ? 'color:var(--brown-dark)' : 'color:var(--text-muted)'}">${t2?.name || '?'}</span>
+            <div style="display:flex;gap:1px">${av(t2p1,'xs')}${av(t2p2,'xs')}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+      
+      // Top players
+      if (playerRankings.length > 0) {
+        const topPlayers = playerRankings.slice(0, 5);
+        html += `<div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:2px;color:var(--text-muted);margin-bottom:10px">⭐ TOP PLAYERS</div>`;
+        topPlayers.forEach((p, i) => {
+          const player = getPlayer(p.id);
+          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+          html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${i < topPlayers.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+            <span style="font-family:'Sublime',sans-serif;font-size:16px;width:28px;text-align:center">${medal}</span>
+            ${av(player, 'sm')}
+            <div style="flex:1"><span style="font-weight:600;font-size:13px">${player?.name || '?'}</span></div>
+            <span style="font-size:12px;color:var(--text-muted)">${p.wins}W ${p.losses}L</span>
+            <span style="font-size:12px;color:var(--clay);font-weight:600">${p.wins + p.losses > 0 ? Math.round(p.wins / (p.wins + p.losses) * 100) : 0}%</span>
+          </div>`;
+        });
+        html += `</div>`;
+      }
+      
+      document.getElementById('mdSummaryContent').innerHTML = html;
+      openModal('mdSummary');
+    }
+    
+    function shareSummaryWhatsApp() {
+      const date = activeMatchday?.date;
+      if (!date) return;
+      
+      const md = activeMatchday;
+      const dayMatches = matches.filter(m => m.date === date).sort((a, b) => {
+        const tA = a.started_at || a.created_at || '';
+        const tB = b.started_at || b.created_at || '';
+        return new Date(tA) - new Date(tB);
+      });
+      const dayRankings = rankTeamsByMatches(date);
+      const dateStr = new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      
+      let msg = `🎾 *PADEL VILLAINS RECAP*\n`;
+      msg += `📅 ${dateStr}${md?.venue ? ' @ ' + md.venue : ''}\n`;
+      msg += `🏟️ ${dayMatches.length} matches played\n\n`;
+      
+      // Villain
+      if (dayRankings.length > 0) {
+        const v = dayRankings[0];
+        const { p1, p2 } = getTeamPlayers(v);
+        msg += `👑 *Today's Villains: ${v.name}*\n`;
+        msg += `   ${p1?.name||'?'} & ${p2?.name||'?'} (${v.wins}W-${v.losses}L)\n\n`;
+      }
+      
+      // Standings
+      msg += `🏆 *Standings:*\n`;
+      dayRankings.forEach((t, i) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+        msg += `${medal} ${t.name} (${t.wins}W-${t.losses}L)\n`;
+      });
+      
+      // Results
+      msg += `\n📋 *Results:*\n`;
+      dayMatches.forEach(m => {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+        const w1 = m.winner_id === t1?.id;
+        const score = (m.scores||[]).map(s => `${s[0]}-${s[1]}`).join(', ');
+        const time = m.finalized_at ? new Date(m.finalized_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
+        msg += `${time ? time + ' ' : ''}${w1 ? '*'+t1?.name+'*' : t1?.name} ${score} ${!w1 ? '*'+t2?.name+'*' : t2?.name}\n`;
+      });
+      
+      msg += `\n🔗 padel-villains.vercel.app`;
+      
+      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     }
     
     function shareQueuedMatchesWhatsApp() {
@@ -6156,8 +6345,13 @@
         return;
       }
       
-      // Confirm before closing
+      // Show summary first so admin can see the recap
       const tm = todayMatches();
+      if (tm.length > 0) {
+        showMatchDaySummary(activeMatchday.date);
+      }
+      
+      // Confirm before closing
       const dayRankings = rankTeamsByMatches(activeMatchday.date);
       
       document.getElementById('confirmTitle').textContent = 'Close Match Day';
