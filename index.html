@@ -2369,9 +2369,12 @@
       </div>
       
       <!-- Viewing Past Match Day Banner -->
-      <div class="card past-matchday-banner hidden" id="pastMatchdayBanner" style="background:var(--gold);color:white;margin-bottom:24px;padding:16px 24px;display:flex;justify-content:space-between;align-items:center">
+      <div class="card past-matchday-banner hidden" id="pastMatchdayBanner" style="background:var(--gold);color:white;margin-bottom:24px;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <div><i class="fas fa-clock-rotate-left"></i> <strong>Viewing Past Match Day:</strong> <span id="pastMatchdayDate"></span></div>
-        <button class="btn btn-sm" onclick="returnToCurrentMatchday()" style="background:white;color:var(--gold)"><i class="fas fa-arrow-left"></i> Back to Current</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" onclick="showMatchDaySummary(viewingMatchday?.date)" style="background:white;color:var(--gold)"><i class="fas fa-trophy"></i> View Recap</button>
+          <button class="btn btn-sm" onclick="returnToCurrentMatchday()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3)"><i class="fas fa-arrow-left"></i> Back to Current</button>
+        </div>
       </div>
       
       <!-- Upcoming Match Days -->
@@ -6058,9 +6061,12 @@
       shareSummaryWhatsApp();
     }
     
+    let currentRecapDate = null; // Track which date the recap is showing
+    
     function showMatchDaySummary(targetDate) {
       const date = targetDate || activeMatchday?.date;
       if (!date) { toast('No match day to show', 'error'); return; }
+      currentRecapDate = date;
       
       const md = matchdays.find(m => m.date === date) || activeMatchday;
       const dayMatches = matches.filter(m => m.date === date).sort((a, b) => {
@@ -6180,10 +6186,10 @@
     }
     
     function shareSummaryWhatsApp() {
-      const date = activeMatchday?.date;
+      const date = currentRecapDate || activeMatchday?.date;
       if (!date) return;
       
-      const md = activeMatchday;
+      const md = matchdays.find(m => m.date === date) || activeMatchday;
       const dayMatches = matches.filter(m => m.date === date).sort((a, b) => {
         const tA = a.started_at || a.created_at || '';
         const tB = b.started_at || b.created_at || '';
@@ -6227,9 +6233,9 @@
     }
     
     function getRecapText() {
-      const date = activeMatchday?.date;
+      const date = currentRecapDate || activeMatchday?.date;
       if (!date) return '';
-      const md = activeMatchday;
+      const md = matchdays.find(m => m.date === date) || activeMatchday;
       const dayMatches = matches.filter(m => m.date === date).sort((a, b) => new Date(a.started_at||a.created_at||'') - new Date(b.started_at||b.created_at||''));
       const dayRankings = rankTeamsByMatches(date);
       const dateStr = new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -6259,7 +6265,7 @@
     }
     
     function sendRecapToAllPlayers() {
-      const date = activeMatchday?.date;
+      const date = currentRecapDate || activeMatchday?.date;
       if (!date) return;
       
       const dayMatches = matches.filter(m => m.date === date);
