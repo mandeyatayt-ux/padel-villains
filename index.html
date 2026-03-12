@@ -6948,6 +6948,333 @@
       }
     }
     
+    // ===== CALENDAR EVENT SHARE IMAGE (Training / Vibes / Match Day) =====
+    function generateCalendarEventCanvas(event) {
+      if (!event) return null;
+      
+      const W = 1080, H = 1920;
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      
+      // Theme per event type
+      const themes = {
+        training: {
+          bg1: '#0A1A12', bg2: '#122A1C', bg3: '#1A3D28', bg4: '#1A4A2E',
+          accent: '#22c55e', accentLight: '#4ade80', accentGlow: 'rgba(34,197,94,0.25)',
+          orbColor: 'rgba(34,197,94,0.08)', orb2Color: 'rgba(74,222,128,0.05)',
+          emoji: '💪', label: 'TRAINING SESSION',
+          tagline: 'TIME TO LEVEL UP', cta: '🔥  GET ON COURT',
+        },
+        vibes: {
+          bg1: '#120A1A', bg2: '#1E1230', bg3: '#2D1A48', bg4: '#3A1E5A',
+          accent: '#A855F7', accentLight: '#C084FC', accentGlow: 'rgba(168,85,247,0.25)',
+          orbColor: 'rgba(168,85,247,0.08)', orb2Color: 'rgba(192,132,252,0.05)',
+          emoji: '🎉', label: 'VIBES SESSION',
+          tagline: 'GOOD VIBES ONLY', cta: '🎶  PULL UP',
+        },
+        matchday: {
+          bg1: '#1A120A', bg2: '#2D1F14', bg3: '#3D2E1A', bg4: '#4A2A18',
+          accent: '#E07850', accentLight: '#F0A080', accentGlow: 'rgba(224,120,80,0.25)',
+          orbColor: 'rgba(224,120,80,0.08)', orb2Color: 'rgba(212,168,83,0.05)',
+          emoji: '🎾', label: 'MATCH DAY',
+          tagline: 'GAME TIME', cta: '⚔️  SEE YOU THERE',
+        }
+      };
+      const t = themes[event.type] || themes.matchday;
+      
+      // === BACKGROUND ===
+      const bgGrad = ctx.createLinearGradient(0, 0, W * 0.3, H);
+      bgGrad.addColorStop(0, t.bg1);
+      bgGrad.addColorStop(0.3, t.bg2);
+      bgGrad.addColorStop(0.6, t.bg3);
+      bgGrad.addColorStop(1, t.bg4);
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+      
+      // === DECORATIVE: Large orb (top-right) ===
+      const orbG = ctx.createRadialGradient(W * 0.82, H * 0.15, 0, W * 0.82, H * 0.15, 500);
+      orbG.addColorStop(0, t.accentGlow);
+      orbG.addColorStop(0.5, t.orbColor);
+      orbG.addColorStop(1, 'transparent');
+      ctx.fillStyle = orbG;
+      ctx.fillRect(0, 0, W, H);
+      
+      // === DECORATIVE: Bottom-left orb ===
+      const orbG2 = ctx.createRadialGradient(W * 0.15, H * 0.78, 0, W * 0.15, H * 0.78, 400);
+      orbG2.addColorStop(0, t.orb2Color);
+      orbG2.addColorStop(1, 'transparent');
+      ctx.fillStyle = orbG2;
+      ctx.fillRect(0, 0, W, H);
+      
+      // === DECORATIVE: Diagonal lines ===
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.012)';
+      ctx.lineWidth = 1;
+      for (let i = -H; i < W + H; i += 55) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke();
+      }
+      ctx.restore();
+      
+      // === DECORATIVE: Circle rings ===
+      ctx.strokeStyle = t.accent + '10';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(W * 0.5, H * 0.38, 340, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = t.accent + '08';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(W * 0.5, H * 0.38, 400, 0, Math.PI * 2); ctx.stroke();
+      
+      // === DECORATIVE: Corner accent arc ===
+      ctx.strokeStyle = t.accent + '12';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(0, 0, 200, 0, Math.PI * 0.5); ctx.stroke();
+      ctx.beginPath(); ctx.arc(W, H, 250, Math.PI, Math.PI * 1.5); ctx.stroke();
+      
+      let y = 100;
+      
+      // === PV LOGO ===
+      const logoCx = W / 2, logoCy = y + 40;
+      const logoG = ctx.createLinearGradient(logoCx - 36, logoCy - 36, logoCx + 36, logoCy + 36);
+      logoG.addColorStop(0, t.accent);
+      logoG.addColorStop(1, t.accentLight);
+      ctx.shadowColor = t.accentGlow;
+      ctx.shadowBlur = 30;
+      ctx.fillStyle = logoG;
+      roundRect(ctx, logoCx - 36, logoCy - 36, 72, 72, 20);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      ctx.fillStyle = 'white';
+      ctx.font = '900 30px "DM Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('PV', logoCx, logoCy + 11);
+      
+      y += 110;
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = '700 16px "DM Sans", sans-serif';
+      ctx.fillText('P A D E L   V I L L A I N S', W / 2, y);
+      y += 14;
+      ctx.fillStyle = t.accent + 'AA';
+      ctx.font = '600 11px "DM Sans", sans-serif';
+      ctx.fillText('H A R A R E   C I R C U I T', W / 2, y);
+      
+      // === DIVIDER ===
+      y += 50;
+      const dG = ctx.createLinearGradient(W * 0.2, 0, W * 0.8, 0);
+      dG.addColorStop(0, 'transparent');
+      dG.addColorStop(0.5, t.accent + '55');
+      dG.addColorStop(1, 'transparent');
+      ctx.strokeStyle = dG;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(W * 0.2, y); ctx.lineTo(W * 0.8, y); ctx.stroke();
+      
+      // === TAGLINE ===
+      y += 70;
+      ctx.fillStyle = t.accent;
+      ctx.font = '800 20px "DM Sans", sans-serif';
+      ctx.fillText(t.tagline, W / 2, y);
+      
+      // === LARGE EMOJI ===
+      y += 80;
+      ctx.font = '120px sans-serif';
+      ctx.fillText(t.emoji, W / 2, y);
+      
+      // === EVENT TITLE ===
+      y += 80;
+      ctx.fillStyle = t.accent + 'CC';
+      ctx.font = '700 18px "DM Sans", sans-serif';
+      ctx.fillText(t.label, W / 2, y);
+      
+      y += 70;
+      const title = (event.title || t.label).toUpperCase();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 64px "DM Sans", sans-serif';
+      // Word wrap for long titles
+      const words = title.split(' ');
+      let lines = [];
+      let currentLine = '';
+      words.forEach(w => {
+        const test = currentLine ? currentLine + ' ' + w : w;
+        if (ctx.measureText(test).width > W - 160) {
+          lines.push(currentLine);
+          currentLine = w;
+        } else {
+          currentLine = test;
+        }
+      });
+      if (currentLine) lines.push(currentLine);
+      
+      lines.forEach((line, i) => {
+        ctx.fillText(line, W / 2, y + i * 76);
+      });
+      
+      // Glow
+      ctx.save();
+      ctx.globalAlpha = 0.12;
+      ctx.shadowColor = t.accent;
+      ctx.shadowBlur = 60;
+      ctx.fillStyle = t.accent;
+      lines.forEach((line, i) => { ctx.fillText(line, W / 2, y + i * 76); });
+      ctx.restore();
+      
+      y += (lines.length - 1) * 76 + 40;
+      
+      // === DESCRIPTION (if exists) ===
+      if (event.description) {
+        y += 30;
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        const descW = 600, descH = 56;
+        roundRect(ctx, W/2 - descW/2, y - 20, descW, descH, 16);
+        ctx.fill();
+        roundRect(ctx, W/2 - descW/2, y - 20, descW, descH, 16);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.font = '500 18px "DM Sans", sans-serif';
+        const desc = event.description.length > 50 ? event.description.substring(0, 47) + '...' : event.description;
+        ctx.fillText(`"${desc}"`, W / 2, y + 12);
+        y += 50;
+      }
+      
+      // === DATE CARD ===
+      y += 50;
+      const d = new Date(event.date + 'T12:00:00');
+      const dayName = d.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
+      const dayNum = d.getDate();
+      const monthName = d.toLocaleDateString('en-GB', { month: 'long' }).toUpperCase();
+      const year = d.getFullYear();
+      
+      const cardY = y - 30;
+      const cardH = 260;
+      ctx.fillStyle = 'rgba(255,255,255,0.025)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, 120, cardY, W - 240, cardH, 28);
+      ctx.fill();
+      roundRect(ctx, 120, cardY, W - 240, cardH, 28);
+      ctx.stroke();
+      
+      ctx.fillStyle = t.accent;
+      ctx.font = '700 22px "DM Sans", sans-serif';
+      ctx.fillText(dayName, W / 2, y + 10);
+      
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 120px "DM Sans", sans-serif';
+      ctx.fillText(dayNum.toString(), W / 2, y + 130);
+      
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.font = '600 24px "DM Sans", sans-serif';
+      ctx.fillText(`${monthName}  ${year}`, W / 2, y + 170);
+      
+      // === VENUE + TIME ===
+      y = cardY + cardH + 55;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '700 28px "DM Sans", sans-serif';
+      ctx.fillText('📍  ' + (event.venue || 'TBC'), W / 2, y);
+      
+      y += 48;
+      const sT = event.start_time || event.startTime || '18:00';
+      const eT = event.end_time || event.endTime || '20:00';
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.font = '600 24px "DM Sans", sans-serif';
+      ctx.fillText('🕐  ' + sT + '  —  ' + eT, W / 2, y);
+      
+      // === BOTTOM CTA ===
+      y = H - 280;
+      const d2 = ctx.createLinearGradient(W * 0.15, 0, W * 0.85, 0);
+      d2.addColorStop(0, 'transparent');
+      d2.addColorStop(0.5, t.accent + '33');
+      d2.addColorStop(1, 'transparent');
+      ctx.strokeStyle = d2;
+      ctx.beginPath(); ctx.moveTo(W * 0.15, y); ctx.lineTo(W * 0.85, y); ctx.stroke();
+      
+      y += 55;
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.font = '700 18px "DM Sans", sans-serif';
+      ctx.fillText('S E E  Y O U  O N  C O U R T', W / 2, y);
+      
+      y += 50;
+      const bW = 380, bH = 64;
+      const bG = ctx.createLinearGradient(W/2 - bW/2, y, W/2 + bW/2, y);
+      bG.addColorStop(0, t.accent);
+      bG.addColorStop(1, t.accentLight);
+      ctx.shadowColor = t.accentGlow;
+      ctx.shadowBlur = 24;
+      ctx.fillStyle = bG;
+      roundRect(ctx, W/2 - bW/2, y - bH/2, bW, bH, 18);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      ctx.fillStyle = 'white';
+      ctx.font = '800 20px "DM Sans", sans-serif';
+      ctx.fillText(t.cta, W / 2, y + 7);
+      
+      // === FOOTER ===
+      y = H - 80;
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.font = '500 14px "DM Sans", sans-serif';
+      ctx.fillText('padel-villains.vercel.app', W / 2, y);
+      y += 24;
+      ctx.fillStyle = t.accent + '50';
+      ctx.font = '600 11px "DM Sans", sans-serif';
+      ctx.fillText('🎾  PADEL VILLAINS  •  HARARE CIRCUIT', W / 2, y);
+      
+      return canvas;
+    }
+    
+    async function shareCalendarEventImage(event) {
+      if (!event) { toast('No event to share', 'error'); return; }
+      
+      // If it's a matchday type and we have an active matchday, use the premium matchday generator
+      if (event.type === 'matchday') {
+        const md = matchdays.find(m => m.id === event.id || m.date === event.date) || activeMatchday;
+        if (md) {
+          // Temporarily close modal, generate and share
+          const canvas = generateEventShareCanvas(md);
+          if (canvas) {
+            try {
+              const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+              const file = new File([blob], 'padel-villains-event.png', { type: 'image/png' });
+              if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ title: '🎾 Padel Villains Match Day', files: [file] });
+                toast('Shared!', 'success');
+              } else {
+                downloadBlob(blob, 'padel-villains-matchday.png');
+                toast('Image saved — share it via WhatsApp', 'info');
+              }
+            } catch (e) {
+              if (e.name !== 'AbortError') toast('Try saving the image instead', 'info');
+            }
+            return;
+          }
+        }
+      }
+      
+      // For Training and Vibes (and matchday fallback)
+      try {
+        const canvas = generateCalendarEventCanvas(event);
+        if (!canvas) { toast('Could not generate image', 'error'); return; }
+        
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const typeName = event.type === 'vibes' ? 'vibes' : event.type === 'training' ? 'training' : 'event';
+        const file = new File([blob], `padel-villains-${typeName}.png`, { type: 'image/png' });
+        
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          const emoji = event.type === 'vibes' ? '🎉' : event.type === 'training' ? '💪' : '🎾';
+          await navigator.share({ title: `${emoji} Padel Villains ${typeName}`, files: [file] });
+          toast('Shared!', 'success');
+        } else {
+          downloadBlob(blob, `padel-villains-${typeName}.png`);
+          toast('Image saved — share it via WhatsApp', 'info');
+        }
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          console.error(e);
+          toast('Try saving the image instead', 'info');
+        }
+      }
+    }
+    
     
     function shareQueuedMatchesWhatsApp() {
       const today = activeMatchday?.date || new Date().toISOString().split('T')[0];
@@ -11287,8 +11614,12 @@
       // Show edit button only for non-matchday events or upcoming events
       let actionsHtml = '<button class="btn btn-secondary" onclick="closeModal(\'viewEvent\')">Close</button>';
       
+      // Share button for ALL event types
+      const shareBtn = `<button class="btn btn-primary" onclick="shareCalendarEventImage(${JSON.stringify(event).replace(/"/g, '&quot;')})" style="background:${typeColor};border-radius:14px"><i class="fas fa-share-nodes"></i> Share</button>`;
+      
       if (event.type !== 'matchday' && !isPast) {
         actionsHtml = `
+          ${shareBtn}
           <button class="btn btn-secondary" onclick="closeModal('viewEvent');openEditEventFromSummary(${event.id})"><i class="fas fa-edit"></i> Edit</button>
           ${actionsHtml}
         `;
@@ -11297,10 +11628,15 @@
         const md = matchdays.find(m => m.id === event.id || m.date === event.date);
         if (md && !isPast) {
           actionsHtml = `
+            ${shareBtn}
             <button class="btn btn-secondary" onclick="closeModal('viewEvent');editMatchdayFromSummary(${md.id})"><i class="fas fa-edit"></i> Edit</button>
             ${actionsHtml}
           `;
+        } else {
+          actionsHtml = `${shareBtn} ${actionsHtml}`;
         }
+      } else {
+        actionsHtml = `${shareBtn} ${actionsHtml}`;
       }
       
       document.getElementById('viewEventActions').innerHTML = actionsHtml;
