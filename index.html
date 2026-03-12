@@ -2450,6 +2450,7 @@
         </div>
         <div class="matchday-actions">
           <button class="btn btn-sm btn-secondary" onclick="openMatchdaySelectModal()"><i class="fas fa-history"></i> View History</button>
+          <button class="btn btn-sm btn-secondary" onclick="shareEventImage()" id="shareEventBtn" style="display:none;background:var(--clay);color:white"><i class="fas fa-share-nodes"></i> Share Event</button>
           <button class="btn btn-sm btn-secondary" onclick="showMatchDaySummary()" id="viewRecapBtn" style="display:none"><i class="fas fa-trophy"></i> View Recap</button>
           <button class="btn btn-sm btn-secondary" onclick="openModal('createMatchday')" id="createMatchdayBtn"><i class="fas fa-plus"></i> Create Match Day</button>
           <button class="btn btn-sm btn-secondary hidden admin-only" onclick="editActiveMatchday()" id="editMatchdayBtn"><i class="fas fa-edit"></i> Edit</button>
@@ -2462,6 +2463,7 @@
       <div class="card past-matchday-banner hidden" id="pastMatchdayBanner" style="background:var(--gold);color:white;margin-bottom:24px;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <div><i class="fas fa-clock-rotate-left"></i> <strong>Viewing Past Match Day:</strong> <span id="pastMatchdayDate"></span></div>
         <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" onclick="shareEventImage()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3)"><i class="fas fa-share-nodes"></i> Share</button>
           <button class="btn btn-sm" onclick="showMatchDaySummary(viewingMatchday?.date)" style="background:white;color:var(--gold)"><i class="fas fa-trophy"></i> View Recap</button>
           <button class="btn btn-sm" onclick="returnToCurrentMatchday()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3)"><i class="fas fa-arrow-left"></i> Back to Current</button>
         </div>
@@ -5331,6 +5333,10 @@
           const recapBtn = document.getElementById('viewRecapBtn');
           if (recapBtn) recapBtn.style.display = hasMatches ? '' : 'none';
           
+          // Show share event button whenever there's an active matchday
+          const shareEvtBtn = document.getElementById('shareEventBtn');
+          if (shareEvtBtn) shareEvtBtn.style.display = '';
+          
           queueBtn.disabled = false;
         } else if (todayEvents.length > 0) {
           // Show today's non-matchday events (vibes/training)
@@ -6600,6 +6606,346 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+    }
+    
+    // ===== EVENT SHARE IMAGE (1080x1920 for iPhone WhatsApp) =====
+    function generateEventShareCanvas(md) {
+      if (!md) md = activeMatchday;
+      if (!md) return null;
+      
+      const W = 1080, H = 1920;
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      
+      // === BACKGROUND: Rich gradient ===
+      const bgGrad = ctx.createLinearGradient(0, 0, W * 0.3, H);
+      bgGrad.addColorStop(0, '#1A120A');
+      bgGrad.addColorStop(0.3, '#2D1F14');
+      bgGrad.addColorStop(0.6, '#3D2E1A');
+      bgGrad.addColorStop(1, '#4A2A18');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+      
+      // === DECORATIVE: Large gradient orb (top-right) ===
+      const orbGrad = ctx.createRadialGradient(W * 0.85, H * 0.18, 0, W * 0.85, H * 0.18, 500);
+      orbGrad.addColorStop(0, 'rgba(224,120,80,0.25)');
+      orbGrad.addColorStop(0.5, 'rgba(224,120,80,0.08)');
+      orbGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = orbGrad;
+      ctx.fillRect(0, 0, W, H);
+      
+      // === DECORATIVE: Bottom-left orb (gold) ===
+      const orbGrad2 = ctx.createRadialGradient(W * 0.1, H * 0.75, 0, W * 0.1, H * 0.75, 400);
+      orbGrad2.addColorStop(0, 'rgba(212,168,83,0.12)');
+      orbGrad2.addColorStop(1, 'transparent');
+      ctx.fillStyle = orbGrad2;
+      ctx.fillRect(0, 0, W, H);
+      
+      // === DECORATIVE: Subtle diagonal lines pattern ===
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+      ctx.lineWidth = 1;
+      for (let i = -H; i < W + H; i += 60) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i + H, H);
+        ctx.stroke();
+      }
+      ctx.restore();
+      
+      // === DECORATIVE: Large circle ring (behind content) ===
+      ctx.strokeStyle = 'rgba(224,120,80,0.06)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(W * 0.5, H * 0.42, 360, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      ctx.strokeStyle = 'rgba(224,120,80,0.03)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(W * 0.5, H * 0.42, 420, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // === TOP: PV Logo and branding ===
+      let y = 100;
+      
+      // Logo circle
+      const logoCx = W / 2, logoCy = y + 40;
+      const logoGrad = ctx.createLinearGradient(logoCx - 36, logoCy - 36, logoCx + 36, logoCy + 36);
+      logoGrad.addColorStop(0, '#E07850');
+      logoGrad.addColorStop(1, '#C4603A');
+      ctx.fillStyle = logoGrad;
+      roundRect(ctx, logoCx - 36, logoCy - 36, 72, 72, 20);
+      ctx.fill();
+      
+      // Logo shadow
+      ctx.shadowColor = 'rgba(224,120,80,0.4)';
+      ctx.shadowBlur = 30;
+      ctx.fillStyle = logoGrad;
+      roundRect(ctx, logoCx - 36, logoCy - 36, 72, 72, 20);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      // PV text in logo
+      ctx.fillStyle = 'white';
+      ctx.font = '900 30px "DM Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('PV', logoCx, logoCy + 11);
+      
+      y += 110;
+      
+      // Brand name
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '700 16px "DM Sans", sans-serif';
+      ctx.letterSpacing = '6px';
+      ctx.textAlign = 'center';
+      ctx.fillText('P A D E L   V I L L A I N S', W / 2, y);
+      
+      y += 14;
+      ctx.fillStyle = 'rgba(224,120,80,0.5)';
+      ctx.font = '600 11px "DM Sans", sans-serif';
+      ctx.fillText('H A R A R E   C I R C U I T', W / 2, y);
+      
+      // === DIVIDER LINE ===
+      y += 50;
+      const divGrad = ctx.createLinearGradient(W * 0.2, 0, W * 0.8, 0);
+      divGrad.addColorStop(0, 'transparent');
+      divGrad.addColorStop(0.5, 'rgba(224,120,80,0.3)');
+      divGrad.addColorStop(1, 'transparent');
+      ctx.strokeStyle = divGrad;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.2, y);
+      ctx.lineTo(W * 0.8, y);
+      ctx.stroke();
+      
+      // === MAIN HEADLINE ===
+      y += 80;
+      ctx.fillStyle = 'rgba(224,120,80,0.8)';
+      ctx.font = '700 18px "DM Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Y O U  A R E  I N V I T E D  T O', W / 2, y);
+      
+      y += 80;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 96px "DM Sans", sans-serif';
+      ctx.fillText('MATCH', W / 2, y);
+      y += 100;
+      ctx.fillText('DAY', W / 2, y);
+      
+      // Glow behind MATCH DAY
+      ctx.save();
+      ctx.globalAlpha = 0.15;
+      ctx.shadowColor = '#E07850';
+      ctx.shadowBlur = 60;
+      ctx.fillStyle = '#E07850';
+      ctx.fillText('DAY', W / 2, y);
+      ctx.restore();
+      
+      // === EVENT TYPE PILL ===
+      y += 60;
+      const pillText = md.game_mode === 'kotc' ? '👑 KING OF THE COURT' : md.game_mode === 'randomiser' ? '🎲 RANDOMISER' : '🏆 ROUND ROBIN';
+      const pillW = 300, pillH = 44;
+      ctx.fillStyle = 'rgba(224,120,80,0.12)';
+      ctx.strokeStyle = 'rgba(224,120,80,0.25)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, W/2 - pillW/2, y - pillH/2, pillW, pillH, 22);
+      ctx.fill();
+      roundRect(ctx, W/2 - pillW/2, y - pillH/2, pillW, pillH, 22);
+      ctx.stroke();
+      ctx.fillStyle = '#E07850';
+      ctx.font = '700 16px "DM Sans", sans-serif';
+      ctx.fillText(pillText, W / 2, y + 6);
+      
+      // === DATE BLOCK (the hero info) ===
+      y += 90;
+      const d = new Date(md.date + 'T12:00:00');
+      const dayName = d.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
+      const dayNum = d.getDate();
+      const monthName = d.toLocaleDateString('en-GB', { month: 'long' }).toUpperCase();
+      const year = d.getFullYear();
+      
+      // Date card background
+      const cardY = y - 30;
+      const cardH = 260;
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, 100, cardY, W - 200, cardH, 28);
+      ctx.fill();
+      roundRect(ctx, 100, cardY, W - 200, cardH, 28);
+      ctx.stroke();
+      
+      // Day name
+      ctx.fillStyle = 'rgba(224,120,80,0.9)';
+      ctx.font = '700 22px "DM Sans", sans-serif';
+      ctx.fillText(dayName, W / 2, y + 10);
+      
+      // Day number
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 120px "DM Sans", sans-serif';
+      ctx.fillText(dayNum.toString(), W / 2, y + 130);
+      
+      // Month + year
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '600 24px "DM Sans", sans-serif';
+      ctx.fillText(`${monthName}  ${year}`, W / 2, y + 170);
+      
+      // === VENUE + TIME INFO ===
+      y = cardY + cardH + 60;
+      
+      // Venue
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '700 28px "DM Sans", sans-serif';
+      ctx.fillText('📍  ' + (md.venue || 'TBC'), W / 2, y);
+      
+      y += 50;
+      
+      // Time
+      const startT = md.start_time || '18:00';
+      const endT = md.end_time || '20:00';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = '600 24px "DM Sans", sans-serif';
+      ctx.fillText('🕐  ' + startT + '  —  ' + endT, W / 2, y);
+      
+      // === CONFIRMED PLAYERS ===
+      y += 70;
+      const confirmed = availablePlayers ? availablePlayers.length : 0;
+      const totalActive = activePlayers().length;
+      
+      if (confirmed > 0) {
+        ctx.fillStyle = 'rgba(224,120,80,0.12)';
+        roundRect(ctx, W/2 - 160, y - 24, 320, 52, 26);
+        ctx.fill();
+        ctx.fillStyle = '#22c55e';
+        ctx.font = '800 22px "DM Sans", sans-serif';
+        ctx.fillText('✅  ' + confirmed + ' / ' + totalActive + '  CONFIRMED', W / 2, y + 8);
+      }
+      
+      // === AVAILABLE PLAYER AVATARS (up to 8) ===
+      y += 70;
+      if (confirmed > 0) {
+        const showPlayers = activePlayers().filter(p => availablePlayers.includes(p.id)).slice(0, 8);
+        const avatarSize = 52;
+        const gap = 12;
+        const totalW = showPlayers.length * avatarSize + (showPlayers.length - 1) * gap;
+        let ax = W / 2 - totalW / 2;
+        
+        showPlayers.forEach((p, i) => {
+          // Avatar circle
+          const colors = ['#E07850','#D4A853','#293a4c','#7C3AED','#059669','#E11D48','#2563EB','#8B5CF6'];
+          ctx.fillStyle = colors[i % colors.length];
+          ctx.beginPath();
+          ctx.arc(ax + avatarSize/2, y + avatarSize/2, avatarSize/2, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Border
+          ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          
+          // Initial
+          ctx.fillStyle = 'white';
+          ctx.font = '700 18px "DM Sans", sans-serif';
+          ctx.fillText(p.name.charAt(0), ax + avatarSize/2, y + avatarSize/2 + 7);
+          
+          ax += avatarSize + gap;
+        });
+        
+        if (confirmed > 8) {
+          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.font = '600 18px "DM Sans", sans-serif';
+          ctx.fillText('+' + (confirmed - 8), ax + 20, y + avatarSize/2 + 7);
+        }
+      }
+      
+      // === BOTTOM: CTA ===
+      y = H - 280;
+      
+      // Divider
+      const div2 = ctx.createLinearGradient(W * 0.15, 0, W * 0.85, 0);
+      div2.addColorStop(0, 'transparent');
+      div2.addColorStop(0.5, 'rgba(224,120,80,0.2)');
+      div2.addColorStop(1, 'transparent');
+      ctx.strokeStyle = div2;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.15, y);
+      ctx.lineTo(W * 0.85, y);
+      ctx.stroke();
+      
+      y += 60;
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.font = '700 18px "DM Sans", sans-serif';
+      ctx.fillText('S E E  Y O U  O N  C O U R T', W / 2, y);
+      
+      y += 50;
+      // CTA Button
+      const btnW = 380, btnH = 64;
+      const btnGrad = ctx.createLinearGradient(W/2 - btnW/2, y, W/2 + btnW/2, y);
+      btnGrad.addColorStop(0, '#E07850');
+      btnGrad.addColorStop(1, '#C4603A');
+      ctx.fillStyle = btnGrad;
+      roundRect(ctx, W/2 - btnW/2, y - btnH/2, btnW, btnH, 18);
+      ctx.fill();
+      
+      // Button shadow
+      ctx.shadowColor = 'rgba(224,120,80,0.4)';
+      ctx.shadowBlur = 24;
+      ctx.fillStyle = btnGrad;
+      roundRect(ctx, W/2 - btnW/2, y - btnH/2, btnW, btnH, 18);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      ctx.fillStyle = 'white';
+      ctx.font = '800 20px "DM Sans", sans-serif';
+      ctx.fillText('🎾  MARK YOUR ATTENDANCE', W / 2, y + 7);
+      
+      // === FOOTER ===
+      y = H - 80;
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.font = '500 14px "DM Sans", sans-serif';
+      ctx.fillText('padel-villains.vercel.app', W / 2, y);
+      
+      y += 24;
+      ctx.fillStyle = 'rgba(224,120,80,0.3)';
+      ctx.font = '600 11px "DM Sans", sans-serif';
+      ctx.fillText('🎾  PADEL VILLAINS  •  HARARE CIRCUIT', W / 2, y);
+      
+      return canvas;
+    }
+    
+    async function shareEventImage() {
+      const btn = document.getElementById('shareEventBtn');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; }
+      
+      try {
+        const md = viewingMatchday || activeMatchday;
+        const canvas = generateEventShareCanvas(md);
+        if (!canvas) { toast('No match day to share', 'error'); return; }
+        
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const file = new File([blob], 'padel-villains-matchday.png', { type: 'image/png' });
+        
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: '🎾 Padel Villains Match Day',
+            files: [file]
+          });
+          toast('Shared!', 'success');
+        } else {
+          downloadBlob(blob, 'padel-villains-matchday.png');
+          toast('Image saved — share it via WhatsApp', 'info');
+        }
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          console.error('Share error:', e);
+          toast('Try saving the image instead', 'info');
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-share-nodes"></i> Share Event'; }
+      }
     }
     
     
