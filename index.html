@@ -4686,6 +4686,12 @@
     
     async function fetchFromDatabase() {
       try {
+        // Process any pending writes first
+        await processPendingSync();
+        
+        // Snapshot local matches before overwriting
+        const localMatchesBefore = JSON.parse(localStorage.getItem('pv_matches') || '[]');
+        
         // Fetch core tables in parallel (these must exist)
         const results = await Promise.all([
           supabaseClient.from('players').select('*').order('created_at'),
@@ -4720,10 +4726,27 @@
           matchdaysData = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
         }
         
+        let serverMatches = m.data || [];
+        
+        // Preserve local-only matches not found in Supabase
+        const srvIds = new Set(serverMatches.map(sm => String(sm.id)));
+        const srvKeys = new Set(serverMatches.map(sm => `${sm.team1_id}-${sm.team2_id}-${sm.date}-${sm.started_at}`));
+        const localOnlyInit = localMatchesBefore.filter(lm => {
+          if (srvIds.has(String(lm.id))) return false;
+          const key = `${lm.team1_id}-${lm.team2_id}-${lm.date}-${lm.started_at}`;
+          if (srvKeys.has(key)) return false;
+          return true;
+        });
+        if (localOnlyInit.length > 0) {
+          console.warn(`Init: Preserving ${localOnlyInit.length} local-only matches`);
+          serverMatches = [...serverMatches, ...localOnlyInit];
+          serverMatches.sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
+        }
+        
         const data = {
           players: p.data || [],
           teams: t.data || [],
-          matches: m.data || [],
+          matches: serverMatches,
           venues: v.data?.length ? v.data : defaultVenues,
           ongoing_matches: ongoingData,
           matchdays: matchdaysData
@@ -4826,6 +4849,15 @@
     async function fetchFreshDataInBackground() {
       try {
         console.log('Background fetch starting...');
+        
+        // CRITICAL: Push any pending writes to Supabase FIRST
+        // This ensures locally-saved matches get to Supabase before we pull fresh data
+        await processPendingSync();
+        
+        // Snapshot current local matches (in case some haven't synced)
+        const localMatches = [...matches];
+        const localOngoing = [...ongoingMatches];
+        
         // Fetch all tables in parallel
         const results = await Promise.all([
           supabaseClient.from('players').select('*').order('created_at'),
@@ -4852,18 +4884,51 @@
           matchdaysData = matchdays; // Keep existing
         }
         
+        let serverMatches = m.data || [];
+        let serverOngoing = o.data || [];
+        
+        // MERGE: Preserve any local-only matches not found in Supabase
+        // These are matches that were saved locally but failed to sync
+        const serverMatchIds = new Set(serverMatches.map(sm => String(sm.id)));
+        const serverMatchKeys = new Set(serverMatches.map(sm => `${sm.team1_id}-${sm.team2_id}-${sm.date}-${sm.started_at}`));
+        
+        const localOnly = localMatches.filter(lm => {
+          // Not in server by ID
+          if (serverMatchIds.has(String(lm.id))) return false;
+          // Not in server by unique key (team pair + date + start time)
+          const key = `${lm.team1_id}-${lm.team2_id}-${lm.date}-${lm.started_at}`;
+          if (serverMatchKeys.has(key)) return false;
+          return true;
+        });
+        
+        if (localOnly.length > 0) {
+          console.warn(`Preserving ${localOnly.length} local-only matches not found in Supabase`);
+          serverMatches = [...serverMatches, ...localOnly];
+          // Re-sort by date descending
+          serverMatches.sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
+          
+          // Try to push the missing matches to Supabase
+          for (const lm of localOnly) {
+            try {
+              await supabaseClient.from('matches').upsert([lm], { onConflict: 'id' });
+            } catch (e) { console.warn('Failed to push local match to Supabase:', e); }
+          }
+        }
+        
         const data = {
           players: p.data || [],
           teams: t.data || [],
-          matches: m.data || [],
+          matches: serverMatches,
           venues: v.data?.length ? v.data : defaultVenues,
-          ongoing_matches: o.data || [],
+          ongoing_matches: serverOngoing,
           matchdays: matchdaysData
         };
         
         console.log('Background fetch complete:', {
           players: data.players.length,
-          playersWithPhotos: data.players.filter(p => p.photo).length
+          playersWithPhotos: data.players.filter(p => p.photo).length,
+          matches: data.matches.length,
+          localOnlyPreserved: localOnly.length
         });
         
         applyData(data);
