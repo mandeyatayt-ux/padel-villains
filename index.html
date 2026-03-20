@@ -8372,20 +8372,23 @@
       renderMatchDay();
     }
 
-    function mdConfirmSchedule() {
+    async function mdConfirmSchedule() {
       if (!mdGeneratedSchedule || mdGeneratedSchedule.length === 0) return;
       mdStep = 'live';
       mdCurrentRound = 1;
       // Queue ALL matches into the ongoing matches system at once
       const allRounds = [...new Set(mdGeneratedSchedule.map(m => m.round))].sort((a,b) => a-b);
-      allRounds.forEach(r => mdQueueRoundMatches(r));
+      for (const r of allRounds) {
+        await mdQueueRoundMatches(r);
+      }
       renderMatchDay();
       toast(`Match Day started! ${mdGeneratedSchedule.length} matches queued 🎮`, 'success');
     }
 
-    function mdQueueRoundMatches(roundNum) {
+    async function mdQueueRoundMatches(roundNum) {
       const roundMatches = mdGeneratedSchedule.filter(m => m.round === roundNum);
-      roundMatches.forEach(async (m) => {
+      for (let i = 0; i < roundMatches.length; i++) {
+        const m = roundMatches[i];
         // Duplicate check - don't queue if same teams already in ongoing
         const t1Id = mdMode === 'roundrobin' ? m.t1 : null;
         const t2Id = mdMode === 'roundrobin' ? m.t2 : null;
@@ -8394,11 +8397,11 @@
             (om.team1_id === t1Id && om.team2_id === t2Id) || 
             (om.team1_id === t2Id && om.team2_id === t1Id)
           );
-          if (alreadyQueued) return; // Skip duplicate
+          if (alreadyQueued) continue; // Skip duplicate
         }
         
         const matchData = mdMode === 'roundrobin' ? {
-          id: Date.now() + Math.random(),
+          id: Date.now() + i + 1,
           date: activeMatchday?.date || new Date().toISOString().split('T')[0],
           location: activeMatchday?.venue || '',
           court: 'Court ' + m.court,
@@ -8408,7 +8411,7 @@
           started_at: new Date().toISOString(),
           md_round: m.round
         } : {
-          id: Date.now() + Math.random(),
+          id: Date.now() + i + 1,
           date: activeMatchday?.date || new Date().toISOString().split('T')[0],
           location: activeMatchday?.venue || '',
           court: 'Court ' + m.court,
@@ -8423,13 +8426,17 @@
         if (supabaseClient) {
           try {
             const { data, error } = await supabaseClient.from('ongoing_matches').insert([matchData]).select().single();
-            if (!error) ongoingMatches.unshift(data);
-          } catch(e) { console.error(e); }
+            if (!error && data) ongoingMatches.unshift(data);
+            else ongoingMatches.unshift(matchData);
+          } catch(e) { 
+            console.error(e); 
+            ongoingMatches.unshift(matchData);
+          }
         } else {
           ongoingMatches.unshift(matchData);
           saveLocal();
         }
-      });
+      }
       renderDashboard();
     }
 
@@ -10057,8 +10064,9 @@
       
       if (supabaseClient && !isOffline) {
         try {
-          await supabaseClient.from('matches').insert([nm]);
-          matches.unshift(nm);
+          const { data, error } = await supabaseClient.from('matches').insert([nm]).select().single();
+          if (error) throw error;
+          matches.unshift(data || nm);
         } catch (e) { 
           console.warn('Supabase write failed, saving offline:', e);
           matches.unshift(nm);
@@ -10174,14 +10182,15 @@
       if (btn?.disabled) return;
       if (btn) btn.disabled = true;
       
-      const id = parseInt(document.getElementById('finalizeMatchId').value);
+      const idRaw = document.getElementById('finalizeMatchId').value;
+      const id = Number(idRaw);
       const scoreA = parseInt(document.getElementById('finalScoreA').value) || 0;
       const scoreB = parseInt(document.getElementById('finalScoreB').value) || 0;
       
       if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); if (btn) btn.disabled = false; return; }
       
-      const m = ongoingMatches.find(match => match.id === id);
-      if (!m) { if (btn) btn.disabled = false; return; }
+      const m = ongoingMatches.find(match => String(match.id) === String(idRaw) || match.id === id);
+      if (!m) { toast('Match not found in queue', 'error'); if (btn) btn.disabled = false; return; }
       
       // Check if already finalized (duplicate protection)
       const alreadyExists = matches.some(em => 
@@ -10190,7 +10199,7 @@
       );
       if (alreadyExists) { 
         toast('This match was already finalized', 'error'); 
-        ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+        ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
         if (btn) btn.disabled = false;
         closeModal('finalizeMatch');
         renderAll();
@@ -10211,31 +10220,36 @@
         winner_id: wid, 
         started_at: m.started_at || null,
         finalized_at: new Date().toISOString(),
-        created_at: new Date().toISOString() 
+        created_at: new Date().toISOString(),
+        game_mode: m.game_mode || null,
+        md_round: m.md_round || null
       };
       
       if (supabaseClient && !isOffline) {
         try {
-          await supabaseClient.from('matches').insert([finalMatch]);
-          await supabaseClient.from('ongoing_matches').delete().eq('id', id);
-          matches.unshift(finalMatch);
-          ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+          const { data, error } = await supabaseClient.from('matches').insert([finalMatch]).select().single();
+          if (error) throw error;
+          matches.unshift(data || finalMatch);
+          
+          const { error: delErr } = await supabaseClient.from('ongoing_matches').delete().eq('id', m.id);
+          if (delErr) console.warn('Failed to delete ongoing match:', delErr);
+          ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
         } catch (e) { 
           console.warn('Supabase write failed, saving offline:', e);
           matches.unshift(finalMatch);
-          ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+          ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
           saveLocal();
           addToPendingSync({ type: 'insert', table: 'matches', data: finalMatch });
-          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: id });
+          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: m.id });
           toast('Saved offline - will sync when online', 'info');
         }
       } else {
         matches.unshift(finalMatch);
-        ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+        ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
         saveLocal();
         if (supabaseClient) {
           addToPendingSync({ type: 'insert', table: 'matches', data: finalMatch });
-          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: id });
+          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: m.id });
         }
       }
       
@@ -10250,21 +10264,24 @@
     }
     
     async function cancelOngoingMatch() {
-      const id = parseInt(document.getElementById('finalizeMatchId').value);
+      const idRaw = document.getElementById('finalizeMatchId').value;
+      const id = Number(idRaw);
+      const m = ongoingMatches.find(match => String(match.id) === String(idRaw) || match.id === id);
+      const matchId = m ? m.id : id;
       
       if (supabaseClient && !isOffline) {
         try {
-          await supabaseClient.from('ongoing_matches').delete().eq('id', id);
-          ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+          await supabaseClient.from('ongoing_matches').delete().eq('id', matchId);
+          ongoingMatches = ongoingMatches.filter(match => match.id !== matchId);
         } catch (e) { 
-          ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+          ongoingMatches = ongoingMatches.filter(match => match.id !== matchId);
           saveLocal();
-          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: id });
+          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: matchId });
         }
       } else {
-        ongoingMatches = ongoingMatches.filter(match => match.id !== id);
+        ongoingMatches = ongoingMatches.filter(match => match.id !== matchId);
         saveLocal();
-        if (supabaseClient) addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: id });
+        if (supabaseClient) addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: matchId });
       }
       
       closeModal('finalizeMatch');
