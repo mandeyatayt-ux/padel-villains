@@ -1026,17 +1026,7 @@
     .btn-whatsapp:hover { background: #128C7E; }
     
     /* Player Spotlight */
-    .player-spotlight { background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); border-radius: 16px; padding: 20px; color: white; }
-    .spotlight-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-    .spotlight-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); overflow: hidden; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; }
-    .spotlight-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .spotlight-info h4 { font-family: 'Sublime', sans-serif; font-size: 24px; letter-spacing: 2px; margin-bottom: 2px; }
-    .spotlight-info p { font-size: 13px; opacity: 0.85; }
-    .spotlight-stats { display: flex; gap: 20px; justify-content: center; text-align: center; }
-    .spotlight-stat-value { font-family: 'Sublime', sans-serif; font-size: 28px; }
-    .spotlight-stat-label { font-size: 11px; opacity: 0.7; text-transform: uppercase; }
-    .spotlight-badges { display: flex; gap: 8px; justify-content: center; margin-top: 12px; font-size: 20px; }
-    .spotlight-streak { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 20px; font-size: 13px; margin-top: 12px; }
+    /* Player card styles */
     
     /* Matchday History Log */
     .matchday-log-item { display: flex; align-items: center; gap: 16px; padding: 14px; background: var(--cream); border-radius: var(--radius-sm); margin-bottom: 8px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
@@ -1254,20 +1244,7 @@
     .compose-to { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--cream); border-radius: 10px; margin-bottom: 16px; }
     .compose-to .avatar { width: 40px; height: 40px; }
     
-    /* Spotify Widget */
-    .spotify-widget { background: linear-gradient(135deg, #1DB954 0%, #191414 100%); border-radius: 16px; padding: 20px; color: white; margin-top: 16px; }
-    .spotify-widget-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-    .spotify-widget-header i { font-size: 24px; }
-    .spotify-widget-header span { font-weight: 600; }
-    .spotify-widget-content { display: flex; align-items: center; gap: 16px; }
-    .spotify-widget-art { width: 60px; height: 60px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-    .spotify-widget-info { flex: 1; }
-    .spotify-widget-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
-    .spotify-widget-artist { font-size: 12px; opacity: 0.8; }
-    .spotify-widget-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #1DB954; border-radius: 20px; font-size: 12px; font-weight: 600; color: white; text-decoration: none; margin-top: 12px; }
-    .spotify-widget-link:hover { background: #1ed760; }
-    .spotify-widget-empty { text-align: center; padding: 20px; opacity: 0.8; }
-    .spotify-widget-empty i { font-size: 32px; margin-bottom: 8px; display: block; }
+    /* Court Booking Widget */
     
     /* Admin Badge */
     .admin-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--gold); color: white; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
@@ -1411,9 +1388,6 @@
       background: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
       background-size: 20px 20px; pointer-events: none;
     }
-    
-    /* Organic blob behind spotlight avatars */
-    #playerSpotlightSection .avatar { position: relative; }
     
     /* Subtle card top accent border */
     .matchday-header.active::before {
@@ -1691,9 +1665,6 @@
       /* Quick actions menu */
       .quick-actions-menu { min-width: 180px; }
       .quick-actions-menu .qa-item { padding: 10px 14px; font-size: 13px; }
-      
-      /* Player spotlight */
-      .spotlight-card { padding: 16px !important; }
       
       /* Empty state */
       .empty { padding: 40px 16px; }
@@ -3652,15 +3623,6 @@
         </div>
       </div>
       
-      <!-- Matchday Spotify Link -->
-      <div class="settings-section">
-        <div class="settings-section-title"><i class="fab fa-spotify"></i> Matchday Music</div>
-        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Add a Spotify playlist link for match days</p>
-        <div class="form-group">
-          <input type="text" class="form-input" id="spotifyLinkInput" placeholder="Paste Spotify playlist link...">
-        </div>
-        <button class="btn btn-primary" onclick="saveSpotifyLink()"><i class="fas fa-save"></i> Save Link</button>
-      </div>
     </section>
     
     <!-- ===== ADMIN TAB ===== -->
@@ -12425,7 +12387,6 @@
       loadUserAccounts();
       loadMessages();
       loadGallery();
-      loadSpotifyLink();
       
       // Populate login dropdown first (needs players data)
       populateLoginDropdown();
@@ -13492,67 +13453,6 @@
       const replyToId = parseInt(document.getElementById('viewMessageModal').dataset.replyTo);
       closeModal('viewMessage');
       openComposeMessage(replyToId);
-    }
-    
-    // ===== SPOTIFY =====
-    function loadSpotifyLink() {
-      const link = localStorage.getItem('pv_spotifyLink');
-      if (link) {
-        document.getElementById('spotifyLinkInput')?.setAttribute('value', link);
-        renderSpotifyWidget(link);
-      }
-    }
-    
-    function saveSpotifyLink() {
-      const link = document.getElementById('spotifyLinkInput').value.trim();
-      localStorage.setItem('pv_spotifyLink', link);
-      renderSpotifyWidget(link);
-      toast('Spotify link saved!', 'success');
-    }
-    
-    function renderSpotifyWidget(link) {
-      const widget = document.getElementById('spotifyWidget');
-      const content = document.getElementById('spotifyContent');
-      
-      if (!link) {
-        widget.style.display = 'none';
-        return;
-      }
-      
-      widget.style.display = 'block';
-      
-      // Extract playlist/track ID and create embed
-      let embedUrl = '';
-      if (link.includes('spotify.com/playlist/')) {
-        const playlistId = link.split('playlist/')[1]?.split('?')[0];
-        embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator&theme=0`;
-      } else if (link.includes('spotify.com/track/')) {
-        const trackId = link.split('track/')[1]?.split('?')[0];
-        embedUrl = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
-      }
-      
-      if (embedUrl) {
-        content.innerHTML = `
-          <iframe style="border-radius:12px;width:100%;height:152px" 
-            src="${embedUrl}" 
-            frameBorder="0" allowfullscreen="" 
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-            loading="lazy"></iframe>
-        `;
-      } else {
-        content.innerHTML = `
-          <div class="spotify-widget-content">
-            <div class="spotify-widget-art"><i class="fas fa-music"></i></div>
-            <div class="spotify-widget-info">
-              <div class="spotify-widget-title">Match Day Playlist</div>
-              <div class="spotify-widget-artist">Click to open in Spotify</div>
-            </div>
-          </div>
-          <a href="${link}" target="_blank" class="spotify-widget-link">
-            <i class="fab fa-spotify"></i> Open in Spotify
-          </a>
-        `;
-      }
     }
     
     // ===== ADMIN PERMISSIONS =====
