@@ -4742,7 +4742,7 @@
         
         // Preserve local-only matches not found in Supabase
         const srvIds = new Set(serverMatches.map(sm => String(sm.id)));
-        const srvKeys = new Set(serverMatches.map(sm => `${sm.team1_id}-${sm.team2_id}-${sm.date}-${sm.started_at}`));
+        const srvKeys = new Set(serverMatches.map(sm => `${sm.team1_id}-${sm.team2_id}-${sm.date}`));
         const localOnlyInit = localMatchesBefore.filter(lm => {
           if (srvIds.has(String(lm.id))) return false;
           const key = `${lm.team1_id}-${lm.team2_id}-${lm.date}-${lm.started_at}`;
@@ -4902,7 +4902,7 @@
         // MERGE: Preserve any local-only matches not found in Supabase
         // These are matches that were saved locally but failed to sync
         const serverMatchIds = new Set(serverMatches.map(sm => String(sm.id)));
-        const serverMatchKeys = new Set(serverMatches.map(sm => `${sm.team1_id}-${sm.team2_id}-${sm.date}-${sm.started_at}`));
+        const serverMatchKeys = new Set(serverMatches.map(sm => `${sm.team1_id}-${sm.team2_id}-${sm.date}`));
         
         const localOnly = localMatches.filter(lm => {
           // Not in server by ID
@@ -4922,7 +4922,16 @@
           // Try to push the missing matches to Supabase
           for (const lm of localOnly) {
             try {
-              await supabaseClient.from('matches').upsert([lm], { onConflict: 'id' });
+              // Clean match data - only include known Supabase columns
+              const clean = {
+                date: lm.date, location: lm.location || '', court: lm.court || '',
+                team1_id: lm.team1_id, team2_id: lm.team2_id,
+                scores: lm.scores, winner_id: lm.winner_id,
+                created_at: lm.created_at || new Date().toISOString()
+              };
+              if (lm.finalized_at) clean.finalized_at = lm.finalized_at;
+              if (lm.game_mode) clean.game_mode = lm.game_mode;
+              await supabaseClient.from('matches').insert([clean]);
             } catch (e) { console.warn('Failed to push local match to Supabase:', e); }
           }
         }
@@ -10249,7 +10258,6 @@
       const wid = scoreA > scoreB ? m.team1_id : m.team2_id;
       
       const finalMatch = { 
-        id: Date.now(), 
         date: m.date, 
         location: m.location, 
         court: m.court, 
@@ -10257,10 +10265,15 @@
         team2_id: m.team2_id, 
         scores, 
         winner_id: wid, 
-        started_at: m.started_at || null,
         finalized_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        game_mode: m.game_mode || null,
+        created_at: new Date().toISOString()
+      };
+      // Add optional columns only if they exist in Supabase (game_mode does, started_at/md_round may not)
+      if (m.game_mode) finalMatch.game_mode = m.game_mode;
+      
+      // Keep extra fields for local display only
+      const localExtra = {
+        started_at: m.started_at || null,
         md_round: m.md_round || null
       };
       
@@ -10268,14 +10281,16 @@
         try {
           const { data, error } = await supabaseClient.from('matches').insert([finalMatch]).select().single();
           if (error) throw error;
-          matches.unshift(data || finalMatch);
+          // Merge Supabase response with local extras
+          matches.unshift({ ...(data || finalMatch), ...localExtra });
           
           const { error: delErr } = await supabaseClient.from('ongoing_matches').delete().eq('id', m.id);
           if (delErr) console.warn('Failed to delete ongoing match:', delErr);
           ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
         } catch (e) { 
           console.warn('Supabase write failed, saving offline:', e);
-          matches.unshift(finalMatch);
+          finalMatch.id = Date.now();
+          matches.unshift({ ...finalMatch, ...localExtra });
           ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
           saveLocal();
           addToPendingSync({ type: 'insert', table: 'matches', data: finalMatch });
@@ -10283,7 +10298,8 @@
           toast('Saved offline - will sync when online', 'info');
         }
       } else {
-        matches.unshift(finalMatch);
+        finalMatch.id = Date.now();
+        matches.unshift({ ...finalMatch, ...localExtra });
         ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
         saveLocal();
         if (supabaseClient) {
@@ -13646,18 +13662,18 @@
       
       try {
         // Get all matches from Supabase first
-        const { data: sbMatches, error: sbErr } = await supabaseClient.from('matches').select('id, team1_id, team2_id, date, started_at');
+        const { data: sbMatches, error: sbErr } = await supabaseClient.from('matches').select('id, team1_id, team2_id, date');
         if (sbErr) throw new Error('Failed to read Supabase: ' + sbErr.message);
         
         const sbIds = new Set((sbMatches || []).map(m => String(m.id)));
         const sbKeys = new Set((sbMatches || []).map(m => 
-          `${m.team1_id}-${m.team2_id}-${m.date}-${m.started_at || ''}`
+          `${m.team1_id}-${m.team2_id}-${m.date}`
         ));
         
         // Find matches that need pushing
         const toPush = matches.filter(m => {
           if (sbIds.has(String(m.id))) return false;
-          const key = `${m.team1_id}-${m.team2_id}-${m.date}-${m.started_at || ''}`;
+          const key = `${m.team1_id}-${m.team2_id}-${m.date}`;
           if (sbKeys.has(key)) return false;
           return true;
         });
@@ -13673,14 +13689,28 @@
         let pushed = 0, failed = 0;
         for (const m of toPush) {
           try {
-            // Remove the local ID and let Supabase assign one, or use insert with the existing ID
-            const matchData = { ...m };
-            // Try insert first
+            // Build clean match object with only known Supabase columns
+            // Strip local-only fields that may not exist in the table
+            const matchData = {
+              date: m.date,
+              location: m.location || '',
+              court: m.court || '',
+              team1_id: m.team1_id,
+              team2_id: m.team2_id,
+              scores: m.scores,
+              winner_id: m.winner_id,
+              created_at: m.created_at || m.finalized_at || new Date().toISOString()
+            };
+            // Only include optional fields if they have values
+            if (m.finalized_at) matchData.finalized_at = m.finalized_at;
+            if (m.game_mode) matchData.game_mode = m.game_mode;
+            
+            // Try insert
             const { data, error } = await supabaseClient.from('matches').insert([matchData]).select().single();
             if (error) {
-              // If insert fails (maybe ID conflict), try without ID
-              const { id, ...withoutId } = matchData;
-              const { data: d2, error: e2 } = await supabaseClient.from('matches').insert([withoutId]).select().single();
+              // If insert fails, try with a fresh timestamp
+              matchData.created_at = new Date().toISOString();
+              const { data: d2, error: e2 } = await supabaseClient.from('matches').insert([matchData]).select().single();
               if (e2) {
                 console.error('Push failed for match:', m, e2);
                 failed++;
