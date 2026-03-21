@@ -4459,7 +4459,18 @@
       for (const op of queue) {
         try {
           if (op.type === 'insert') {
-            await supabaseClient.from(op.table).insert([op.data]);
+            // Sanitize matches table data - strip columns that don't exist in Supabase
+            let insertData = op.data;
+            if (op.table === 'matches') {
+              insertData = {
+                date: op.data.date, location: op.data.location || '', court: op.data.court || '',
+                team1_id: op.data.team1_id, team2_id: op.data.team2_id,
+                scores: op.data.scores, winner_id: op.data.winner_id,
+                created_at: op.data.created_at || new Date().toISOString()
+              };
+              if (op.data.game_mode) insertData.game_mode = op.data.game_mode;
+            }
+            await supabaseClient.from(op.table).insert([insertData]);
             synced++;
           } else if (op.type === 'delete') {
             await supabaseClient.from(op.table).delete().eq('id', op.id);
@@ -4929,7 +4940,6 @@
                 scores: lm.scores, winner_id: lm.winner_id,
                 created_at: lm.created_at || new Date().toISOString()
               };
-              if (lm.finalized_at) clean.finalized_at = lm.finalized_at;
               if (lm.game_mode) clean.game_mode = lm.game_mode;
               await supabaseClient.from('matches').insert([clean]);
             } catch (e) { console.warn('Failed to push local match to Supabase:', e); }
@@ -9091,14 +9101,15 @@
         team2_id: challengerId,
         scores: [[side === 'kings' ? 1 : 0, side === 'kings' ? 0 : 1]],
         winner_id: winnerId,
-        started_at: new Date().toISOString(),
-        finalized_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         game_mode: 'kotc'
       };
       if (supabaseClient) {
-        supabaseClient.from('matches').insert([matchRecord]).then(({error}) => {
-          if (!error) matches.unshift(matchRecord);
+        // Send only safe columns to Supabase
+        const { id, ...sbRecord } = matchRecord;
+        supabaseClient.from('matches').insert([sbRecord]).select().single().then(({data, error}) => {
+          if (!error && data) matches.unshift(data);
+          else matches.unshift(matchRecord);
         });
       } else {
         matches.unshift(matchRecord);
@@ -9337,13 +9348,12 @@
         team1_players: m.team1,
         team2_players: m.team2,
         scores: [[team1Wins ? 1 : 0, team1Wins ? 0 : 1]],
-        started_at: new Date().toISOString(),
-        finalized_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         game_mode: 'randomiser'
       };
       if (supabaseClient) {
-        supabaseClient.from('matches').insert([matchRecord]).catch(() => {});
+        const { id, ...sbRecord } = matchRecord;
+        supabaseClient.from('matches').insert([sbRecord]).catch(() => {});
       }
       
       randomiserRenderLive();
@@ -10265,15 +10275,15 @@
         team2_id: m.team2_id, 
         scores, 
         winner_id: wid, 
-        finalized_at: new Date().toISOString(),
         created_at: new Date().toISOString()
       };
-      // Add optional columns only if they exist in Supabase (game_mode does, started_at/md_round may not)
+      // game_mode is confirmed to exist in Supabase
       if (m.game_mode) finalMatch.game_mode = m.game_mode;
       
-      // Keep extra fields for local display only
+      // These fields do NOT exist in Supabase — keep for local display only
       const localExtra = {
         started_at: m.started_at || null,
+        finalized_at: new Date().toISOString(),
         md_round: m.md_round || null
       };
       
@@ -13689,8 +13699,9 @@
         let pushed = 0, failed = 0;
         for (const m of toPush) {
           try {
-            // Build clean match object with only known Supabase columns
-            // Strip local-only fields that may not exist in the table
+            // ONLY include columns that exist in Supabase matches table
+            // Safe: date, location, court, team1_id, team2_id, scores, winner_id, created_at, game_mode
+            // NOT safe: started_at, finalized_at, md_round, id (let Supabase auto-generate)
             const matchData = {
               date: m.date,
               location: m.location || '',
@@ -13699,17 +13710,14 @@
               team2_id: m.team2_id,
               scores: m.scores,
               winner_id: m.winner_id,
-              created_at: m.created_at || m.finalized_at || new Date().toISOString()
+              created_at: m.created_at || new Date().toISOString()
             };
-            // Only include optional fields if they have values
-            if (m.finalized_at) matchData.finalized_at = m.finalized_at;
             if (m.game_mode) matchData.game_mode = m.game_mode;
             
-            // Try insert
             const { data, error } = await supabaseClient.from('matches').insert([matchData]).select().single();
             if (error) {
-              // If insert fails, try with a fresh timestamp
-              matchData.created_at = new Date().toISOString();
+              // Retry without created_at in case it's also auto-generated
+              delete matchData.created_at;
               const { data: d2, error: e2 } = await supabaseClient.from('matches').insert([matchData]).select().single();
               if (e2) {
                 console.error('Push failed for match:', m, e2);
@@ -13717,7 +13725,7 @@
                 if (el) el.textContent += `  ❌ Failed: ${getTeam(m.team1_id)?.name || '?'} vs ${getTeam(m.team2_id)?.name || '?'} — ${e2.message}\n`;
               } else {
                 pushed++;
-                if (el) el.textContent += `  ✅ Pushed (new ID): ${getTeam(m.team1_id)?.name || '?'} vs ${getTeam(m.team2_id)?.name || '?'}\n`;
+                if (el) el.textContent += `  ✅ Pushed: ${getTeam(m.team1_id)?.name || '?'} vs ${getTeam(m.team2_id)?.name || '?'}\n`;
               }
             } else {
               pushed++;
