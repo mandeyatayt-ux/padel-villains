@@ -3649,6 +3649,18 @@
         <div id="userAccountsList"></div>
       </div>
       
+      <!-- Data Recovery -->
+      <div class="card" style="margin-bottom:24px;border:2px solid var(--clay)">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-database" style="color:var(--clay);margin-right:8px"></i>Data Recovery</h3>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">If matches are missing on other devices, use these tools to diagnose and fix sync issues.</p>
+        <div id="dataDiagnostics" style="background:var(--cream);padding:16px;border-radius:12px;font-family:monospace;font-size:12px;margin-bottom:16px;white-space:pre-wrap">Loading diagnostics...</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="runDataDiagnostics()" style="border-radius:12px"><i class="fas fa-stethoscope"></i> Run Diagnostics</button>
+          <button class="btn btn-primary" onclick="forcePushLocalToSupabase()" style="background:var(--clay);border-radius:12px"><i class="fas fa-cloud-arrow-up"></i> Force Push Local → Supabase</button>
+          <button class="btn btn-secondary" onclick="forceFullRefresh()" style="border-radius:12px"><i class="fas fa-sync"></i> Force Full Refresh</button>
+        </div>
+      </div>
+      
       <!-- Danger Zone -->
       <div class="card" style="border:2px solid var(--danger)">
         <h3 style="font-size:16px;font-weight:700;color:var(--danger);margin-bottom:16px"><i class="fas fa-exclamation-triangle" style="margin-right:8px"></i>Danger Zone</h3>
@@ -13518,6 +13530,205 @@
       const replyToId = parseInt(document.getElementById('viewMessageModal').dataset.replyTo);
       closeModal('viewMessage');
       openComposeMessage(replyToId);
+    }
+    
+    // ===== DATA RECOVERY TOOLS =====
+    async function runDataDiagnostics() {
+      const el = document.getElementById('dataDiagnostics');
+      if (!el) return;
+      el.textContent = 'Running diagnostics...\n';
+      
+      try {
+        // Local data
+        const localMatches = matches.length;
+        const localOngoing = ongoingMatches.length;
+        const localStorageMatches = JSON.parse(localStorage.getItem('pv_matches') || '[]');
+        const localStorageOngoing = JSON.parse(localStorage.getItem('pv_ongoing') || '[]');
+        const pendingSyncQueue = JSON.parse(localStorage.getItem('pv_pending_sync') || '[]');
+        const cacheMatches = (() => {
+          try { const c = JSON.parse(localStorage.getItem('pv_cache') || '{}'); return c.matches?.length || 0; } catch(e) { return '?'; }
+        })();
+        
+        let report = '';
+        report += `=== LOCAL STATE ===\n`;
+        report += `In-memory matches: ${localMatches}\n`;
+        report += `In-memory ongoing: ${localOngoing}\n`;
+        report += `localStorage pv_matches: ${localStorageMatches.length}\n`;
+        report += `localStorage pv_ongoing: ${localStorageOngoing.length}\n`;
+        report += `Cache matches: ${cacheMatches}\n`;
+        report += `Pending sync queue: ${pendingSyncQueue.length}\n`;
+        
+        if (pendingSyncQueue.length > 0) {
+          report += `  Queued ops: ${pendingSyncQueue.map(o => o.type + ':' + o.table).join(', ')}\n`;
+        }
+        
+        // Supabase data
+        if (supabaseClient) {
+          report += `\n=== SUPABASE ===\n`;
+          
+          const { data: sbMatches, error: mErr, count: mCount } = await supabaseClient
+            .from('matches').select('*', { count: 'exact' });
+          
+          if (mErr) {
+            report += `Matches query error: ${mErr.message}\n`;
+          } else {
+            report += `Supabase matches: ${sbMatches?.length || 0}\n`;
+            
+            // Find today's matches in both
+            const today = getLocalDateStr();
+            const localToday = matches.filter(m => m.date === today);
+            const sbToday = (sbMatches || []).filter(m => m.date === today);
+            report += `\nToday (${today}):\n`;
+            report += `  Local: ${localToday.length} matches\n`;
+            report += `  Supabase: ${sbToday.length} matches\n`;
+            
+            // Find March 20 matches (the match day from screenshots)
+            const mar20 = '2026-03-20';
+            const localMar20 = matches.filter(m => m.date === mar20);
+            const sbMar20 = (sbMatches || []).filter(m => m.date === mar20);
+            report += `\nFri 20 Mar (${mar20}):\n`;
+            report += `  Local: ${localMar20.length} matches\n`;
+            report += `  Supabase: ${sbMar20.length} matches\n`;
+            
+            // Find orphans (local but not in Supabase)
+            const sbIds = new Set((sbMatches || []).map(m => String(m.id)));
+            const sbKeys = new Set((sbMatches || []).map(m => 
+              `${m.team1_id}-${m.team2_id}-${m.date}`
+            ));
+            const orphans = matches.filter(m => {
+              if (sbIds.has(String(m.id))) return false;
+              const key = `${m.team1_id}-${m.team2_id}-${m.date}`;
+              if (sbKeys.has(key)) return false;
+              return true;
+            });
+            
+            report += `\n=== ORPHANED MATCHES ===\n`;
+            report += `Matches in local but NOT in Supabase: ${orphans.length}\n`;
+            if (orphans.length > 0) {
+              orphans.forEach(m => {
+                const t1 = getTeam(m.team1_id)?.name || m.team1_id;
+                const t2 = getTeam(m.team2_id)?.name || m.team2_id;
+                const score = (m.scores || []).map(s => s.join('-')).join(', ');
+                report += `  ${m.date} ${t1} vs ${t2} (${score}) ${m.finalized_at || ''}\n`;
+              });
+              report += `\n⚠️ Use "Force Push Local → Supabase" to fix!\n`;
+            } else {
+              report += `✅ All local matches exist in Supabase\n`;
+              
+              // Check reverse: Supabase has matches local doesn't
+              const localIds = new Set(matches.map(m => String(m.id)));
+              const reverseOrphans = (sbMatches || []).filter(m => !localIds.has(String(m.id)));
+              if (reverseOrphans.length > 0) {
+                report += `\n⚠️ Supabase has ${reverseOrphans.length} matches NOT in local!\n`;
+                report += `Use "Force Full Refresh" to pull them.\n`;
+              }
+            }
+          }
+          
+          const { data: sbOngoing } = await supabaseClient.from('ongoing_matches').select('*');
+          report += `\nSupabase ongoing: ${sbOngoing?.length || 0}\n`;
+        } else {
+          report += `\n⚠️ Supabase not connected (offline mode)\n`;
+        }
+        
+        el.textContent = report;
+      } catch (e) {
+        el.textContent = `Error running diagnostics: ${e.message}`;
+      }
+    }
+    
+    async function forcePushLocalToSupabase() {
+      if (!supabaseClient) { toast('Supabase not connected', 'error'); return; }
+      if (!confirm('This will push ALL local matches to Supabase. Any matches only on this device will be synced to the cloud. Continue?')) return;
+      
+      const el = document.getElementById('dataDiagnostics');
+      if (el) el.textContent = 'Pushing local data to Supabase...\n';
+      
+      try {
+        // Get all matches from Supabase first
+        const { data: sbMatches, error: sbErr } = await supabaseClient.from('matches').select('id, team1_id, team2_id, date, started_at');
+        if (sbErr) throw new Error('Failed to read Supabase: ' + sbErr.message);
+        
+        const sbIds = new Set((sbMatches || []).map(m => String(m.id)));
+        const sbKeys = new Set((sbMatches || []).map(m => 
+          `${m.team1_id}-${m.team2_id}-${m.date}-${m.started_at || ''}`
+        ));
+        
+        // Find matches that need pushing
+        const toPush = matches.filter(m => {
+          if (sbIds.has(String(m.id))) return false;
+          const key = `${m.team1_id}-${m.team2_id}-${m.date}-${m.started_at || ''}`;
+          if (sbKeys.has(key)) return false;
+          return true;
+        });
+        
+        if (toPush.length === 0) {
+          toast('All matches already in Supabase — nothing to push', 'info');
+          if (el) el.textContent += `\n✅ All ${matches.length} local matches already exist in Supabase. Nothing to push.\n\nIf matches are still missing on other devices, try "Force Full Refresh" on those devices.`;
+          return;
+        }
+        
+        if (el) el.textContent += `Found ${toPush.length} matches to push...\n`;
+        
+        let pushed = 0, failed = 0;
+        for (const m of toPush) {
+          try {
+            // Remove the local ID and let Supabase assign one, or use insert with the existing ID
+            const matchData = { ...m };
+            // Try insert first
+            const { data, error } = await supabaseClient.from('matches').insert([matchData]).select().single();
+            if (error) {
+              // If insert fails (maybe ID conflict), try without ID
+              const { id, ...withoutId } = matchData;
+              const { data: d2, error: e2 } = await supabaseClient.from('matches').insert([withoutId]).select().single();
+              if (e2) {
+                console.error('Push failed for match:', m, e2);
+                failed++;
+                if (el) el.textContent += `  ❌ Failed: ${getTeam(m.team1_id)?.name || '?'} vs ${getTeam(m.team2_id)?.name || '?'} — ${e2.message}\n`;
+              } else {
+                pushed++;
+                if (el) el.textContent += `  ✅ Pushed (new ID): ${getTeam(m.team1_id)?.name || '?'} vs ${getTeam(m.team2_id)?.name || '?'}\n`;
+              }
+            } else {
+              pushed++;
+              if (el) el.textContent += `  ✅ Pushed: ${getTeam(m.team1_id)?.name || '?'} vs ${getTeam(m.team2_id)?.name || '?'}\n`;
+            }
+          } catch (e) {
+            failed++;
+            if (el) el.textContent += `  ❌ Error: ${e.message}\n`;
+          }
+        }
+        
+        if (el) el.textContent += `\nDone! Pushed: ${pushed}, Failed: ${failed}\n`;
+        
+        if (pushed > 0) {
+          toast(`Pushed ${pushed} matches to Supabase!`, 'success');
+          if (el) el.textContent += `\n🎉 Now refresh the app on phone/desktop to see the data!`;
+        }
+        if (failed > 0) {
+          toast(`${failed} matches failed to push — check diagnostics`, 'error');
+        }
+      } catch (e) {
+        console.error(e);
+        toast('Push failed: ' + e.message, 'error');
+        if (el) el.textContent += `\n❌ Error: ${e.message}`;
+      }
+    }
+    
+    async function forceFullRefresh() {
+      if (!confirm('This will clear all cached data and reload everything from Supabase. Continue?')) return;
+      
+      // Clear cache
+      localStorage.removeItem('pv_cache');
+      localStorage.removeItem('pv_cache_time');
+      
+      // Force fetch from database
+      try {
+        await fetchFromDatabase();
+        toast('Full refresh complete!', 'success');
+      } catch (e) {
+        toast('Refresh failed: ' + e.message, 'error');
+      }
     }
     
     // ===== ADMIN PERMISSIONS =====
