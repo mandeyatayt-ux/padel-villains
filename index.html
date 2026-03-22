@@ -3657,6 +3657,7 @@
         <div style="display:flex;gap:12px;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="runDataDiagnostics()" style="border-radius:12px"><i class="fas fa-stethoscope"></i> Run Diagnostics</button>
           <button class="btn btn-primary" onclick="forcePushLocalToSupabase()" style="background:var(--clay);border-radius:12px"><i class="fas fa-cloud-arrow-up"></i> Force Push Local → Supabase</button>
+          <button class="btn btn-primary" onclick="recoverMarch20Matches()" style="background:#059669;border-radius:12px"><i class="fas fa-heart-pulse"></i> Recover March 20</button>
           <button class="btn btn-secondary" onclick="forceFullRefresh()" style="border-radius:12px"><i class="fas fa-sync"></i> Force Full Refresh</button>
         </div>
       </div>
@@ -13756,6 +13757,93 @@
         toast('Push failed: ' + e.message, 'error');
         if (el) el.textContent += `\n❌ Error: ${e.message}`;
       }
+    }
+    
+    async function recoverMarch20Matches() {
+      if (!supabaseClient) { toast('Supabase not connected', 'error'); return; }
+      const el = document.getElementById('dataDiagnostics');
+      if (el) el.textContent = 'Recovering March 20 matches...\n';
+      
+      try {
+        const teamMap = {};
+        teams.forEach(t => { teamMap[t.name] = t.id; });
+        if (el) el.textContent += `Teams: ${Object.keys(teamMap).join(', ')}\n\n`;
+        
+        // All 23 matches from March 20 iPad screenshots
+        const expected = [
+          ['The Lads','T-Man',1,0],['The Lads','Martín & Matt',1,0],
+          ['The Lads','City boyz',1,0],['Martín & Matt','The Dubes',1,0],
+          ['The Dubes','T-Man',1,0],['The Dubes','City boyz',0,1],
+          ['Martín & Matt','City boyz',0,1],['The Lads','The Dubes',1,0],
+          ['The Dubes','Martín & Matt',0,1],['The Lads','City boyz',0,1],
+          ['The Lads','Martín & Matt',1,0],['City boyz','The Dubes',0,1],
+          ['City boyz','Martín & Matt',0,1],['The Lads','The Dubes',0,1],
+          ['The Dubes','Martín & Matt',1,0],['The Lads','City boyz',0,1],
+          ['The Lads','Martín & Matt',1,0],['The Dubes','City boyz',1,0],
+          ['City boyz','Martín & Matt',0,1],['Martín & Matt','The Dubes',1,0],
+          ['The Lads','The Dubes',0,1],['The Lads','City boyz',1,0],
+          ['City boyz','Martín & Matt',0,1]
+        ];
+        
+        const missingTeams = [...new Set(expected.flat().filter(x => typeof x === 'string' && !teamMap[x]))];
+        if (missingTeams.length > 0) {
+          if (el) el.textContent += '❌ Missing teams: ' + missingTeams.join(', ') + '\n';
+          return;
+        }
+        
+        const { data: sbM, error: sbErr } = await supabaseClient.from('matches').select('*').eq('date', '2026-03-20');
+        if (sbErr) { if (el) el.textContent += '❌ Query error: ' + sbErr.message + '\n'; return; }
+        
+        if (el) el.textContent += `In Supabase for Mar 20: ${(sbM||[]).length}\nExpected: 23\n\n`;
+        
+        // Count duplicates: same team pair + same score can appear multiple times
+        const existingCount = {};
+        (sbM||[]).forEach(m => {
+          const sig = `${m.team1_id}-${m.team2_id}-${(m.scores||[[0,0]])[0][0]}-${(m.scores||[[0,0]])[0][1]}`;
+          existingCount[sig] = (existingCount[sig]||0) + 1;
+        });
+        
+        const expectedCount = {};
+        const missing = [];
+        expected.forEach(([t1,t2,s1,s2], idx) => {
+          const t1Id = teamMap[t1], t2Id = teamMap[t2];
+          const sig = `${t1Id}-${t2Id}-${s1}-${s2}`;
+          expectedCount[sig] = (expectedCount[sig]||0) + 1;
+          if ((existingCount[sig]||0) < expectedCount[sig]) {
+            missing.push({t1,t2,t1Id,t2Id,s1,s2,idx:idx+1});
+          }
+        });
+        
+        if (missing.length === 0) {
+          if (el) el.textContent += '✅ All 23 matches present! No recovery needed.\n';
+          toast('All matches present!', 'success');
+          return;
+        }
+        
+        if (el) el.textContent += `Missing ${missing.length} matches:\n`;
+        missing.forEach(m => { if (el) el.textContent += `  #${m.idx}: ${m.t1} ${m.s1}-${m.s2} ${m.t2}\n`; });
+        if (el) el.textContent += '\nPushing...\n';
+        
+        let pushed = 0, failed = 0;
+        for (let i = 0; i < missing.length; i++) {
+          const m = missing[i];
+          const wid = m.s1 > m.s2 ? m.t1Id : m.t2Id;
+          const md = { id: Date.now()+i+500, date:'2026-03-20', location:'The Hub', court:'The Hub 1',
+            team1_id:m.t1Id, team2_id:m.t2Id, scores:[[m.s1,m.s2]], winner_id:wid,
+            created_at: new Date().toISOString() };
+          try {
+            const { error } = await supabaseClient.from('matches').insert([md]);
+            if (error) { md.id = Date.now()+Math.floor(Math.random()*100000)+i;
+              const { error:e2 } = await supabaseClient.from('matches').insert([md]);
+              if (e2) throw e2; }
+            pushed++;
+            if (el) el.textContent += `  ✅ ${m.t1} ${m.s1}-${m.s2} ${m.t2}\n`;
+          } catch(e) { failed++; if (el) el.textContent += `  ❌ ${m.t1} vs ${m.t2}: ${e.message}\n`; }
+        }
+        
+        if (el) el.textContent += `\nDone! Pushed: ${pushed}, Failed: ${failed}\n`;
+        if (pushed > 0) { if (el) el.textContent += '🎉 Now tap "Force Full Refresh"!\n'; toast(`Recovered ${pushed} matches!`, 'success'); }
+      } catch(e) { if (el) el.textContent += '\n❌ ' + e.message + '\n'; }
     }
     
     async function forceFullRefresh() {
