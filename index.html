@@ -4463,6 +4463,7 @@
             let insertData = op.data;
             if (op.table === 'matches') {
               insertData = {
+                id: op.data.id || Date.now(),
                 date: op.data.date, location: op.data.location || '', court: op.data.court || '',
                 team1_id: op.data.team1_id, team2_id: op.data.team2_id,
                 scores: op.data.scores, winner_id: op.data.winner_id,
@@ -4935,6 +4936,7 @@
             try {
               // Clean match data - only include known Supabase columns
               const clean = {
+                id: lm.id || Date.now() + Math.floor(Math.random() * 100000),
                 date: lm.date, location: lm.location || '', court: lm.court || '',
                 team1_id: lm.team1_id, team2_id: lm.team2_id,
                 scores: lm.scores, winner_id: lm.winner_id,
@@ -9106,7 +9108,7 @@
       };
       if (supabaseClient) {
         // Send only safe columns to Supabase
-        const { id, ...sbRecord } = matchRecord;
+        const sbRecord = matchRecord;
         supabaseClient.from('matches').insert([sbRecord]).select().single().then(({data, error}) => {
           if (!error && data) matches.unshift(data);
           else matches.unshift(matchRecord);
@@ -9352,7 +9354,7 @@
         game_mode: 'randomiser'
       };
       if (supabaseClient) {
-        const { id, ...sbRecord } = matchRecord;
+        const sbRecord = matchRecord;
         supabaseClient.from('matches').insert([sbRecord]).catch(() => {});
       }
       
@@ -10268,6 +10270,7 @@
       const wid = scoreA > scoreB ? m.team1_id : m.team2_id;
       
       const finalMatch = { 
+        id: Date.now(), 
         date: m.date, 
         location: m.location, 
         court: m.court, 
@@ -13697,12 +13700,14 @@
         if (el) el.textContent += `Found ${toPush.length} matches to push...\n`;
         
         let pushed = 0, failed = 0;
-        for (const m of toPush) {
+        for (let i = 0; i < toPush.length; i++) {
+          const m = toPush[i];
           try {
-            // ONLY include columns that exist in Supabase matches table
-            // Safe: date, location, court, team1_id, team2_id, scores, winner_id, created_at, game_mode
-            // NOT safe: started_at, finalized_at, md_round, id (let Supabase auto-generate)
+            // Supabase matches table requires: id, date, team1_id, team2_id, scores, winner_id, created_at
+            // Also supports: location, court, game_mode
+            // Does NOT have: started_at, finalized_at, md_round
             const matchData = {
+              id: m.id || Date.now() + i,
               date: m.date,
               location: m.location || '',
               court: m.court || '',
@@ -13716,8 +13721,8 @@
             
             const { data, error } = await supabaseClient.from('matches').insert([matchData]).select().single();
             if (error) {
-              // Retry without created_at in case it's also auto-generated
-              delete matchData.created_at;
+              // Retry with fresh unique ID in case of ID conflict
+              matchData.id = Date.now() + Math.floor(Math.random() * 100000) + i;
               const { data: d2, error: e2 } = await supabaseClient.from('matches').insert([matchData]).select().single();
               if (e2) {
                 console.error('Push failed for match:', m, e2);
