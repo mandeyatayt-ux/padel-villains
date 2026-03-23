@@ -3661,16 +3661,49 @@
         <div id="userAccountsList"></div>
       </div>
       
+      <!-- System Info -->
+      <div class="card" style="margin-bottom:24px">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-microchip" style="color:var(--clay);margin-right:8px"></i>System Info</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="background:var(--cream);padding:12px 16px;border-radius:12px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text-muted);margin-bottom:4px">DEVICE ID</div>
+            <div style="font-size:12px;font-family:monospace;word-break:break-all" id="adminDeviceId"></div>
+          </div>
+          <div style="background:var(--cream);padding:12px 16px;border-radius:12px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text-muted);margin-bottom:4px">SYNC STATUS</div>
+            <div style="font-size:12px" id="adminSyncStatus"></div>
+          </div>
+          <div style="background:var(--cream);padding:12px 16px;border-radius:12px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text-muted);margin-bottom:4px">MATCHES IN MEMORY</div>
+            <div style="font-size:12px" id="adminMatchCount"></div>
+          </div>
+          <div style="background:var(--cream);padding:12px 16px;border-radius:12px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text-muted);margin-bottom:4px">PENDING SYNC</div>
+            <div style="font-size:12px" id="adminPendingCount"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Audit Trail -->
+      <div class="card" style="margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="font-size:16px;font-weight:700"><i class="fas fa-clipboard-list" style="color:var(--clay);margin-right:8px"></i>Audit Trail</h3>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="renderAuditLog()" style="border-radius:10px"><i class="fas fa-sync"></i> Refresh</button>
+            <button class="btn btn-sm" onclick="clearAuditLog()" style="border-radius:10px;color:var(--danger)"><i class="fas fa-trash"></i> Clear</button>
+          </div>
+        </div>
+        <div id="auditLogContainer" style="max-height:400px;overflow-y:auto;border-radius:12px"></div>
+      </div>
+      
       <!-- Data Recovery -->
       <div class="card" style="margin-bottom:24px;border:2px solid var(--clay)">
-        <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-database" style="color:var(--clay);margin-right:8px"></i>Data Recovery</h3>
-        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">If matches are missing on other devices, use these tools to diagnose and fix sync issues.</p>
-        <div id="dataDiagnostics" style="background:var(--cream);padding:16px;border-radius:12px;font-family:monospace;font-size:12px;margin-bottom:16px;white-space:pre-wrap">Loading diagnostics...</div>
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-database" style="color:var(--clay);margin-right:8px"></i>Data Tools</h3>
+        <div id="dataDiagnostics" style="background:var(--cream);padding:16px;border-radius:12px;font-family:monospace;font-size:12px;margin-bottom:16px;white-space:pre-wrap;max-height:300px;overflow-y:auto">Tap Run Diagnostics</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="runDataDiagnostics()" style="border-radius:12px"><i class="fas fa-stethoscope"></i> Run Diagnostics</button>
-          <button class="btn btn-primary" onclick="forcePushLocalToSupabase()" style="background:var(--clay);border-radius:12px"><i class="fas fa-cloud-arrow-up"></i> Force Push Local → Supabase</button>
-          <button class="btn btn-primary" onclick="recoverMarch20Matches()" style="background:#059669;border-radius:12px"><i class="fas fa-heart-pulse"></i> Recover March 20</button>
-          <button class="btn btn-secondary" onclick="forceFullRefresh()" style="border-radius:12px"><i class="fas fa-sync"></i> Force Full Refresh</button>
+          <button class="btn btn-primary" onclick="forcePushLocalToSupabase()" style="background:var(--clay);border-radius:12px"><i class="fas fa-cloud-arrow-up"></i> Force Push</button>
+          <button class="btn btn-secondary" onclick="forceFullRefresh()" style="border-radius:12px"><i class="fas fa-sync"></i> Force Refresh</button>
         </div>
       </div>
       
@@ -4854,6 +4887,8 @@
                 if (tabId === 'admin' && typeof renderUserAccounts === 'function') {
                   renderUserAccounts();
                   renderAdminPanel();
+                  renderAuditLog();
+                  updateAdminSystemInfo();
                 }
               }
             }, { once: true });
@@ -4924,13 +4959,10 @@
     
     async function fetchFromDatabase() {
       try {
-        // Process any pending writes first
+        // Push any pending writes to Supabase first
         await processPendingSync();
         
-        // Snapshot local matches before overwriting
-        const localMatchesBefore = JSON.parse(localStorage.getItem('pv_matches') || '[]');
-        
-        // Fetch core tables in parallel (these must exist)
+        // Fetch core tables in parallel
         const results = await Promise.all([
           supabaseClient.from('players').select('*').order('created_at'),
           supabaseClient.from('teams').select('*').order('created_at'),
@@ -4940,51 +4972,28 @@
         
         const [p, t, m, v] = results;
         
-        // Check for errors - extract message safely
         if (p.error) throw new Error('Failed to load players: ' + (p.error.message || 'Unknown error'));
         if (t.error) throw new Error('Failed to load teams: ' + (t.error.message || 'Unknown error'));
         if (m.error) throw new Error('Failed to load matches: ' + (m.error.message || 'Unknown error'));
         
-        // Try to fetch ongoing_matches (may not exist)
         let ongoingData = [];
         try {
           const o = await supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false });
           ongoingData = o.data || [];
-        } catch (e) {
-          console.log('Ongoing matches table not available');
-        }
+        } catch (e) { console.log('Ongoing matches table not available'); }
         
-        // Try to fetch matchdays (may not exist)
         let matchdaysData = [];
         try {
           const md = await supabaseClient.from('matchdays').select('*').order('date', { ascending: true });
           matchdaysData = md.data || [];
         } catch (e) {
-          console.log('Matchdays table not available');
           matchdaysData = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
-        }
-        
-        let serverMatches = m.data || [];
-        
-        // Preserve local-only matches not found in Supabase
-        const srvIds = new Set(serverMatches.map(sm => String(sm.id)));
-        const srvKeys = new Set(serverMatches.map(sm => `${sm.team1_id}-${sm.team2_id}-${sm.date}`));
-        const localOnlyInit = localMatchesBefore.filter(lm => {
-          if (srvIds.has(String(lm.id))) return false;
-          const key = `${lm.team1_id}-${lm.team2_id}-${lm.date}-${lm.started_at}`;
-          if (srvKeys.has(key)) return false;
-          return true;
-        });
-        if (localOnlyInit.length > 0) {
-          console.warn(`Init: Preserving ${localOnlyInit.length} local-only matches`);
-          serverMatches = [...serverMatches, ...localOnlyInit];
-          serverMatches.sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
         }
         
         const data = {
           players: p.data || [],
           teams: t.data || [],
-          matches: serverMatches,
+          matches: m.data || [],
           venues: v.data?.length ? v.data : defaultVenues,
           ongoing_matches: ongoingData,
           matchdays: matchdaysData
@@ -5088,13 +5097,8 @@
       try {
         console.log('Background fetch starting...');
         
-        // CRITICAL: Push any pending writes to Supabase FIRST
-        // This ensures locally-saved matches get to Supabase before we pull fresh data
+        // Push pending writes to Supabase FIRST
         await processPendingSync();
-        
-        // Snapshot current local matches (in case some haven't synced)
-        const localMatches = [...matches];
-        const localOngoing = [...ongoingMatches];
         
         // Fetch all tables in parallel
         const results = await Promise.all([
@@ -5107,88 +5111,39 @@
         
         const [p, t, m, v, o] = results;
         
-        // Only update if we got valid data
         if (p.error || t.error || m.error) {
-          console.log('Background refresh had errors, skipping update');
+          console.log('Background refresh had errors, skipping');
           return;
         }
         
-        // Try matchdays separately
         let matchdaysData = [];
         try {
           const md = await supabaseClient.from('matchdays').select('*').order('date', { ascending: true });
           matchdaysData = md.data || [];
         } catch (e) {
-          matchdaysData = matchdays; // Keep existing
-        }
-        
-        let serverMatches = m.data || [];
-        let serverOngoing = o.data || [];
-        
-        // MERGE: Preserve any local-only matches not found in Supabase
-        // These are matches that were saved locally but failed to sync
-        const serverMatchIds = new Set(serverMatches.map(sm => String(sm.id)));
-        const serverMatchKeys = new Set(serverMatches.map(sm => `${sm.team1_id}-${sm.team2_id}-${sm.date}`));
-        
-        const localOnly = localMatches.filter(lm => {
-          // Not in server by ID
-          if (serverMatchIds.has(String(lm.id))) return false;
-          // Not in server by unique key (team pair + date + start time)
-          const key = `${lm.team1_id}-${lm.team2_id}-${lm.date}-${lm.started_at}`;
-          if (serverMatchKeys.has(key)) return false;
-          return true;
-        });
-        
-        if (localOnly.length > 0) {
-          console.warn(`Preserving ${localOnly.length} local-only matches not found in Supabase`);
-          serverMatches = [...serverMatches, ...localOnly];
-          // Re-sort by date descending
-          serverMatches.sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
-          
-          // Try to push the missing matches to Supabase
-          for (const lm of localOnly) {
-            try {
-              // Clean match data - only include known Supabase columns
-              const clean = {
-                id: lm.id || Date.now() + Math.floor(Math.random() * 100000),
-                date: lm.date, location: lm.location || '', court: lm.court || '',
-                team1_id: lm.team1_id, team2_id: lm.team2_id,
-                scores: lm.scores, winner_id: lm.winner_id,
-                created_at: lm.created_at || new Date().toISOString()
-              };
-              if (lm.game_mode) clean.game_mode = lm.game_mode;
-              await supabaseClient.from('matches').insert([clean]);
-            } catch (e) { console.warn('Failed to push local match to Supabase:', e); }
-          }
+          matchdaysData = matchdays;
         }
         
         const data = {
           players: p.data || [],
           teams: t.data || [],
-          matches: serverMatches,
+          matches: m.data || [],
           venues: v.data?.length ? v.data : defaultVenues,
-          ongoing_matches: serverOngoing,
+          ongoing_matches: o.data || [],
           matchdays: matchdaysData
         };
         
         console.log('Background fetch complete:', {
-          players: data.players.length,
-          playersWithPhotos: data.players.filter(p => p.photo).length,
-          matches: data.matches.length,
-          localOnlyPreserved: localOnly.length
+          players: data.players.length, matches: data.matches.length
         });
         
         applyData(data);
         cacheData(data);
         renderAll();
+        updateSyncBadge();
         
-        // Also refresh My Profile if user is logged in
-        if (currentUser) {
-          renderMyProfile();
-        }
-        
-        loadEventsFromDb(); // Also refresh events
-        console.log('Background refresh and render complete');
+        if (currentUser) renderMyProfile();
+        loadEventsFromDb();
       } catch (e) {
         console.log('Background refresh failed:', e);
       }
@@ -10526,24 +10481,26 @@
       if (idx === -1) return;
       
       const m = matches[idx];
+      const oldScores = m.scores;
+      const oldWinner = m.winner_id;
       const newWinner = scoreA > scoreB ? m.team1_id : m.team2_id;
       
-      matches[idx] = {
-        ...m,
-        scores: [[scoreA, scoreB]],
-        winner_id: newWinner
-      };
+      matches[idx] = { ...m, scores: [[scoreA, scoreB]], winner_id: newWinner };
       
       if (supabaseClient) {
         try {
           await supabaseClient.from('matches').update({
-            scores: [[scoreA, scoreB]],
-            winner_id: newWinner
+            scores: [[scoreA, scoreB]], winner_id: newWinner
           }).eq('id', id);
         } catch (e) { toast('Error saving', 'error'); return; }
       } else {
         saveLocal();
       }
+      
+      logAudit('match_edited', m, { 
+        old_scores: oldScores, new_scores: [[scoreA, scoreB]],
+        old_winner: oldWinner, new_winner: newWinner 
+      });
       
       closeModal('editMatch');
       renderAll();
@@ -10565,11 +10522,18 @@
     }
     
     async function deleteMatch(id) {
+      const m = matches.find(match => match.id === id);
+      
       if (supabaseClient) {
         try {
           await supabaseClient.from('matches').delete().eq('id', id);
         } catch (e) { toast('Error deleting', 'error'); return; }
       }
+      
+      logAudit('match_deleted', m, { 
+        teams: `${getTeam(m?.team1_id)?.name || '?'} vs ${getTeam(m?.team2_id)?.name || '?'}`,
+        scores: m?.scores 
+      });
       
       matches = matches.filter(m => m.id !== id);
       if (!supabaseClient) saveLocal();
@@ -13888,93 +13852,6 @@
       }
     }
     
-    async function recoverMarch20Matches() {
-      if (!supabaseClient) { toast('Supabase not connected', 'error'); return; }
-      const el = document.getElementById('dataDiagnostics');
-      if (el) el.textContent = 'Recovering March 20 matches...\n';
-      
-      try {
-        const teamMap = {};
-        teams.forEach(t => { teamMap[t.name] = t.id; });
-        if (el) el.textContent += `Teams: ${Object.keys(teamMap).join(', ')}\n\n`;
-        
-        // All 23 matches from March 20 iPad screenshots
-        const expected = [
-          ['The Lads','T-Man',1,0],['The Lads','Martín & Matt',1,0],
-          ['The Lads','City boyz',1,0],['Martín & Matt','The Dubes',1,0],
-          ['The Dubes','T-Man',1,0],['The Dubes','City boyz',0,1],
-          ['Martín & Matt','City boyz',0,1],['The Lads','The Dubes',1,0],
-          ['The Dubes','Martín & Matt',0,1],['The Lads','City boyz',0,1],
-          ['The Lads','Martín & Matt',1,0],['City boyz','The Dubes',0,1],
-          ['City boyz','Martín & Matt',0,1],['The Lads','The Dubes',0,1],
-          ['The Dubes','Martín & Matt',1,0],['The Lads','City boyz',0,1],
-          ['The Lads','Martín & Matt',1,0],['The Dubes','City boyz',1,0],
-          ['City boyz','Martín & Matt',0,1],['Martín & Matt','The Dubes',1,0],
-          ['The Lads','The Dubes',0,1],['The Lads','City boyz',1,0],
-          ['City boyz','Martín & Matt',0,1]
-        ];
-        
-        const missingTeams = [...new Set(expected.flat().filter(x => typeof x === 'string' && !teamMap[x]))];
-        if (missingTeams.length > 0) {
-          if (el) el.textContent += '❌ Missing teams: ' + missingTeams.join(', ') + '\n';
-          return;
-        }
-        
-        const { data: sbM, error: sbErr } = await supabaseClient.from('matches').select('*').eq('date', '2026-03-20');
-        if (sbErr) { if (el) el.textContent += '❌ Query error: ' + sbErr.message + '\n'; return; }
-        
-        if (el) el.textContent += `In Supabase for Mar 20: ${(sbM||[]).length}\nExpected: 23\n\n`;
-        
-        // Count duplicates: same team pair + same score can appear multiple times
-        const existingCount = {};
-        (sbM||[]).forEach(m => {
-          const sig = `${m.team1_id}-${m.team2_id}-${(m.scores||[[0,0]])[0][0]}-${(m.scores||[[0,0]])[0][1]}`;
-          existingCount[sig] = (existingCount[sig]||0) + 1;
-        });
-        
-        const expectedCount = {};
-        const missing = [];
-        expected.forEach(([t1,t2,s1,s2], idx) => {
-          const t1Id = teamMap[t1], t2Id = teamMap[t2];
-          const sig = `${t1Id}-${t2Id}-${s1}-${s2}`;
-          expectedCount[sig] = (expectedCount[sig]||0) + 1;
-          if ((existingCount[sig]||0) < expectedCount[sig]) {
-            missing.push({t1,t2,t1Id,t2Id,s1,s2,idx:idx+1});
-          }
-        });
-        
-        if (missing.length === 0) {
-          if (el) el.textContent += '✅ All 23 matches present! No recovery needed.\n';
-          toast('All matches present!', 'success');
-          return;
-        }
-        
-        if (el) el.textContent += `Missing ${missing.length} matches:\n`;
-        missing.forEach(m => { if (el) el.textContent += `  #${m.idx}: ${m.t1} ${m.s1}-${m.s2} ${m.t2}\n`; });
-        if (el) el.textContent += '\nPushing...\n';
-        
-        let pushed = 0, failed = 0;
-        for (let i = 0; i < missing.length; i++) {
-          const m = missing[i];
-          const wid = m.s1 > m.s2 ? m.t1Id : m.t2Id;
-          const md = { id: Date.now()+i+500, date:'2026-03-20', location:'The Hub', court:'The Hub 1',
-            team1_id:m.t1Id, team2_id:m.t2Id, scores:[[m.s1,m.s2]], winner_id:wid,
-            created_at: new Date().toISOString() };
-          try {
-            const { error } = await supabaseClient.from('matches').insert([md]);
-            if (error) { md.id = Date.now()+Math.floor(Math.random()*100000)+i;
-              const { error:e2 } = await supabaseClient.from('matches').insert([md]);
-              if (e2) throw e2; }
-            pushed++;
-            if (el) el.textContent += `  ✅ ${m.t1} ${m.s1}-${m.s2} ${m.t2}\n`;
-          } catch(e) { failed++; if (el) el.textContent += `  ❌ ${m.t1} vs ${m.t2}: ${e.message}\n`; }
-        }
-        
-        if (el) el.textContent += `\nDone! Pushed: ${pushed}, Failed: ${failed}\n`;
-        if (pushed > 0) { if (el) el.textContent += '🎉 Now tap "Force Full Refresh"!\n'; toast(`Recovered ${pushed} matches!`, 'success'); }
-      } catch(e) { if (el) el.textContent += '\n❌ ' + e.message + '\n'; }
-    }
-    
     async function manualSync() {
       if (syncStatus.syncing) { toast('Sync already in progress', 'info'); return; }
       
@@ -14005,6 +13882,82 @@
         updateSyncBadge();
         if (icon) icon.classList.remove('fa-spin');
       }
+    }
+    
+    // === AUDIT LOG VIEWER ===
+    function renderAuditLog() {
+      const container = document.getElementById('auditLogContainer');
+      if (!container) return;
+      
+      const log = JSON.parse(localStorage.getItem('pv_audit_log') || '[]');
+      
+      if (log.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">No audit entries yet. Actions will be logged here.</div>';
+        return;
+      }
+      
+      const actionIcons = {
+        'match_saved': '✅', 'match_saved_offline': '📱', 'match_queued': '⏳',
+        'match_cancelled': '❌', 'match_edited': '✏️', 'match_deleted': '🗑️',
+        'manual_sync': '🔄'
+      };
+      const actionColors = {
+        'match_saved': '#059669', 'match_saved_offline': '#D97706', 'match_queued': 'var(--clay)',
+        'match_cancelled': '#E11D48', 'match_edited': '#2563EB', 'match_deleted': '#E11D48',
+        'manual_sync': 'var(--clay)'
+      };
+      
+      container.innerHTML = log.slice(0, 50).map(entry => {
+        const icon = actionIcons[entry.action] || '📋';
+        const color = actionColors[entry.action] || 'var(--text-muted)';
+        const time = entry.created_at ? new Date(entry.created_at).toLocaleString('en-GB', {
+          day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', second:'2-digit'
+        }) : '?';
+        const user = entry.user_id || 'unknown';
+        const device = (entry.device_id || '').substring(0, 12);
+        const details = entry.details?.message || JSON.stringify(entry.details || {}).substring(0, 60);
+        const uid = entry.match_uid ? entry.match_uid.substring(0, 16) + '...' : '';
+        
+        return `<div style="display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(93,78,55,0.06);font-size:12px;align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">${icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+              <span style="font-weight:700;color:${color};text-transform:uppercase;font-size:10px;letter-spacing:0.5px">${entry.action.replace(/_/g, ' ')}</span>
+              <span style="color:var(--text-muted);font-size:10px">${time}</span>
+            </div>
+            <div style="color:var(--brown-dark);font-size:11px">${details}</div>
+            <div style="color:var(--text-muted);font-size:10px;margin-top:2px">
+              ${user} • ${device}${uid ? ' • ' + uid : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    
+    function clearAuditLog() {
+      if (!confirm('Clear all audit log entries from this device?')) return;
+      localStorage.setItem('pv_audit_log', '[]');
+      renderAuditLog();
+      toast('Audit log cleared', 'success');
+    }
+    
+    function updateAdminSystemInfo() {
+      const deviceEl = document.getElementById('adminDeviceId');
+      const syncEl = document.getElementById('adminSyncStatus');
+      const matchEl = document.getElementById('adminMatchCount');
+      const pendingEl = document.getElementById('adminPendingCount');
+      
+      if (deviceEl) deviceEl.textContent = PV_DEVICE_ID;
+      if (syncEl) {
+        const pending = pendingSync.length;
+        syncEl.innerHTML = pending > 0 
+          ? `<span style="color:#D97706">⚠️ ${pending} pending</span>`
+          : `<span style="color:#059669">✅ Synced</span>` + (syncStatus.lastSync 
+            ? ` <span style="color:var(--text-muted);font-size:10px">(${syncStatus.lastSync.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})})</span>` 
+            : '');
+      }
+      if (matchEl) matchEl.textContent = `${matches.length} completed, ${ongoingMatches.length} in queue`;
+      if (pendingEl) pendingEl.textContent = `${pendingSync.length} operations queued`;
     }
     
     async function forceFullRefresh() {
