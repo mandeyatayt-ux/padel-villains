@@ -353,6 +353,7 @@
     /* === SIDEBAR LAYOUT (Desktop 1024px+) === */
     .sidebar-logo { display: none; }
     .sidebar-user { display: none; }
+    .sidebar-sync { display: none !important; }
     @media (min-width: 1024px) {
       .app { padding-left: 250px !important; max-width: 100% !important; }
       .header { margin-left: 0; padding: 0 32px !important; }
@@ -2090,6 +2091,7 @@
         background: rgba(224,120,80,0.05); border-radius: 14px;
         border: 1px solid rgba(224,120,80,0.06);
       }
+      .sidebar-sync { display: block !important; }
       
       /* Section labels in sidebar */
       .nav::before {
@@ -2406,6 +2408,16 @@
       <button data-tab="history"><span class="nav-icon" data-icon="scoreboard"></span><span>History</span></button>
       <button data-tab="settings" class="admin-only"><span class="nav-icon" data-icon="scorekeeper"></span><span>Settings</span></button>
       <button data-tab="admin" class="admin-only"><span class="nav-icon" data-icon="strategy"></span><span>Admin</span></button>
+      <!-- Sync Status -->
+      <div class="sidebar-sync" style="display:none;padding:8px 20px;margin:4px 14px;border-radius:12px;background:rgba(93,78,55,0.04);cursor:pointer" onclick="manualSync()">
+        <div style="display:flex;align-items:center;gap:10px">
+          <i class="fas fa-sync" id="syncIcon" style="color:var(--clay);font-size:14px"></i>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--brown-dark)" id="syncStatusText">✅ Synced</div>
+          </div>
+          <span id="syncBadge" style="display:none;background:var(--danger);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;margin-left:auto">0</span>
+        </div>
+      </div>
       <div class="sidebar-user">
         <div class="avatar sm" id="sidebarAvatar" style="background:linear-gradient(135deg,var(--clay),var(--clay-dark));color:white;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;font-size:13px;font-weight:700">T</div>
         <div><div class="sidebar-user-name" id="sidebarName">Tayt M.</div><div class="sidebar-user-role" id="sidebarRole">Admin</div></div>
@@ -4442,16 +4454,212 @@
     let calendarDate = new Date(); // Current calendar view
     let isOffline = false;
     
+    // ===== CORE INFRASTRUCTURE: Device ID, Match UID, Sync =====
+    
+    // Device fingerprint — persists across sessions, identifies which device sent data
+    const PV_DEVICE_ID = (() => {
+      let id = localStorage.getItem('pv_device_id');
+      if (!id) {
+        id = 'pv_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
+        localStorage.setItem('pv_device_id', id);
+      }
+      return id;
+    })();
+    
+    // Generate a unique match ID — globally unique, collision-proof
+    function generateMatchUID() {
+      const ts = Date.now().toString(36);
+      const rand = Math.random().toString(36).substring(2, 10);
+      return `m_${ts}_${rand}_${PV_DEVICE_ID.substring(3, 9)}`;
+    }
+    
+    // Generate a numeric ID for Supabase (bigint NOT NULL)
+    function generateNumericId() {
+      return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+    }
+    
+    // Sync status tracking
+    let syncStatus = { pending: 0, lastSync: null, syncing: false };
+    
+    function updateSyncBadge() {
+      const badge = document.getElementById('syncBadge');
+      const count = pendingSync.length;
+      syncStatus.pending = count;
+      if (badge) {
+        badge.style.display = count > 0 ? '' : 'none';
+        badge.textContent = count;
+      }
+      const statusEl = document.getElementById('syncStatusText');
+      if (statusEl) {
+        if (syncStatus.syncing) {
+          statusEl.textContent = '🔄 Syncing...';
+          statusEl.style.color = 'var(--clay)';
+        } else if (count > 0) {
+          statusEl.textContent = `⚠️ ${count} pending`;
+          statusEl.style.color = '#D97706';
+        } else {
+          statusEl.textContent = '✅ Synced';
+          statusEl.style.color = 'var(--success)';
+        }
+      }
+    }
+    
+    // === CENTRALIZED: Save completed match to Supabase ===
+    async function saveMatchToSupabase(matchData) {
+      // Ensure required fields
+      if (!matchData.id) matchData.id = generateNumericId();
+      if (!matchData.match_uid) matchData.match_uid = generateMatchUID();
+      if (!matchData.created_at) matchData.created_at = new Date().toISOString();
+      if (!matchData.device_id) matchData.device_id = PV_DEVICE_ID;
+      
+      // Build Supabase-safe object (only columns that exist)
+      const sbData = {
+        id: matchData.id,
+        match_uid: matchData.match_uid,
+        date: matchData.date,
+        location: matchData.location || '',
+        court: matchData.court || '',
+        team1_id: matchData.team1_id,
+        team2_id: matchData.team2_id,
+        scores: matchData.scores,
+        winner_id: matchData.winner_id || null,
+        created_at: matchData.created_at,
+        device_id: matchData.device_id
+      };
+      // Optional columns — include if present
+      if (matchData.started_at) sbData.started_at = matchData.started_at;
+      if (matchData.finalized_at) sbData.finalized_at = matchData.finalized_at;
+      if (matchData.game_mode) sbData.game_mode = matchData.game_mode;
+      if (matchData.md_round != null) sbData.md_round = matchData.md_round;
+      
+      if (supabaseClient && !isOffline) {
+        try {
+          const { data, error } = await supabaseClient.from('matches').insert([sbData]).select().single();
+          if (error) {
+            // If unique constraint violation on match_uid, it's a duplicate — not an error
+            if (error.message?.includes('match_uid') || error.code === '23505') {
+              console.log('Duplicate match_uid detected, skipping:', matchData.match_uid);
+              return { success: true, duplicate: true, data: matchData };
+            }
+            throw error;
+          }
+          // Log to audit trail
+          logAudit('match_saved', data || sbData, 'Match saved to Supabase');
+          return { success: true, data: data || matchData };
+        } catch (e) {
+          console.warn('Supabase match save failed, queuing offline:', e.message);
+          addToPendingSync({ type: 'insert', table: 'matches', data: sbData, match_uid: matchData.match_uid });
+          logAudit('match_saved_offline', sbData, 'Saved offline: ' + e.message);
+          return { success: false, offline: true, data: matchData, error: e.message };
+        }
+      } else {
+        // Offline — queue for later sync
+        addToPendingSync({ type: 'insert', table: 'matches', data: sbData, match_uid: matchData.match_uid });
+        logAudit('match_saved_offline', sbData, 'Device offline');
+        return { success: false, offline: true, data: matchData };
+      }
+    }
+    
+    // === CENTRALIZED: Queue ongoing match to Supabase ===
+    async function queueMatchToSupabase(matchData) {
+      if (!matchData.id) matchData.id = generateNumericId();
+      if (!matchData.match_uid) matchData.match_uid = generateMatchUID();
+      if (!matchData.started_at) matchData.started_at = new Date().toISOString();
+      if (!matchData.device_id) matchData.device_id = PV_DEVICE_ID;
+      
+      if (supabaseClient && !isOffline) {
+        try {
+          const { data, error } = await supabaseClient.from('ongoing_matches').insert([matchData]).select().single();
+          if (error) throw error;
+          logAudit('match_queued', data || matchData, 'Match queued');
+          return { success: true, data: data || matchData };
+        } catch (e) {
+          console.warn('Supabase queue failed, saving offline:', e.message);
+          addToPendingSync({ type: 'insert', table: 'ongoing_matches', data: matchData, match_uid: matchData.match_uid });
+          return { success: false, offline: true, data: matchData, error: e.message };
+        }
+      } else {
+        addToPendingSync({ type: 'insert', table: 'ongoing_matches', data: matchData, match_uid: matchData.match_uid });
+        return { success: false, offline: true, data: matchData };
+      }
+    }
+    
+    // === CENTRALIZED: Delete ongoing match from Supabase ===
+    async function deleteOngoingFromSupabase(matchId) {
+      if (supabaseClient && !isOffline) {
+        try {
+          const { error } = await supabaseClient.from('ongoing_matches').delete().eq('id', matchId);
+          if (error) console.warn('Failed to delete ongoing match:', error);
+          return { success: !error };
+        } catch (e) {
+          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: matchId });
+          return { success: false };
+        }
+      } else {
+        addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: matchId });
+        return { success: false };
+      }
+    }
+    
+    // === DUPLICATE CHECK: Is this match already saved? ===
+    function isDuplicateMatch(team1Id, team2Id, date, matchUid) {
+      // Check by match_uid first (strongest check)
+      if (matchUid && matches.some(m => m.match_uid === matchUid)) return true;
+      // Check in ongoing queue
+      if (matchUid && ongoingMatches.some(m => m.match_uid === matchUid)) return true;
+      return false;
+    }
+    
+    function isDuplicateInQueue(team1Id, team2Id) {
+      return ongoingMatches.some(m => 
+        (m.team1_id === team1Id && m.team2_id === team2Id) || 
+        (m.team1_id === team2Id && m.team2_id === team1Id)
+      );
+    }
+    
+    // === AUDIT TRAIL ===
+    function logAudit(action, matchData, details) {
+      const entry = {
+        action,
+        match_id: matchData?.id || null,
+        match_uid: matchData?.match_uid || null,
+        device_id: PV_DEVICE_ID,
+        user_id: currentUser?.username || currentUser?.name || 'unknown',
+        details: typeof details === 'string' ? { message: details } : details,
+        created_at: new Date().toISOString()
+      };
+      
+      // Save to local audit log (keep last 200 entries)
+      const localLog = JSON.parse(localStorage.getItem('pv_audit_log') || '[]');
+      localLog.unshift(entry);
+      if (localLog.length > 200) localLog.length = 200;
+      localStorage.setItem('pv_audit_log', JSON.stringify(localLog));
+      
+      // Push to Supabase audit table (non-blocking, fire-and-forget)
+      if (supabaseClient && !isOffline) {
+        supabaseClient.from('match_audit_log').insert([entry]).catch(() => {});
+      }
+    }
+    
     // Offline write queue - stores pending Supabase operations
     let pendingSync = JSON.parse(localStorage.getItem('pv_pending_sync') || '[]');
     
     function addToPendingSync(operation) {
-      pendingSync.push({ ...operation, timestamp: Date.now() });
+      // Deduplicate: don't queue if same match_uid already pending
+      if (operation.match_uid) {
+        const exists = pendingSync.some(p => p.match_uid === operation.match_uid && p.type === operation.type);
+        if (exists) return;
+      }
+      pendingSync.push({ ...operation, timestamp: Date.now(), device_id: PV_DEVICE_ID });
       localStorage.setItem('pv_pending_sync', JSON.stringify(pendingSync));
+      updateSyncBadge();
     }
     
     async function processPendingSync() {
       if (!supabaseClient || pendingSync.length === 0) return;
+      syncStatus.syncing = true;
+      updateSyncBadge();
+      
       const queue = [...pendingSync];
       pendingSync = [];
       localStorage.setItem('pv_pending_sync', '[]');
@@ -4460,19 +4668,20 @@
       for (const op of queue) {
         try {
           if (op.type === 'insert') {
-            // Sanitize matches table data - strip columns that don't exist in Supabase
-            let insertData = op.data;
-            if (op.table === 'matches') {
-              insertData = {
-                id: op.data.id || Date.now(),
-                date: op.data.date, location: op.data.location || '', court: op.data.court || '',
-                team1_id: op.data.team1_id, team2_id: op.data.team2_id,
-                scores: op.data.scores, winner_id: op.data.winner_id,
-                created_at: op.data.created_at || new Date().toISOString()
-              };
-              if (op.data.game_mode) insertData.game_mode = op.data.game_mode;
+            let insertData = { ...op.data };
+            // Ensure ID exists
+            if (!insertData.id) insertData.id = generateNumericId();
+            // Ensure device_id
+            if (!insertData.device_id) insertData.device_id = PV_DEVICE_ID;
+            
+            const { error } = await supabaseClient.from(op.table).insert([insertData]);
+            if (error) {
+              // Skip duplicate match_uid errors (already synced)
+              if (error.code === '23505' && error.message?.includes('match_uid')) {
+                synced++; continue;
+              }
+              throw error;
             }
-            await supabaseClient.from(op.table).insert([insertData]);
             synced++;
           } else if (op.type === 'delete') {
             await supabaseClient.from(op.table).delete().eq('id', op.id);
@@ -4482,7 +4691,7 @@
             synced++;
           }
         } catch (e) {
-          console.error('Sync failed for:', op, e);
+          console.error('Sync failed for:', op.type, op.table, e.message);
           pendingSync.push(op); // Re-queue failed ops
           failed++;
         }
@@ -4491,6 +4700,10 @@
       if (failed > 0) localStorage.setItem('pv_pending_sync', JSON.stringify(pendingSync));
       if (synced > 0) toast(`Synced ${synced} offline change${synced > 1 ? 's' : ''}`, 'success');
       if (failed > 0) toast(`${failed} change${failed > 1 ? 's' : ''} failed to sync`, 'error');
+      
+      syncStatus.syncing = false;
+      syncStatus.lastSync = new Date();
+      updateSyncBadge();
     }
     let activeMatchday = null;
     let viewingMatchday = null;
@@ -8450,30 +8663,28 @@
       const roundMatches = mdGeneratedSchedule.filter(m => m.round === roundNum);
       for (let i = 0; i < roundMatches.length; i++) {
         const m = roundMatches[i];
-        // Duplicate check - don't queue if same teams already in ongoing
         const t1Id = mdMode === 'roundrobin' ? m.t1 : null;
         const t2Id = mdMode === 'roundrobin' ? m.t2 : null;
-        if (t1Id && t2Id) {
-          const alreadyQueued = ongoingMatches.some(om => 
-            (om.team1_id === t1Id && om.team2_id === t2Id) || 
-            (om.team1_id === t2Id && om.team2_id === t1Id)
-          );
-          if (alreadyQueued) continue; // Skip duplicate
-        }
+        
+        // Duplicate check
+        if (t1Id && t2Id && isDuplicateInQueue(t1Id, t2Id)) continue;
         
         const matchData = mdMode === 'roundrobin' ? {
-          id: Date.now() + i + 1,
-          date: activeMatchday?.date || new Date().toISOString().split('T')[0],
+          id: generateNumericId(),
+          match_uid: generateMatchUID(),
+          date: activeMatchday?.date || getLocalDateStr(),
           location: activeMatchday?.venue || '',
           court: 'Court ' + m.court,
           team1_id: m.t1,
           team2_id: m.t2,
           status: 'ongoing',
           started_at: new Date().toISOString(),
-          md_round: m.round
+          md_round: m.round,
+          device_id: PV_DEVICE_ID
         } : {
-          id: Date.now() + i + 1,
-          date: activeMatchday?.date || new Date().toISOString().split('T')[0],
+          id: generateNumericId(),
+          match_uid: generateMatchUID(),
+          date: activeMatchday?.date || getLocalDateStr(),
           location: activeMatchday?.venue || '',
           court: 'Court ' + m.court,
           team1_players: m.team1,
@@ -8481,23 +8692,14 @@
           status: 'ongoing',
           started_at: new Date().toISOString(),
           md_round: m.round,
-          is_americano: true
+          is_americano: true,
+          device_id: PV_DEVICE_ID
         };
 
-        if (supabaseClient) {
-          try {
-            const { data, error } = await supabaseClient.from('ongoing_matches').insert([matchData]).select().single();
-            if (!error && data) ongoingMatches.unshift(data);
-            else ongoingMatches.unshift(matchData);
-          } catch(e) { 
-            console.error(e); 
-            ongoingMatches.unshift(matchData);
-          }
-        } else {
-          ongoingMatches.unshift(matchData);
-          saveLocal();
-        }
+        const result = await queueMatchToSupabase(matchData);
+        ongoingMatches.unshift(result.data || matchData);
       }
+      saveLocal();
       renderDashboard();
     }
 
@@ -9096,7 +9298,8 @@
       // Also save as a real match for history
       const winnerId = side === 'kings' ? kingsId : challengerId;
       const matchRecord = {
-        id: Date.now(),
+        id: generateNumericId(),
+        match_uid: generateMatchUID(),
         date: activeMatchday?.date || getLocalDateStr(),
         location: activeMatchday?.venue || '',
         court: 'KOTC',
@@ -9104,20 +9307,16 @@
         team2_id: challengerId,
         scores: [[side === 'kings' ? 1 : 0, side === 'kings' ? 0 : 1]],
         winner_id: winnerId,
-        created_at: new Date().toISOString(),
-        game_mode: 'kotc'
+        finalized_at: new Date().toISOString(),
+        game_mode: 'kotc',
+        device_id: PV_DEVICE_ID,
+        created_at: new Date().toISOString()
       };
-      if (supabaseClient) {
-        // Send only safe columns to Supabase
-        const sbRecord = matchRecord;
-        supabaseClient.from('matches').insert([sbRecord]).select().single().then(({data, error}) => {
-          if (!error && data) matches.unshift(data);
-          else matches.unshift(matchRecord);
-        });
-      } else {
-        matches.unshift(matchRecord);
+      // Fire and forget — non-blocking save
+      saveMatchToSupabase(matchRecord).then(result => {
+        matches.unshift(result.data || matchRecord);
         saveLocal();
-      }
+      });
       
       renderMatchDay();
     }
@@ -9344,20 +9543,23 @@
       
       // Save as match record (game_mode: randomiser, no winner_id to skip team rankings)
       const matchRecord = {
-        id: Date.now(),
+        id: generateNumericId(),
+        match_uid: generateMatchUID(),
         date: activeMatchday?.date || getLocalDateStr(),
         location: activeMatchday?.venue || '',
         court: 'Random Court ' + m.court,
         team1_players: m.team1,
         team2_players: m.team2,
         scores: [[team1Wins ? 1 : 0, team1Wins ? 0 : 1]],
-        created_at: new Date().toISOString(),
-        game_mode: 'randomiser'
+        finalized_at: new Date().toISOString(),
+        game_mode: 'randomiser',
+        device_id: PV_DEVICE_ID,
+        created_at: new Date().toISOString()
       };
-      if (supabaseClient) {
-        const sbRecord = matchRecord;
-        supabaseClient.from('matches').insert([sbRecord]).catch(() => {});
-      }
+      saveMatchToSupabase(matchRecord).then(result => {
+        matches.unshift(result.data || matchRecord);
+        saveLocal();
+      });
       
       randomiserRenderLive();
     }
@@ -10086,13 +10288,8 @@
     
     // ===== MATCH ACTIONS =====
     async function addMatch() {
-      // Admin only check
-      if (!currentUser?.is_admin) {
-        toast('Only admins can add match results', 'error');
-        return;
-      }
+      if (!currentUser?.is_admin) { toast('Only admins can add match results', 'error'); return; }
       
-      // Prevent double-clicks
       const btn = document.querySelector('#addMatch .btn-primary, #addMatch [onclick*="addMatch"]');
       if (btn?.disabled) return;
       if (btn) btn.disabled = true;
@@ -10108,38 +10305,24 @@
       if (t1 === t2) { toast('Select different teams', 'error'); if (btn) btn.disabled = false; return; }
       if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); if (btn) btn.disabled = false; return; }
       
-      const scores = [[scoreA, scoreB]];
-      const wid = scoreA > scoreB ? t1 : t2;
-      
-      const nm = { 
-        id: Date.now(), 
-        date, 
-        location: activeMatchday?.venue || '', 
-        court, 
-        team1_id: t1, 
-        team2_id: t2, 
-        scores, 
-        winner_id: wid, 
-        created_at: new Date().toISOString() 
+      const matchData = {
+        id: generateNumericId(),
+        match_uid: generateMatchUID(),
+        date,
+        location: activeMatchday?.venue || '',
+        court,
+        team1_id: t1,
+        team2_id: t2,
+        scores: [[scoreA, scoreB]],
+        winner_id: scoreA > scoreB ? t1 : t2,
+        finalized_at: new Date().toISOString(),
+        device_id: PV_DEVICE_ID,
+        created_at: new Date().toISOString()
       };
       
-      if (supabaseClient && !isOffline) {
-        try {
-          const { data, error } = await supabaseClient.from('matches').insert([nm]).select().single();
-          if (error) throw error;
-          matches.unshift(data || nm);
-        } catch (e) { 
-          console.warn('Supabase write failed, saving offline:', e);
-          matches.unshift(nm);
-          saveLocal();
-          addToPendingSync({ type: 'insert', table: 'matches', data: nm });
-          toast('Saved offline - will sync when online', 'info');
-        }
-      } else {
-        matches.unshift(nm);
-        saveLocal();
-        if (supabaseClient) addToPendingSync({ type: 'insert', table: 'matches', data: nm });
-      }
+      const result = await saveMatchToSupabase(matchData);
+      matches.unshift(result.data || matchData);
+      saveLocal();
       
       document.getElementById('scoreA').value = '';
       document.getElementById('scoreB').value = '';
@@ -10148,12 +10331,11 @@
       closeModal('addMatch');
       if (btn) btn.disabled = false;
       renderAll();
-      toast('Match logged!', 'success');
+      toast(result.offline ? 'Saved offline — will sync' : 'Match logged!', result.offline ? 'info' : 'success');
     }
     
     // ===== QUEUE MATCH (ONGOING) =====
     async function queueMatch() {
-      // Prevent double-clicks
       const btn = document.querySelector('#queueMatch .btn-primary, #queueMatch [onclick*="queueMatch"]');
       if (btn?.disabled) return;
       if (btn) btn.disabled = true;
@@ -10165,48 +10347,31 @@
       
       if (!t1 || !t2) { toast('Select both teams', 'error'); if (btn) btn.disabled = false; return; }
       if (t1 === t2) { toast('Select different teams', 'error'); if (btn) btn.disabled = false; return; }
+      if (isDuplicateInQueue(t1, t2)) { toast('This match is already in the queue', 'error'); if (btn) btn.disabled = false; return; }
       
-      // Check for duplicate - same teams already in queue
-      const isDuplicate = ongoingMatches.some(m => 
-        (m.team1_id === t1 && m.team2_id === t2) || (m.team1_id === t2 && m.team2_id === t1)
-      );
-      if (isDuplicate) { toast('This match is already in the queue', 'error'); if (btn) btn.disabled = false; return; }
-      
-      const nm = { 
-        id: Date.now(), 
-        date, 
-        location: activeMatchday?.venue || '', 
-        court, 
-        team1_id: t1, 
-        team2_id: t2, 
+      const matchData = {
+        id: generateNumericId(),
+        match_uid: generateMatchUID(),
+        date,
+        location: activeMatchday?.venue || '',
+        court,
+        team1_id: t1,
+        team2_id: t2,
         status: 'ongoing',
-        started_at: new Date().toISOString()
+        started_at: new Date().toISOString(),
+        device_id: PV_DEVICE_ID
       };
       
-      if (supabaseClient && !isOffline) {
-        try {
-          const { data, error } = await supabaseClient.from('ongoing_matches').insert([nm]).select().single();
-          if (error) throw error;
-          ongoingMatches.unshift(data);
-        } catch (e) { 
-          console.warn('Supabase write failed, saving offline:', e);
-          ongoingMatches.unshift(nm);
-          saveLocal();
-          addToPendingSync({ type: 'insert', table: 'ongoing_matches', data: nm });
-          toast('Saved offline - will sync when online', 'info');
-        }
-      } else {
-        ongoingMatches.unshift(nm);
-        saveLocal();
-        if (supabaseClient) addToPendingSync({ type: 'insert', table: 'ongoing_matches', data: nm });
-      }
+      const result = await queueMatchToSupabase(matchData);
+      ongoingMatches.unshift(result.data || matchData);
+      saveLocal();
       
       document.getElementById('queueTeam1').value = '';
       document.getElementById('queueTeam2').value = '';
       closeModal('queueMatch');
       if (btn) btn.disabled = false;
       renderAll();
-      toast('Match started!', 'success');
+      toast(result.offline ? 'Queued offline' : 'Match queued!', result.offline ? 'info' : 'success');
     }
     
     function openFinalizeMatch(id) {
@@ -10238,120 +10403,82 @@
     }
     
     async function finalizeMatch() {
-      // Prevent double-clicks
       const btn = document.querySelector('#finalizeMatch .btn-primary, #finalizeMatch [onclick*="finalizeMatch"]');
       if (btn?.disabled) return;
       if (btn) btn.disabled = true;
       
       const idRaw = document.getElementById('finalizeMatchId').value;
-      const id = Number(idRaw);
       const scoreA = parseInt(document.getElementById('finalScoreA').value) || 0;
       const scoreB = parseInt(document.getElementById('finalScoreB').value) || 0;
       
       if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); if (btn) btn.disabled = false; return; }
       
-      const m = ongoingMatches.find(match => String(match.id) === String(idRaw) || match.id === id);
+      const m = ongoingMatches.find(match => String(match.id) === String(idRaw));
       if (!m) { toast('Match not found in queue', 'error'); if (btn) btn.disabled = false; return; }
       
-      // Check if already finalized (duplicate protection)
-      const alreadyExists = matches.some(em => 
-        em.team1_id === m.team1_id && em.team2_id === m.team2_id && em.date === m.date &&
-        em.started_at === m.started_at
-      );
-      if (alreadyExists) { 
-        toast('This match was already finalized', 'error'); 
+      // Duplicate check using match_uid
+      if (m.match_uid && isDuplicateMatch(m.team1_id, m.team2_id, m.date, m.match_uid)) {
+        toast('This match was already finalized', 'error');
         ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
-        if (btn) btn.disabled = false;
-        closeModal('finalizeMatch');
-        renderAll();
-        return; 
+        if (btn) btn.disabled = false; closeModal('finalizeMatch'); renderAll(); return;
       }
       
       const scores = [[scoreA, scoreB]];
       const wid = scoreA > scoreB ? m.team1_id : m.team2_id;
       
-      const finalMatch = { 
-        id: Date.now(), 
-        date: m.date, 
-        location: m.location, 
-        court: m.court, 
-        team1_id: m.team1_id, 
-        team2_id: m.team2_id, 
-        scores, 
-        winner_id: wid, 
-        created_at: new Date().toISOString()
-      };
-      // game_mode is confirmed to exist in Supabase
-      if (m.game_mode) finalMatch.game_mode = m.game_mode;
-      
-      // These fields do NOT exist in Supabase — keep for local display only
-      const localExtra = {
+      const matchData = {
+        id: generateNumericId(),
+        match_uid: m.match_uid || generateMatchUID(),
+        date: m.date,
+        location: m.location,
+        court: m.court,
+        team1_id: m.team1_id,
+        team2_id: m.team2_id,
+        scores,
+        winner_id: wid,
         started_at: m.started_at || null,
         finalized_at: new Date().toISOString(),
-        md_round: m.md_round || null
+        md_round: m.md_round || null,
+        game_mode: m.game_mode || null,
+        device_id: PV_DEVICE_ID,
+        created_at: new Date().toISOString()
       };
       
-      if (supabaseClient && !isOffline) {
-        try {
-          const { data, error } = await supabaseClient.from('matches').insert([finalMatch]).select().single();
-          if (error) throw error;
-          // Merge Supabase response with local extras
-          matches.unshift({ ...(data || finalMatch), ...localExtra });
-          
-          const { error: delErr } = await supabaseClient.from('ongoing_matches').delete().eq('id', m.id);
-          if (delErr) console.warn('Failed to delete ongoing match:', delErr);
-          ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
-        } catch (e) { 
-          console.warn('Supabase write failed, saving offline:', e);
-          finalMatch.id = Date.now();
-          matches.unshift({ ...finalMatch, ...localExtra });
-          ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
-          saveLocal();
-          addToPendingSync({ type: 'insert', table: 'matches', data: finalMatch });
-          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: m.id });
-          toast('Saved offline - will sync when online', 'info');
-        }
-      } else {
-        finalMatch.id = Date.now();
-        matches.unshift({ ...finalMatch, ...localExtra });
-        ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
-        saveLocal();
-        if (supabaseClient) {
-          addToPendingSync({ type: 'insert', table: 'matches', data: finalMatch });
-          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: m.id });
-        }
-      }
+      // Save to Supabase via centralized helper
+      const result = await saveMatchToSupabase(matchData);
+      
+      // Add to local matches array
+      const savedMatch = result.data || matchData;
+      matches.unshift(savedMatch);
+      
+      // Remove from ongoing queue
+      ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
+      await deleteOngoingFromSupabase(m.id);
+      
+      // Always save locally as backup
+      saveLocal();
+      
+      if (result.offline) toast('Saved offline — will sync when online', 'info');
       
       closeModal('finalizeMatch');
       if (btn) btn.disabled = false;
-      // Hook into Match Day system for auto round advancement
-      if (m && m.md_round) {
+      
+      if (m.md_round) {
         mdOnMatchComplete({team1_id: m.team1_id, team2_id: m.team2_id, md_round: m.md_round, score1: scores, score2: scores});
       }
       renderAll();
-      toast('Match finalized!', 'success');
+      if (!result.offline) toast('Match finalized!', 'success');
     }
     
     async function cancelOngoingMatch() {
       const idRaw = document.getElementById('finalizeMatchId').value;
-      const id = Number(idRaw);
-      const m = ongoingMatches.find(match => String(match.id) === String(idRaw) || match.id === id);
-      const matchId = m ? m.id : id;
+      const m = ongoingMatches.find(match => String(match.id) === String(idRaw));
+      const matchId = m ? m.id : Number(idRaw);
       
-      if (supabaseClient && !isOffline) {
-        try {
-          await supabaseClient.from('ongoing_matches').delete().eq('id', matchId);
-          ongoingMatches = ongoingMatches.filter(match => match.id !== matchId);
-        } catch (e) { 
-          ongoingMatches = ongoingMatches.filter(match => match.id !== matchId);
-          saveLocal();
-          addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: matchId });
-        }
-      } else {
-        ongoingMatches = ongoingMatches.filter(match => match.id !== matchId);
-        saveLocal();
-        if (supabaseClient) addToPendingSync({ type: 'delete', table: 'ongoing_matches', id: matchId });
-      }
+      logAudit('match_cancelled', m || { id: matchId }, 'Match removed from queue');
+      await deleteOngoingFromSupabase(matchId);
+      ongoingMatches = ongoingMatches.filter(match => match.id !== matchId);
+      saveLocal();
       
       closeModal('finalizeMatch');
       renderAll();
@@ -11405,6 +11532,7 @@
         isOffline = false;
         document.getElementById('offlineBanner').classList.remove('show');
         toast('Back online!', 'success');
+        updateSyncBadge();
         // Sync pending offline writes first, then refresh data
         processPendingSync().then(() => {
           if (supabaseClient) fetchData();
@@ -11417,6 +11545,7 @@
         const pending = JSON.parse(localStorage.getItem('pv_pending_sync') || '[]');
         const countEl = document.getElementById('offlinePendingCount');
         if (countEl) countEl.textContent = pending.length > 0 ? `${pending.length} pending` : '';
+        updateSyncBadge();
         toast('You\'re offline - Changes will be saved locally', 'info');
       });
       
@@ -13844,6 +13973,38 @@
         if (el) el.textContent += `\nDone! Pushed: ${pushed}, Failed: ${failed}\n`;
         if (pushed > 0) { if (el) el.textContent += '🎉 Now tap "Force Full Refresh"!\n'; toast(`Recovered ${pushed} matches!`, 'success'); }
       } catch(e) { if (el) el.textContent += '\n❌ ' + e.message + '\n'; }
+    }
+    
+    async function manualSync() {
+      if (syncStatus.syncing) { toast('Sync already in progress', 'info'); return; }
+      
+      syncStatus.syncing = true;
+      updateSyncBadge();
+      const icon = document.getElementById('syncIcon');
+      if (icon) icon.classList.add('fa-spin');
+      
+      try {
+        // Step 1: Push any pending writes
+        await processPendingSync();
+        
+        // Step 2: Pull fresh data from Supabase
+        if (supabaseClient) {
+          localStorage.removeItem('pv_cache');
+          localStorage.removeItem('pv_cache_time');
+          await fetchFromDatabase();
+        }
+        
+        toast('Sync complete!', 'success');
+        logAudit('manual_sync', null, 'Manual sync completed');
+      } catch (e) {
+        console.error('Manual sync error:', e);
+        toast('Sync failed: ' + e.message, 'error');
+      } finally {
+        syncStatus.syncing = false;
+        syncStatus.lastSync = new Date();
+        updateSyncBadge();
+        if (icon) icon.classList.remove('fa-spin');
+      }
     }
     
     async function forceFullRefresh() {
