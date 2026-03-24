@@ -2274,7 +2274,11 @@
     @media (max-width: 1023px) {
       .sidebar-logo { display: none !important; }
       .sidebar-user { display: none !important; }
+      .sidebar-sync { display: none !important; }
       body::before, body::after { display: none; }
+      /* Match Day Info Hub mobile */
+      #mdInfoResults > div { grid-template-columns: 1fr !important; }
+      #mdInfoHub .ongoing-match { padding: 12px !important; }
       .nav { 
         position: static !important; width: auto !important;
         flex-direction: row !important; border-right: none !important;
@@ -2432,6 +2436,7 @@
           <div class="matchday-details" id="matchdayDetails"></div>
         </div>
         <div class="matchday-actions">
+          <button class="btn btn-sm" onclick="switchTab('matchday')" id="goToMatchDayBtn" style="display:none;background:var(--clay);color:white;border-radius:10px;font-weight:700"><i class="fas fa-arrow-right"></i> Match Day Hub</button>
           <button class="btn btn-sm btn-secondary" onclick="openMatchdaySelectModal()"><i class="fas fa-history"></i> View History</button>
           <button class="btn btn-sm btn-secondary" onclick="shareEventImage()" id="shareEventBtn" style="display:none;background:var(--clay);color:white"><i class="fas fa-share-nodes"></i> Share Event</button>
           <button class="btn btn-sm btn-secondary" onclick="showMatchDaySummary()" id="viewRecapBtn" style="display:none"><i class="fas fa-trophy"></i> View Recap</button>
@@ -2970,6 +2975,50 @@
 
     <!-- ===== MATCH DAY TAB ===== -->
     <section class="tab" id="matchday">
+      <!-- Match Day Info Hub — the central command for all matchday info -->
+      <div id="mdInfoHub" style="margin-bottom:24px">
+        <!-- Status Banner -->
+        <div id="mdInfoStatus" class="card" style="margin-bottom:16px;display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+            <div>
+              <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--clay);text-transform:uppercase" id="mdInfoStatusLabel">NO MATCH DAY</div>
+              <div style="font-size:18px;font-weight:800;color:var(--brown-dark);margin-top:2px" id="mdInfoDate"></div>
+              <div style="font-size:13px;color:var(--text-muted);margin-top:2px" id="mdInfoVenueTime"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap" id="mdInfoActions"></div>
+          </div>
+        </div>
+        
+        <!-- Ongoing Matches on Match Day page -->
+        <div id="mdInfoOngoing" style="display:none;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h3 style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><span class="pulse-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse 1.5s infinite"></span> Queue</h3>
+            <span style="font-size:12px;color:var(--text-muted)" id="mdInfoQueueCount"></span>
+          </div>
+          <div id="mdInfoOngoingList"></div>
+        </div>
+        
+        <!-- Results + Rankings row -->
+        <div id="mdInfoResults" style="display:none;margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="card" style="padding:16px">
+              <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">📋 Results</h3>
+              <div id="mdInfoResultsList" style="max-height:300px;overflow-y:auto"></div>
+            </div>
+            <div class="card" style="padding:16px">
+              <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">🏆 Standings</h3>
+              <div id="mdInfoStandings"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- My Match Day on Match Day page -->
+        <div id="mdInfoMyDay" class="card" style="display:none;margin-bottom:16px;padding:16px">
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">🎯 My Match Day</h3>
+          <div id="mdInfoMyDayContent"></div>
+        </div>
+      </div>
+      
       <!-- Hero -->
       <div class="md-hero">
         <div class="md-hero-title">⚔️ MATCH DAY</div>
@@ -4884,6 +4933,9 @@
                 if (tabId === 'myprofile' && typeof renderMyProfile === 'function') {
                   renderMyProfile();
                 }
+                if (tabId === 'matchday' && typeof renderMatchDay === 'function') {
+                  renderMatchDay();
+                }
                 if (tabId === 'admin' && typeof renderUserAccounts === 'function') {
                   renderUserAccounts();
                   renderAdminPanel();
@@ -4897,6 +4949,9 @@
             // Call render functions for specific tabs
             if (tabId === 'myprofile' && typeof renderMyProfile === 'function') {
               renderMyProfile();
+            }
+            if (tabId === 'matchday' && typeof renderMatchDay === 'function') {
+              renderMatchDay();
             }
             if (tabId === 'admin' && typeof renderUserAccounts === 'function') {
               renderUserAccounts();
@@ -5565,6 +5620,10 @@
           // Show share event button whenever there's an active matchday
           const shareEvtBtn = document.getElementById('shareEventBtn');
           if (shareEvtBtn) shareEvtBtn.style.display = '';
+          
+          // Show "Match Day Hub" link button
+          const goBtn = document.getElementById('goToMatchDayBtn');
+          if (goBtn) goBtn.style.display = '';
           
           queueBtn.disabled = false;
         } else if (todayEvents.length > 0) {
@@ -8690,7 +8749,169 @@
     }
 
     // --- RENDER ---
+    // ===== MATCH DAY INFO HUB (central matchday command) =====
+    function renderMdInfoHub() {
+      const statusEl = document.getElementById('mdInfoStatus');
+      const ongoingEl = document.getElementById('mdInfoOngoing');
+      const resultsEl = document.getElementById('mdInfoResults');
+      const myDayEl = document.getElementById('mdInfoMyDay');
+      if (!statusEl) return;
+      
+      const md = activeMatchday;
+      const today = getLocalDateStr();
+      const matchdayDate = md?.date || today;
+      const dayMatches = matches.filter(m => m.date === matchdayDate);
+      const dayOngoing = ongoingMatches.filter(m => m.date === matchdayDate || !m.date);
+      const dayRankings = rankTeamsByMatches(matchdayDate);
+      
+      // --- STATUS BANNER ---
+      if (md) {
+        statusEl.style.display = '';
+        const dateStr = new Date(md.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+        const isToday = md.date === today;
+        const isFuture = md.date > today;
+        const hasMatches = dayMatches.length > 0;
+        
+        const statusLabel = md.status === 'closed' ? '✅ COMPLETED' 
+          : (hasMatches || dayOngoing.length > 0) ? '🔴 LIVE' 
+          : isToday ? '📅 TODAY' 
+          : isFuture ? '📅 UPCOMING' : '📅 SCHEDULED';
+        
+        document.getElementById('mdInfoStatusLabel').textContent = statusLabel;
+        document.getElementById('mdInfoDate').textContent = dateStr;
+        document.getElementById('mdInfoVenueTime').textContent = `📍 ${md.venue || 'TBD'} • 🕐 ${md.start_time || '?'} – ${md.end_time || '?'}`;
+        
+        // Action buttons
+        let actions = '';
+        if (currentUser?.is_admin) {
+          if (md.status !== 'closed') {
+            actions += `<button class="btn btn-sm btn-secondary" onclick="editActiveMatchday()" style="border-radius:10px"><i class="fas fa-edit"></i> Edit</button>`;
+            actions += `<button class="btn btn-sm btn-danger" onclick="closeMatchday()" style="border-radius:10px"><i class="fas fa-flag-checkered"></i> Close</button>`;
+          }
+        }
+        actions += `<button class="btn btn-sm" onclick="shareEventImage()" style="background:var(--clay);color:white;border-radius:10px"><i class="fas fa-share-nodes"></i> Share</button>`;
+        if (hasMatches) {
+          actions += `<button class="btn btn-sm btn-secondary" onclick="showMatchDaySummary()" style="border-radius:10px"><i class="fas fa-trophy"></i> Recap</button>`;
+        }
+        document.getElementById('mdInfoActions').innerHTML = actions;
+      } else {
+        statusEl.style.display = 'none';
+      }
+      
+      // --- ONGOING QUEUE ---
+      if (dayOngoing.length > 0) {
+        ongoingEl.style.display = '';
+        document.getElementById('mdInfoQueueCount').textContent = `${dayOngoing.length} match${dayOngoing.length > 1 ? 'es' : ''}`;
+        document.getElementById('mdInfoOngoingList').innerHTML = dayOngoing.map(m => {
+          const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+          const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
+          const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
+          const roundBadge = m.md_round ? `<span style="background:var(--clay);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">R${m.md_round}</span>` : '';
+          return `<div class="ongoing-match" onclick="openFinalizeMatch(${m.id})" style="margin-bottom:8px">
+            <div class="ongoing-match-header">
+              <div class="ongoing-match-status"><span class="live-dot"></span> ${roundBadge}</div>
+              <span class="ongoing-match-court">${m.court || ''}</span>
+            </div>
+            <div class="ongoing-match-teams">
+              <div class="ongoing-match-team">
+                <div class="ongoing-match-team-avatars">${av(t1p1,'sm')}${av(t1p2,'sm')}</div>
+                <span class="ongoing-match-team-name">${t1?.name || '?'}</span>
+              </div>
+              <span class="ongoing-match-vs">VS</span>
+              <div class="ongoing-match-team">
+                <span class="ongoing-match-team-name">${t2?.name || '?'}</span>
+                <div class="ongoing-match-team-avatars">${av(t2p1,'sm')}${av(t2p2,'sm')}</div>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+      } else {
+        ongoingEl.style.display = 'none';
+      }
+      
+      // --- RESULTS + STANDINGS ---
+      if (dayMatches.length > 0) {
+        resultsEl.style.display = '';
+        
+        // Results list
+        document.getElementById('mdInfoResultsList').innerHTML = dayMatches.slice().sort((a,b) => 
+          new Date(a.finalized_at||a.created_at||'') - new Date(b.finalized_at||b.created_at||'')
+        ).map(m => {
+          const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+          const w1 = m.winner_id === t1?.id;
+          const score = (m.scores||[]).map(s => `${s[0]}-${s[1]}`).join(', ');
+          const time = m.finalized_at ? new Date(m.finalized_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+          return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(93,78,55,0.06);font-size:13px">
+            ${time ? `<span style="font-size:11px;color:var(--text-muted);min-width:36px">${time}</span>` : ''}
+            <span style="font-weight:${w1?'700':'400'};color:${w1?'var(--brown-dark)':'var(--text-muted)'};flex:1">${t1?.name||'?'}</span>
+            <span style="font-weight:800;color:var(--clay);font-size:15px">${score}</span>
+            <span style="font-weight:${!w1?'700':'400'};color:${!w1?'var(--brown-dark)':'var(--text-muted)'};flex:1;text-align:right">${t2?.name||'?'}</span>
+          </div>`;
+        }).join('');
+        
+        // Standings
+        document.getElementById('mdInfoStandings').innerHTML = dayRankings.map((t, i) => {
+          const { p1, p2 } = getTeamPlayers(t);
+          const medals = ['🥇','🥈','🥉'];
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(93,78,55,0.06)">
+            <span style="font-size:16px;width:24px;text-align:center">${i < 3 ? medals[i] : '#'+(i+1)}</span>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:13px">${t.name}</div>
+              <div style="font-size:10px;color:var(--text-muted)">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+            </div>
+            <span style="font-weight:700;color:var(--success);font-size:13px">${t.wins}W</span>
+            <span style="font-weight:700;color:var(--danger);font-size:13px">${t.losses}L</span>
+          </div>`;
+        }).join('') || '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">No team results yet</div>';
+      } else {
+        resultsEl.style.display = 'none';
+      }
+      
+      // --- MY MATCH DAY ---
+      if (currentUser?.player_id) {
+        const myPlayerId = currentUser.player_id;
+        const myTeams = teams.filter(t => t.player1_id === myPlayerId || t.player2_id === myPlayerId);
+        const myTeamIds = myTeams.map(t => t.id);
+        const myCompleted = dayMatches.filter(m => myTeamIds.includes(m.team1_id) || myTeamIds.includes(m.team2_id));
+        const myOngoing = dayOngoing.filter(m => myTeamIds.includes(m.team1_id) || myTeamIds.includes(m.team2_id));
+        
+        if (myCompleted.length > 0 || myOngoing.length > 0) {
+          myDayEl.style.display = '';
+          let wins = 0, losses = 0;
+          myCompleted.forEach(m => { if (myTeamIds.includes(m.winner_id)) wins++; else losses++; });
+          
+          document.getElementById('mdInfoMyDayContent').innerHTML = `
+            <div style="display:flex;gap:12px;margin-bottom:12px">
+              <div style="flex:1;text-align:center;padding:10px;background:rgba(5,150,105,0.06);border-radius:12px">
+                <div style="font-size:24px;font-weight:900;color:var(--success)">${wins}</div>
+                <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text-muted)">WINS</div>
+              </div>
+              <div style="flex:1;text-align:center;padding:10px;background:rgba(225,29,72,0.04);border-radius:12px">
+                <div style="font-size:24px;font-weight:900;color:var(--danger)">${losses}</div>
+                <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text-muted)">LOSSES</div>
+              </div>
+              <div style="flex:1;text-align:center;padding:10px;background:rgba(224,120,80,0.06);border-radius:12px">
+                <div style="font-size:24px;font-weight:900;color:var(--clay)">${myCompleted.length}</div>
+                <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text-muted)">PLAYED</div>
+              </div>
+            </div>
+            ${myOngoing.length > 0 ? `<div style="font-size:11px;font-weight:700;color:var(--clay);letter-spacing:1px;margin-bottom:6px">⏳ NEXT UP</div>` + myOngoing.map(m => {
+              const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+              return `<div style="padding:8px 10px;background:rgba(224,120,80,0.05);border-radius:8px;border-left:3px solid var(--clay);font-size:12px;font-weight:600;margin-bottom:4px">${t1?.name||'?'} vs ${t2?.name||'?'} • ${m.court||''}</div>`;
+            }).join('') : ''}
+          `;
+        } else {
+          myDayEl.style.display = 'none';
+        }
+      } else {
+        myDayEl.style.display = 'none';
+      }
+    }
+    
     function renderMatchDay() {
+      // Render the info hub (status, queue, results, standings, my day)
+      renderMdInfoHub();
+      
       const heroSub = document.getElementById('mdHeroSub');
       if (heroSub && activeMatchday) {
         const d = new Date(activeMatchday.date);
