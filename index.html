@@ -8577,6 +8577,11 @@
           if (!played.has(key)) pairs.push([teamIds[i], teamIds[j]]);
         }
       }
+      // Shuffle to avoid bias toward first team
+      for (let i = pairs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+      }
       return pairs;
     }
 
@@ -8605,7 +8610,7 @@
             const totalRest = (round - lastT1) + (round - lastT2);
             return { m, minGames, totalGames, minRest, totalRest };
           })
-          .filter(c => c.minRest >= 1) // no back-to-back
+          .filter(c => c.minRest >= 2) // must sit out at least 1 round
           .sort((a, b) => {
             // First: prioritize teams with fewer games (balance)
             if (a.minGames !== b.minGames) return a.minGames - b.minGames;
