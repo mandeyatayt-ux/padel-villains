@@ -11905,9 +11905,10 @@
     }
     
     function getEventsForDate(dateStr) {
-      // Combine calendar events and matchdays
+      // Combine calendar events and matchdays, avoiding duplicates
       const calEvents = events.filter(e => e.date === dateStr);
-      const mdEvents = matchdays.filter(md => md.date === dateStr).map(md => ({
+      const calEventIds = new Set(calEvents.map(e => String(e.id)));
+      const mdEvents = matchdays.filter(md => md.date === dateStr && !calEventIds.has(String(md.id))).map(md => ({
         ...md,
         type: 'matchday',
         title: `Match Day @ ${md.venue}`
