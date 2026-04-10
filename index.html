@@ -3232,7 +3232,7 @@
         </div>
       </div>
 
-      <!-- Live Match Day Section -->
+      <!-- Live Match Day Section — Court Assignment View -->
       <div id="mdLiveSection" style="display:none">
         <!-- Progress -->
         <div class="card" style="margin-bottom:16px;padding:16px 20px">
@@ -3243,43 +3243,33 @@
           <div class="md-progress"><div class="md-progress-bar" id="mdProgressBar" style="width:0%"></div></div>
         </div>
 
-        <!-- On Court Now -->
-        <div style="margin-bottom:24px">
-          <div style="font-weight:700;font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-            <span class="pulse-dot"></span> On Court Now
-          </div>
-          <div id="mdOnCourt"><div class="empty" style="padding:20px"><p>No matches on court</p></div></div>
+        <!-- Court Cards (dynamic grid) -->
+        <div id="mdCourtGrid" style="display:grid;gap:16px;margin-bottom:20px"></div>
+
+        <!-- Add Court Button -->
+        <div style="text-align:center;margin-bottom:24px">
+          <button class="btn btn-secondary btn-sm" onclick="mdAddCourt()" style="border-radius:12px;font-size:12px"><i class="fas fa-plus"></i> Add Court</button>
+          <button class="btn btn-secondary btn-sm" onclick="mdRemoveCourt()" id="mdRemoveCourtBtn" style="border-radius:12px;font-size:12px;display:none"><i class="fas fa-minus"></i> Remove Court</button>
         </div>
 
-        <!-- Up Next -->
+        <!-- Queue (draggable) -->
         <div style="margin-bottom:24px">
-          <div style="font-weight:700;font-size:16px;margin-bottom:12px">⏭️ Up Next</div>
-          <div id="mdUpNext"></div>
-        </div>
-
-        <!-- Team View -->
-        <div id="mdTeamView" style="display:none"></div>
-
-        <!-- Full Queue -->
-        <div class="card" style="margin-bottom:24px">
-          <div class="section-header" style="margin-bottom:12px">
-            <div>
-              <h3 style="font-size:16px;font-weight:700">📋 Full Schedule</h3>
-              <p style="font-size:11px;color:var(--text-muted)">Tap a team name to view their matches</p>
-            </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted)">Queue — <span id="mdQueueCount">0</span> matches</div>
+            <div style="font-size:11px;color:var(--text-muted)">Drag to reorder</div>
           </div>
-          <div id="mdFullSchedule"></div>
+          <div id="mdCourtQueue" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
 
         <!-- Completed Matches -->
         <div class="card" style="margin-bottom:24px" id="mdCompletedCard" style="display:none">
-          <h3 style="font-size:16px;font-weight:700;margin-bottom:12px">✅ Completed</h3>
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:12px">Completed</h3>
           <div id="mdCompletedList"></div>
         </div>
 
         <!-- Add Late Team -->
         <div class="md-late-add" id="mdLateAdd">
-          <div style="font-weight:700;font-size:14px;margin-bottom:8px">➕ Add Team (Late Arrival)</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:8px">Add Team (Late Arrival)</div>
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">New matches will be generated for the added team</div>
           <div class="md-late-add-btns" id="mdLateTeams"></div>
         </div>
@@ -9097,104 +9087,123 @@
       const allScheduled = mdGeneratedSchedule;
       const totalGames = allScheduled.length;
       const completedCount = mdCompletedGames.length;
-      const maxRound = Math.max(...allScheduled.map(m => m.round));
 
       // Progress
       document.getElementById('mdProgressText').textContent = `${completedCount} / ${totalGames} matches`;
       document.getElementById('mdProgressBar').style.width = totalGames > 0 ? (completedCount / totalGames * 100) + '%' : '0%';
 
-      // Find current on-court matches (from ongoing matches that are part of this matchday schedule)
-      const onCourtHtml = ongoingMatches.filter(m => m.md_round).map(m => {
-        if (m.is_americano) {
-          const names1 = (m.team1_players||[]).map(id => getPlayer(id)?.name || '?');
-          const names2 = (m.team2_players||[]).map(id => getPlayer(id)?.name || '?');
-          return `<div class="md-live-card">
-            <div class="md-live-header">
-              <span style="font-size:11px;font-weight:700;color:var(--clay);text-transform:uppercase;letter-spacing:1px">Court ${m.court} • Round ${m.md_round}</span>
-              <span class="md-live-badge">LIVE</span>
+      // Court grid columns
+      const courtGrid = document.getElementById('mdCourtGrid');
+      courtGrid.style.gridTemplateColumns = mdCourts === 1 ? '1fr' : `repeat(${mdCourts}, 1fr)`;
+
+      // Build court cards
+      let courtHtml = '';
+      for (let c = 1; c <= mdCourts; c++) {
+        const courtMatch = ongoingMatches.find(m => m.md_round && (m.court === `Court ${c}` || m.court === c || m.court === `C${c}`));
+        
+        if (courtMatch) {
+          let t1Name = '?', t2Name = '?', t1Players = '', t2Players = '', t1Color = '#888', t2Color = '#888';
+          if (courtMatch.is_americano) {
+            t1Name = (courtMatch.team1_players||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
+            t2Name = (courtMatch.team2_players||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
+          } else {
+            const t1 = getTeam(courtMatch.team1_id), t2 = getTeam(courtMatch.team2_id);
+            const p1a = getPlayer(t1?.player1_id), p1b = getPlayer(t1?.player2_id);
+            const p2a = getPlayer(t2?.player1_id), p2b = getPlayer(t2?.player2_id);
+            t1Name = t1?.name || '?';
+            t2Name = t2?.name || '?';
+            t1Players = `${p1a?.name||'?'} & ${p1b?.name||'?'}`;
+            t2Players = `${p2a?.name||'?'} & ${p2b?.name||'?'}`;
+            t1Color = getPlayerColor(t1?.player1_id);
+            t2Color = getPlayerColor(t2?.player1_id);
+          }
+          const roundBadge = courtMatch.md_round ? `R${courtMatch.md_round}` : '';
+          
+          courtHtml += `<div class="card" style="border-radius:16px;overflow:hidden;padding:0">
+            <div style="background:var(--brown-dark);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+              <span style="color:var(--cream);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="background:var(--clay);color:white;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700">${roundBadge}</span>
+                <span style="background:#059669;color:white;font-size:10px;padding:2px 10px;border-radius:99px;font-weight:600">In play</span>
+              </div>
             </div>
-            <div class="md-live-teams">
-              <div class="md-live-team"><div><div class="md-live-team-name">${names1.join(' & ')}</div></div></div>
-              <div class="md-live-vs">VS</div>
-              <div class="md-live-team md-live-team-right"><div><div class="md-live-team-name">${names2.join(' & ')}</div></div></div>
+            <div style="padding:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div class="avatar" style="width:36px;height:36px;background:${t1Color}">${t1Name.charAt(0)}</div>
+                  <div><div style="font-weight:700;font-size:14px">${t1Name}</div>${t1Players ? `<div style="font-size:11px;color:var(--text-muted)">${t1Players}</div>` : ''}</div>
+                </div>
+              </div>
+              <div style="text-align:center;font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:2px;margin-bottom:14px">VS</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div class="avatar" style="width:36px;height:36px;background:${t2Color}">${t2Name.charAt(0)}</div>
+                  <div><div style="font-weight:700;font-size:14px">${t2Name}</div>${t2Players ? `<div style="font-size:11px;color:var(--text-muted)">${t2Players}</div>` : ''}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-primary" style="flex:1;border-radius:10px;font-size:13px;padding:10px 0" onclick="openFinalizeMatch(${courtMatch.id})"><i class="fas fa-check"></i> Record Score</button>
+                <button class="btn btn-secondary" style="width:44px;border-radius:10px;color:var(--danger);font-size:14px" onclick="mdCancelCourtMatch(${courtMatch.id})" title="Cancel match"><i class="fas fa-times"></i></button>
+              </div>
             </div>
           </div>`;
+        } else {
+          courtHtml += `<div class="card" style="border-radius:16px;overflow:hidden;padding:0">
+            <div style="background:var(--brown-dark);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+              <span style="color:var(--cream);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
+              <span style="font-size:10px;padding:2px 10px;border-radius:99px;color:var(--text-muted);background:rgba(255,255,255,0.1)">Idle</span>
+            </div>
+            <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Waiting for next match</div>
+          </div>`;
         }
-        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
-        const p1a = getPlayer(t1?.player1_id), p1b = getPlayer(t1?.player2_id);
-        const p2a = getPlayer(t2?.player1_id), p2b = getPlayer(t2?.player2_id);
-        return `<div class="md-live-card">
-          <div class="md-live-header">
-            <span style="font-size:11px;font-weight:700;color:var(--clay);text-transform:uppercase;letter-spacing:1px">${m.court || 'Court'} • Round ${m.md_round || '?'}</span>
-            <span class="md-live-badge">LIVE</span>
-          </div>
-          <div class="md-live-teams">
-            <div class="md-live-team">
-              <div class="avatar" style="width:40px;height:40px;background:${getPlayerColor(t1?.player1_id)}">${(p1a?.name||'?').charAt(0)}</div>
-              <div><div class="md-live-team-name">${t1?.name||'?'}</div><div class="md-live-team-players">${p1a?.name||'?'} & ${p1b?.name||'?'}</div></div>
-            </div>
-            <div class="md-live-vs">VS</div>
-            <div class="md-live-team md-live-team-right">
-              <div class="avatar" style="width:40px;height:40px;background:${getPlayerColor(t2?.player1_id)}">${(p2a?.name||'?').charAt(0)}</div>
-              <div style="text-align:right"><div class="md-live-team-name">${t2?.name||'?'}</div><div class="md-live-team-players">${p2a?.name||'?'} & ${p2b?.name||'?'}</div></div>
-            </div>
-          </div>
-        </div>`;
-      }).join('');
-      document.getElementById('mdOnCourt').innerHTML = onCourtHtml || '<div class="empty" style="padding:20px"><p>No matches on court</p></div>';
-
-      // Up next (next round not yet queued)
-      const queuedRounds = new Set(ongoingMatches.filter(m => m.md_round).map(m => m.md_round));
-      const completedRounds = new Set(mdCompletedGames.map(m => m.round));
-      let nextRound = null;
-      for (let r = 1; r <= maxRound; r++) {
-        if (!queuedRounds.has(r) && !completedRounds.has(r)) { nextRound = r; break; }
       }
-      const upNextMatches = nextRound ? allScheduled.filter(m => m.round === nextRound) : [];
-      document.getElementById('mdUpNext').innerHTML = upNextMatches.map(m => {
-        if (mdMode === 'americano') {
-          const n1 = (m.team1||[]).map(id => getPlayer(id)?.name || '?').join(' & ');
-          const n2 = (m.team2||[]).map(id => getPlayer(id)?.name || '?').join(' & ');
-          return `<div class="md-next-match"><span style="font-size:10px;font-weight:700;color:var(--text-muted)">C${m.court}</span><span style="font-weight:600;font-size:14px">${n1}</span><span class="md-schedule-vs">VS</span><span style="font-weight:600;font-size:14px">${n2}</span></div>`;
-        }
-        const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
-        return `<div class="md-next-match">
-          <span style="font-size:10px;font-weight:700;color:var(--text-muted)">C${m.court}</span>
-          <div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t1?.player1_id)}">${(getPlayer(t1?.player1_id)?.name||'?').charAt(0)}</div><span style="font-weight:600;font-size:14px">${t1?.name||'?'}</span></div>
-          <span class="md-schedule-vs">VS</span>
-          <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;font-size:14px">${t2?.name||'?'}</span><div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t2?.player1_id)}">${(getPlayer(t2?.player1_id)?.name||'?').charAt(0)}</div></div>
-        </div>`;
-      }).join('') || '<div style="font-size:13px;color:var(--text-muted);padding:8px">No more upcoming matches</div>';
+      courtGrid.innerHTML = courtHtml;
 
-      // Full schedule
-      let schedHtml = '';
-      for (let r = 1; r <= maxRound; r++) {
-        const rMatches = allScheduled.filter(m => m.round === r);
-        const isDone = completedRounds.has(r);
-        const isLive = queuedRounds.has(r);
-        schedHtml += `<div class="md-round-label"><span class="md-round-badge" style="${isDone ? 'background:var(--success)' : isLive ? 'background:var(--danger)' : ''}">${isDone ? '✓' : isLive ? '●' : ''} Round ${r}</span><span class="md-round-line"></span></div>`;
-        rMatches.forEach(m => {
-          if (mdMode === 'roundrobin') {
-            const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
-            schedHtml += `<div class="md-schedule-match" style="${isDone ? 'opacity:0.5' : isLive ? 'background:rgba(224,120,80,0.06)' : ''}">
-              <span style="font-size:10px;font-weight:700;color:var(--text-muted)">C${m.court}</span>
-              <span style="font-weight:600;cursor:pointer;${mdViewTeamId===m.t1?'color:var(--clay)':''}" onclick="mdShowTeamView(${m.t1})">${t1?.name||'?'}</span>
-              <span style="color:var(--text-muted);font-size:10px">vs</span>
-              <span style="font-weight:600;cursor:pointer;${mdViewTeamId===m.t2?'color:var(--clay)':''}" onclick="mdShowTeamView(${m.t2})">${t2?.name||'?'}</span>
-            </div>`;
+      // Remove court button visibility
+      const removeBtn = document.getElementById('mdRemoveCourtBtn');
+      if (removeBtn) removeBtn.style.display = mdCourts > 1 ? '' : 'none';
+
+      // Queue: remaining scheduled matches not on court and not completed
+      const completedKeys = new Set(mdCompletedGames.map(m => `${m.round}-${m.t1 || ''}-${m.t2 || ''}`));
+      const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`));
+      
+      const queueMatches = allScheduled.filter(m => {
+        const key = `${m.round}-${m.t1 || ''}-${m.t2 || ''}`;
+        const keyAlt = `${m.round}-${m.t2 || ''}-${m.t1 || ''}`;
+        return !completedKeys.has(key) && !completedKeys.has(keyAlt) && !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
+      });
+
+      document.getElementById('mdQueueCount').textContent = queueMatches.length;
+      const queueContainer = document.getElementById('mdCourtQueue');
+      
+      if (queueMatches.length === 0) {
+        queueContainer.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">No more matches in queue</div>';
+      } else {
+        queueContainer.innerHTML = queueMatches.map((m, idx) => {
+          let t1Name = '?', t2Name = '?';
+          if (mdMode === 'americano') {
+            t1Name = (m.team1||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
+            t2Name = (m.team2||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
           } else {
-            const n1 = (m.team1||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
-            const n2 = (m.team2||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
-            schedHtml += `<div class="md-schedule-match" style="${isDone ? 'opacity:0.5' : isLive ? 'background:rgba(124,58,237,0.06)' : ''}">
-              <span style="font-size:10px;font-weight:700;color:var(--text-muted)">C${m.court}</span>
-              <span style="font-weight:600;font-size:13px">${n1}</span>
-              <span style="color:var(--text-muted);font-size:10px">vs</span>
-              <span style="font-weight:600;font-size:13px">${n2}</span>
-            </div>`;
+            t1Name = getTeam(m.t1)?.name || '?';
+            t2Name = getTeam(m.t2)?.name || '?';
           }
-        });
+          return `<div class="md-queue-item card" draggable="true" data-idx="${idx}" style="padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:grab;border-radius:12px;margin:0">
+            <div style="color:var(--text-muted);font-size:16px;cursor:grab;user-select:none;padding:0 2px">≡</div>
+            <span style="background:var(--clay);color:white;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;min-width:24px;text-align:center">R${m.round}</span>
+            <div style="flex:1;display:flex;align-items:center;gap:8px">
+              <span style="font-weight:600;font-size:13px">${t1Name}</span>
+              <span style="color:var(--text-muted);font-size:10px">vs</span>
+              <span style="font-weight:600;font-size:13px">${t2Name}</span>
+            </div>
+            <span style="font-size:11px;color:var(--text-muted)">C${m.court}</span>
+            <button class="md-queue-cancel" onclick="mdCancelQueueMatch(${idx});event.stopPropagation()" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--danger);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" title="Remove"><i class="fas fa-times"></i></button>
+          </div>`;
+        }).join('');
+        
+        // Setup drag and drop
+        mdSetupQueueDrag();
       }
-      document.getElementById('mdFullSchedule').innerHTML = schedHtml;
 
       // Completed matches
       const compCard = document.getElementById('mdCompletedCard');
@@ -9204,11 +9213,17 @@
           compCard.style.display = '';
           compList.innerHTML = mdCompletedGames.map(m => {
             const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
-            return `<div class="md-schedule-match" style="opacity:0.7">
-              <span style="font-size:10px;font-weight:700;color:var(--success)">✓</span>
-              <span style="font-weight:600">${t1?.name||'?'}</span>
-              <span style="font-weight:700;color:var(--clay)">${m.score1 || '?'} - ${m.score2 || '?'}</span>
-              <span style="font-weight:600">${t2?.name||'?'}</span>
+            const isT1Winner = parseInt(m.score1) > parseInt(m.score2);
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;background:var(--cream);margin-bottom:4px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:10px;font-weight:700;color:var(--text-muted)">R${m.round||'?'}</span>
+                <span style="font-weight:${isT1Winner?'700':'500'};font-size:13px">${t1?.name||'?'}</span>
+                <span style="font-weight:700;font-size:16px;color:${isT1Winner?'var(--success)':'var(--text-muted)'}">${m.score1||'?'}</span>
+                <span style="color:var(--text-muted);font-size:10px">–</span>
+                <span style="font-weight:700;font-size:16px;color:${!isT1Winner?'var(--success)':'var(--text-muted)'}">${m.score2||'?'}</span>
+                <span style="font-weight:${!isT1Winner?'700':'500'};font-size:13px">${t2?.name||'?'}</span>
+              </div>
+              <span style="font-size:11px;color:var(--text-muted)">C${m.court||'?'}</span>
             </div>`;
           }).join('');
         } else {
@@ -9229,40 +9244,92 @@
       } else if (document.getElementById('mdLateAdd')) {
         document.getElementById('mdLateAdd').style.display = mdMode === 'americano' ? 'none' : '';
       }
+    }
 
-      // Team view
-      const teamViewEl = document.getElementById('mdTeamView');
-      if (teamViewEl) {
-        if (mdViewTeamId && mdMode === 'roundrobin') {
-          const team = getTeam(mdViewTeamId);
-          const p1 = getPlayer(team?.player1_id), p2 = getPlayer(team?.player2_id);
-          const teamMatches = allScheduled.filter(m => m.t1 === mdViewTeamId || m.t2 === mdViewTeamId);
-          const teamCompleted = mdCompletedGames.filter(m => m.t1 === mdViewTeamId || m.t2 === mdViewTeamId);
-          
-          teamViewEl.style.display = '';
-          teamViewEl.innerHTML = `<div class="md-team-view">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-              <div style="display:flex;align-items:center;gap:10px">
-                <div class="avatar" style="width:36px;height:36px;background:${getPlayerColor(team?.player1_id)}">${(p1?.name||'?').charAt(0)}</div>
-                <div><div style="font-weight:700;font-size:16px">${team?.name||'?'}'s Games</div><div style="font-size:12px;color:var(--text-muted)">${p1?.name||'?'} & ${p2?.name||'?'}</div></div>
-              </div>
-              <button onclick="mdShowTeamView(null)" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--cream);cursor:pointer;font-size:14px">✕</button>
-            </div>
-            ${teamMatches.map(m => {
-              const opp = m.t1 === mdViewTeamId ? getTeam(m.t2) : getTeam(m.t1);
-              const completed = teamCompleted.find(c => (c.t1 === m.t1 && c.t2 === m.t2) || (c.t1 === m.t2 && c.t2 === m.t1));
-              const isLive = ongoingMatches.some(om => om.md_round === m.round && (om.team1_id === m.t1 || om.team1_id === m.t2));
-              const status = completed ? 'completed' : isLive ? 'live' : 'upcoming';
-              const statusText = completed ? `${completed.score1}-${completed.score2}` : isLive ? 'LIVE' : `Round ${m.round} • C${m.court}`;
-              return `<div class="md-team-view-match">
-                <div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;font-weight:700;color:var(--text-muted)">R${m.round}</span><span style="font-weight:600;font-size:14px">vs ${opp?.name||'?'}</span></div>
-                <span class="md-team-view-status ${status}">${statusText}</span>
-              </div>`;
-            }).join('')}
-          </div>`;
-        } else {
-          teamViewEl.style.display = 'none';
-        }
+    // Court management
+    function mdAddCourt() {
+      mdCourts++;
+      document.querySelectorAll('.md-config-btns')[0]?.querySelectorAll('.md-config-btn').forEach(b => b.classList.remove('active'));
+      toast(`Court ${mdCourts} added`, 'success');
+      renderMDLive();
+    }
+    
+    function mdRemoveCourt() {
+      if (mdCourts <= 1) return;
+      const courtLabel = `Court ${mdCourts}`;
+      const hasMatch = ongoingMatches.some(m => m.court === courtLabel || m.court === mdCourts || m.court === `C${mdCourts}`);
+      if (hasMatch) { toast('Cannot remove court with active match', 'error'); return; }
+      mdCourts--;
+      toast('Court removed', 'info');
+      renderMDLive();
+    }
+
+    // Cancel a match on court
+    function mdCancelCourtMatch(matchId) {
+      if (!confirm('Cancel this match? Teams return to available pool.')) return;
+      ongoingMatches = ongoingMatches.filter(m => m.id !== matchId);
+      if (supabaseClient) {
+        supabaseClient.from('ongoing_matches').delete().eq('id', matchId).then(({ error }) => {
+          if (error) console.error('Delete ongoing error:', error);
+        });
+      }
+      localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
+      renderMDLive();
+      renderOngoingMatches();
+      toast('Match cancelled', 'info');
+    }
+
+    // Cancel a queued match
+    function mdCancelQueueMatch(idx) {
+      if (!mdGeneratedSchedule) return;
+      const completedKeys = new Set(mdCompletedGames.map(m => `${m.round}-${m.t1 || ''}-${m.t2 || ''}`));
+      const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`));
+      const queueMatches = mdGeneratedSchedule.filter(m => {
+        const key = `${m.round}-${m.t1 || ''}-${m.t2 || ''}`;
+        const keyAlt = `${m.round}-${m.t2 || ''}-${m.t1 || ''}`;
+        return !completedKeys.has(key) && !completedKeys.has(keyAlt) && !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
+      });
+      if (idx >= 0 && idx < queueMatches.length) {
+        const match = queueMatches[idx];
+        mdGeneratedSchedule = mdGeneratedSchedule.filter(m => m !== match);
+        toast('Match removed from queue', 'info');
+        renderMDLive();
+      }
+    }
+
+    // Drag and drop for queue
+    function mdSetupQueueDrag() {
+      const queue = document.getElementById('mdCourtQueue');
+      if (!queue) return;
+      let dragItem = null;
+      const placeholder = document.createElement('div');
+      placeholder.style.cssText = 'height:4px;background:var(--clay);border-radius:2px;margin:2px 0;transition:all 0.15s';
+
+      queue.addEventListener('dragstart', function(e) {
+        dragItem = e.target.closest('.md-queue-item');
+        if (!dragItem) return;
+        setTimeout(() => { if (dragItem) dragItem.style.opacity = '0.3'; }, 0);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      queue.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        const target = e.target.closest('.md-queue-item');
+        if (!target || target === dragItem) return;
+        const rect = target.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        if (e.clientY < mid) queue.insertBefore(placeholder, target);
+        else queue.insertBefore(placeholder, target.nextSibling);
+      });
+      queue.addEventListener('drop', function(e) {
+        e.preventDefault();
+        if (dragItem && placeholder.parentNode) queue.insertBefore(dragItem, placeholder);
+        mdCleanupDrag();
+      });
+      queue.addEventListener('dragend', mdCleanupDrag);
+      function mdCleanupDrag() {
+        if (dragItem) dragItem.style.opacity = '1';
+        if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+        dragItem = null;
       }
     }
 
