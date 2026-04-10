@@ -8584,31 +8584,67 @@
       const scheduled = [];
       const remaining = pairs.map(p => ({t1: p[0], t2: p[1]}));
       const lastPlayed = {};
-      teamIds.forEach(id => lastPlayed[id] = -1);
+      const gamesPlayed = {};
+      teamIds.forEach(id => { lastPlayed[id] = -999; gamesPlayed[id] = 0; });
       let round = 0;
+      
       while (remaining.length > 0) {
-        // Sort by longest wait (prioritize teams sitting out)
-        remaining.sort((a, b) => {
-          const maxWaitA = Math.max(round - lastPlayed[a.t1], round - lastPlayed[a.t2]);
-          const maxWaitB = Math.max(round - lastPlayed[b.t1], round - lastPlayed[b.t2]);
-          return maxWaitB - maxWaitA;
-        });
         const roundMatches = [];
         const playing = new Set();
-        for (let i = 0; i < remaining.length && roundMatches.length < courts; i++) {
-          const m = remaining[i];
-          if (!playing.has(m.t1) && !playing.has(m.t2)) {
-            roundMatches.push({...m, round: round + 1, court: roundMatches.length + 1});
-            playing.add(m.t1);
-            playing.add(m.t2);
-            remaining.splice(i, 1);
-            i--;
+        
+        // Build candidates: matches where neither team played last round
+        // Sort by: 1) fewest total games played (balance), 2) longest wait
+        const candidates = remaining
+          .filter(m => !playing.has(m.t1) && !playing.has(m.t2))
+          .map(m => {
+            const minGames = Math.min(gamesPlayed[m.t1], gamesPlayed[m.t2]);
+            const totalGames = gamesPlayed[m.t1] + gamesPlayed[m.t2];
+            const lastT1 = lastPlayed[m.t1];
+            const lastT2 = lastPlayed[m.t2];
+            const minRest = Math.min(round - lastT1, round - lastT2);
+            const totalRest = (round - lastT1) + (round - lastT2);
+            return { m, minGames, totalGames, minRest, totalRest };
+          })
+          .filter(c => c.minRest >= 1) // no back-to-back
+          .sort((a, b) => {
+            // First: prioritize teams with fewer games (balance)
+            if (a.minGames !== b.minGames) return a.minGames - b.minGames;
+            // Then: prioritize longest combined rest
+            return b.totalRest - a.totalRest;
+          });
+        
+        for (const c of candidates) {
+          if (roundMatches.length >= courts) break;
+          if (playing.has(c.m.t1) || playing.has(c.m.t2)) continue;
+          roundMatches.push({...c.m, round: round + 1, court: roundMatches.length + 1});
+          playing.add(c.m.t1);
+          playing.add(c.m.t2);
+        }
+        
+        // If no valid matches found (all teams played last round), allow shortest rest
+        if (roundMatches.length === 0 && remaining.length > 0) {
+          const fallback = remaining
+            .map(m => ({ m, minRest: Math.min(round - lastPlayed[m.t1], round - lastPlayed[m.t2]) }))
+            .sort((a, b) => b.minRest - a.minRest);
+          if (fallback.length > 0) {
+            const pick = fallback[0].m;
+            roundMatches.push({...pick, round: round + 1, court: 1});
           }
         }
-        roundMatches.forEach(m => { lastPlayed[m.t1] = round; lastPlayed[m.t2] = round; });
+        
+        // Remove scheduled matches from remaining
+        roundMatches.forEach(rm => {
+          const idx = remaining.findIndex(m => m.t1 === rm.t1 && m.t2 === rm.t2);
+          if (idx >= 0) remaining.splice(idx, 1);
+          lastPlayed[rm.t1] = round;
+          lastPlayed[rm.t2] = round;
+          gamesPlayed[rm.t1]++;
+          gamesPlayed[rm.t2]++;
+        });
+        
         scheduled.push(...roundMatches);
         round++;
-        if (round > 200) break;
+        if (round > 300) break;
       }
       return scheduled;
     }
