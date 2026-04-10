@@ -4719,7 +4719,7 @@
       
       // Push to Supabase audit table (non-blocking, fire-and-forget)
       if (supabaseClient && !isOffline) {
-        supabaseClient.from('match_audit_log').insert([entry]).catch(() => {});
+        supabaseClient.from('match_audit_log').insert([entry]).then(({ error }) => { if (error) console.error('Audit log error:', error); });
       }
     }
     
