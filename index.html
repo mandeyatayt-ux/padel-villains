@@ -8605,7 +8605,7 @@
         roundMatches.push([fixed, rotating[0]]);
         // Fold remaining: pair i with (total-2-i) from rotating array
         for (let i = 1; i < total / 2; i++) {
-          roundMatches.push([rotating[i], rotating[total - 2 - i]]);
+          roundMatches.push([rotating[i], rotating[total - 1 - i]]);
         }
         // Remove BYE matches (null team)
         logicalRounds.push(roundMatches.filter(m => m[0] !== null && m[1] !== null));
