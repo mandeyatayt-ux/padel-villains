@@ -8586,71 +8586,73 @@
     }
 
     function mdScheduleMatches(pairs, courts, teamIds) {
-      const scheduled = [];
-      const remaining = pairs.map(p => ({t1: p[0], t2: p[1]}));
-      const lastPlayed = {};
-      const gamesPlayed = {};
-      teamIds.forEach(id => { lastPlayed[id] = -999; gamesPlayed[id] = 0; });
-      let round = 0;
+      // Circle method: the standard round-robin scheduling algorithm
+      // Produces perfectly balanced rounds where each team plays exactly once per logical round
+      const n = teamIds.length;
+      const teams = [...teamIds];
+      const isOdd = n % 2 === 1;
+      if (isOdd) teams.push(null); // BYE placeholder for odd teams
+      const total = teams.length;
       
-      while (remaining.length > 0) {
+      // Generate logical rounds using circle/polygon method
+      const logicalRounds = [];
+      const fixed = teams[0];
+      const rotating = teams.slice(1);
+      
+      for (let r = 0; r < total - 1; r++) {
         const roundMatches = [];
-        const playing = new Set();
-        
-        // Build candidates: matches where neither team played last round
-        // Sort by: 1) fewest total games played (balance), 2) longest wait
-        const candidates = remaining
-          .filter(m => !playing.has(m.t1) && !playing.has(m.t2))
-          .map(m => {
-            const minGames = Math.min(gamesPlayed[m.t1], gamesPlayed[m.t2]);
-            const totalGames = gamesPlayed[m.t1] + gamesPlayed[m.t2];
-            const lastT1 = lastPlayed[m.t1];
-            const lastT2 = lastPlayed[m.t2];
-            const minRest = Math.min(round - lastT1, round - lastT2);
-            const totalRest = (round - lastT1) + (round - lastT2);
-            return { m, minGames, totalGames, minRest, totalRest };
-          })
-          .filter(c => c.minRest >= 2) // must sit out at least 1 round
-          .sort((a, b) => {
-            // First: prioritize teams with fewer games (balance)
-            if (a.minGames !== b.minGames) return a.minGames - b.minGames;
-            // Then: prioritize longest combined rest
-            return b.totalRest - a.totalRest;
-          });
-        
-        for (const c of candidates) {
-          if (roundMatches.length >= courts) break;
-          if (playing.has(c.m.t1) || playing.has(c.m.t2)) continue;
-          roundMatches.push({...c.m, round: round + 1, court: roundMatches.length + 1});
-          playing.add(c.m.t1);
-          playing.add(c.m.t2);
+        // Pair fixed team with top of rotation
+        roundMatches.push([fixed, rotating[0]]);
+        // Fold remaining: pair i with (total-2-i) from rotating array
+        for (let i = 1; i < total / 2; i++) {
+          roundMatches.push([rotating[i], rotating[total - 2 - i]]);
         }
-        
-        // If no valid matches found (all teams played last round), allow shortest rest
-        if (roundMatches.length === 0 && remaining.length > 0) {
-          const fallback = remaining
-            .map(m => ({ m, minRest: Math.min(round - lastPlayed[m.t1], round - lastPlayed[m.t2]) }))
-            .sort((a, b) => b.minRest - a.minRest);
-          if (fallback.length > 0) {
-            const pick = fallback[0].m;
-            roundMatches.push({...pick, round: round + 1, court: 1});
+        // Remove BYE matches (null team)
+        logicalRounds.push(roundMatches.filter(m => m[0] !== null && m[1] !== null));
+        // Rotate: move first element to end
+        rotating.push(rotating.shift());
+      }
+      
+      // Flatten logical rounds into sequential match order
+      const scheduled = [];
+      let matchRound = 0;
+      
+      for (const logicalRound of logicalRounds) {
+        if (courts >= 2) {
+          // Multi-court: group matches from same logical round onto courts simultaneously
+          for (let i = 0; i < logicalRound.length; i += courts) {
+            matchRound++;
+            for (let c = 0; c < courts && (i + c) < logicalRound.length; c++) {
+              scheduled.push({
+                t1: logicalRound[i + c][0],
+                t2: logicalRound[i + c][1],
+                round: matchRound,
+                court: c + 1
+              });
+            }
+          }
+        } else {
+          // 1 court: each match plays sequentially
+          // Reorder within logical round to avoid back-to-back at boundary with previous round
+          let ordered = [...logicalRound];
+          if (scheduled.length > 0) {
+            const last = scheduled[scheduled.length - 1];
+            const lastTeams = new Set([last.t1, last.t2]);
+            if (ordered.length > 1 && (lastTeams.has(ordered[0][0]) || lastTeams.has(ordered[0][1]))) {
+              // First match conflicts — find a safe one to swap to front
+              const safeIdx = ordered.findIndex(m => !lastTeams.has(m[0]) && !lastTeams.has(m[1]));
+              if (safeIdx > 0) {
+                [ordered[0], ordered[safeIdx]] = [ordered[safeIdx], ordered[0]];
+              }
+            }
+          }
+          for (const m of ordered) {
+            matchRound++;
+            scheduled.push({ t1: m[0], t2: m[1], round: matchRound, court: 1 });
           }
         }
-        
-        // Remove scheduled matches from remaining
-        roundMatches.forEach(rm => {
-          const idx = remaining.findIndex(m => m.t1 === rm.t1 && m.t2 === rm.t2);
-          if (idx >= 0) remaining.splice(idx, 1);
-          lastPlayed[rm.t1] = round;
-          lastPlayed[rm.t2] = round;
-          gamesPlayed[rm.t1]++;
-          gamesPlayed[rm.t2]++;
-        });
-        
-        scheduled.push(...roundMatches);
-        round++;
-        if (round > 300) break;
       }
+      
       return scheduled;
     }
 
