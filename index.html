@@ -5528,9 +5528,15 @@
         queueBtn.classList.remove('hidden');
       }
       
+      // Priority: today's matchday > today's vibes/training > future matchday > nothing
+      const matchdayIsToday = activeMatchday && activeMatchday.date === today;
+      const matchdayIsPast = activeMatchday && activeMatchday.date < today;
+      const showMatchday = activeMatchday && (matchdayIsToday || matchdayIsPast || todayEvents.length === 0);
+      
       // Render matchday header (only for current)
       if (!isViewingPast) {
-        if (activeMatchday) {
+        
+        if (showMatchday) {
           header.classList.add('active');
           const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
           
@@ -5770,7 +5776,7 @@
           countdownEl.classList.add('hidden');
           quickActionsEl.classList.remove('hidden');
         }
-      } else if (!isViewingPast && !activeMatchday && todayEvents.length > 0) {
+      } else if (!isViewingPast && (!showMatchday) && todayEvents.length > 0) {
         // Show countdown for vibes/training events
         const event = todayEvents[0];
         const now = new Date();
@@ -11907,8 +11913,8 @@
     function getEventsForDate(dateStr) {
       // Combine calendar events and matchdays, avoiding duplicates
       const calEvents = events.filter(e => e.date === dateStr);
-      const calEventIds = new Set(calEvents.map(e => String(e.id)));
-      const mdEvents = matchdays.filter(md => md.date === dateStr && !calEventIds.has(String(md.id))).map(md => ({
+      const hasMatchdayEvent = calEvents.some(e => e.type === 'matchday');
+      const mdEvents = hasMatchdayEvent ? [] : matchdays.filter(md => md.date === dateStr).map(md => ({
         ...md,
         type: 'matchday',
         title: `Match Day @ ${md.venue}`
