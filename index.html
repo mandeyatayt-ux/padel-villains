@@ -14087,11 +14087,11 @@
         // Step 1: Push any pending writes
         await processPendingSync();
         
-        // Step 2: Pull fresh data from Supabase
+        // Step 2: Pull fresh data from Supabase (background mode preserves auth & tab)
         if (supabaseClient) {
           localStorage.removeItem('pv_cache');
           localStorage.removeItem('pv_cache_time');
-          await fetchFromDatabase();
+          await fetchFreshDataInBackground();
         }
         
         toast('Sync complete!', 'success');
