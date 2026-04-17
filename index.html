@@ -10863,7 +10863,6 @@
     function selectTeamForMatch(teamId) {
       if (editMatchTeamSide === 1) {
         if (teamId === editMatchPendingTeam2Id) {
-          // Same as other side → auto-swap
           const tmp = editMatchPendingTeam1Id;
           editMatchPendingTeam1Id = editMatchPendingTeam2Id;
           editMatchPendingTeam2Id = tmp;
@@ -10885,7 +10884,9 @@
       const m = matches.find(match => match.id === id);
       if (m) renderEditMatchInfo(m);
       closeModal('selectTeam');
-    } {
+    }
+    
+    async function saveMatch() {
       const id = parseInt(document.getElementById('editMatchId').value);
       const scoreA = parseInt(document.getElementById('editScoreA').value) || 0;
       const scoreB = parseInt(document.getElementById('editScoreB').value) || 0;
@@ -10898,30 +10899,51 @@
       const m = matches[idx];
       const oldScores = m.scores;
       const oldWinner = m.winner_id;
-      const newWinner = scoreA > scoreB ? m.team1_id : m.team2_id;
+      const oldTeam1Id = m.team1_id;
+      const oldTeam2Id = m.team2_id;
+      const newTeam1Id = editMatchPendingTeam1Id ?? oldTeam1Id;
+      const newTeam2Id = editMatchPendingTeam2Id ?? oldTeam2Id;
+      const teamsChanged = (newTeam1Id !== oldTeam1Id) || (newTeam2Id !== oldTeam2Id);
+
+      if (teamsChanged && newTeam1Id === newTeam2Id) {
+        toast('Both sides cannot be the same team', 'error'); return;
+      }
+
+      const newWinner = scoreA > scoreB ? newTeam1Id : newTeam2Id;
       
-      matches[idx] = { ...m, scores: [[scoreA, scoreB]], winner_id: newWinner };
+      matches[idx] = { ...m, scores: [[scoreA, scoreB]], winner_id: newWinner, team1_id: newTeam1Id, team2_id: newTeam2Id };
       
       if (supabaseClient) {
         try {
-          await supabaseClient.from('matches').update({
-            scores: [[scoreA, scoreB]], winner_id: newWinner
-          }).eq('id', id);
+          const updatePayload = { scores: [[scoreA, scoreB]], winner_id: newWinner };
+          if (teamsChanged) {
+            updatePayload.team1_id = newTeam1Id;
+            updatePayload.team2_id = newTeam2Id;
+          }
+          await supabaseClient.from('matches').update(updatePayload).eq('id', id);
         } catch (e) { toast('Error saving', 'error'); return; }
       } else {
         saveLocal();
       }
       
-      logAudit('match_edited', m, { 
+      const auditDetails = { 
         old_scores: oldScores, new_scores: [[scoreA, scoreB]],
         old_winner: oldWinner, new_winner: newWinner 
-      });
+      };
+      if (teamsChanged) {
+        auditDetails.old_team1_id = oldTeam1Id;
+        auditDetails.new_team1_id = newTeam1Id;
+        auditDetails.old_team2_id = oldTeam2Id;
+        auditDetails.new_team2_id = newTeam2Id;
+        auditDetails.old_teams = `${getTeam(oldTeam1Id)?.name || '?'} vs ${getTeam(oldTeam2Id)?.name || '?'}`;
+        auditDetails.new_teams = `${getTeam(newTeam1Id)?.name || '?'} vs ${getTeam(newTeam2Id)?.name || '?'}`;
+      }
+      logAudit(teamsChanged ? 'match_teams_edited' : 'match_edited', m, auditDetails);
       
       closeModal('editMatch');
       renderAll();
-      toast('Match updated!', 'success');
+      toast(teamsChanged ? 'Match updated (teams changed)' : 'Match updated!', 'success');
     }
-    
     function confirmDeleteMatch() {
       const id = parseInt(document.getElementById('editMatchId').value);
       const m = matches.find(match => match.id === id);
