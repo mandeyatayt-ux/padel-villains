@@ -4241,6 +4241,15 @@
     </div>
   </div>
 
+ <!-- Select Team Modal (for Edit Match team change) -->
+  <div class="modal-overlay" id="selectTeamModal">
+    <div class="modal">
+      <div class="modal-header"><h3 class="modal-title" id="selectTeamTitle">SELECT TEAM</h3><button class="modal-close" onclick="closeModal('selectTeam')"><i class="fas fa-times"></i></button></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="selectTeamHint">Tap a team to replace this side</div>
+      <div id="selectTeamGrid" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto"></div>
+      <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('selectTeam')">Cancel</button></div>
+    </div>
+  </div>
   <!-- Add Event Modal -->
   <div class="modal-overlay" id="addEventModal">
     <div class="modal">
@@ -10778,36 +10787,105 @@
     }
     
     // ===== EDIT/DELETE MATCH =====
+    // State for Edit Match team-change flow
+    let editMatchPendingTeam1Id = null;
+    let editMatchPendingTeam2Id = null;
+    let editMatchTeamSide = null; // 1 or 2 — which side the picker is editing
+
     function openEditMatch(id) {
       const m = matches.find(match => match.id === id);
       if (!m) return;
       
-      const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
-      const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
-      const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
       const scores = m.scores?.[0] || [0, 0];
       
       document.getElementById('editMatchId').value = id;
-      document.getElementById('editMatchInfo').innerHTML = `
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${new Date(m.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} • ${m.court}</div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:16px">
-          <div style="display:flex;align-items:center;gap:8px">
-            ${av(t1p1, 'xs')}${av(t1p2, 'xs')}
-            <strong>${t1?.name || '?'}</strong>
-          </div>
-          <span style="color:var(--clay);font-weight:700">VS</span>
-          <div style="display:flex;align-items:center;gap:8px">
-            <strong>${t2?.name || '?'}</strong>
-            ${av(t2p1, 'xs')}${av(t2p2, 'xs')}
-          </div>
-        </div>
-      `;
+      editMatchPendingTeam1Id = m.team1_id;
+      editMatchPendingTeam2Id = m.team2_id;
+      renderEditMatchInfo(m);
       document.getElementById('editScoreA').value = scores[0];
       document.getElementById('editScoreB').value = scores[1];
       openModal('editMatch');
     }
-    
-    async function saveMatch() {
+
+    function renderEditMatchInfo(m) {
+      const t1 = getTeam(editMatchPendingTeam1Id), t2 = getTeam(editMatchPendingTeam2Id);
+      const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
+      const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
+      const changed = (editMatchPendingTeam1Id !== m.team1_id) || (editMatchPendingTeam2Id !== m.team2_id);
+      const editHint = '<i class="fas fa-pen" style="font-size:10px;color:var(--clay);margin-left:6px;opacity:0.7"></i>';
+      document.getElementById('editMatchInfo').innerHTML = `
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${new Date(m.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} • ${m.court || ''}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap">
+          <button type="button" onclick="openTeamPicker(1)" style="background:rgba(255,255,255,0.6);border:1px dashed var(--clay-light);border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:inherit;font-size:inherit;color:inherit" title="Tap to change team">
+            ${av(t1p1, 'xs')}${av(t1p2, 'xs')}
+            <strong>${t1?.name || '?'}</strong>${editHint}
+          </button>
+          <span style="color:var(--clay);font-weight:700">VS</span>
+          <button type="button" onclick="openTeamPicker(2)" style="background:rgba(255,255,255,0.6);border:1px dashed var(--clay-light);border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:inherit;font-size:inherit;color:inherit" title="Tap to change team">
+            <strong>${t2?.name || '?'}</strong>${editHint}
+            ${av(t2p1, 'xs')}${av(t2p2, 'xs')}
+          </button>
+        </div>
+        ${changed ? '<div style="font-size:11px;color:var(--clay);margin-top:10px;font-weight:600"><i class="fas fa-info-circle"></i> Team change will apply when you tap Save</div>' : ''}
+      `;
+    }
+
+    function openTeamPicker(side) {
+      editMatchTeamSide = side;
+      const currentThisSide = side === 1 ? editMatchPendingTeam1Id : editMatchPendingTeam2Id;
+      const currentOtherSide = side === 1 ? editMatchPendingTeam2Id : editMatchPendingTeam1Id;
+      document.getElementById('selectTeamTitle').textContent = `SELECT TEAM ${side === 1 ? 'A' : 'B'}`;
+      document.getElementById('selectTeamHint').textContent = 'Tap a team to replace this side. Picking the opposing team will swap sides.';
+      const grid = document.getElementById('selectTeamGrid');
+      const list = teams.filter(t => t.active !== false);
+      grid.innerHTML = list.map(t => {
+        const p1 = getPlayer(t.player1_id);
+        const p2 = getPlayer(t.player2_id);
+        const isCurrent = t.id === currentThisSide;
+        const isOther = t.id === currentOtherSide;
+        const badge = isCurrent ? '<div style="margin-left:auto;font-size:11px;color:var(--clay);font-weight:700">CURRENT</div>'
+                      : isOther ? '<div style="margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:700">↔ SWAP</div>'
+                      : '';
+        return `<button class="md-team-btn ${isCurrent ? 'active' : ''}" onclick="selectTeamForMatch(${t.id})">
+          <div class="md-team-avatars">
+            ${av(p1)}${av(p2)}
+          </div>
+          <div>
+            <div class="md-team-name">${t.name}</div>
+            <div class="md-team-players">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+          </div>
+          ${badge}
+        </button>`;
+      }).join('');
+      openModal('selectTeam');
+    }
+
+    function selectTeamForMatch(teamId) {
+      if (editMatchTeamSide === 1) {
+        if (teamId === editMatchPendingTeam2Id) {
+          // Same as other side → auto-swap
+          const tmp = editMatchPendingTeam1Id;
+          editMatchPendingTeam1Id = editMatchPendingTeam2Id;
+          editMatchPendingTeam2Id = tmp;
+          toast('Teams swapped', 'info');
+        } else {
+          editMatchPendingTeam1Id = teamId;
+        }
+      } else if (editMatchTeamSide === 2) {
+        if (teamId === editMatchPendingTeam1Id) {
+          const tmp = editMatchPendingTeam2Id;
+          editMatchPendingTeam2Id = editMatchPendingTeam1Id;
+          editMatchPendingTeam1Id = tmp;
+          toast('Teams swapped', 'info');
+        } else {
+          editMatchPendingTeam2Id = teamId;
+        }
+      }
+      const id = parseInt(document.getElementById('editMatchId').value);
+      const m = matches.find(match => match.id === id);
+      if (m) renderEditMatchInfo(m);
+      closeModal('selectTeam');
+    } {
       const id = parseInt(document.getElementById('editMatchId').value);
       const scoreA = parseInt(document.getElementById('editScoreA').value) || 0;
       const scoreB = parseInt(document.getElementById('editScoreB').value) || 0;
