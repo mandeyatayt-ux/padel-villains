@@ -2402,7 +2402,6 @@
       </div>
       <button class="active" data-tab="dashboard"><span class="nav-icon" data-icon="court"></span><span>Dashboard</span></button>
       <button data-tab="matchday"><span class="nav-icon" data-icon="strategy"></span><span>Match Day</span></button>
-      <button data-tab="matches"><span class="nav-icon" data-icon="scoreboard"></span><span>Matches</span></button>
       <button data-tab="myprofile" id="navMyProfile"><span class="nav-icon" data-icon="player"></span><span>My Profile</span></button>
       <button data-tab="players"><span class="nav-icon" data-icon="doubles"></span><span>Players</span></button>
       <button data-tab="teams"><span class="nav-icon" data-icon="doubles"></span><span>Teams</span></button>
@@ -2864,41 +2863,8 @@
       <div class="grid-3" id="teamsGrid"><div class="empty"><div class="empty-icon">🏅</div><h3>No Teams Yet</h3><p>Create your first team to start tracking</p></div></div>
     </section>
 
-    <!-- ===== MATCHES TAB ===== -->
-    <section class="tab" id="matches">
-      <!-- Ongoing Matches Section -->
-      <div class="card" style="margin-bottom:24px" id="ongoingSection">
-        <div class="section-header" style="margin-bottom:20px">
-          <div>
-            <h3 style="font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px">
-              <span class="live-dot"></span> Ongoing Matches
-            </h3>
-            <p style="font-size:13px;color:var(--text-muted)">Matches in progress - click to enter final score</p>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="openModal('queueMatch')"><i class="fas fa-plus"></i> Queue Match</button>
-          <button class="btn btn-sm btn-whatsapp" onclick="shareQueuedMatchesWhatsApp()" title="Share today's results & upcoming matches on WhatsApp"><i class="fab fa-whatsapp"></i> Share Today</button>
-        </div>
-        <div id="ongoingMatches"><div class="empty" style="padding:30px"><p>No ongoing matches</p></div></div>
-      </div>
-      
-      <!-- Match History Section -->
-      <div class="section-header">
-        <div><h2 class="section-title">MATCH HISTORY</h2><p class="section-subtitle">Completed matches</p></div>
-        <button class="btn btn-primary admin-only" onclick="openModal('addMatch')"><i class="fas fa-plus"></i> Add Result</button>
-      </div>
-      <div class="matches-filters">
-        <button class="filter-btn active" data-filter="all">All</button>
-        <button class="filter-btn" data-filter="today">Today</button>
-        <button class="filter-btn" data-filter="week">This Week</button>
-      </div>
-      <div style="margin-bottom:20px">
-        <select id="matchTeamFilter" onchange="renderMatches()" style="width:100%;padding:12px 16px;border-radius:12px;border:2px solid var(--cream-dark);font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;background:white;color:var(--text);cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22><path fill=%22%23888%22 d=%22M6 8L1 3h10z%22/></svg>');background-repeat:no-repeat;background-position:right 14px center">
-          <option value="">All Teams</option>
-        </select>
-      </div>
-      <div id="matchTeamStats" style="display:none"></div>
-      <div id="matchesList"><div class="empty"><div class="empty-icon">📋</div><h3>No Matches Yet</h3><p>Log your first match</p></div></div>
-    </section>
+    <!-- ===== MATCHES TAB REMOVED ===== -->
+    <!-- Merged into Match Day (live + per-day viewing) and History (All Matches section) -->
 
     <!-- ===== RANKINGS TAB ===== -->
     <section class="tab" id="rankings">
@@ -2975,6 +2941,25 @@
 
     <!-- ===== MATCH DAY TAB ===== -->
     <section class="tab" id="matchday">
+      <!-- ====== MATCHDAY PICKER & CONTROLS ====== -->
+      <div id="mdPickerBar" class="card" style="margin-bottom:16px;padding:14px 16px;display:none">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase">Viewing</div>
+          <select id="mdPickerSelect" onchange="mdSelectMatchday(this.value)" style="flex:1;min-width:200px;padding:10px 14px;border-radius:10px;border:2px solid var(--cream-dark);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;background:white;color:var(--text);cursor:pointer">
+            <option value="">— Select a match day —</option>
+          </select>
+          <button class="btn btn-sm btn-secondary" onclick="mdJumpToCurrent()" id="mdJumpCurrentBtn" style="display:none;border-radius:10px"><i class="fas fa-arrow-left"></i> Back to Current</button>
+        </div>
+      </div>
+
+      <!-- Viewing Past Match Day Banner -->
+      <div class="card" id="mdViewingPastBanner" style="display:none;background:var(--gold);color:white;margin-bottom:16px;padding:14px 18px;border-radius:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div style="font-size:13px;font-weight:600"><i class="fas fa-clock-rotate-left"></i> Viewing past match day: <strong id="mdViewingPastDate"></strong></div>
+          <button class="btn btn-sm" onclick="mdJumpToCurrent()" style="background:white;color:var(--gold);border-radius:10px;font-weight:700"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+      </div>
+
       <!-- Match Day Info Hub — the central command for all matchday info -->
       <div id="mdInfoHub" style="margin-bottom:24px">
         <!-- Status Banner -->
@@ -2988,6 +2973,12 @@
             <div style="display:flex;gap:8px;flex-wrap:wrap" id="mdInfoActions"></div>
           </div>
         </div>
+        
+        <!-- Sync confidence counter -->
+        <div id="mdSyncCounter" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px"></div>
+        
+        <!-- Action toolbar — Queue, Add Result, Share Today -->
+        <div id="mdActionToolbar" style="display:none;margin-bottom:16px;flex-wrap:wrap;gap:8px"></div>
         
         <!-- Ongoing Matches on Match Day page -->
         <div id="mdInfoOngoing" style="display:none;margin-bottom:16px">
@@ -3017,6 +3008,19 @@
           <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">🎯 My Match Day</h3>
           <div id="mdInfoMyDayContent"></div>
         </div>
+      </div>
+      
+      <!-- Team Performance Filter (per-matchday team stats view) -->
+      <div id="mdTeamPerformance" class="card" style="display:none;margin-bottom:24px;padding:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px">🔍 Team Performance on This Match Day</div>
+          <button class="btn btn-sm btn-secondary" onclick="mdClearTeamFilter()" id="mdClearTeamFilterBtn" style="display:none;border-radius:10px"><i class="fas fa-times"></i> Clear</button>
+        </div>
+        <select id="mdTeamPerfFilter" onchange="mdApplyTeamFilter(this.value)" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--cream-dark);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;background:white;color:var(--text);cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22><path fill=%22%23888%22 d=%22M6 8L1 3h10z%22/></svg>');background-repeat:no-repeat;background-position:right 14px center">
+          <option value="">Select a team to see their performance</option>
+        </select>
+        <div id="mdTeamPerfStats" style="display:none;margin-top:14px"></div>
+        <div id="mdTeamPerfMatches" style="display:none;margin-top:14px"></div>
       </div>
       
       <!-- Hero -->
@@ -3279,10 +3283,34 @@
     <!-- ===== HISTORY TAB ===== -->
     <section class="tab" id="history">
       <div class="section-header">
-        <div><h2 class="section-title">📅 MATCH DAY HISTORY</h2><p class="section-subtitle">View results from previous match days</p></div>
-        <button class="btn btn-secondary" onclick="openModal('matchdaySummary')"><i class="fas fa-share"></i> Share Summary</button>
+        <div><h2 class="section-title">📅 MATCH DAY HISTORY</h2><p class="section-subtitle">Browse match days and every match ever played</p></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary admin-only" onclick="openModal('addMatch')"><i class="fas fa-plus"></i> Add Result</button>
+          <button class="btn btn-secondary" onclick="openModal('matchdaySummary')"><i class="fas fa-share"></i> Share Summary</button>
+        </div>
       </div>
+      
+      <!-- Filter bar (shared by both Match Days and All Matches sections) -->
+      <div class="card" style="margin-bottom:20px;padding:16px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase">🔍 Filters</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <select id="matchTeamFilter" onchange="renderMatches(); renderHistory();" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--cream-dark);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;background:white;color:var(--text);cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22><path fill=%22%23888%22 d=%22M6 8L1 3h10z%22/></svg>');background-repeat:no-repeat;background-position:right 14px center">
+            <option value="">All Teams</option>
+          </select>
+          <select id="matchMatchdayFilter" onchange="renderMatches(); renderHistory();" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--cream-dark);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;background:white;color:var(--text);cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22><path fill=%22%23888%22 d=%22M6 8L1 3h10z%22/></svg>');background-repeat:no-repeat;background-position:right 14px center">
+            <option value="">All Match Days</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Match Day cards (grouped view) -->
+      <h3 style="font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px">Match Days</h3>
       <div id="matchdayHistoryList"><div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Yet</h3><p>Complete a match day to see it here</p></div></div>
+      
+      <!-- All Matches (flat list with filters applied) -->
+      <h3 style="font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-top:32px;margin-bottom:12px">All Matches</h3>
+      <div id="matchTeamStats" style="display:none"></div>
+      <div id="matchesList"><div class="empty"><div class="empty-icon">📋</div><h3>No Matches Yet</h3><p>Log your first match</p></div></div>
     </section>
 
     <!-- ===== ACHIEVEMENTS TAB ===== -->
@@ -4215,7 +4243,7 @@
       </div>
       <div class="modal-actions">
         <button class="btn btn-secondary" onclick="cancelOngoingMatch()"><i class="fas fa-trash"></i> Cancel Match</button>
-        <button class="btn btn-primary" onclick="finalizeMatch()"><i class="fas fa-check"></i> Finalize</button>
+        <button class="btn btn-primary" id="finalizeSubmitBtn" onclick="finalizeMatch()"><i class="fas fa-check"></i> Finalize</button>
       </div>
     </div>
   </div>
@@ -4788,6 +4816,8 @@
     }
     let activeMatchday = null;
     let viewingMatchday = null;
+    let mdViewingId = null; // id of matchday being viewed on Match Day tab (null = active/today)
+    let mdTeamFilterId = null; // team id for per-matchday team performance filter
     let selectedPlayers = [];
     let confirmAction = null;
     let tempPhotoData = { addPlayer: null, editPlayer: null };
@@ -6019,12 +6049,9 @@
     
     function viewMatchdayHistory(date) {
       const md = matchdays.find(m => m.date === date);
-      if (md) {
-        viewingMatchday = md;
-        renderDashboard();
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      if (!md) return;
+      viewMatchday(md.id);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
     // ===== PLAYER AVAILABILITY =====
@@ -8020,6 +8047,7 @@
     // ===== ONGOING MATCHES =====
     function renderOngoingMatches() {
       const container = document.getElementById('ongoingMatches');
+      if (!container) return; // Matches tab removed — ongoing now rendered by renderMdInfoHub
       if (ongoingMatches.length === 0) {
         container.innerHTML = '<div class="empty" style="padding:30px"><p>No ongoing matches</p></div>';
         return;
@@ -8055,8 +8083,11 @@
       }).join('');
     }
     
-    // ===== MATCHES =====
+    // ===== MATCHES (renders into History tab's All Matches section) =====
     function renderMatches(filter) {
+      const listEl = document.getElementById('matchesList');
+      if (!listEl) return; // History tab not yet rendered or element missing
+      
       // Get active time filter from button if not passed
       if (!filter) {
         const activeBtn = document.querySelector('.matches-filters .filter-btn[data-filter].active');
@@ -8069,8 +8100,17 @@
       if (filter === 'today') filtered = filtered.filter(m => m.date === today);
       else if (filter === 'week') filtered = filtered.filter(m => m.date >= weekAgo);
       
+      // Apply matchday filter (new — from History filter bar)
+      const matchdayFilterEl = document.getElementById('matchMatchdayFilter');
+      const selectedMatchdayId = matchdayFilterEl?.value || '';
+      if (selectedMatchdayId) {
+        const selectedMd = matchdays.find(md => String(md.id) === String(selectedMatchdayId));
+        if (selectedMd) filtered = filtered.filter(m => m.date === selectedMd.date);
+      }
+      
       // Populate team filter dropdown
       const teamSelect = document.getElementById('matchTeamFilter');
+      if (!teamSelect) return;
       const currentTeamId = parseInt(teamSelect.value) || '';
       const teamOptions = activeTeams().filter(t => {
         const stats = getTeamStats(t.id);
@@ -8082,6 +8122,18 @@
       ).join('');
       if (teamSelect.innerHTML !== optionsHtml) teamSelect.innerHTML = optionsHtml;
       if (currentTeamId) teamSelect.value = currentTeamId;
+      
+      // Populate matchday filter dropdown
+      if (matchdayFilterEl) {
+        const mdOptions = matchdays.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+        const mdOptsHtml = '<option value="">All Match Days</option>' + mdOptions.map(md => {
+          const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+          const selected = String(md.id) === String(selectedMatchdayId) ? 'selected' : '';
+          return `<option value="${md.id}" ${selected}>${dateStr} • ${md.venue || '—'}</option>`;
+        }).join('');
+        if (matchdayFilterEl.innerHTML !== mdOptsHtml) matchdayFilterEl.innerHTML = mdOptsHtml;
+        if (selectedMatchdayId) matchdayFilterEl.value = selectedMatchdayId;
+      }
       
       // Apply team filter
       const statsContainer = document.getElementById('matchTeamStats');
@@ -8805,11 +8857,13 @@
       const myDayEl = document.getElementById('mdInfoMyDay');
       if (!statusEl) return;
       
-      const md = activeMatchday;
+      const md = getViewedMatchday();
+      const isActiveView = md && activeMatchday && md.id === activeMatchday.id;
       const today = getLocalDateStr();
       const matchdayDate = md?.date || today;
       const dayMatches = matches.filter(m => m.date === matchdayDate);
-      const dayOngoing = ongoingMatches.filter(m => m.date === matchdayDate || !m.date);
+      // Only show ongoing queue when viewing the active matchday
+      const dayOngoing = isActiveView ? ongoingMatches.filter(m => m.date === matchdayDate || !m.date) : [];
       const dayRankings = rankTeamsByMatches(matchdayDate);
       
       // --- STATUS BANNER ---
@@ -8956,9 +9010,276 @@
       }
     }
     
+    // ===== MATCH DAY PICKER, SYNC COUNTER, ACTION TOOLBAR, TEAM FILTER =====
+    function getViewedMatchday() {
+      if (mdViewingId != null) {
+        const md = matchdays.find(m => m.id === mdViewingId);
+        if (md) return md;
+        // Stale viewing id — fall through to active
+        mdViewingId = null;
+      }
+      return activeMatchday;
+    }
+    
+    function renderMdPicker() {
+      const bar = document.getElementById('mdPickerBar');
+      const select = document.getElementById('mdPickerSelect');
+      const jumpBtn = document.getElementById('mdJumpCurrentBtn');
+      const pastBanner = document.getElementById('mdViewingPastBanner');
+      if (!bar || !select) return;
+      
+      // Hide picker entirely if there are no match days yet
+      if (!matchdays || matchdays.length === 0) {
+        bar.style.display = 'none';
+        if (pastBanner) pastBanner.style.display = 'none';
+        return;
+      }
+      bar.style.display = '';
+      
+      const viewed = getViewedMatchday();
+      const viewedId = viewed?.id ?? '';
+      const sortedMatchdays = matchdays.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      const opts = sortedMatchdays.map(md => {
+        const dateStr = new Date(md.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+        const isActive = activeMatchday && md.id === activeMatchday.id;
+        const isClosed = md.status === 'closed';
+        const tag = isActive ? ' • LIVE' : isClosed ? ' • completed' : '';
+        const venue = md.venue ? ` • ${md.venue}` : '';
+        return `<option value="${md.id}" ${md.id === viewedId ? 'selected' : ''}>${dateStr}${venue}${tag}</option>`;
+      }).join('');
+      const emptyOpt = `<option value="" ${!viewedId ? 'selected' : ''}>— Select a match day —</option>`;
+      const newHtml = emptyOpt + opts;
+      if (select.innerHTML !== newHtml) select.innerHTML = newHtml;
+      if (viewedId) select.value = String(viewedId);
+      
+      // Past-day banner + Back-to-current button visibility
+      const isViewingPast = mdViewingId != null && (!activeMatchday || mdViewingId !== activeMatchday.id);
+      if (pastBanner) {
+        if (isViewingPast && viewed) {
+          pastBanner.style.display = '';
+          const dateStr = new Date(viewed.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+          document.getElementById('mdViewingPastDate').textContent = dateStr;
+        } else {
+          pastBanner.style.display = 'none';
+        }
+      }
+      if (jumpBtn) jumpBtn.style.display = isViewingPast && activeMatchday ? '' : 'none';
+    }
+    
+    function mdSelectMatchday(mdId) {
+      if (!mdId) { mdViewingId = null; }
+      else { mdViewingId = parseInt(mdId); }
+      // Reset team filter when switching matchdays
+      mdTeamFilterId = null;
+      renderMatchDay();
+    }
+    
+    function mdJumpToCurrent() {
+      mdViewingId = null;
+      mdTeamFilterId = null;
+      renderMatchDay();
+    }
+    
+    function renderMdSyncCounter() {
+      const el = document.getElementById('mdSyncCounter');
+      if (!el) return;
+      const viewed = getViewedMatchday();
+      if (!viewed) { el.style.display = 'none'; return; }
+      
+      const dayMatches = matches.filter(m => m.date === viewed.date);
+      if (dayMatches.length === 0) { el.style.display = 'none'; return; }
+      
+      // Check pending sync queue for matches on this date
+      let pending = 0;
+      try {
+        const queue = JSON.parse(localStorage.getItem('pv_pending_sync') || '[]');
+        pending = queue.filter(q => q.table === 'matches' && q.data?.date === viewed.date).length;
+      } catch(e) { pending = 0; }
+      
+      const total = dayMatches.length;
+      const saved = Math.max(0, total - pending);
+      el.style.display = 'flex';
+      if (pending === 0) {
+        el.style.background = 'rgba(5,150,105,0.08)';
+        el.style.color = 'var(--success)';
+        el.style.border = '1px solid rgba(5,150,105,0.18)';
+        el.innerHTML = `<span>✓</span><span>${saved}/${total} saved</span><span style="margin-left:auto;font-weight:500;font-size:11px;color:var(--text-muted)">All results confirmed</span>`;
+      } else {
+        el.style.background = 'rgba(245,158,11,0.1)';
+        el.style.color = '#B45309';
+        el.style.border = '1px solid rgba(245,158,11,0.25)';
+        el.innerHTML = `<span>⚠️</span><span>${saved}/${total} saved — ${pending} syncing</span><span style="margin-left:auto;font-weight:500;font-size:11px">Will retry automatically</span>`;
+      }
+    }
+    
+    function renderMdActionToolbar() {
+      const el = document.getElementById('mdActionToolbar');
+      if (!el) return;
+      const viewed = getViewedMatchday();
+      if (!viewed) { el.style.display = 'none'; return; }
+      
+      const isActiveView = activeMatchday && viewed.id === activeMatchday.id;
+      const isAdmin = !!currentUser?.is_admin;
+      const dayMatches = matches.filter(m => m.date === viewed.date);
+      
+      const btns = [];
+      if (isActiveView && viewed.status !== 'closed') {
+        btns.push(`<button class="btn btn-primary btn-sm" onclick="openModal('queueMatch')" style="border-radius:10px"><i class="fas fa-plus"></i> Queue Match</button>`);
+      }
+      if (isAdmin) {
+        btns.push(`<button class="btn btn-sm btn-secondary" onclick="openAddMatchForViewedDay()" style="border-radius:10px"><i class="fas fa-plus"></i> Add Result</button>`);
+      }
+      if (dayMatches.length > 0 || (isActiveView && ongoingMatches.length > 0)) {
+        btns.push(`<button class="btn btn-sm btn-whatsapp" onclick="shareQueuedMatchesWhatsApp()" title="Share on WhatsApp" style="border-radius:10px"><i class="fab fa-whatsapp"></i> Share Today</button>`);
+      }
+      
+      if (btns.length === 0) { el.style.display = 'none'; return; }
+      el.style.display = 'flex';
+      el.innerHTML = btns.join('');
+    }
+    
+    function renderMdTeamFilter() {
+      const card = document.getElementById('mdTeamPerformance');
+      const select = document.getElementById('mdTeamPerfFilter');
+      const statsEl = document.getElementById('mdTeamPerfStats');
+      const matchesEl = document.getElementById('mdTeamPerfMatches');
+      const clearBtn = document.getElementById('mdClearTeamFilterBtn');
+      if (!card || !select) return;
+      
+      const viewed = getViewedMatchday();
+      if (!viewed) { card.style.display = 'none'; return; }
+      
+      const dayMatches = matches.filter(m => m.date === viewed.date);
+      if (dayMatches.length === 0) { card.style.display = 'none'; return; }
+      
+      // Populate dropdown with teams that played this matchday
+      const teamIdsInDay = new Set();
+      dayMatches.forEach(m => { teamIdsInDay.add(m.team1_id); teamIdsInDay.add(m.team2_id); });
+      const teamOptions = Array.from(teamIdsInDay).map(id => getTeam(id)).filter(Boolean).sort((a,b) => a.name.localeCompare(b.name));
+      const opts = '<option value="">Select a team to see their performance</option>' + teamOptions.map(t => 
+        `<option value="${t.id}" ${t.id == mdTeamFilterId ? 'selected' : ''}>${t.name}</option>`
+      ).join('');
+      if (select.innerHTML !== opts) select.innerHTML = opts;
+      if (mdTeamFilterId) select.value = String(mdTeamFilterId);
+      
+      card.style.display = '';
+      
+      if (!mdTeamFilterId) {
+        if (statsEl) statsEl.style.display = 'none';
+        if (matchesEl) matchesEl.style.display = 'none';
+        if (clearBtn) clearBtn.style.display = 'none';
+        return;
+      }
+      
+      if (clearBtn) clearBtn.style.display = '';
+      
+      const team = getTeam(mdTeamFilterId);
+      if (!team) return;
+      const teamMatches = dayMatches.filter(m => m.team1_id == mdTeamFilterId || m.team2_id == mdTeamFilterId);
+      const { p1, p2 } = getTeamPlayers(team);
+      let wins = 0, losses = 0;
+      const beat = [], lostTo = [];
+      teamMatches.forEach(m => {
+        const opponentId = m.team1_id == mdTeamFilterId ? m.team2_id : m.team1_id;
+        const opponent = getTeam(opponentId);
+        if (m.winner_id == mdTeamFilterId) { wins++; if (opponent) beat.push(opponent.name); }
+        else { losses++; if (opponent) lostTo.push(opponent.name); }
+      });
+      const rate = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
+      
+      if (statsEl) {
+        statsEl.style.display = '';
+        statsEl.innerHTML = `
+          <div class="match-team-stats">
+            <div class="match-team-stats-header">
+              <div style="display:flex;gap:4px">${av(p1, 'sm')}${av(p2, 'sm')}</div>
+              <div>
+                <div class="match-team-stats-name">${team.name}</div>
+                <div style="font-size:12px;color:var(--text-muted)">${p1?.name || '?'} & ${p2?.name || '?'}</div>
+              </div>
+            </div>
+            <div class="match-team-stats-row">
+              <div class="match-team-stat"><div class="match-team-stat-value">${wins + losses}</div><div class="match-team-stat-label">Played</div></div>
+              <div class="match-team-stat"><div class="match-team-stat-value wins">${wins}</div><div class="match-team-stat-label">Wins</div></div>
+              <div class="match-team-stat"><div class="match-team-stat-value losses">${losses}</div><div class="match-team-stat-label">Losses</div></div>
+              <div class="match-team-stat"><div class="match-team-stat-value rate">${rate}%</div><div class="match-team-stat-label">Win Rate</div></div>
+            </div>
+            ${beat.length > 0 ? `<div style="margin-top:10px;font-size:12px;color:var(--text-muted)"><strong style="color:var(--success)">Beat:</strong> ${beat.join(', ')}</div>` : ''}
+            ${lostTo.length > 0 ? `<div style="margin-top:4px;font-size:12px;color:var(--text-muted)"><strong style="color:var(--danger)">Lost to:</strong> ${lostTo.join(', ')}</div>` : ''}
+          </div>`;
+      }
+      
+      if (matchesEl) {
+        matchesEl.style.display = '';
+        matchesEl.innerHTML = teamMatches.map(m => {
+          const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+          const w1 = m.winner_id === t1?.id;
+          const score = (m.scores||[]).map(s => `${s[0]}-${s[1]}`).join(', ');
+          return `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid rgba(93,78,55,0.06);font-size:13px">
+            <span style="font-weight:${w1?'700':'400'};color:${w1?'var(--brown-dark)':'var(--text-muted)'};flex:1">${t1?.name||'?'}</span>
+            <span style="font-weight:800;color:var(--clay);font-size:15px">${score}</span>
+            <span style="font-weight:${!w1?'700':'400'};color:${!w1?'var(--brown-dark)':'var(--text-muted)'};flex:1;text-align:right">${t2?.name||'?'}</span>
+          </div>`;
+        }).join('');
+      }
+    }
+    
+    function mdApplyTeamFilter(teamId) {
+      mdTeamFilterId = teamId ? parseInt(teamId) : null;
+      renderMdTeamFilter();
+    }
+    
+    function mdClearTeamFilter() {
+      mdTeamFilterId = null;
+      renderMdTeamFilter();
+    }
+    
+    // Pre-fill Add Result modal with viewed matchday's date & venue when admin clicks on Match Day
+    function openAddMatchForViewedDay() {
+      const viewed = getViewedMatchday();
+      openModal('addMatch');
+      // openModal triggers form defaults; override with viewed date/venue after open
+      setTimeout(() => {
+        if (viewed) {
+          const dateEl = document.getElementById('matchDate');
+          const courtEl = document.getElementById('matchCourt');
+          if (dateEl) dateEl.value = viewed.date;
+          // Leave court as default (user picks); venue is implicit via active venue
+        }
+      }, 50);
+    }
+    
     function renderMatchDay() {
       // Render the info hub (status, queue, results, standings, my day)
       renderMdInfoHub();
+      renderMdPicker();
+      renderMdSyncCounter();
+      renderMdActionToolbar();
+      renderMdTeamFilter();
+      
+      // Determine if user is viewing a past (non-active) matchday
+      const viewed = getViewedMatchday();
+      const isViewingPast = viewed && (!activeMatchday || viewed.id !== activeMatchday.id);
+      
+      // Gather all cockpit (live-control) sections so we can toggle them as one
+      const cockpitSectionIds = [
+        'mdRoundRobinSection','mdAmericanoSection','mdKOTCSection','mdKOTCLiveSection',
+        'mdRandomiserSection','mdRandomPreview','mdRandomLive','mdPreviewSection','mdLiveSection'
+      ];
+      const heroEl = document.querySelector('#matchday .md-hero');
+      const configEl = document.querySelector('#matchday .md-config');
+      
+      if (isViewingPast) {
+        // Past matchday — hide everything operational. Info Hub + Team Performance remain visible.
+        cockpitSectionIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+        if (heroEl) heroEl.style.display = 'none';
+        if (configEl) configEl.style.display = 'none';
+        return;
+      }
+      // Active/current view — restore hero & config (in case they were hidden)
+      if (heroEl) heroEl.style.display = '';
+      if (configEl) configEl.style.display = '';
       
       const heroSub = document.getElementById('mdHeroSub');
       if (heroSub && activeMatchday) {
@@ -9421,10 +9742,30 @@
     // ===== SETTINGS =====
     // ===== HISTORY =====
     function renderHistory() {
-      // Show all matchdays sorted by date (newest first)
-      const allMatchdays = matchdays.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+      const listEl = document.getElementById('matchdayHistoryList');
+      if (!listEl) return;
       
-      document.getElementById('matchdayHistoryList').innerHTML = allMatchdays.length ? allMatchdays.map(md => {
+      // Read filter bar values (shared with renderMatches)
+      const teamFilterEl = document.getElementById('matchTeamFilter');
+      const matchdayFilterEl = document.getElementById('matchMatchdayFilter');
+      const teamFilterId = teamFilterEl?.value ? parseInt(teamFilterEl.value) : null;
+      const selectedMatchdayId = matchdayFilterEl?.value ? parseInt(matchdayFilterEl.value) : null;
+      
+      let filteredMatchdays = matchdays.slice();
+      
+      // Matchday filter: show only the selected one
+      if (selectedMatchdayId) {
+        filteredMatchdays = filteredMatchdays.filter(md => md.id === selectedMatchdayId);
+      }
+      // Team filter: show only match days where the team played
+      if (teamFilterId) {
+        const teamDates = new Set(matches.filter(m => m.team1_id == teamFilterId || m.team2_id == teamFilterId).map(m => m.date));
+        filteredMatchdays = filteredMatchdays.filter(md => teamDates.has(md.date));
+      }
+      
+      const allMatchdays = filteredMatchdays.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      listEl.innerHTML = allMatchdays.length ? allMatchdays.map(md => {
         const dayMatches = matches.filter(m => m.date === md.date);
         const dayRankings = rankTeamsByMatches(md.date);
         const winner = dayRankings.length > 0 ? dayRankings[0] : null;
@@ -9461,7 +9802,7 @@
             <span class="matchday-history-winner-name">${winner.name} (${winner.wins}W - ${winner.losses}L)</span>
           </div>` : ''}
         </div>`;
-      }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Yet</h3><p>Create a match day to see it here</p></div>';
+      }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Match Filters</h3><p>Try clearing filters or creating a match day.</p></div>';
     }
     
     // ===== KING OF THE COURT (KOTC) =====
@@ -9938,21 +10279,29 @@
 
     function viewMatchday(id) {
       const md = matchdays.find(m => m.id === id);
-      if (md) {
-        viewingMatchday = md;
-        closeModal('selectMatchday');
-        // Switch to dashboard tab
-        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-        document.querySelector('[data-tab="dashboard"]').classList.add('active');
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('dashboard').classList.add('active');
-        renderDashboard();
-      }
+      if (!md) return;
+      
+      // Keep viewingMatchday for any legacy Dashboard reads, but primary target is Match Day tab
+      viewingMatchday = md;
+      mdViewingId = md.id;
+      mdTeamFilterId = null;
+      closeModal('selectMatchday');
+      
+      // Switch to Match Day tab
+      document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+      const navBtn = document.querySelector('[data-tab="matchday"]');
+      if (navBtn) navBtn.classList.add('active');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('matchday').classList.add('active');
+      renderMatchDay();
     }
     
     function returnToCurrentMatchday() {
       viewingMatchday = null;
+      mdViewingId = null;
+      mdTeamFilterId = null;
       renderDashboard();
+      renderMatchDay();
     }
     
     function openMatchdaySelectModal() {
@@ -10704,25 +11053,35 @@
     }
     
     async function finalizeMatch() {
-      const btn = document.querySelector('#finalizeMatch .btn-primary, #finalizeMatch [onclick*="finalizeMatch"]');
+      const btn = document.getElementById('finalizeSubmitBtn');
       if (btn?.disabled) return;
-      if (btn) btn.disabled = true;
+      
+      const originalLabel = btn ? btn.innerHTML : '';
+      const setBtn = (label, disabled, color) => {
+        if (!btn) return;
+        btn.innerHTML = label;
+        btn.disabled = disabled;
+        if (color) btn.style.background = color;
+      };
       
       const idRaw = document.getElementById('finalizeMatchId').value;
       const scoreA = parseInt(document.getElementById('finalScoreA').value) || 0;
       const scoreB = parseInt(document.getElementById('finalScoreB').value) || 0;
       
-      if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); if (btn) btn.disabled = false; return; }
+      if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); return; }
       
       const m = ongoingMatches.find(match => String(match.id) === String(idRaw));
-      if (!m) { toast('Match not found in queue', 'error'); if (btn) btn.disabled = false; return; }
+      if (!m) { toast('Match not found in queue', 'error'); return; }
       
       // Duplicate check using match_uid
       if (m.match_uid && isDuplicateMatch(m.team1_id, m.team2_id, m.date, m.match_uid)) {
         toast('This match was already finalized', 'error');
         ongoingMatches = ongoingMatches.filter(match => match.id !== m.id);
-        if (btn) btn.disabled = false; closeModal('finalizeMatch'); renderAll(); return;
+        closeModal('finalizeMatch'); renderAll(); return;
       }
+      
+      // Enter Saving state
+      setBtn('<i class="fas fa-spinner fa-spin"></i> Saving…', true, '');
       
       const scores = [[scoreA, scoreB]];
       const wid = scoreA > scoreB ? m.team1_id : m.team2_id;
@@ -10759,10 +11118,22 @@
       // Always save locally as backup
       saveLocal();
       
-      if (result.offline) toast('Saved offline — will sync when online', 'info');
+      // Show Saved state briefly before closing
+      if (result.offline) {
+        setBtn('<i class="fas fa-cloud"></i> Queued (offline)', true, 'var(--gold)');
+      } else {
+        setBtn('<i class="fas fa-check"></i> Saved', true, 'var(--success)');
+      }
+      
+      // Let the Saved state be visible for a moment
+      await new Promise(resolve => setTimeout(resolve, 600));
       
       closeModal('finalizeMatch');
-      if (btn) btn.disabled = false;
+      // Restore button label for next open
+      setBtn(originalLabel, false, '');
+      if (btn) btn.style.background = '';
+      
+      if (result.offline) toast('Saved offline — will sync when online', 'info');
       
       if (m.md_round) {
         mdOnMatchComplete({team1_id: m.team1_id, team2_id: m.team2_id, md_round: m.md_round, score1: scores, score2: scores});
