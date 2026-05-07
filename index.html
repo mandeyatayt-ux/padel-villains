@@ -10486,11 +10486,12 @@
     // Form guide: last N results for a team as W/L array (most recent first)
     function getTeamForm(teamId, n = 5) {
       const teamMatches = matches
-        .filter(m => m.team1_id === teamId || m.team2_id === teamId)
+        .filter(m => (m.team1_id === teamId || m.team2_id === teamId) && m.winner_id)
         .sort((a, b) => {
-          const da = a.finalized_at || a.created_at || a.date || '';
-          const db = b.finalized_at || b.created_at || b.date || '';
-          return db.localeCompare(da);
+          // Use created_at as primary (always populated), then date as fallback
+          const da = new Date(a.created_at || a.date || 0).getTime();
+          const db = new Date(b.created_at || b.date || 0).getTime();
+          return db - da;
         })
         .slice(0, n);
       return teamMatches.map(m => m.winner_id === teamId ? 'W' : 'L');
