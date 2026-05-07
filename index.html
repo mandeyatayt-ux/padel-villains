@@ -2924,6 +2924,7 @@
         <div class="matches-filters" id="rankingTypeFilters">
           <button class="filter-btn active" data-ranking-type="teams">Team Rankings</button>
           <button class="filter-btn" data-ranking-type="individual">Individual Rankings</button>
+          <button class="filter-btn" data-ranking-type="power">Power Rankings</button>
         </div>
       </div>
       
@@ -2986,9 +2987,31 @@
           <div id="individualPerformanceNotes" style="font-size:13px;color:var(--text-muted)"></div>
         </div>
       </div>
+      <!-- Power Rankings Section (ELO) -->
+      <div id="powerRankingsSection" class="hidden">
+        <div class="card" style="margin-bottom:20px;padding:16px 20px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span style="font-size:20px">⚡</span>
+            <div>
+              <div style="font-weight:700;font-size:15px">ELO Power Rankings</div>
+              <div style="font-size:12px;color:var(--text-muted)">Ratings adjust based on opponent strength. Beat a top team = big gain. Lose to a low team = big drop.</div>
+            </div>
+          </div>
+        </div>
+        <div class="rankings-table">
+          <div class="rankings-head"><span>Rank</span><span>Team</span><span>W-L</span><span>ELO</span><span>Trend</span></div>
+          <div id="powerRankingsBody"><div class="empty" style="padding:40px"><p>No matches to rank yet</p></div></div>
+        </div>
+        <div class="card" style="margin-top:20px;padding:16px 20px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:8px">How ELO works</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6">
+            Every team starts at 1500. When you win, you gain points — more if your opponent was highly rated, less if they were weak.
+            When you lose, the reverse. A tight rivalry between evenly-matched teams barely moves the needle. An upset reshuffles everything.
+            K-factor is 32 (standard for club-level competition).
+          </div>
+        </div>
+      </div>
     </section>
-
-    <!-- ===== MATCH DAY TAB ===== -->
     <section class="tab" id="matchday">
       <!-- ====== MATCHDAY PICKER & CONTROLS ====== -->
       <div id="mdPickerBar" class="card" style="margin-bottom:16px;padding:14px 16px;display:none">
@@ -8665,6 +8688,113 @@
       });
     }
     
+    // ===== ELO POWER RANKINGS =====
+    function calculateELO() {
+      const K = 32;
+      const ratings = {};
+      
+      // Initialize all teams at 1500
+      teams.forEach(t => { ratings[t.id] = { rating: 1500, history: [1500] }; });
+      
+      // Sort matches chronologically
+      const sorted = [...matches]
+        .filter(m => m.team1_id && m.team2_id && m.winner_id)
+        .sort((a, b) => {
+          const da = a.finalized_at || a.created_at || a.date || '';
+          const db = b.finalized_at || b.created_at || b.date || '';
+          return da.localeCompare(db);
+        });
+      
+      // Process each match
+      sorted.forEach(m => {
+        if (!ratings[m.team1_id]) ratings[m.team1_id] = { rating: 1500, history: [1500] };
+        if (!ratings[m.team2_id]) ratings[m.team2_id] = { rating: 1500, history: [1500] };
+        
+        const r1 = ratings[m.team1_id].rating;
+        const r2 = ratings[m.team2_id].rating;
+        
+        // Expected scores
+        const e1 = 1 / (1 + Math.pow(10, (r2 - r1) / 400));
+        const e2 = 1 / (1 + Math.pow(10, (r1 - r2) / 400));
+        
+        // Actual scores
+        const s1 = m.winner_id === m.team1_id ? 1 : 0;
+        const s2 = m.winner_id === m.team2_id ? 1 : 0;
+        
+        // Update ratings
+        ratings[m.team1_id].rating = Math.round(r1 + K * (s1 - e1));
+        ratings[m.team2_id].rating = Math.round(r2 + K * (s2 - e2));
+        ratings[m.team1_id].history.push(ratings[m.team1_id].rating);
+        ratings[m.team2_id].history.push(ratings[m.team2_id].rating);
+      });
+      
+      return ratings;
+    }
+    
+    function renderPowerRankings() {
+      const body = document.getElementById('powerRankingsBody');
+      if (!body) return;
+      
+      const ratings = calculateELO();
+      const ranked = teams
+        .filter(t => ratings[t.id] && ratings[t.id].history.length > 1)
+        .map(t => {
+          const r = ratings[t.id];
+          const hist = r.history;
+          const prev = hist.length >= 2 ? hist[hist.length - 2] : 1500;
+          const delta = r.rating - prev;
+          const stats = getTeamStats(t.id);
+          // Trend: last 5 rating changes
+          const trend = hist.slice(-6).map((val, i, arr) => i === 0 ? null : val - arr[i-1]).filter(v => v !== null);
+          return { ...t, rating: r.rating, delta, stats, trend, history: hist };
+        })
+        .sort((a, b) => b.rating - a.rating);
+      
+      if (ranked.length === 0) {
+        body.innerHTML = '<div class="empty" style="padding:40px"><p>Play some matches to generate power rankings</p></div>';
+        return;
+      }
+      
+      const maxRating = Math.max(...ranked.map(r => r.rating));
+      const minRating = Math.min(...ranked.map(r => r.rating));
+      const range = maxRating - minRating || 1;
+      
+      body.innerHTML = ranked.map((t, i) => {
+        const p1 = getPlayer(t.player1_id), p2 = getPlayer(t.player2_id);
+        const rank = i + 1;
+        const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`;
+        const deltaStr = t.delta > 0 ? `<span style="color:#059669;font-weight:700"><i class="fas fa-arrow-up" style="font-size:10px"></i> ${t.delta}</span>` 
+                        : t.delta < 0 ? `<span style="color:#dc2626;font-weight:700"><i class="fas fa-arrow-down" style="font-size:10px"></i> ${Math.abs(t.delta)}</span>`
+                        : `<span style="color:var(--text-muted)">—</span>`;
+        const barWidth = Math.max(8, ((t.rating - minRating) / range) * 100);
+        const formDots = renderFormDots(t.id);
+        // Mini sparkline from trend
+        const sparkline = t.trend.length > 0 ? t.trend.map(d => 
+          `<span style="display:inline-block;width:4px;height:${Math.min(14, Math.max(3, Math.abs(d) / 2))}px;background:${d >= 0 ? '#059669' : '#dc2626'};border-radius:1px;vertical-align:middle"></span>`
+        ).join('') : '';
+        
+        return `<div class="rankings-row" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--divider);flex-wrap:wrap">
+          <span style="min-width:28px;font-size:${rank <= 3 ? '20px' : '14px'};text-align:center;font-weight:700;color:var(--text-muted)">${medal}</span>
+          <div style="flex:1;min-width:120px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t.player1_id)}">${(p1?.name||'?').charAt(0)}</div>
+              <div>
+                <div style="font-weight:700;font-size:14px">${t.name} ${formDots}</div>
+                <div style="font-size:11px;color:var(--text-muted)">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+              </div>
+            </div>
+          </div>
+          <span style="font-size:12px;color:var(--text-muted);min-width:44px;text-align:center">${t.stats.wins}W-${t.stats.losses}L</span>
+          <div style="min-width:80px;text-align:right">
+            <div style="font-family:'Sublime',sans-serif;font-size:20px;letter-spacing:1px;color:var(--brown-dark)">${t.rating}</div>
+            <div style="height:4px;background:var(--cream-dark);border-radius:2px;margin-top:4px;overflow:hidden"><div style="height:100%;width:${barWidth}%;background:linear-gradient(90deg,var(--clay),var(--clay-light));border-radius:2px"></div></div>
+          </div>
+          <div style="min-width:44px;text-align:center">${deltaStr}</div>
+          <div style="display:flex;align-items:end;gap:1px;min-width:30px;height:16px">${sparkline}</div>
+        </div>`;
+      }).join('');
+    }
+    
     // Setup ranking filters
     function setupRankingFilters() {
       // Team/Individual toggle
@@ -8677,9 +8807,16 @@
           if (type === 'teams') {
             document.getElementById('teamRankingsSection').classList.remove('hidden');
             document.getElementById('individualRankingsSection').classList.add('hidden');
+            document.getElementById('powerRankingsSection').classList.add('hidden');
+          } else if (type === 'power') {
+            document.getElementById('teamRankingsSection').classList.add('hidden');
+            document.getElementById('individualRankingsSection').classList.add('hidden');
+            document.getElementById('powerRankingsSection').classList.remove('hidden');
+            renderPowerRankings();
           } else {
             document.getElementById('teamRankingsSection').classList.add('hidden');
             document.getElementById('individualRankingsSection').classList.remove('hidden');
+            document.getElementById('powerRankingsSection').classList.add('hidden');
             renderIndividualRankings();
           }
         });
