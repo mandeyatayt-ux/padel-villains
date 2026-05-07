@@ -2576,7 +2576,7 @@
       
       <!-- Matchday Countdown (shown when matchday is today but not yet started) -->
       <div class="card matchday-countdown hidden" id="matchdayCountdown" style="background:linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%);color:white;text-align:center;padding:24px">
-        <div id="countdownLabel" style="font-size:14px;opacity:0.9;margin-bottom:8px">🎾 MATCH DAY STARTS IN</div>
+        <div id="countdownLabel" style="font-size:14px;opacity:0.9;margin-bottom:8px">🏆 MATCH DAY STARTS IN</div>
         <div id="countdownTimer" style="font-family:'Sublime',sans-serif;font-size:48px;letter-spacing:4px">--:--:--</div>
         <div id="countdownVenue" style="font-size:14px;opacity:0.8;margin-top:8px"></div>
       </div>
@@ -6148,6 +6148,7 @@
       // Render villains card based on day rankings
       const vc = document.getElementById('villainCard');
       if (villain && villain.matches > 0) {
+        vc.style.display = '';
         const { p1, p2 } = getTeamPlayers(villain);
         vc.innerHTML = `
           <div class="villain-crown">👑</div>
@@ -6161,7 +6162,7 @@
           </div>
         `;
       } else {
-        vc.innerHTML = `<div class="no-villain"><div class="no-villain-icon">⚔️</div><h3>No Villains Yet</h3><p>Win a match to become the Villains!</p></div>`;
+        vc.style.display = 'none';
       }
       
       // Matches with edit option (only editable if not viewing past)
