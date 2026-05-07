@@ -3302,9 +3302,10 @@
         <div id="mdCourtGrid" style="display:grid;gap:16px;margin-bottom:20px"></div>
 
         <!-- Add Court Button -->
-        <div style="text-align:center;margin-bottom:24px">
+        <div style="text-align:center;margin-bottom:24px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" onclick="mdAddCourt()" style="border-radius:12px;font-size:12px"><i class="fas fa-plus"></i> Add Court</button>
           <button class="btn btn-secondary btn-sm" onclick="mdRemoveCourt()" id="mdRemoveCourtBtn" style="border-radius:12px;font-size:12px;display:none"><i class="fas fa-minus"></i> Remove Court</button>
+          <button class="btn btn-secondary btn-sm" onclick="mdReallocateCourts();renderMDLive();toast('Matches redistributed','success')" style="border-radius:12px;font-size:12px"><i class="fas fa-shuffle"></i> Reallocate</button>
         </div>
 
         <!-- Queue (draggable) -->
@@ -9167,7 +9168,7 @@
       renderDashboard();
     }
 
-    function mdAddLateTeam(teamId) {
+    async function mdAddLateTeam(teamId) {
       if (mdActiveTeamIds.includes(teamId)) return;
       mdActiveTeamIds.push(teamId);
       // Generate new matches only for this team
@@ -9196,7 +9197,6 @@
         const maxRound = queueItems.length > 0 ? Math.max(...queueItems.map(m => m.round)) : 0;
         let insertRound = 1;
         newMatches.forEach(nm => {
-          // Find next round where neither team is already scheduled
           while (insertRound <= maxRound + newMatches.length) {
             const roundTeams = (mdGeneratedSchedule || []).filter(m => m.round === insertRound).flatMap(m => [m.t1, m.t2]);
             if (!roundTeams.includes(nm.t1) && !roundTeams.includes(nm.t2)) break;
@@ -9206,12 +9206,31 @@
           insertRound++;
         });
         mdGeneratedSchedule = [...(mdGeneratedSchedule || []), ...newMatches];
-        // Re-sort schedule by round so new matches appear interleaved
         mdGeneratedSchedule.sort((a, b) => a.round - b.round);
+        
+        // Queue new matches to ongoingMatches
+        for (const m of newMatches) {
+          const matchData = {
+            id: generateNumericId(),
+            match_uid: generateMatchUID(),
+            date: activeMatchday?.date || getLocalDateStr(),
+            location: activeMatchday?.venue || '',
+            court: 'Court ' + m.court,
+            team1_id: m.t1,
+            team2_id: m.t2,
+            status: 'ongoing',
+            started_at: new Date().toISOString(),
+            md_round: m.round,
+            device_id: PV_DEVICE_ID
+          };
+          const result = await queueMatchToSupabase(matchData);
+          ongoingMatches.push(result.data || matchData);
+        }
+        saveLocal();
       }
       updateDropdowns();
       renderMatchDay();
-      toast(`${getTeam(teamId)?.name || 'Team'} added! ${newPairs.length} new matches generated`, 'success');
+      toast(`${getTeam(teamId)?.name || 'Team'} added! ${newPairs.length} new matches queued`, 'success');
     }
 
     function mdShowTeamView(teamId) {
@@ -9998,22 +10017,74 @@
     function mdAddCourt() {
       mdCourts++;
       document.querySelectorAll('.md-config-btns')[0]?.querySelectorAll('.md-config-btn').forEach(b => b.classList.remove('active'));
-      // Redistribute queued matches across courts
-      if (mdGeneratedSchedule) {
-        const completedSids = new Set(mdCompletedGames.map(m => m.sid));
-        const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id}-${m.team2_id}`));
-        let courtIdx = 0;
-        mdGeneratedSchedule.forEach(m => {
-          const key = `${m.round}-${m.t1}-${m.t2}`;
-          const keyAlt = `${m.round}-${m.t2}-${m.t1}`;
-          if (!completedSids.has(m.sid) && !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt)) {
-            m.court = (courtIdx % mdCourts) + 1;
-            courtIdx++;
-          }
-        });
-      }
+      mdReallocateCourts();
       toast(`Court ${mdCourts} added — matches redistributed`, 'success');
       renderMDLive();
+    }
+
+    // Redistribute all queued (not currently first-on-court) matches evenly across courts
+    function mdReallocateCourts() {
+      if (!mdGeneratedSchedule || mdCourts < 1) return;
+      const completedSids = new Set(mdCompletedGames.map(m => m.sid));
+      
+      // Find which matches are currently "on court" (first match per court in ongoingMatches)
+      const onCourtIds = new Set();
+      for (let c = 1; c <= mdCourts; c++) {
+        const courtMatch = ongoingMatches.find(m => m.md_round && (m.court === `Court ${c}` || m.court === c || m.court === `C${c}`));
+        if (courtMatch) onCourtIds.add(courtMatch.id);
+      }
+
+      // Get waiting matches (in ongoingMatches but not currently on court)
+      const waiting = ongoingMatches.filter(m => m.md_round && !onCourtIds.has(m.id));
+      
+      // Redistribute waiting matches across courts round-robin
+      waiting.forEach((m, i) => {
+        const newCourt = `Court ${(i % mdCourts) + 1}`;
+        m.court = newCourt;
+      });
+      
+      // Also update schedule for any future reference
+      let courtIdx = 0;
+      mdGeneratedSchedule.forEach(m => {
+        if (!completedSids.has(m.sid)) {
+          m.court = (courtIdx % mdCourts) + 1;
+          courtIdx++;
+        }
+      });
+    }
+
+    // Auto-assign: when a court becomes free, pull the next waiting match onto it
+    function mdAutoAssignCourts() {
+      if (mdStep !== 'live' || mdCourts < 1) return;
+      
+      for (let c = 1; c <= mdCourts; c++) {
+        const courtLabel = `Court ${c}`;
+        const hasMatch = ongoingMatches.some(m => m.md_round && (m.court === courtLabel || m.court === c || m.court === `C${c}`));
+        if (hasMatch) continue; // Court is busy
+        
+        // Find the first waiting match on an overloaded court
+        // Count matches per court
+        const courtCounts = {};
+        for (let cc = 1; cc <= mdCourts; cc++) {
+          const label = `Court ${cc}`;
+          courtCounts[label] = ongoingMatches.filter(m => m.md_round && (m.court === label || m.court === cc || m.court === `C${cc}`)).length;
+        }
+        
+        // Find court with most matches
+        let busiestCourt = null, busiestCount = 0;
+        for (const [court, count] of Object.entries(courtCounts)) {
+          if (count > 1 && count > busiestCount) { busiestCourt = court; busiestCount = count; }
+        }
+        
+        if (busiestCourt) {
+          // Move the LAST match from the busiest court to this free court (keep the first one playing)
+          const busiestMatches = ongoingMatches.filter(m => m.md_round && (m.court === busiestCourt));
+          if (busiestMatches.length > 1) {
+            const toMove = busiestMatches[busiestMatches.length - 1];
+            toMove.court = courtLabel;
+          }
+        }
+      }
     }
     
     function mdRemoveCourt() {
@@ -10132,10 +10203,10 @@
           toast('🏆 All matches complete! Match Day is over!', 'success');
         }
       }
+      // Auto-assign waiting matches to any free courts
+      mdAutoAssignCourts();
       renderMatchDay();
     }
-
-    // Edit a completed match result
     function mdEditResult(idx) {
       const m = mdCompletedGames[idx];
       if (!m) return;
@@ -10205,7 +10276,7 @@
     }
 
     // Generate more matches (another full round-robin cycle)
-    function mdGenerateMore() {
+    async function mdGenerateMore() {
       if (mdMode !== 'roundrobin' || mdActiveTeamIds.length < 2) {
         toast('Need at least 2 active teams', 'error');
         return;
@@ -10216,7 +10287,26 @@
       const maxRound = mdGeneratedSchedule ? Math.max(0, ...mdGeneratedSchedule.map(m => m.round)) : 0;
       const adjusted = newScheduled.map(m => ({ ...m, round: m.round + maxRound }));
       mdGeneratedSchedule = [...(mdGeneratedSchedule || []), ...adjusted];
-      toast(`${adjusted.length} new matches generated!`, 'success');
+      // Queue new matches to ongoingMatches
+      for (const m of adjusted) {
+        const matchData = {
+          id: generateNumericId(),
+          match_uid: generateMatchUID(),
+          date: activeMatchday?.date || getLocalDateStr(),
+          location: activeMatchday?.venue || '',
+          court: 'Court ' + m.court,
+          team1_id: m.t1,
+          team2_id: m.t2,
+          status: 'ongoing',
+          started_at: new Date().toISOString(),
+          md_round: m.round,
+          device_id: PV_DEVICE_ID
+        };
+        const result = await queueMatchToSupabase(matchData);
+        ongoingMatches.push(result.data || matchData);
+      }
+      saveLocal();
+      toast(`${adjusted.length} new matches generated & queued!`, 'success');
       renderMDLive();
     }
 
