@@ -10898,8 +10898,13 @@
       document.getElementById('editTeamPlayer2').innerHTML = allPo;
       document.getElementById('matchTeam1').innerHTML = to;
       document.getElementById('matchTeam2').innerHTML = to;
-      document.getElementById('queueTeam1').innerHTML = to;
-      document.getElementById('queueTeam2').innerHTML = to;
+      // Queue Match: restrict to active matchday teams when live
+      const mdTeamList = (mdStep === 'live' && mdActiveTeamIds.length > 0)
+        ? activeT.filter(t => mdActiveTeamIds.includes(t.id))
+        : activeT;
+      const qto = '<option value="">Select team</option>' + mdTeamList.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+      document.getElementById('queueTeam1').innerHTML = qto;
+      document.getElementById('queueTeam2').innerHTML = qto;
       
       // Live Score dropdowns
       const liveTeam1 = document.getElementById('liveScoreTeam1');
