@@ -3317,7 +3317,7 @@
         </div>
 
         <!-- Results -->
-        <div class="card" style="margin-bottom:24px" id="mdCompletedCard" style="display:none">
+        <div class="card" style="margin-bottom:24px;display:none" id="mdCompletedCard">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <h3 style="font-size:16px;font-weight:700">Results</h3>
             <div style="display:flex;align-items:center;gap:8px">
@@ -4899,10 +4899,8 @@
     
     // === DUPLICATE CHECK: Is this match already saved? ===
     function isDuplicateMatch(team1Id, team2Id, date, matchUid) {
-      // Check by match_uid first (strongest check)
+      // Check by match_uid in SAVED matches only (not ongoing — the match being finalized is still there)
       if (matchUid && matches.some(m => m.match_uid === matchUid)) return true;
-      // Check in ongoing queue
-      if (matchUid && ongoingMatches.some(m => m.match_uid === matchUid)) return true;
       return false;
     }
     
@@ -9186,11 +9184,32 @@
         }
       });
       if (newPairs.length > 0) {
-        const maxRound = mdGeneratedSchedule ? Math.max(...mdGeneratedSchedule.map(m => m.round), 0) : 0;
-        const newScheduled = mdScheduleMatches(newPairs, mdCourts, mdActiveTeamIds);
-        const adjusted = newScheduled.map(m => ({...m, round: m.round + maxRound, isNew: true}));
-        mdGeneratedSchedule = [...(mdGeneratedSchedule || []), ...adjusted];
+        // Build new matches with unique sids
+        const newMatches = newPairs.map((p, i) => ({
+          t1: p[0], t2: p[1], court: (i % mdCourts) + 1, isNew: true,
+          sid: `s_${Date.now()}_late_${i}_${Math.random().toString(36).slice(2,6)}`,
+          round: 0 // will be assigned below
+        }));
+        // Interleave into queue: find rounds where the late team isn't playing, insert there
+        const completedSids = new Set(mdCompletedGames.map(m => m.sid));
+        const queueItems = (mdGeneratedSchedule || []).filter(m => !completedSids.has(m.sid));
+        const maxRound = queueItems.length > 0 ? Math.max(...queueItems.map(m => m.round)) : 0;
+        let insertRound = 1;
+        newMatches.forEach(nm => {
+          // Find next round where neither team is already scheduled
+          while (insertRound <= maxRound + newMatches.length) {
+            const roundTeams = (mdGeneratedSchedule || []).filter(m => m.round === insertRound).flatMap(m => [m.t1, m.t2]);
+            if (!roundTeams.includes(nm.t1) && !roundTeams.includes(nm.t2)) break;
+            insertRound++;
+          }
+          nm.round = insertRound;
+          insertRound++;
+        });
+        mdGeneratedSchedule = [...(mdGeneratedSchedule || []), ...newMatches];
+        // Re-sort schedule by round so new matches appear interleaved
+        mdGeneratedSchedule.sort((a, b) => a.round - b.round);
       }
+      updateDropdowns();
       renderMatchDay();
       toast(`${getTeam(teamId)?.name || 'Team'} added! ${newPairs.length} new matches generated`, 'success');
     }
@@ -10945,6 +10964,8 @@
         toast('Admin access required', 'error');
         return;
       }
+      // Refresh dropdowns when opening queue match (to apply matchday filter)
+      if (t === 'queueMatch') updateDropdowns();
       document.getElementById(t + 'Modal').classList.add('active'); 
     }
     function closeModal(t) { document.getElementById(t + 'Modal').classList.remove('active'); tempPhotoData[t] = null; }
@@ -11550,6 +11571,8 @@
         team1_id: m.team1_id,
         team2_id: m.team2_id,
         scores,
+        score1: scoreA,
+        score2: scoreB,
         winner_id: wid,
         started_at: m.started_at || null,
         finalized_at: new Date().toISOString(),
@@ -11591,7 +11614,7 @@
       if (result.offline) toast('Saved offline — will sync when online', 'info');
       
       if (m.md_round) {
-        mdOnMatchComplete({team1_id: m.team1_id, team2_id: m.team2_id, md_round: m.md_round, score1: scores, score2: scores});
+        mdOnMatchComplete({team1_id: m.team1_id, team2_id: m.team2_id, md_round: m.md_round, score1: scoreA, score2: scoreB, court: m.court, id: savedMatch.id, match_uid: savedMatch.match_uid || matchData.match_uid});
       }
       renderAll();
       if (!result.offline) toast('Match finalized!', 'success');
