@@ -3117,7 +3117,7 @@
             <span id="mdActiveCount" style="background:var(--clay);color:white;padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
           </div>
           <div class="md-selected-teams" id="mdSelectedChips"></div>
-          <button class="md-add-teams-btn" onclick="openTeamPicker('roundrobin')"><i class="fas fa-plus"></i> Add Teams</button>
+          <button class="md-add-teams-btn" onclick="openMDTeamPicker('roundrobin')"><i class="fas fa-plus"></i> Add Teams</button>
           <button class="md-generate-btn" id="mdGenerateBtn" onclick="mdGenerate()" disabled>🎲 Generate Schedule</button>
         </div>
       </div>
@@ -3154,7 +3154,7 @@
             <span id="mdKOTCCount" style="background:var(--gold);color:var(--brown-dark);padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
           </div>
           <div class="md-selected-teams" id="mdKOTCSelectedChips"></div>
-          <button class="md-add-teams-btn" onclick="openTeamPicker('kotc')"><i class="fas fa-plus"></i> Add Teams</button>
+          <button class="md-add-teams-btn" onclick="openMDTeamPicker('kotc')"><i class="fas fa-plus"></i> Add Teams</button>
           <button class="md-generate-btn" id="mdKOTCStartBtn" onclick="kotcStart()" disabled style="background:linear-gradient(135deg,#D4A853 0%,#B8942F 100%);color:var(--brown-dark)">👑 Start King of the Court</button>
           <button class="btn btn-secondary" onclick="kotcTeamIds=[];renderSelectedChips('kotc');mdRender();" style="margin-top:8px;width:100%">Clear Selection</button>
         </div>
@@ -8659,7 +8659,7 @@
     // ===== TEAM PICKER MODAL =====
     let teamPickerMode = 'roundrobin'; // 'roundrobin' or 'kotc'
 
-    function openTeamPicker(mode) {
+    function openMDTeamPicker(mode) {
       teamPickerMode = mode;
       document.getElementById('teamPickerTitle').textContent = mode === 'kotc' ? '👑 Select Teams' : 'Select Teams';
       document.getElementById('teamPickerSearch').value = '';
