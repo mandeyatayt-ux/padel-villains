@@ -9189,22 +9189,56 @@
         const newMatches = newPairs.map((p, i) => ({
           t1: p[0], t2: p[1], court: (i % mdCourts) + 1, isNew: true,
           sid: `s_${Date.now()}_late_${i}_${Math.random().toString(36).slice(2,6)}`,
-          round: 0 // will be assigned below
+          round: 0
         }));
-        // Interleave into queue: find rounds where the late team isn't playing, insert there
+        
+        // Smart interleave: space late team matches evenly, no back-to-back
         const completedSids = new Set(mdCompletedGames.map(m => m.sid));
         const queueItems = (mdGeneratedSchedule || []).filter(m => !completedSids.has(m.sid));
         const maxRound = queueItems.length > 0 ? Math.max(...queueItems.map(m => m.round)) : 0;
-        let insertRound = 1;
-        newMatches.forEach(nm => {
-          while (insertRound <= maxRound + newMatches.length) {
-            const roundTeams = (mdGeneratedSchedule || []).filter(m => m.round === insertRound).flatMap(m => [m.t1, m.t2]);
-            if (!roundTeams.includes(nm.t1) && !roundTeams.includes(nm.t2)) break;
-            insertRound++;
+        const totalSlots = maxRound + newMatches.length + 1;
+        
+        // Calculate ideal spacing between late team's games
+        const spacing = Math.max(2, Math.floor(totalSlots / (newMatches.length + 1)));
+        let lastAssignedRound = -spacing; // allow first match early
+        
+        newMatches.forEach((nm, nmIdx) => {
+          // Target round based on even spacing
+          let targetRound = lastAssignedRound + spacing;
+          let bestRound = null;
+          
+          // Search near the target for a valid slot
+          for (let offset = 0; offset < totalSlots; offset++) {
+            for (const dir of [0, 1, -1]) {
+              const tryRound = targetRound + (offset * (dir || 1));
+              if (tryRound < 1) continue;
+              
+              // Check: no team conflict in this round
+              const roundTeams = [...(mdGeneratedSchedule || []), ...newMatches.filter(x => x.round > 0)]
+                .filter(m => m.round === tryRound).flatMap(m => [m.t1, m.t2]);
+              if (roundTeams.includes(nm.t1) || roundTeams.includes(nm.t2)) continue;
+              
+              // Check: late team not in adjacent rounds (no back-to-back)
+              const adjTeams = [...(mdGeneratedSchedule || []), ...newMatches.filter(x => x.round > 0)]
+                .filter(m => m.round === tryRound - 1 || m.round === tryRound + 1)
+                .flatMap(m => [m.t1, m.t2]);
+              const lateTeamAdj = adjTeams.includes(teamId);
+              
+              if (!lateTeamAdj || queueItems.length === 0) {
+                bestRound = tryRound;
+                break;
+              }
+            }
+            if (bestRound !== null) break;
           }
-          nm.round = insertRound;
-          insertRound++;
+          
+          // Fallback: just use the target
+          if (bestRound === null) bestRound = targetRound > 0 ? targetRound : maxRound + nmIdx + 1;
+          
+          nm.round = bestRound;
+          lastAssignedRound = bestRound;
         });
+        
         mdGeneratedSchedule = [...(mdGeneratedSchedule || []), ...newMatches];
         mdGeneratedSchedule.sort((a, b) => a.round - b.round);
         
