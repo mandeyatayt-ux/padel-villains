@@ -3316,10 +3316,24 @@
           <div id="mdCourtQueue" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
 
-        <!-- Completed Matches -->
+        <!-- Results -->
         <div class="card" style="margin-bottom:24px" id="mdCompletedCard" style="display:none">
-          <h3 style="font-size:16px;font-weight:700;margin-bottom:12px">Completed</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h3 style="font-size:16px;font-weight:700">Results</h3>
+            <div style="display:flex;align-items:center;gap:8px">
+              <select id="mdResultsTeamFilter" onchange="renderMDLive()" style="padding:6px 28px 6px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:12px;font-family:inherit;background:white;cursor:pointer;appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%2210%22 viewBox=%220 0 10 10%22><path fill=%22%23888%22 d=%22M5 7L1 3h8z%22/></svg>');background-repeat:no-repeat;background-position:right 8px center">
+                <option value="">All Teams</option>
+              </select>
+              <span id="mdResultsCount" style="font-size:12px;color:var(--text-muted)"></span>
+            </div>
+          </div>
           <div id="mdCompletedList"></div>
+        </div>
+
+        <!-- Generate More Matches -->
+        <div class="card" style="margin-bottom:24px;text-align:center;padding:20px" id="mdGenerateMoreCard">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Need more games? Generate another full round.</div>
+          <button class="btn btn-primary" onclick="mdGenerateMore()" style="border-radius:12px"><i class="fas fa-plus-circle"></i> Generate More Matches</button>
         </div>
 
         <!-- Add Late Team -->
@@ -9052,7 +9066,7 @@
         }
       }
       
-      return scheduled;
+      return scheduled.map((m, i) => ({ ...m, sid: `s_${Date.now()}_${i}_${Math.random().toString(36).slice(2,6)}` }));
     }
 
     // --- AMERICANO SCHEDULING ---
@@ -9857,13 +9871,14 @@
       if (removeBtn) removeBtn.style.display = mdCourts > 1 ? '' : 'none';
 
       // Queue: remaining scheduled matches not on court and not completed
-      const completedKeys = new Set(mdCompletedGames.map(m => `${m.round}-${m.t1 || ''}-${m.t2 || ''}`));
+      const completedSids = new Set(mdCompletedGames.map(m => m.sid));
       const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`));
       
       const queueMatches = allScheduled.filter(m => {
+        if (completedSids.has(m.sid)) return false;
         const key = `${m.round}-${m.t1 || ''}-${m.t2 || ''}`;
         const keyAlt = `${m.round}-${m.t2 || ''}-${m.t1 || ''}`;
-        return !completedKeys.has(key) && !completedKeys.has(keyAlt) && !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
+        return !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
       });
 
       document.getElementById('mdQueueCount').textContent = queueMatches.length;
@@ -9898,25 +9913,46 @@
         mdSetupQueueDrag();
       }
 
-      // Completed matches
+      // Results section
       const compCard = document.getElementById('mdCompletedCard');
       const compList = document.getElementById('mdCompletedList');
       if (compCard && compList) {
         if (mdCompletedGames.length > 0) {
           compCard.style.display = '';
-          compList.innerHTML = mdCompletedGames.map(m => {
+          // Populate team filter
+          const filterEl = document.getElementById('mdResultsTeamFilter');
+          if (filterEl) {
+            const currentVal = filterEl.value;
+            const teamsInResults = [...new Set(mdCompletedGames.flatMap(m => [m.t1, m.t2]))];
+            filterEl.innerHTML = '<option value="">All Teams</option>' + teamsInResults.map(id => {
+              const t = getTeam(id);
+              return t ? `<option value="${id}" ${currentVal == id ? 'selected' : ''}>${t.name}</option>` : '';
+            }).join('');
+          }
+          // Filter
+          const filterTeamId = filterEl?.value ? parseInt(filterEl.value) : null;
+          let filtered = mdCompletedGames;
+          if (filterTeamId) filtered = filtered.filter(m => m.t1 === filterTeamId || m.t2 === filterTeamId);
+          document.getElementById('mdResultsCount').textContent = `${filtered.length} of ${mdCompletedGames.length}`;
+          
+          compList.innerHTML = filtered.map((m, idx) => {
             const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
             const isT1Winner = parseInt(m.score1) > parseInt(m.score2);
-            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;background:var(--cream);margin-bottom:4px">
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:10px;font-weight:700;color:var(--text-muted)">R${m.round||'?'}</span>
-                <span style="font-weight:${isT1Winner?'700':'500'};font-size:13px">${t1?.name||'?'}</span>
-                <span style="font-weight:700;font-size:16px;color:${isT1Winner?'var(--success)':'var(--text-muted)'}">${m.score1||'?'}</span>
+            const realIdx = mdCompletedGames.indexOf(m);
+            return `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:var(--cream);margin-bottom:6px;flex-wrap:wrap">
+              <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:22px">R${m.round||'?'}</span>
+              <div style="flex:1;display:flex;align-items:center;gap:6px;min-width:0">
+                <span style="font-weight:${isT1Winner?'700':'500'};font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t1?.name||'?'}</span>
+                <span style="font-weight:700;font-size:16px;color:${isT1Winner?'var(--success)':'var(--text-muted)'}">${m.score1??'?'}</span>
                 <span style="color:var(--text-muted);font-size:10px">–</span>
-                <span style="font-weight:700;font-size:16px;color:${!isT1Winner?'var(--success)':'var(--text-muted)'}">${m.score2||'?'}</span>
-                <span style="font-weight:${!isT1Winner?'700':'500'};font-size:13px">${t2?.name||'?'}</span>
+                <span style="font-weight:700;font-size:16px;color:${!isT1Winner?'var(--success)':'var(--text-muted)'}">${m.score2??'?'}</span>
+                <span style="font-weight:${!isT1Winner?'700':'500'};font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t2?.name||'?'}</span>
               </div>
-              <span style="font-size:11px;color:var(--text-muted)">C${m.court||'?'}</span>
+              <div style="display:flex;gap:4px;flex-shrink:0">
+                <button onclick="mdEditResult(${realIdx})" title="Edit" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;font-size:11px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;padding:0"><i class="fas fa-pen"></i></button>
+                <button onclick="mdReturnToQueue(${realIdx})" title="Return to queue" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;font-size:11px;color:var(--clay);display:flex;align-items:center;justify-content:center;padding:0"><i class="fas fa-undo"></i></button>
+                <button onclick="mdRemoveResult(${realIdx})" title="Remove" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;font-size:11px;color:var(--danger);display:flex;align-items:center;justify-content:center;padding:0"><i class="fas fa-trash"></i></button>
+              </div>
             </div>`;
           }).join('');
         } else {
@@ -9943,7 +9979,21 @@
     function mdAddCourt() {
       mdCourts++;
       document.querySelectorAll('.md-config-btns')[0]?.querySelectorAll('.md-config-btn').forEach(b => b.classList.remove('active'));
-      toast(`Court ${mdCourts} added`, 'success');
+      // Redistribute queued matches across courts
+      if (mdGeneratedSchedule) {
+        const completedSids = new Set(mdCompletedGames.map(m => m.sid));
+        const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id}-${m.team2_id}`));
+        let courtIdx = 0;
+        mdGeneratedSchedule.forEach(m => {
+          const key = `${m.round}-${m.t1}-${m.t2}`;
+          const keyAlt = `${m.round}-${m.t2}-${m.t1}`;
+          if (!completedSids.has(m.sid) && !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt)) {
+            m.court = (courtIdx % mdCourts) + 1;
+            courtIdx++;
+          }
+        });
+      }
+      toast(`Court ${mdCourts} added — matches redistributed`, 'success');
       renderMDLive();
     }
     
@@ -9975,16 +10025,17 @@
     // Cancel a queued match
     function mdCancelQueueMatch(idx) {
       if (!mdGeneratedSchedule) return;
-      const completedKeys = new Set(mdCompletedGames.map(m => `${m.round}-${m.t1 || ''}-${m.t2 || ''}`));
+      const completedSids = new Set(mdCompletedGames.map(m => m.sid));
       const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`));
       const queueMatches = mdGeneratedSchedule.filter(m => {
+        if (completedSids.has(m.sid)) return false;
         const key = `${m.round}-${m.t1 || ''}-${m.t2 || ''}`;
         const keyAlt = `${m.round}-${m.t2 || ''}-${m.t1 || ''}`;
-        return !completedKeys.has(key) && !completedKeys.has(keyAlt) && !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
+        return !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
       });
       if (idx >= 0 && idx < queueMatches.length) {
         const match = queueMatches[idx];
-        mdGeneratedSchedule = mdGeneratedSchedule.filter(m => m !== match);
+        mdGeneratedSchedule = mdGeneratedSchedule.filter(m => m.sid !== match.sid);
         toast('Match removed from queue', 'info');
         renderMDLive();
       }
@@ -10029,12 +10080,23 @@
     // Hook into match completion to advance rounds
     function mdOnMatchComplete(completedMatch) {
       if (!completedMatch.md_round || mdStep !== 'live') return;
+      // Find the schedule item by matching teams and round
+      const schedItem = (mdGeneratedSchedule || []).find(m => 
+        m.round === completedMatch.md_round && 
+        ((m.t1 === completedMatch.team1_id && m.t2 === completedMatch.team2_id) ||
+         (m.t1 === completedMatch.team2_id && m.t2 === completedMatch.team1_id))
+      );
       mdCompletedGames.push({
+        sid: schedItem?.sid || `c_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
         t1: completedMatch.team1_id,
         t2: completedMatch.team2_id,
         score1: completedMatch.score1,
         score2: completedMatch.score2,
-        round: completedMatch.md_round
+        round: completedMatch.md_round,
+        court: completedMatch.court || '?',
+        match_id: completedMatch.id,
+        match_uid: completedMatch.match_uid,
+        completedAt: new Date().toISOString()
       });
       // Check if current round is complete
       const roundMatches = (mdGeneratedSchedule || []).filter(m => m.round === completedMatch.md_round);
@@ -10052,6 +10114,91 @@
         }
       }
       renderMatchDay();
+    }
+
+    // Edit a completed match result
+    function mdEditResult(idx) {
+      const m = mdCompletedGames[idx];
+      if (!m) return;
+      const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
+      const newScore1 = prompt(`${t1?.name || 'Team 1'} score:`, m.score1);
+      if (newScore1 === null) return;
+      const newScore2 = prompt(`${t2?.name || 'Team 2'} score:`, m.score2);
+      if (newScore2 === null) return;
+      const s1 = parseInt(newScore1), s2 = parseInt(newScore2);
+      if (isNaN(s1) || isNaN(s2)) { toast('Invalid scores', 'error'); return; }
+      // Update completed game
+      mdCompletedGames[idx].score1 = s1;
+      mdCompletedGames[idx].score2 = s2;
+      // Also update the saved match in memory if it exists
+      if (m.match_id) {
+        const savedMatch = matches.find(x => x.id === m.match_id);
+        if (savedMatch) {
+          savedMatch.score1 = s1;
+          savedMatch.score2 = s2;
+          savedMatch.winner_id = s1 > s2 ? m.t1 : m.t2;
+          // Push to Supabase
+          if (supabaseClient) {
+            supabaseClient.from('matches').update({ score1: s1, score2: s2, winner_id: savedMatch.winner_id }).eq('id', m.match_id);
+          }
+        }
+      }
+      toast('Result updated', 'success');
+      renderMDLive();
+    }
+
+    // Return a completed match back to the queue
+    function mdReturnToQueue(idx) {
+      const m = mdCompletedGames[idx];
+      if (!m) return;
+      if (!confirm(`Return ${getTeam(m.t1)?.name || '?'} vs ${getTeam(m.t2)?.name || '?'} to queue?`)) return;
+      // Remove from completed
+      mdCompletedGames.splice(idx, 1);
+      // Add back to schedule if sid not already there
+      if (m.sid && !(mdGeneratedSchedule || []).some(s => s.sid === m.sid)) {
+        mdGeneratedSchedule = mdGeneratedSchedule || [];
+        mdGeneratedSchedule.push({ sid: m.sid, t1: m.t1, t2: m.t2, round: m.round, court: parseInt(String(m.court).replace(/\D/g,'')) || 1 });
+      }
+      // Delete the saved match from memory and Supabase
+      if (m.match_id) {
+        matches = matches.filter(x => x.id !== m.match_id);
+        if (supabaseClient) supabaseClient.from('matches').delete().eq('id', m.match_id);
+      }
+      toast('Match returned to queue', 'info');
+      renderMDLive();
+    }
+
+    // Remove a completed result entirely
+    function mdRemoveResult(idx) {
+      const m = mdCompletedGames[idx];
+      if (!m) return;
+      if (!confirm(`Delete result for ${getTeam(m.t1)?.name || '?'} vs ${getTeam(m.t2)?.name || '?'}? This cannot be undone.`)) return;
+      mdCompletedGames.splice(idx, 1);
+      // Also remove the saved match
+      if (m.match_id) {
+        matches = matches.filter(x => x.id !== m.match_id);
+        if (supabaseClient) supabaseClient.from('matches').delete().eq('id', m.match_id);
+      }
+      // Remove from schedule so it doesn't reappear in queue
+      if (m.sid) mdGeneratedSchedule = (mdGeneratedSchedule || []).filter(s => s.sid !== m.sid);
+      toast('Result removed', 'info');
+      renderMDLive();
+    }
+
+    // Generate more matches (another full round-robin cycle)
+    function mdGenerateMore() {
+      if (mdMode !== 'roundrobin' || mdActiveTeamIds.length < 2) {
+        toast('Need at least 2 active teams', 'error');
+        return;
+      }
+      // Generate a full round of all-play-all (teams can play each other again)
+      const pairs = mdGenerateRoundRobin(mdActiveTeamIds, []);
+      const newScheduled = mdScheduleMatches(pairs, mdCourts, mdActiveTeamIds);
+      const maxRound = mdGeneratedSchedule ? Math.max(0, ...mdGeneratedSchedule.map(m => m.round)) : 0;
+      const adjusted = newScheduled.map(m => ({ ...m, round: m.round + maxRound }));
+      mdGeneratedSchedule = [...(mdGeneratedSchedule || []), ...adjusted];
+      toast(`${adjusted.length} new matches generated!`, 'success');
+      renderMDLive();
     }
 
     function getPlayerColor(id) {
