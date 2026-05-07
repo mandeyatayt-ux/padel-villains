@@ -761,6 +761,19 @@
       .team-picker-modal { max-width: 480px; left: 50%; right: auto; transform: translateX(-50%) translateY(100%); border-radius: 24px 24px 0 0; }
       .team-picker-modal.open { transform: translateX(-50%) translateY(0); }
     }
+
+    /* Test Mode */
+    .test-mode-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 10000; background: repeating-linear-gradient(45deg, #FF6B35, #FF6B35 10px, #E55A2B 10px, #E55A2B 20px); color: white; text-align: center; padding: 8px 16px; font-family: 'Sublime', sans-serif; font-size: 14px; letter-spacing: 3px; display: none; box-shadow: 0 2px 12px rgba(255,107,53,0.4); }
+    .test-mode-banner.active { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .test-mode-banner button { background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 4px 14px; border-radius: 16px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .test-mode-banner button:hover { background: rgba(255,255,255,0.4); }
+    body.test-mode { padding-top: 40px !important; }
+    body.test-mode .bottom-nav { /* keep nav visible */ }
+    .test-mode-toggle { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: var(--cream); border-radius: 12px; }
+    .test-mode-toggle-switch { position: relative; width: 48px; height: 26px; background: var(--border); border-radius: 26px; cursor: pointer; transition: background 0.2s; border: none; padding: 0; }
+    .test-mode-toggle-switch.on { background: #FF6B35; }
+    .test-mode-toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .test-mode-toggle-switch.on::after { transform: translateX(22px); }
     .md-generate-btn { width: 100%; margin-top: 16px; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); color: white; font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s; }
     .md-generate-btn:hover { transform: translateY(-1px); }
     .md-generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -3766,6 +3779,19 @@
         <div id="userAccountsList"></div>
       </div>
       
+      <!-- Test Mode -->
+      <div class="card" style="margin-bottom:24px;border:2px solid #FF6B35">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:12px"><i class="fas fa-flask" style="color:#FF6B35;margin-right:8px"></i>Test Mode</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Test features without saving to the database. All writes are intercepted and only applied locally. Exiting test mode reloads live data.</p>
+        <div class="test-mode-toggle">
+          <div>
+            <div style="font-weight:700;font-size:14px" id="testModeLabel">OFF</div>
+            <div style="font-size:11px;color:var(--text-muted)">Supabase writes blocked</div>
+          </div>
+          <button class="test-mode-toggle-switch" id="testModeSwitch" onclick="toggleTestMode()"></button>
+        </div>
+      </div>
+
       <!-- System Info -->
       <div class="card" style="margin-bottom:24px">
         <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-microchip" style="color:var(--clay);margin-right:8px"></i>System Info</h3>
@@ -4518,6 +4544,12 @@
     </div>
   </div>
 
+  <!-- Test Mode Banner -->
+  <div class="test-mode-banner" id="testModeBanner">
+    <span>⚠️ TEST MODE — NO DATA SAVED</span>
+    <button onclick="toggleTestMode()">Exit</button>
+  </div>
+
   <!-- Team Picker Modal -->
   <div class="team-picker-overlay" id="teamPickerOverlay" onclick="closeTeamPicker()"></div>
   <div class="team-picker-modal" id="teamPickerModal">
@@ -4558,6 +4590,81 @@
       return typeof str === 'string' && /^[a-f0-9]{64}$/.test(str);
     }
     let supabaseClient = null;
+    let testMode = false;
+    let _supabaseOriginalFrom = null;
+
+    // Test Mode: proxy Supabase writes
+    function createTestMockChain(table, operation, args) {
+      const result = { data: operation === 'delete' ? null : { id: Date.now() }, error: null };
+      const chain = {
+        select: () => chain,
+        single: () => Promise.resolve(result),
+        eq: () => chain,
+        neq: () => chain,
+        in: () => chain,
+        is: () => chain,
+        order: () => chain,
+        limit: () => chain,
+        maybeSingle: () => Promise.resolve(result),
+        then: (resolve, reject) => Promise.resolve(result).then(resolve, reject),
+        catch: (fn) => Promise.resolve(result).catch(fn),
+      };
+      return chain;
+    }
+
+    function enableTestModeProxy() {
+      if (!supabaseClient || _supabaseOriginalFrom) return;
+      _supabaseOriginalFrom = supabaseClient.from.bind(supabaseClient);
+      supabaseClient.from = function(table) {
+        const builder = _supabaseOriginalFrom(table);
+        if (!testMode) return builder;
+        return new Proxy(builder, {
+          get(target, prop) {
+            if (['insert', 'update', 'delete', 'upsert'].includes(prop)) {
+              return function(...args) {
+                console.log(`[TEST MODE] Blocked ${prop.toUpperCase()} on "${table}"`, args);
+                if (table !== 'match_audit_log') {
+                  toast(`🧪 ${prop} → ${table} (not saved)`, 'info');
+                }
+                return createTestMockChain(table, prop, args);
+              };
+            }
+            return typeof target[prop] === 'function' ? target[prop].bind(target) : target[prop];
+          }
+        });
+      };
+    }
+
+    function disableTestModeProxy() {
+      if (_supabaseOriginalFrom && supabaseClient) {
+        supabaseClient.from = _supabaseOriginalFrom;
+        _supabaseOriginalFrom = null;
+      }
+    }
+
+    function toggleTestMode() {
+      testMode = !testMode;
+      const banner = document.getElementById('testModeBanner');
+      const switchEl = document.getElementById('testModeSwitch');
+      const labelEl = document.getElementById('testModeLabel');
+      if (testMode) {
+        enableTestModeProxy();
+        banner.classList.add('active');
+        document.body.classList.add('test-mode');
+        if (switchEl) switchEl.classList.add('on');
+        if (labelEl) labelEl.textContent = 'ON';
+        toast('🧪 Test Mode ON — writes blocked', 'success');
+      } else {
+        disableTestModeProxy();
+        banner.classList.remove('active');
+        document.body.classList.remove('test-mode');
+        if (switchEl) switchEl.classList.remove('on');
+        if (labelEl) labelEl.textContent = 'OFF';
+        toast('Test Mode OFF — reloading live data...', 'info');
+        // Reload from Supabase to discard test changes
+        if (supabaseClient) fetchFromDatabase();
+      }
+    }
     
     // ===== STATE =====
     // ===== PADEL ICON SYSTEM =====
@@ -4968,6 +5075,7 @@
           try {
             const { createClient } = window.supabase;
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            enableTestModeProxy();
             console.log('Supabase connected!');
             await fetchData();
           } catch (e) {
