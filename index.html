@@ -4595,7 +4595,16 @@
 
     // Test Mode: proxy Supabase writes
     function createTestMockChain(table, operation, args) {
-      const result = { data: operation === 'delete' ? null : { id: Date.now() }, error: null };
+      // Echo back the submitted data so local state stays consistent
+      let mockData = null;
+      if (operation === 'insert' && args[0]) {
+        mockData = Array.isArray(args[0]) ? { ...args[0][0], id: args[0][0]?.id || Date.now() } : { ...args[0], id: args[0]?.id || Date.now() };
+      } else if (operation === 'upsert' && args[0]) {
+        mockData = Array.isArray(args[0]) ? { ...args[0][0] } : { ...args[0] };
+      } else if (operation === 'update' && args[0]) {
+        mockData = { ...args[0] };
+      }
+      const result = { data: mockData, error: null };
       const chain = {
         select: () => chain,
         single: () => Promise.resolve(result),
