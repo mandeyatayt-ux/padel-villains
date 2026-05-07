@@ -774,6 +774,69 @@
     .test-mode-toggle-switch.on { background: #FF6B35; }
     .test-mode-toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
     .test-mode-toggle-switch.on::after { transform: translateX(22px); }
+
+    /* Sticky Match Day Header */
+    .md-sticky { position: sticky; top: 0; z-index: 100; background: linear-gradient(135deg, var(--brown-dark) 0%, #5D4E37 100%); padding: 10px 16px; color: var(--cream); border-radius: 0 0 16px 16px; margin: -24px -16px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+    body.test-mode .md-sticky { top: 40px; }
+    .md-sticky-row { display: flex; justify-content: space-between; align-items: center; }
+    .md-sticky-title { font-size: 11px; letter-spacing: 2px; opacity: 0.7; font-weight: 600; }
+    .md-sticky-info { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .md-sticky-timer { opacity: 0.6; font-size: 11px; }
+    .md-sticky-progress { height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; margin-top: 8px; }
+    .md-sticky-progress-fill { height: 100%; background: var(--clay); border-radius: 2px; transition: width 0.5s; }
+
+    /* Sitting Out Indicator */
+    .md-sitting { padding: 10px 14px; margin-bottom: 16px; background: #FFF7ED; border-radius: 14px; border: 1px dashed rgba(245,158,11,0.25); }
+    .md-sitting-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: #92400E; margin-bottom: 8px; text-transform: uppercase; }
+    .md-sitting-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .md-sitting-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 4px; border-radius: 16px; background: white; font-size: 11px; font-weight: 600; color: var(--text); border: 0.5px solid var(--border); }
+    .md-sitting-av { width: 20px; height: 20px; border-radius: 50%; background: var(--clay); display: flex; align-items: center; justify-content: center; font-size: 9px; color: white; font-weight: 700; }
+    .md-sitting-time { color: var(--text-muted); font-size: 10px; }
+
+    /* Inline Score Entry */
+    .md-inline-score { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--divider); }
+    .md-score-input { width: 52px; height: 40px; border: 2px solid var(--cream-dark); border-radius: 12px; text-align: center; font-size: 20px; font-weight: 700; color: var(--text); background: var(--cream); font-family: 'Sublime', sans-serif; outline: none; transition: border-color 0.2s; }
+    .md-score-input:focus { border-color: var(--clay); }
+    .md-score-dash { font-size: 14px; color: var(--text-muted); font-weight: 700; }
+    .md-score-save { flex: 1; height: 40px; background: var(--clay); color: white; border: none; border-radius: 12px; font-size: 12px; font-weight: 700; letter-spacing: 1px; font-family: inherit; cursor: pointer; transition: opacity 0.2s; }
+    .md-score-save:active { opacity: 0.8; }
+
+    /* H2H Stat Bar */
+    .md-h2h-bar { display: flex; gap: 2px; margin: 0 14px 4px; height: 5px; border-radius: 4px; overflow: hidden; }
+    .md-h2h-fill { border-radius: 4px; transition: flex 0.3s; }
+    .md-h2h-labels { display: flex; justify-content: space-between; padding: 0 14px 10px; font-size: 10px; color: var(--text-muted); }
+
+    /* Live Standings */
+    .md-standings { background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 16px; overflow: hidden; }
+    .md-standings-header { padding: 12px 16px; font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--brown-dark); border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center; }
+    .md-stand-row { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 0.5px solid var(--divider); font-size: 12px; }
+    .md-stand-row:last-child { border-bottom: none; }
+    .md-stand-rank { width: 20px; font-weight: 700; color: var(--text-muted); text-align: center; font-size: 13px; }
+    .md-stand-name { flex: 1; font-weight: 600; color: var(--text); }
+    .md-stand-wl { color: var(--text-muted); font-size: 11px; min-width: 36px; text-align: center; }
+    .md-stand-bar { width: 56px; height: 4px; background: var(--cream-dark); border-radius: 2px; overflow: hidden; }
+    .md-stand-fill { height: 100%; background: linear-gradient(90deg, var(--clay), var(--clay-light)); border-radius: 2px; }
+
+    /* Match Timeline */
+    .md-timeline { padding: 0; }
+    .md-tl-item { display: flex; gap: 12px; padding: 8px 0; }
+    .md-tl-dot-col { display: flex; flex-direction: column; align-items: center; width: 12px; flex-shrink: 0; }
+    .md-tl-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--clay); flex-shrink: 0; }
+    .md-tl-line { width: 1.5px; flex: 1; background: var(--cream-dark); min-height: 16px; }
+    .md-tl-content { flex: 1; }
+    .md-tl-match { font-size: 13px; color: var(--text); line-height: 1.4; }
+    .md-tl-meta { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Win Rate Gauge */
+    .md-gauge { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+    .md-gauge svg { transform: rotate(-90deg); }
+    .md-gauge-val { position: absolute; font-size: 14px; font-weight: 700; color: var(--text); }
+
+    /* Pill Filter Chips */
+    .md-pills { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .md-pills::-webkit-scrollbar { display: none; }
+    .md-pill { padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1.5px solid var(--cream-dark); background: white; color: var(--text-muted); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .md-pill.active { background: var(--brown-dark); color: var(--cream); border-color: var(--brown-dark); }
     .md-generate-btn { width: 100%; margin-top: 16px; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%); color: white; font-weight: 700; font-size: 15px; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s; }
     .md-generate-btn:hover { transform: translateY(-1px); }
     .md-generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
@@ -3312,17 +3375,26 @@
 
       <!-- Live Match Day Section — Court Assignment View -->
       <div id="mdLiveSection" style="display:none">
-        <!-- Progress -->
-        <div class="card" style="margin-bottom:16px;padding:16px 20px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-weight:700;font-size:14px">Match Day Progress</span>
-            <span style="font-size:13px;color:var(--text-muted)" id="mdProgressText">0 / 0</span>
+        <!-- Sticky Header -->
+        <div class="md-sticky" id="mdStickyHeader">
+          <div class="md-sticky-row">
+            <div class="md-sticky-title">⚔️ MATCH DAY LIVE</div>
+            <div class="md-sticky-info">
+              <span id="mdStickyProgress">0 / 0</span>
+              <span class="md-sticky-timer" id="mdStickyTimer"></span>
+            </div>
           </div>
-          <div class="md-progress"><div class="md-progress-bar" id="mdProgressBar" style="width:0%"></div></div>
+          <div class="md-sticky-progress"><div class="md-sticky-progress-fill" id="mdStickyBar" style="width:0%"></div></div>
         </div>
 
         <!-- Court Cards (dynamic grid) -->
-        <div id="mdCourtGrid" style="display:grid;gap:16px;margin-bottom:20px"></div>
+        <div id="mdCourtGrid" style="display:grid;gap:16px;margin-bottom:16px"></div>
+
+        <!-- Sitting Out -->
+        <div class="md-sitting" id="mdSittingOut" style="display:none">
+          <div class="md-sitting-label">🪑 Sitting out</div>
+          <div class="md-sitting-chips" id="mdSittingChips"></div>
+        </div>
 
         <!-- Add Court Button -->
         <div style="text-align:center;margin-bottom:24px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
@@ -3340,7 +3412,13 @@
           <div id="mdCourtQueue" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
 
-        <!-- Results -->
+        <!-- Live Standings -->
+        <div class="md-standings" id="mdLiveStandings" style="display:none">
+          <div class="md-standings-header"><span>📊 Today's standings</span><span id="mdStandingsCount" style="font-size:11px;color:var(--text-muted);font-weight:400"></span></div>
+          <div id="mdStandingsBody"></div>
+        </div>
+
+        <!-- Results (Timeline) -->
         <div class="card" style="margin-bottom:24px;display:none" id="mdCompletedCard">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <h3 style="font-size:16px;font-weight:700">Results</h3>
@@ -6520,6 +6598,18 @@
           renderDashboard();
         }
       }, 60000); // Every 60 seconds
+      
+      // Session timer update
+      setInterval(() => {
+        if (mdStep === 'live' && mdSessionStart) {
+          const timerEl = document.getElementById('mdStickyTimer');
+          if (timerEl) {
+            const elapsed = Math.floor((Date.now() - mdSessionStart) / 60000);
+            const h = Math.floor(elapsed / 60), m = elapsed % 60;
+            timerEl.textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
+          }
+        }
+      }, 30000);
     }
     
     function shareMatchdayResults() {
@@ -8869,12 +8959,14 @@
     let mdGeneratedSchedule = null; // [{t1, t2, round, court, isNew?}] for RR; [{team1:[], team2:[], round, court}] for Americano
     let mdStep = 'setup'; // setup | preview | live
     let mdCompletedGames = []; // matches completed during this session
+    let mdSessionStart = null; // timestamp when match day started
     let mdCurrentRound = 1;
     let mdViewTeamId = null;
 
     function setMatchDayMode(mode) {
       mdMode = mode;
       mdStep = 'setup';
+      mdSessionStart = null;
       mdGeneratedSchedule = null;
       document.getElementById('mdModeRR').classList.toggle('active', mode === 'roundrobin');
       document.getElementById('mdModeAM').classList.toggle('active', mode === 'americano');
@@ -9251,6 +9343,7 @@
     async function mdConfirmSchedule() {
       if (!mdGeneratedSchedule || mdGeneratedSchedule.length === 0) return;
       mdStep = 'live';
+      mdSessionStart = Date.now();
       mdCurrentRound = 1;
       // Queue ALL matches into the ongoing matches system at once
       const allRounds = [...new Set(mdGeneratedSchedule.map(m => m.round))].sort((a,b) => a-b);
@@ -10005,8 +10098,19 @@
       const completedCount = mdCompletedGames.length;
 
       // Progress
-      document.getElementById('mdProgressText').textContent = `${completedCount} / ${totalGames} matches`;
-      document.getElementById('mdProgressBar').style.width = totalGames > 0 ? (completedCount / totalGames * 100) + '%' : '0%';
+      // Sticky header
+      const pct = totalGames > 0 ? (completedCount / totalGames * 100) : 0;
+      const stickyProg = document.getElementById('mdStickyProgress');
+      if (stickyProg) stickyProg.textContent = `${completedCount} / ${totalGames}`;
+      const stickyBar = document.getElementById('mdStickyBar');
+      if (stickyBar) stickyBar.style.width = pct + '%';
+      // Session timer
+      const timerEl = document.getElementById('mdStickyTimer');
+      if (timerEl && mdSessionStart) {
+        const elapsed = Math.floor((Date.now() - mdSessionStart) / 60000);
+        const h = Math.floor(elapsed / 60), m = elapsed % 60;
+        timerEl.textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      }
 
       // Court grid columns
       const courtGrid = document.getElementById('mdCourtGrid');
@@ -10057,9 +10161,22 @@
                   <div><div style="font-weight:700;font-size:14px">${t2Name} ${courtMatch.team2_id ? renderFormDots(courtMatch.team2_id) : ''}</div>${t2Players ? `<div style="font-size:11px;color:var(--text-muted)">${t2Players}</div>` : ''}</div>
                 </div>
               </div>
-              <div style="display:flex;gap:8px">
-                <button class="btn btn-primary" style="flex:1;border-radius:10px;font-size:13px;padding:10px 0" onclick="openFinalizeMatch(${courtMatch.id})"><i class="fas fa-check"></i> Record Score</button>
-                <button class="btn btn-secondary" style="width:44px;border-radius:10px;color:var(--danger);font-size:14px" onclick="mdCancelCourtMatch(${courtMatch.id})" title="Cancel match"><i class="fas fa-times"></i></button>
+              ${courtMatch.team1_id && courtMatch.team2_id ? (() => {
+                const h2h = getTeamH2H(courtMatch.team1_id, courtMatch.team2_id);
+                const total = h2h.t1Wins + h2h.t2Wins;
+                if (total > 0) {
+                  const pct1 = Math.round(h2h.t1Wins / total * 100);
+                  return `<div class="md-h2h-bar"><div class="md-h2h-fill" style="flex:${h2h.t1Wins || 1};background:var(--clay)"></div><div class="md-h2h-fill" style="flex:${h2h.t2Wins || 1};background:var(--brown-dark)"></div></div>
+                  <div class="md-h2h-labels"><span>${t1Name} ${h2h.t1Wins}W (${pct1}%)</span><span>${t2Name} ${h2h.t2Wins}W (${100-pct1}%)</span></div>`;
+                }
+                return '';
+              })() : ''}
+              <div class="md-inline-score">
+                <input class="md-score-input" type="number" min="0" max="99" id="inlineScore1_${courtMatch.id}" placeholder="0" inputmode="numeric">
+                <span class="md-score-dash">–</span>
+                <input class="md-score-input" type="number" min="0" max="99" id="inlineScore2_${courtMatch.id}" placeholder="0" inputmode="numeric">
+                <button class="md-score-save" onclick="mdInlineFinalize(${courtMatch.id})">SAVE</button>
+                <button class="btn btn-secondary" style="width:40px;height:40px;border-radius:12px;color:var(--danger);font-size:14px;flex-shrink:0;padding:0" onclick="mdCancelCourtMatch(${courtMatch.id})" title="Cancel"><i class="fas fa-times"></i></button>
               </div>
             </div>
           </div>`;
@@ -10124,7 +10241,7 @@
         mdSetupQueueDrag();
       }
 
-      // Results section
+      // Results section (Timeline)
       const compCard = document.getElementById('mdCompletedCard');
       const compList = document.getElementById('mdCompletedList');
       if (compCard && compList) {
@@ -10140,36 +10257,45 @@
               return t ? `<option value="${id}" ${currentVal == id ? 'selected' : ''}>${t.name}</option>` : '';
             }).join('');
           }
-          // Filter
           const filterTeamId = filterEl?.value ? parseInt(filterEl.value) : null;
-          let filtered = mdCompletedGames;
+          let filtered = [...mdCompletedGames].reverse(); // newest first
           if (filterTeamId) filtered = filtered.filter(m => m.t1 === filterTeamId || m.t2 === filterTeamId);
           document.getElementById('mdResultsCount').textContent = `${filtered.length} of ${mdCompletedGames.length}`;
           
-          compList.innerHTML = filtered.map((m, idx) => {
+          compList.innerHTML = '<div class="md-timeline">' + filtered.map((m, idx) => {
             const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
             const isT1Winner = parseInt(m.score1) > parseInt(m.score2);
+            const winnerName = isT1Winner ? (t1?.name||'?') : (t2?.name||'?');
+            const loserName = isT1Winner ? (t2?.name||'?') : (t1?.name||'?');
+            const wScore = isT1Winner ? m.score1 : m.score2;
+            const lScore = isT1Winner ? m.score2 : m.score1;
             const realIdx = mdCompletedGames.indexOf(m);
-            return `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:var(--cream);margin-bottom:6px;flex-wrap:wrap">
-              <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:22px">R${m.round||'?'}</span>
-              <div style="flex:1;display:flex;align-items:center;gap:6px;min-width:0">
-                <span style="font-weight:${isT1Winner?'700':'500'};font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t1?.name||'?'}</span>
-                <span style="font-weight:700;font-size:16px;color:${isT1Winner?'var(--success)':'var(--text-muted)'}">${m.score1??'?'}</span>
-                <span style="color:var(--text-muted);font-size:10px">–</span>
-                <span style="font-weight:700;font-size:16px;color:${!isT1Winner?'var(--success)':'var(--text-muted)'}">${m.score2??'?'}</span>
-                <span style="font-weight:${!isT1Winner?'700':'500'};font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t2?.name||'?'}</span>
-              </div>
-              <div style="display:flex;gap:4px;flex-shrink:0">
-                <button onclick="mdEditResult(${realIdx})" title="Edit" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;font-size:11px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;padding:0"><i class="fas fa-pen"></i></button>
-                <button onclick="mdReturnToQueue(${realIdx})" title="Return to queue" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;font-size:11px;color:var(--clay);display:flex;align-items:center;justify-content:center;padding:0"><i class="fas fa-undo"></i></button>
-                <button onclick="mdRemoveResult(${realIdx})" title="Remove" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;font-size:11px;color:var(--danger);display:flex;align-items:center;justify-content:center;padding:0"><i class="fas fa-trash"></i></button>
+            const timeAgo = m.completedAt ? (() => { const mins = Math.floor((Date.now() - new Date(m.completedAt).getTime()) / 60000); return mins < 1 ? 'Just now' : `${mins}m ago`; })() : '';
+            const isLast = idx === filtered.length - 1;
+            return `<div class="md-tl-item">
+              <div class="md-tl-dot-col"><div class="md-tl-dot" style="${idx === 0 ? 'background:var(--clay)' : 'background:var(--clay-light)'}"></div>${!isLast ? '<div class="md-tl-line"></div>' : ''}</div>
+              <div class="md-tl-content">
+                <div class="md-tl-match"><strong>${winnerName}</strong> beat ${loserName} <strong>${wScore}-${lScore}</strong></div>
+                <div class="md-tl-meta">${timeAgo}${m.court ? ` · ${m.court}` : ''} · R${m.round||'?'}
+                  <span style="margin-left:6px">
+                    <button onclick="mdEditResult(${realIdx})" title="Edit" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted);padding:0"><i class="fas fa-pen"></i></button>
+                    <button onclick="mdReturnToQueue(${realIdx})" title="Undo" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--clay);padding:0"><i class="fas fa-undo"></i></button>
+                    <button onclick="mdRemoveResult(${realIdx})" title="Remove" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--danger);padding:0"><i class="fas fa-trash"></i></button>
+                  </span>
+                </div>
               </div>
             </div>`;
-          }).join('');
+          }).join('') + '</div>';
         } else {
           compCard.style.display = 'none';
         }
       }
+
+      // Sitting out indicator
+      renderMDSittingOut();
+
+      // Live standings
+      renderMDLiveStandings();
 
       // Late add teams
       const lateContainer = document.getElementById('mdLateTeams');
@@ -10503,6 +10629,116 @@
       return `<span style="display:inline-flex;gap:3px;margin-left:2px" title="${form.join(' ')}">${form.map(r => 
         `<span style="width:7px;height:7px;border-radius:50%;background:${r === 'W' ? '#059669' : '#dc2626'}"></span>`
       ).join('')}</span>`;
+    }
+
+    // Head-to-head record between two teams
+    function getTeamH2H(t1Id, t2Id) {
+      let t1Wins = 0, t2Wins = 0;
+      matches.forEach(m => {
+        if ((m.team1_id === t1Id && m.team2_id === t2Id) || (m.team1_id === t2Id && m.team2_id === t1Id)) {
+          if (m.winner_id === t1Id) t1Wins++;
+          else if (m.winner_id === t2Id) t2Wins++;
+        }
+      });
+      return { t1Wins, t2Wins, total: t1Wins + t2Wins };
+    }
+
+    // Inline score finalize (no modal)
+    async function mdInlineFinalize(matchId) {
+      const s1El = document.getElementById(`inlineScore1_${matchId}`);
+      const s2El = document.getElementById(`inlineScore2_${matchId}`);
+      if (!s1El || !s2El) return;
+      const scoreA = parseInt(s1El.value) || 0;
+      const scoreB = parseInt(s2El.value) || 0;
+      if (scoreA === 0 && scoreB === 0) { toast('Enter scores first', 'error'); return; }
+      if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); return; }
+      const m = ongoingMatches.find(x => x.id === matchId);
+      if (!m) { toast('Match not found', 'error'); return; }
+      if (m.match_uid && matches.some(x => x.match_uid === m.match_uid)) {
+        toast('Already finalized', 'error'); ongoingMatches = ongoingMatches.filter(x => x.id !== matchId); renderAll(); return;
+      }
+      const wid = scoreA > scoreB ? m.team1_id : m.team2_id;
+      const matchData = {
+        id: generateNumericId(), match_uid: m.match_uid || generateMatchUID(),
+        date: m.date, location: m.location, court: m.court,
+        team1_id: m.team1_id, team2_id: m.team2_id,
+        scores: [[scoreA, scoreB]], score1: scoreA, score2: scoreB,
+        winner_id: wid, started_at: m.started_at || null,
+        finalized_at: new Date().toISOString(), md_round: m.md_round || null,
+        device_id: PV_DEVICE_ID, created_at: new Date().toISOString()
+      };
+      const result = await saveMatchToSupabase(matchData);
+      const savedMatch = result.data || matchData;
+      matches.unshift(savedMatch);
+      ongoingMatches = ongoingMatches.filter(x => x.id !== matchId);
+      await deleteOngoingFromSupabase(matchId);
+      saveLocal();
+      if (m.md_round) {
+        mdOnMatchComplete({ team1_id: m.team1_id, team2_id: m.team2_id, md_round: m.md_round, score1: scoreA, score2: scoreB, court: m.court, id: savedMatch.id, match_uid: savedMatch.match_uid });
+      }
+      renderAll();
+      toast(`${getTeam(m.team1_id)?.name || '?'} ${scoreA}-${scoreB} ${getTeam(m.team2_id)?.name || '?'} ✓`, 'success');
+    }
+
+    // Render who's sitting out
+    function renderMDSittingOut() {
+      const container = document.getElementById('mdSittingOut');
+      const chips = document.getElementById('mdSittingChips');
+      if (!container || !chips || mdMode !== 'roundrobin') { if (container) container.style.display = 'none'; return; }
+      // Find teams currently on court
+      const playingIds = new Set();
+      for (let c = 1; c <= mdCourts; c++) {
+        const cm = ongoingMatches.find(m => m.md_round && (m.court === `Court ${c}` || m.court === c || m.court === `C${c}`));
+        if (cm) { playingIds.add(cm.team1_id); playingIds.add(cm.team2_id); }
+      }
+      const sitting = mdActiveTeamIds.filter(id => !playingIds.has(id));
+      if (sitting.length === 0) { container.style.display = 'none'; return; }
+      container.style.display = '';
+      // Calculate how long each team has been sitting (since their last completed match)
+      chips.innerHTML = sitting.map(id => {
+        const t = getTeam(id);
+        const lastMatch = mdCompletedGames.filter(m => m.t1 === id || m.t2 === id).sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || ''))[0];
+        let waitTime = '';
+        if (lastMatch?.completedAt) {
+          const mins = Math.floor((Date.now() - new Date(lastMatch.completedAt).getTime()) / 60000);
+          waitTime = `${mins}m`;
+        }
+        return `<span class="md-sitting-chip"><span class="md-sitting-av">${(t?.name||'?').charAt(0)}</span>${t?.name||'?'}${waitTime ? ` <span class="md-sitting-time">${waitTime}</span>` : ''}</span>`;
+      }).join('');
+    }
+
+    // Render live standings for today
+    function renderMDLiveStandings() {
+      const container = document.getElementById('mdLiveStandings');
+      const body = document.getElementById('mdStandingsBody');
+      if (!container || !body) return;
+      if (mdCompletedGames.length === 0) { container.style.display = 'none'; return; }
+      container.style.display = '';
+      // Calculate W-L for each active team from today's completed games
+      const stats = {};
+      mdActiveTeamIds.forEach(id => { stats[id] = { wins: 0, losses: 0 }; });
+      mdCompletedGames.forEach(m => {
+        const s1 = parseInt(m.score1), s2 = parseInt(m.score2);
+        const winnerId = s1 > s2 ? m.t1 : m.t2;
+        const loserId = s1 > s2 ? m.t2 : m.t1;
+        if (stats[winnerId]) stats[winnerId].wins++;
+        if (stats[loserId]) stats[loserId].losses++;
+      });
+      const ranked = Object.entries(stats)
+        .map(([id, s]) => ({ id: parseInt(id), ...s, total: s.wins + s.losses, rate: s.wins + s.losses > 0 ? Math.round(s.wins / (s.wins + s.losses) * 100) : 0 }))
+        .filter(s => s.total > 0)
+        .sort((a, b) => b.rate - a.rate || b.wins - a.wins);
+      document.getElementById('mdStandingsCount').textContent = `${ranked.length} teams`;
+      body.innerHTML = ranked.map((s, i) => {
+        const t = getTeam(s.id);
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`;
+        return `<div class="md-stand-row">
+          <span class="md-stand-rank">${medal}</span>
+          <span class="md-stand-name">${t?.name || '?'} ${renderFormDots(s.id, 3)}</span>
+          <span class="md-stand-wl">${s.wins}W-${s.losses}L</span>
+          <div class="md-stand-bar"><div class="md-stand-fill" style="width:${s.rate}%"></div></div>
+        </div>`;
+      }).join('');
     }
 
     function getPlayerColor(id) {
