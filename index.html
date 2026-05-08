@@ -2146,6 +2146,15 @@
       border: 1px solid rgba(245,239,235,0.5) !important;
       box-shadow: 0 4px 24px rgba(102,37,0,0.04) !important;
     }
+    /* Countdown & past-banner need their own coloured backgrounds */
+    .matchday-countdown {
+      background: linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%) !important;
+      border-color: var(--clay-dark) !important;
+    }
+    .past-matchday-banner {
+      background: var(--gold) !important;
+      border-color: var(--gold) !important;
+    }
     
     /* === DESKTOP LAYOUT (1024px+) === */
     @media (min-width: 1024px) {
@@ -2299,9 +2308,9 @@
       filter: blur(50px); pointer-events: none;
     }
     .matchday-header.active {
-      border-color: rgba(224,120,80,0.25) !important;
-      background: linear-gradient(135deg, rgba(68,64,60,0.06) 0%, rgba(224,120,80,0.12) 100%) !important;
-      box-shadow: 0 8px 32px rgba(224,120,80,0.1) !important;
+      border-color: rgba(224,120,80,0.3) !important;
+      background: linear-gradient(135deg, rgba(68,64,60,0.08) 0%, rgba(224,120,80,0.15) 100%) !important;
+      box-shadow: 0 8px 32px rgba(224,120,80,0.12) !important;
       border-radius: 20px !important;
     }
     .matchday-header { border-radius: 20px !important; }
