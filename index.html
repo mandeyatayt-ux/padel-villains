@@ -3176,9 +3176,9 @@
             <div class="md-mode-btn-title">🏆 Round Robin</div>
             <div class="md-mode-btn-desc">All teams play each other</div>
           </button>
-          <button class="md-mode-btn" id="mdModeAM" onclick="setMatchDayMode('americano')">
-            <div class="md-mode-btn-title">🎲 Americano</div>
-            <div class="md-mode-btn-desc">Rotating partners</div>
+          <button class="md-mode-btn" id="mdModeDraft" onclick="setMatchDayMode('draft')">
+            <div class="md-mode-btn-title">🎯 Draft Mode</div>
+            <div class="md-mode-btn-desc">Random teams, round robin</div>
           </button>
           <button class="md-mode-btn" id="mdModeKOTC" onclick="setMatchDayMode('kotc')">
             <div class="md-mode-btn-title">👑 King of the Court</div>
@@ -3230,24 +3230,38 @@
         </div>
       </div>
 
-      <!-- Americano: Player Selection -->
-      <div id="mdAmericanoSection" style="display:none">
+      <!-- Draft Mode: Player Selection -->
+      <div id="mdDraftSection" style="display:none">
         <div class="card" style="margin-bottom:24px">
           <div class="section-header" style="margin-bottom:16px">
             <div>
-              <h3 style="font-size:18px;font-weight:700">Select Players</h3>
-              <p style="font-size:12px;color:var(--text-muted)">Pick players for Americano (multiples of 4 ideal)</p>
+              <h3 style="font-size:18px;font-weight:700">🎯 Select Players for Draft</h3>
+              <p style="font-size:12px;color:var(--text-muted)">Players will be randomly paired into teams</p>
             </div>
-            <span id="mdAmericanoCount" style="background:#7C3AED;color:white;padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
+            <span id="mdDraftCount" style="background:var(--clay);color:white;padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
           </div>
-          <div class="md-americano-players" id="mdAmericanoPlayers"></div>
-          <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
-            <span style="font-size:13px;font-weight:600;color:var(--text-muted)">Rounds:</span>
-            <button class="md-config-btn" onclick="setMDAmericanoRounds(4)" style="padding:6px 14px;min-width:40px">4</button>
-            <button class="md-config-btn active" onclick="setMDAmericanoRounds(6)" style="padding:6px 14px;min-width:40px">6</button>
-            <button class="md-config-btn" onclick="setMDAmericanoRounds(8)" style="padding:6px 14px;min-width:40px">8</button>
+          <div class="md-americano-players" id="mdDraftPlayers"></div>
+          <div id="mdDraftOddNotice" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(212,168,83,0.1);border:1px solid rgba(212,168,83,0.3);border-radius:10px;font-size:12px;color:var(--gold)">
+            ⭐ Odd number — one player will become the <strong>Star</strong> (rotates as fill-in, no record)
           </div>
-          <button class="md-generate-btn" id="mdAmericanoGenBtn" onclick="mdGenerate()" disabled style="background:linear-gradient(135deg,#7C3AED 0%,#6D28D9 100%)">🎲 Generate Americano</button>
+          <button class="md-generate-btn" id="mdDraftDrawBtn" onclick="draftDrawTeams()" disabled style="background:linear-gradient(135deg,var(--clay) 0%,var(--clay-dark) 100%)">🎲 Draw Teams</button>
+        </div>
+      </div>
+
+      <!-- Draft Mode: Team Reveal -->
+      <div id="mdDraftReveal" style="display:none">
+        <div class="card" style="margin-bottom:24px">
+          <div style="text-align:center;margin-bottom:20px">
+            <div style="font-size:36px">🎯</div>
+            <div style="font-family:'Sublime',sans-serif;font-size:28px;letter-spacing:3px;color:var(--brown-dark)">DRAFT RESULTS</div>
+            <p style="font-size:13px;color:var(--text-muted)">Your teams for today's match day</p>
+          </div>
+          <div id="mdDraftStarDisplay" style="display:none"></div>
+          <div id="mdDraftTeamCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:20px"></div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-secondary" onclick="draftBackToSetup()" style="flex:1">← Re-draw</button>
+            <button class="md-generate-btn" onclick="draftConfirmAndGenerate()" style="flex:2;margin-top:0">✅ Confirm & Generate Schedule</button>
+          </div>
         </div>
       </div>
 
@@ -8961,18 +8975,36 @@
     }
     
     // ===== MATCH DAY =====
-    let mdMode = 'roundrobin'; // roundrobin | americano
+    let mdMode = 'roundrobin'; // roundrobin | draft | kotc | randomiser
     let mdCourts = 1;
     let mdDuration = 3;
     let mdActiveTeamIds = [];
-    let mdAmericanoPlayerIds = [];
-    let mdAmericanoRounds = 6;
-    let mdGeneratedSchedule = null; // [{t1, t2, round, court, isNew?}] for RR; [{team1:[], team2:[], round, court}] for Americano
+    let mdDraftPlayerIds = [];
+    let mdDraftState = { drawnTeams: null, starPlayerId: null, createdTeamIds: [] };
+    let mdGeneratedSchedule = null;
     let mdStep = 'setup'; // setup | preview | live
-    let mdCompletedGames = []; // matches completed during this session
-    let mdSessionStart = null; // timestamp when match day started
+    let mdCompletedGames = [];
+    let mdSessionStart = null;
     let mdCurrentRound = 1;
     let mdViewTeamId = null;
+
+    // Draft Mode team name pools (mix-and-match)
+    const DRAFT_NAME_POOL = [
+      // Ancient Greece
+      'Spartans','Titans','Olympians','Trojans','Athenians','Argonauts','Oracles','Minotaurs','Centurions','Macedonians',
+      // DC Comics
+      'Gotham Knights','Kryptonians','Amazonians','Dark Knights','Lanterns','Atlanteans','Star Labs','Phantom Zone',
+      // Marvel
+      'Avengers','X-Force','Wakandans','Asgardians','Guardians','Thunderbolts','Eternals','Defenders',
+      // 80s Bands
+      'Def Leppard','Bon Jovi','The Police','Duran Duran','Iron Maiden','Scorpions','Van Halen','Motley Crue',
+      // Zimbabwe
+      'Flame Lilies','Jacarandas','Fish Eagles','Baobabs','Kopjes','Stone City','Chimurenga','Hwange Pride',
+      // Cool Characters
+      'Ronin','Phantom','Maverick','Ghost','Shadow','Apex','Rogue','Sentinel',
+      // Cool Animals
+      'Honey Badgers','Black Mambas','Wolverines','Snow Leopards','Peregrine','Komodo Dragons','Dire Wolves','Grizzlies'
+    ];
 
     function setMatchDayMode(mode) {
       mdMode = mode;
@@ -8980,11 +9012,12 @@
       mdSessionStart = null;
       mdGeneratedSchedule = null;
       document.getElementById('mdModeRR').classList.toggle('active', mode === 'roundrobin');
-      document.getElementById('mdModeAM').classList.toggle('active', mode === 'americano');
+      document.getElementById('mdModeDraft').classList.toggle('active', mode === 'draft');
       document.getElementById('mdModeKOTC').classList.toggle('active', mode === 'kotc');
       document.getElementById('mdModeRandom').classList.toggle('active', mode === 'randomiser');
       document.getElementById('mdRoundRobinSection').style.display = mode === 'roundrobin' ? '' : 'none';
-      document.getElementById('mdAmericanoSection').style.display = mode === 'americano' ? '' : 'none';
+      document.getElementById('mdDraftSection').style.display = mode === 'draft' ? '' : 'none';
+      document.getElementById('mdDraftReveal').style.display = 'none';
       document.getElementById('mdKOTCSection').style.display = mode === 'kotc' ? '' : 'none';
       document.getElementById('mdKOTCLiveSection').style.display = 'none';
       document.getElementById('mdRandomiserSection').style.display = mode === 'randomiser' ? '' : 'none';
@@ -8995,6 +9028,7 @@
       mdUpdateEstimate();
       if (mode === 'kotc') kotcRenderTeamGrid();
       if (mode === 'randomiser') randomiserRenderPlayers();
+      if (mode === 'draft') draftRenderPlayers();
     }
 
     function setMDCourts(n) {
@@ -9189,12 +9223,177 @@
       }
     }
 
-    function mdToggleAmericanoPlayer(id) {
-      if (mdStep === 'live') return;
-      const idx = mdAmericanoPlayerIds.indexOf(id);
-      idx > -1 ? mdAmericanoPlayerIds.splice(idx, 1) : mdAmericanoPlayerIds.push(id);
-      mdGeneratedSchedule = null;
+    // ===== DRAFT MODE =====
+    function draftTogglePlayer(id) {
+      const idx = mdDraftPlayerIds.indexOf(id);
+      idx > -1 ? mdDraftPlayerIds.splice(idx, 1) : mdDraftPlayerIds.push(id);
+      draftRenderPlayers();
+    }
+
+    function draftRenderPlayers() {
+      const grid = document.getElementById('mdDraftPlayers');
+      if (!grid) return;
+      grid.innerHTML = activePlayers().map(p => {
+        const active = mdDraftPlayerIds.includes(p.id);
+        return `<button class="md-americano-btn ${active ? 'active' : ''}" onclick="draftTogglePlayer(${p.id})" style="${active ? 'border-color:var(--clay);background:rgba(224,120,80,0.06)' : ''}">
+          ${av(p, 'xs')}
+          <span class="md-americano-name">${p.name}</span>
+          ${active ? '<span class="md-americano-check" style="background:var(--clay)"><i class="fas fa-check"></i></span>' : ''}
+        </button>`;
+      }).join('');
+      const count = mdDraftPlayerIds.length;
+      document.getElementById('mdDraftCount').textContent = count;
+      document.getElementById('mdDraftDrawBtn').disabled = count < 4;
+      document.getElementById('mdDraftOddNotice').style.display = count >= 4 && count % 2 === 1 ? '' : 'none';
+      mdUpdateEstimate();
+    }
+
+    function draftDrawTeams() {
+      const pIds = [...mdDraftPlayerIds];
+      if (pIds.length < 4) { toast('Need at least 4 players', 'error'); return; }
+      
+      // Shuffle players
+      for (let i = pIds.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pIds[i], pIds[j]] = [pIds[j], pIds[i]];
+      }
+      
+      // If odd, last player becomes star
+      let starId = null;
+      if (pIds.length % 2 === 1) {
+        starId = pIds.pop();
+      }
+      
+      // Pick random team names (no duplicates)
+      const namePool = [...DRAFT_NAME_POOL];
+      for (let i = namePool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [namePool[i], namePool[j]] = [namePool[j], namePool[i]];
+      }
+      
+      // Pair up players
+      const drawnTeams = [];
+      for (let i = 0; i < pIds.length; i += 2) {
+        drawnTeams.push({
+          name: namePool[i / 2] || `Team ${(i/2)+1}`,
+          player1_id: pIds[i],
+          player2_id: pIds[i + 1]
+        });
+      }
+      
+      mdDraftState.drawnTeams = drawnTeams;
+      mdDraftState.starPlayerId = starId;
+      mdDraftState.createdTeamIds = [];
+      
+      // Show reveal
+      draftRenderReveal();
+      document.getElementById('mdDraftSection').style.display = 'none';
+      document.getElementById('mdDraftReveal').style.display = '';
+    }
+
+    function draftRenderReveal() {
+      const { drawnTeams, starPlayerId } = mdDraftState;
+      
+      // Star player display
+      const starEl = document.getElementById('mdDraftStarDisplay');
+      if (starPlayerId) {
+        const sp = getPlayer(starPlayerId);
+        starEl.style.display = '';
+        starEl.innerHTML = `<div style="text-align:center;margin-bottom:20px;padding:16px;background:linear-gradient(135deg,rgba(212,168,83,0.1),rgba(212,168,83,0.05));border:1px solid rgba(212,168,83,0.25);border-radius:14px">
+          <div style="font-size:28px">⭐</div>
+          <div style="font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:700;margin:4px 0">STAR PLAYER</div>
+          <div style="display:flex;justify-content:center;margin:8px 0">${av(sp,'lg')}</div>
+          <div style="font-weight:700;font-size:16px">${sp?.name || '?'}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Rotates as fill-in · No record</div>
+        </div>`;
+      } else {
+        starEl.style.display = 'none';
+      }
+      
+      // Team cards
+      const cardsEl = document.getElementById('mdDraftTeamCards');
+      cardsEl.innerHTML = drawnTeams.map((t, i) => {
+        const p1 = getPlayer(t.player1_id);
+        const p2 = getPlayer(t.player2_id);
+        return `<div style="background:linear-gradient(135deg,var(--brown-dark) 0%,var(--clay) 100%);color:white;border-radius:16px;padding:20px;text-align:center;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
+          <div style="font-size:11px;letter-spacing:2px;opacity:0.7">TEAM ${i+1}</div>
+          <div style="font-family:'Sublime',sans-serif;font-size:22px;letter-spacing:2px;margin:6px 0">${t.name}</div>
+          <div style="display:flex;gap:6px;justify-content:center;margin:12px 0">
+            ${av(p1,'md')}${av(p2,'md')}
+          </div>
+          <div style="font-size:13px;opacity:0.9">${p1?.name || '?'} & ${p2?.name || '?'}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function draftBackToSetup() {
+      mdDraftState = { drawnTeams: null, starPlayerId: null, createdTeamIds: [] };
+      document.getElementById('mdDraftReveal').style.display = 'none';
+      document.getElementById('mdDraftSection').style.display = '';
+      draftRenderPlayers();
+    }
+
+    async function draftConfirmAndGenerate() {
+      const { drawnTeams, starPlayerId } = mdDraftState;
+      if (!drawnTeams || drawnTeams.length < 2) return;
+      
+      toast('Creating teams...', 'info');
+      const createdIds = [];
+      
+      for (const dt of drawnTeams) {
+        const teamData = {
+          id: Date.now() + Math.floor(Math.random() * 10000),
+          name: dt.name,
+          player1_id: dt.player1_id,
+          player2_id: dt.player2_id,
+          wins: 0, losses: 0, active: true,
+          created_at: new Date().toISOString()
+        };
+        
+        if (supabaseClient) {
+          try {
+            const { data, error } = await supabaseClient.from('teams').insert([teamData]).select().single();
+            if (error) throw error;
+            teams.push(data);
+            createdIds.push(data.id);
+          } catch (e) {
+            console.error('Draft team create error:', e);
+            teams.push(teamData);
+            createdIds.push(teamData.id);
+          }
+        } else {
+          teams.push(teamData);
+          createdIds.push(teamData.id);
+        }
+      }
+      
+      mdDraftState.createdTeamIds = createdIds;
+      mdActiveTeamIds = createdIds;
+      
+      // Save draft session to Supabase for cross-device sync
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('draft_sessions').upsert([{
+            matchday_date: activeMatchday?.date || getLocalDateStr(),
+            teams: JSON.stringify(drawnTeams),
+            star_player_id: starPlayerId,
+            team_ids: JSON.stringify(createdIds),
+            confirmed: true
+          }], { onConflict: 'matchday_date' });
+        } catch (e) { console.log('Draft session save (table may not exist yet):', e.message); }
+      }
+      
+      // Generate round robin schedule with created team IDs
+      const existingPairs = mdCompletedGames.map(m => [m.t1, m.t2]);
+      const pairs = mdGenerateRoundRobin(createdIds, existingPairs);
+      mdGeneratedSchedule = mdScheduleMatches(pairs, mdCourts, createdIds);
+      
+      // Hide reveal, show preview
+      document.getElementById('mdDraftReveal').style.display = 'none';
+      mdStep = 'preview';
       renderMatchDay();
+      toast(`${drawnTeams.length} teams drafted! Review the schedule.`, 'success');
     }
 
     function mdUpdateEstimate() {
@@ -9203,10 +9402,13 @@
         const n = mdActiveTeamIds.length;
         totalMatches = (n * (n - 1)) / 2;
         totalRounds = Math.ceil(totalMatches / mdCourts);
+      } else if (mdMode === 'draft') {
+        const numTeams = Math.floor(mdDraftPlayerIds.length / 2);
+        totalMatches = (numTeams * (numTeams - 1)) / 2;
+        totalRounds = Math.ceil(totalMatches / mdCourts);
       } else {
-        const n = mdAmericanoPlayerIds.length;
-        totalMatches = mdAmericanoRounds * Math.floor(n / 4);
-        totalRounds = mdAmericanoRounds;
+        totalMatches = 0;
+        totalRounds = 0;
       }
       const estMins = totalRounds * 15;
       const el = document.getElementById('mdEstimate');
@@ -9338,8 +9540,7 @@
         const pairs = mdGenerateRoundRobin(mdActiveTeamIds, existingPairs);
         mdGeneratedSchedule = mdScheduleMatches(pairs, mdCourts, mdActiveTeamIds);
       } else {
-        if (mdAmericanoPlayerIds.length < 4) { toast('Select at least 4 players', 'error'); return; }
-        mdGeneratedSchedule = mdGenerateAmericano(mdAmericanoPlayerIds, mdAmericanoRounds);
+        return; // Draft mode uses draftConfirmAndGenerate()
       }
       mdStep = 'preview';
       renderMatchDay();
@@ -9348,6 +9549,20 @@
     function mdBackToSetup() {
       mdStep = 'setup';
       mdGeneratedSchedule = null;
+      if (mdMode === 'draft' && mdDraftState.drawnTeams) {
+        // Delete the created teams since we're going back
+        mdDraftState.createdTeamIds.forEach(tid => {
+          const idx = teams.findIndex(t => t.id === tid);
+          if (idx > -1) teams.splice(idx, 1);
+          if (supabaseClient) supabaseClient.from('teams').delete().eq('id', tid).then(() => {});
+        });
+        mdDraftState.createdTeamIds = [];
+        mdActiveTeamIds = [];
+        // Show reveal again
+        document.getElementById('mdDraftReveal').style.display = '';
+        document.getElementById('mdPreviewSection').style.display = 'none';
+        return;
+      }
       renderMatchDay();
     }
 
@@ -9369,13 +9584,13 @@
       const roundMatches = mdGeneratedSchedule.filter(m => m.round === roundNum);
       for (let i = 0; i < roundMatches.length; i++) {
         const m = roundMatches[i];
-        const t1Id = mdMode === 'roundrobin' ? m.t1 : null;
-        const t2Id = mdMode === 'roundrobin' ? m.t2 : null;
+        const t1Id = mdMode !== 'randomiser' ? m.t1 : null;
+        const t2Id = mdMode !== 'randomiser' ? m.t2 : null;
         
         // Duplicate check
         if (t1Id && t2Id && isDuplicateInQueue(t1Id, t2Id)) continue;
         
-        const matchData = mdMode === 'roundrobin' ? {
+        const matchData = mdMode === 'roundrobin' || mdMode === 'draft' ? {
           id: generateNumericId(),
           match_uid: generateMatchUID(),
           date: activeMatchday?.date || getLocalDateStr(),
@@ -9929,7 +10144,7 @@
       
       // Gather all cockpit (live-control) sections so we can toggle them as one
       const cockpitSectionIds = [
-        'mdRoundRobinSection','mdAmericanoSection','mdKOTCSection','mdKOTCLiveSection',
+        'mdRoundRobinSection','mdDraftSection','mdDraftReveal','mdKOTCSection','mdKOTCLiveSection',
         'mdRandomiserSection','mdRandomPreview','mdRandomLive','mdPreviewSection','mdLiveSection'
       ];
       const heroEl = document.querySelector('#matchday .md-hero');
@@ -9963,23 +10178,27 @@
 
       if (mdMode === 'roundrobin') {
         document.getElementById('mdRoundRobinSection').style.display = showSetup ? '' : 'none';
-        document.getElementById('mdAmericanoSection').style.display = 'none';
+        document.getElementById('mdDraftSection').style.display = 'none';
+        document.getElementById('mdDraftReveal').style.display = 'none';
         document.getElementById('mdKOTCSection').style.display = 'none';
         document.getElementById('mdKOTCLiveSection').style.display = 'none';
         document.getElementById('mdRandomiserSection').style.display = 'none';
         document.getElementById('mdRandomPreview').style.display = 'none';
         document.getElementById('mdRandomLive').style.display = 'none';
-      } else if (mdMode === 'americano') {
+      } else if (mdMode === 'draft') {
         document.getElementById('mdRoundRobinSection').style.display = 'none';
-        document.getElementById('mdAmericanoSection').style.display = showSetup ? '' : 'none';
+        document.getElementById('mdDraftSection').style.display = mdDraftState.drawnTeams ? 'none' : (showSetup ? '' : 'none');
+        document.getElementById('mdDraftReveal').style.display = mdDraftState.drawnTeams && !mdDraftState.createdTeamIds.length ? '' : 'none';
         document.getElementById('mdKOTCSection').style.display = 'none';
         document.getElementById('mdKOTCLiveSection').style.display = 'none';
         document.getElementById('mdRandomiserSection').style.display = 'none';
         document.getElementById('mdRandomPreview').style.display = 'none';
         document.getElementById('mdRandomLive').style.display = 'none';
+        if (!mdDraftState.drawnTeams) draftRenderPlayers();
       } else if (mdMode === 'kotc') {
         document.getElementById('mdRoundRobinSection').style.display = 'none';
-        document.getElementById('mdAmericanoSection').style.display = 'none';
+        document.getElementById('mdDraftSection').style.display = 'none';
+        document.getElementById('mdDraftReveal').style.display = 'none';
         document.getElementById('mdKOTCSection').style.display = kotcState.active ? 'none' : (showSetup ? '' : 'none');
         document.getElementById('mdKOTCLiveSection').style.display = kotcState.active ? '' : 'none';
         document.getElementById('mdRandomiserSection').style.display = 'none';
@@ -9991,7 +10210,8 @@
         return;
       } else if (mdMode === 'randomiser') {
         document.getElementById('mdRoundRobinSection').style.display = 'none';
-        document.getElementById('mdAmericanoSection').style.display = 'none';
+        document.getElementById('mdDraftSection').style.display = 'none';
+        document.getElementById('mdDraftReveal').style.display = 'none';
         document.getElementById('mdKOTCSection').style.display = 'none';
         document.getElementById('mdKOTCLiveSection').style.display = 'none';
         document.getElementById('mdPreviewSection').style.display = 'none';
@@ -10033,23 +10253,9 @@
         if (genBtn) genBtn.disabled = mdActiveTeamIds.length < 2;
       }
 
-      // Render player grid (Americano)
-      if (mdMode === 'americano') {
-        const grid = document.getElementById('mdAmericanoPlayers');
-        if (grid) {
-          grid.innerHTML = players.map(p => {
-            const active = mdAmericanoPlayerIds.includes(p.id);
-            return `<button class="md-americano-btn ${active ? 'active' : ''}" onclick="mdToggleAmericanoPlayer(${p.id})">
-              <div class="avatar" style="width:28px;height:28px;font-size:11px;background:${active ? '#7C3AED' : getPlayerColor(p.id)}">${(p.name||'?').charAt(0)}</div>
-              <span class="md-americano-name">${p.name}</span>
-              ${active ? '<div class="md-americano-check">✓</div>' : ''}
-            </button>`;
-          }).join('');
-        }
-        const countEl = document.getElementById('mdAmericanoCount');
-        if (countEl) countEl.textContent = mdAmericanoPlayerIds.length;
-        const genBtn = document.getElementById('mdAmericanoGenBtn');
-        if (genBtn) genBtn.disabled = mdAmericanoPlayerIds.length < 4;
+      // Render player grid (Draft Mode) — handled by draftRenderPlayers()
+      if (mdMode === 'draft' && !mdDraftState.drawnTeams) {
+        draftRenderPlayers();
       }
 
       // Render preview
@@ -10065,7 +10271,7 @@
             const roundMatches = mdGeneratedSchedule.filter(m => m.round === r);
             html += `<div class="md-round-label"><span class="md-round-badge">Round ${r}</span><span class="md-round-line"></span></div>`;
             roundMatches.forEach(m => {
-              if (mdMode === 'roundrobin') {
+              if (mdMode === 'roundrobin' || mdMode === 'draft') {
                 const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
                 const p1 = getPlayer(t1?.player1_id);
                 html += `<div class="md-schedule-match ${m.isNew ? 'new-team' : ''}">
@@ -10086,7 +10292,7 @@
               }
             });
             // Show sitting out teams
-            if (mdMode === 'roundrobin') {
+            if (mdMode === 'roundrobin' || mdMode === 'draft') {
               const playingIds = new Set(roundMatches.flatMap(m => [m.t1, m.t2]));
               const sitting = mdActiveTeamIds.filter(id => !playingIds.has(id)).map(id => getTeam(id)?.name || '?');
               if (sitting.length > 0) html += `<div class="md-sitting">☕ Sitting out: ${sitting.join(', ')}</div>`;
@@ -10233,8 +10439,8 @@
             t1Name = getTeam(m.t1)?.name || '?';
             t2Name = getTeam(m.t2)?.name || '?';
           }
-          const t1Form = mdMode === 'roundrobin' ? renderFormDots(m.t1) : '';
-          const t2Form = mdMode === 'roundrobin' ? renderFormDots(m.t2) : '';
+          const t1Form = mdMode === 'roundrobin' || mdMode === 'draft' ? renderFormDots(m.t1) : '';
+          const t2Form = mdMode === 'roundrobin' || mdMode === 'draft' ? renderFormDots(m.t2) : '';
           return `<div class="md-queue-item card" draggable="true" data-idx="${idx}" style="padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:grab;border-radius:12px;margin:0">
             <div style="color:var(--text-muted);font-size:16px;cursor:grab;user-select:none;padding:0 2px">≡</div>
             <span style="background:var(--clay);color:white;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;min-width:24px;text-align:center">R${m.round}</span>
