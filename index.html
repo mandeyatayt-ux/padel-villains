@@ -10795,7 +10795,7 @@
 
     // Generate more matches (another full round-robin cycle)
     async function mdGenerateMore() {
-      if (mdMode !== 'roundrobin' || mdActiveTeamIds.length < 2) {
+      if ((mdMode !== 'roundrobin' && mdMode !== 'draft') || mdActiveTeamIds.length < 2) {
         toast('Need at least 2 active teams', 'error');
         return;
       }
@@ -10903,7 +10903,7 @@
     function renderMDSittingOut() {
       const container = document.getElementById('mdSittingOut');
       const chips = document.getElementById('mdSittingChips');
-      if (!container || !chips || mdMode !== 'roundrobin') { if (container) container.style.display = 'none'; return; }
+      if (!container || !chips || (mdMode !== 'roundrobin' && mdMode !== 'draft')) { if (container) container.style.display = 'none'; return; }
       // Find teams currently on court
       const playingIds = new Set();
       for (let c = 1; c <= mdCourts; c++) {
