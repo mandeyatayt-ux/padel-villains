@@ -8036,9 +8036,11 @@
           if (error) throw error;
           matchdays.push(data);
         } catch (e) {
-          console.error(e);
-          toast('Error creating match day', 'error');
-          return;
+          console.warn('Matchday create failed, saving locally:', e.message);
+          matchdays.push(newMatchday);
+          addToPendingSync({ type: 'insert', table: 'matchdays', data: newMatchday });
+          saveLocal();
+          toast('Saved offline — will sync when back online', 'info');
         }
       } else {
         matchdays.push(newMatchday);
@@ -8082,9 +8084,9 @@
             try {
               await supabaseClient.from('matchdays').update({ status: 'closed' }).eq('id', activeMatchday.id);
             } catch (e) {
-              console.error(e);
-              toast('Error closing match day', 'error');
-              return;
+              console.warn('Close matchday sync failed, saved locally:', e.message);
+              addToPendingSync({ type: 'upsert', table: 'matchdays', data: { id: activeMatchday.id, status: 'closed' } });
+              saveLocal();
             }
           } else {
             saveLocal();
@@ -8175,9 +8177,9 @@
             end_time: endTime
           }).eq('id', id);
         } catch (e) {
-          console.error('Matchday update error:', e);
-          toast('Error saving changes', 'error');
-          return;
+          console.warn('Matchday update sync failed, saved locally:', e.message);
+          addToPendingSync({ type: 'upsert', table: 'matchdays', data: { id, date, venue, start_time: startTime, end_time: endTime } });
+          saveLocal();
         }
       }
       
@@ -8232,9 +8234,8 @@
           try {
             await supabaseClient.from('matchdays').delete().eq('id', activeMatchday.id);
           } catch (e) {
-            console.error('Matchday delete error:', e);
-            toast('Error cancelling match day', 'error');
-            return;
+            console.warn('Matchday cancel sync failed, continuing locally:', e.message);
+            addToPendingSync({ type: 'delete', table: 'matchdays', id: activeMatchday.id });
           }
         }
         
@@ -11656,7 +11657,7 @@
       if (supabaseClient) {
         try {
           await supabaseClient.from('venues').update({ name, courts }).eq('id', id);
-        } catch (e) { toast('Error saving venue', 'error'); return; }
+        } catch (e) { console.warn('Venue save sync failed:', e.message); addToPendingSync({ type: 'upsert', table: 'venues', data: { id, name, courts } }); saveLocal(); }
       } else {
         saveLocal();
       }
@@ -11681,10 +11682,10 @@
       if (supabaseClient) {
         try {
           await supabaseClient.from('venues').delete().eq('id', id);
-        } catch (e) { toast('Error deleting venue', 'error'); return; }
+        } catch (e) { console.warn('Venue delete sync failed:', e.message); addToPendingSync({ type: 'delete', table: 'venues', id }); }
       }
       venues = venues.filter(v => v.id !== id);
-      if (!supabaseClient) saveLocal();
+      saveLocal();
       closeModal('confirm');
       renderAll();
       toast('Venue deleted', 'success');
@@ -11702,7 +11703,12 @@
           const { data, error } = await supabaseClient.from('venues').insert([nv]).select().single();
           if (error) throw error;
           venues.push(data);
-        } catch (e) { toast('Error adding venue', 'error'); return; }
+        } catch (e) {
+          console.warn('Venue create failed, saving locally:', e.message);
+          venues.push(nv);
+          addToPendingSync({ type: 'insert', table: 'venues', data: nv });
+          saveLocal();
+        }
       } else {
         venues.push(nv);
         saveLocal();
@@ -11887,10 +11893,10 @@
           const { data, error } = await supabaseClient.from('players').insert([dbPayload]).select().single();
           if (error) {
             console.warn('Add player online failed, saving locally:', error.message);
-            // Fallback: save locally
             dbPayload.wins = 0; dbPayload.losses = 0; dbPayload.games_played = 0; dbPayload.available = true;
             if (dbPayload.photo) photoCache[dbPayload.id] = dbPayload.photo;
             players.push(dbPayload);
+            addToPendingSync({ type: 'insert', table: 'players', data: dbPayload });
             saveLocal();
             toast('Saved offline — will sync when back online', 'info');
           } else {
@@ -11902,6 +11908,7 @@
           dbPayload.wins = 0; dbPayload.losses = 0; dbPayload.games_played = 0; dbPayload.available = true;
           if (dbPayload.photo) photoCache[dbPayload.id] = dbPayload.photo;
           players.push(dbPayload);
+          addToPendingSync({ type: 'insert', table: 'players', data: dbPayload });
           saveLocal();
           toast('Saved offline — will sync when back online', 'info');
         }
@@ -11974,14 +11981,14 @@
           
           const { error } = await supabaseClient.from('players').update(updateData).eq('id', id);
           if (error) {
-            console.error('Player update error:', error);
-            toast('Error saving: ' + (error.message || 'Unknown'), 'error');
-            return;
+            console.warn('Player update sync failed, saved locally:', error.message);
+            addToPendingSync({ type: 'upsert', table: 'players', data: { id, ...updateData } });
+            saveLocal();
           }
         } catch (e) { 
-          console.error('Player save error:', e);
-          toast('Error saving player', 'error'); 
-          return; 
+          console.warn('Player save failed, saved locally:', e.message);
+          addToPendingSync({ type: 'upsert', table: 'players', data: { id, ...updateData } });
+          saveLocal();
         }
       } else { 
         saveLocal(); 
@@ -12130,7 +12137,13 @@
           const { data, error } = await supabaseClient.from('teams').insert([nt]).select().single();
           if (error) throw error;
           teams.push(data);
-        } catch (e) { toast('Error', 'error'); return; }
+        } catch (e) {
+          console.warn('Team create failed, saving locally:', e.message);
+          teams.push(nt);
+          addToPendingSync({ type: 'insert', table: 'teams', data: nt });
+          saveLocal();
+          toast('Saved offline — will sync when back online', 'info');
+        }
       } else {
         teams.push(nt);
         saveLocal();
@@ -12185,14 +12198,14 @@
           };
           const { error } = await supabaseClient.from('teams').update(updateData).eq('id', id);
           if (error) {
-            console.error('Team update error:', error);
-            toast('Error: ' + (error.message || 'Could not update team'), 'error');
-            return;
+            console.warn('Team update sync failed, saved locally:', error.message);
+            addToPendingSync({ type: 'upsert', table: 'teams', data: { id, ...updateData } });
+            saveLocal();
           }
         } catch (e) { 
-          console.error('Team save error:', e);
-          toast('Error saving team', 'error'); 
-          return; 
+          console.warn('Team save failed, saved locally:', e.message);
+          addToPendingSync({ type: 'upsert', table: 'teams', data: { id, ...updateData } });
+          saveLocal();
         }
       } else { saveLocal(); }
       
