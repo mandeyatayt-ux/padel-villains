@@ -11886,17 +11886,24 @@
         try {
           const { data, error } = await supabaseClient.from('players').insert([dbPayload]).select().single();
           if (error) {
-            console.error('Add player error:', error);
-            toast('Error: ' + (error.message || 'Could not add player'), 'error');
-            return;
+            console.warn('Add player online failed, saving locally:', error.message);
+            // Fallback: save locally
+            dbPayload.wins = 0; dbPayload.losses = 0; dbPayload.games_played = 0; dbPayload.available = true;
+            if (dbPayload.photo) photoCache[dbPayload.id] = dbPayload.photo;
+            players.push(dbPayload);
+            saveLocal();
+            toast('Saved offline — will sync when back online', 'info');
+          } else {
+            if (data.photo) photoCache[data.id] = data.photo;
+            players.push(data);
           }
-          // Cache photo in memory
-          if (data.photo) photoCache[data.id] = data.photo;
-          players.push(data);
         } catch (e) { 
-          console.error('Add player exception:', e);
-          toast('Error adding player', 'error'); 
-          return; 
+          console.warn('Add player exception, saving locally:', e);
+          dbPayload.wins = 0; dbPayload.losses = 0; dbPayload.games_played = 0; dbPayload.available = true;
+          if (dbPayload.photo) photoCache[dbPayload.id] = dbPayload.photo;
+          players.push(dbPayload);
+          saveLocal();
+          toast('Saved offline — will sync when back online', 'info');
         }
       } else {
         // Offline mode — add computed fields for local use
