@@ -3413,6 +3413,15 @@
         <!-- Court Cards (dynamic grid) -->
         <div id="mdCourtGrid" style="display:grid;gap:16px;margin-bottom:16px"></div>
 
+        <!-- Queue (draggable) -->
+        <div style="margin-bottom:24px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted)">Queue — <span id="mdQueueCount">0</span> matches</div>
+            <div style="font-size:11px;color:var(--text-muted)">Drag to reorder</div>
+          </div>
+          <div id="mdCourtQueue" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+
         <!-- Sitting Out -->
         <div class="md-sitting" id="mdSittingOut" style="display:none">
           <div class="md-sitting-label">🪑 Sitting out</div>
@@ -3424,15 +3433,6 @@
           <button class="btn btn-secondary btn-sm" onclick="mdAddCourt()" style="border-radius:12px;font-size:12px"><i class="fas fa-plus"></i> Add Court</button>
           <button class="btn btn-secondary btn-sm" onclick="mdRemoveCourt()" id="mdRemoveCourtBtn" style="border-radius:12px;font-size:12px;display:none"><i class="fas fa-minus"></i> Remove Court</button>
           <button class="btn btn-secondary btn-sm" onclick="mdReallocateCourts();renderMDLive();toast('Matches redistributed','success')" style="border-radius:12px;font-size:12px"><i class="fas fa-shuffle"></i> Reallocate</button>
-        </div>
-
-        <!-- Queue (draggable) -->
-        <div style="margin-bottom:24px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted)">Queue — <span id="mdQueueCount">0</span> matches</div>
-            <div style="font-size:11px;color:var(--text-muted)">Drag to reorder</div>
-          </div>
-          <div id="mdCourtQueue" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
 
         <!-- Live Standings -->
@@ -9650,55 +9650,41 @@
           round: 0
         }));
         
-        // Smart interleave: space late team matches evenly, no back-to-back
+        // Get the current queue (non-completed, sorted by round)
         const completedSids = new Set(mdCompletedGames.map(m => m.sid));
-        const queueItems = (mdGeneratedSchedule || []).filter(m => !completedSids.has(m.sid));
-        const maxRound = queueItems.length > 0 ? Math.max(...queueItems.map(m => m.round)) : 0;
-        const totalSlots = maxRound + newMatches.length + 1;
+        const existingQueue = (mdGeneratedSchedule || [])
+          .filter(m => !completedSids.has(m.sid))
+          .sort((a, b) => a.round - b.round);
         
-        // Calculate ideal spacing between late team's games
-        const spacing = Math.max(2, Math.floor(totalSlots / (newMatches.length + 1)));
-        let lastAssignedRound = -spacing; // allow first match early
+        // Calculate evenly-spaced insert positions
+        const qLen = existingQueue.length;
+        const nNew = newMatches.length;
         
-        newMatches.forEach((nm, nmIdx) => {
-          // Target round based on even spacing
-          let targetRound = lastAssignedRound + spacing;
-          let bestRound = null;
-          
-          // Search near the target for a valid slot
-          for (let offset = 0; offset < totalSlots; offset++) {
-            for (const dir of [0, 1, -1]) {
-              const tryRound = targetRound + (offset * (dir || 1));
-              if (tryRound < 1) continue;
-              
-              // Check: no team conflict in this round
-              const roundTeams = [...(mdGeneratedSchedule || []), ...newMatches.filter(x => x.round > 0)]
-                .filter(m => m.round === tryRound).flatMap(m => [m.t1, m.t2]);
-              if (roundTeams.includes(nm.t1) || roundTeams.includes(nm.t2)) continue;
-              
-              // Check: late team not in adjacent rounds (no back-to-back)
-              const adjTeams = [...(mdGeneratedSchedule || []), ...newMatches.filter(x => x.round > 0)]
-                .filter(m => m.round === tryRound - 1 || m.round === tryRound + 1)
-                .flatMap(m => [m.t1, m.t2]);
-              const lateTeamAdj = adjTeams.includes(teamId);
-              
-              if (!lateTeamAdj || queueItems.length === 0) {
-                bestRound = tryRound;
-                break;
-              }
-            }
-            if (bestRound !== null) break;
+        if (qLen === 0) {
+          // No existing queue — just number them sequentially
+          const maxRound = (mdGeneratedSchedule || []).length > 0 
+            ? Math.max(...(mdGeneratedSchedule || []).map(m => m.round)) : 0;
+          newMatches.forEach((nm, i) => { nm.round = maxRound + i + 1; });
+          mdGeneratedSchedule = [...(mdGeneratedSchedule || []), ...newMatches];
+        } else {
+          // Spread evenly: insert at positions gap apart through the queue
+          const gap = Math.max(1, Math.floor((qLen + nNew) / (nNew + 1)));
+          for (let i = 0; i < nNew; i++) {
+            const insertAfterIdx = Math.min(qLen - 1, (i + 1) * gap - 1);
+            const refMatch = existingQueue[insertAfterIdx];
+            // Use a fractional round to slot between existing rounds
+            const nm = newMatches[i];
+            nm.round = refMatch.round + 0.5;
           }
           
-          // Fallback: just use the target
-          if (bestRound === null) bestRound = targetRound > 0 ? targetRound : maxRound + nmIdx + 1;
+          // Re-number all queue rounds sequentially to clean up fractionals
+          const combined = [...existingQueue, ...newMatches].sort((a, b) => a.round - b.round);
+          combined.forEach((m, i) => { m.round = i + 1; });
           
-          nm.round = bestRound;
-          lastAssignedRound = bestRound;
-        });
-        
-        mdGeneratedSchedule = [...(mdGeneratedSchedule || []), ...newMatches];
-        mdGeneratedSchedule.sort((a, b) => a.round - b.round);
+          // Update the full schedule: keep completed + renumbered queue
+          const completed = (mdGeneratedSchedule || []).filter(m => completedSids.has(m.sid));
+          mdGeneratedSchedule = [...completed, ...combined];
+        }
         
         // Queue new matches to ongoingMatches
         for (const m of newMatches) {
@@ -10466,7 +10452,8 @@
           }
           const t1Form = mdMode === 'roundrobin' || mdMode === 'draft' ? renderFormDots(m.t1) : '';
           const t2Form = mdMode === 'roundrobin' || mdMode === 'draft' ? renderFormDots(m.t2) : '';
-          return `<div class="md-queue-item card" draggable="true" data-idx="${idx}" style="padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:grab;border-radius:12px;margin:0">
+          const isBusy = (m.t1 && busyTeamIds.has(m.t1)) || (m.t2 && busyTeamIds.has(m.t2));
+          return `<div class="md-queue-item card" draggable="true" data-idx="${idx}" style="padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:grab;border-radius:12px;margin:0;${isBusy ? 'opacity:0.5;border-left:3px solid var(--clay)' : ''}">${isBusy ? '<span style="font-size:10px;color:var(--clay)" title="Team currently on court">⏳</span>' : ''}
             <div style="color:var(--text-muted);font-size:16px;cursor:grab;user-select:none;padding:0 2px">≡</div>
             <span style="background:var(--clay);color:white;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;min-width:24px;text-align:center">R${m.round}</span>
             <div style="flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
