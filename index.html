@@ -9831,6 +9831,7 @@
             <span style="font-weight:${w1?'700':'400'};color:${w1?'var(--brown-dark)':'var(--text-muted)'};flex:1">${t1?.name||'?'}</span>
             <span style="font-weight:800;color:var(--clay);font-size:15px">${score}</span>
             <span style="font-weight:${!w1?'700':'400'};color:${!w1?'var(--brown-dark)':'var(--text-muted)'};flex:1;text-align:right">${t2?.name||'?'}</span>
+            ${currentUser?.is_admin ? `<button onclick="openFinalizeMatch(${m.id});event.stopPropagation()" title="Edit" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted);padding:0;flex-shrink:0"><i class="fas fa-pen"></i></button>` : ''}
           </div>`;
         }).join('');
         
@@ -10529,11 +10530,11 @@
               <div class="md-tl-content">
                 <div class="md-tl-match"><strong>${winnerName}</strong> beat ${loserName} <strong>${wScore}-${lScore}</strong></div>
                 <div class="md-tl-meta">${timeAgo}${m.court ? ` · ${m.court}` : ''} · R${m.round||'?'}
-                  <span style="margin-left:6px">
+                  ${currentUser?.is_admin ? `<span style="margin-left:6px">
                     <button onclick="mdEditResult(${realIdx})" title="Edit" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted);padding:0"><i class="fas fa-pen"></i></button>
-                    <button onclick="mdReturnToQueue(${realIdx})" title="Undo" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--clay);padding:0"><i class="fas fa-undo"></i></button>
+                    <button onclick="mdUndoResult(${realIdx})" title="Undo" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--clay);padding:0"><i class="fas fa-undo"></i></button>
                     <button onclick="mdRemoveResult(${realIdx})" title="Remove" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--danger);padding:0"><i class="fas fa-trash"></i></button>
-                  </span>
+                  </span>` : ""}
                 </div>
               </div>
             </div>`;
@@ -10791,6 +10792,7 @@
       renderMatchDay();
     }
     function mdEditResult(idx) {
+      if (!currentUser?.is_admin) { toast('Only admins can edit results', 'error'); return; }
       const m = mdCompletedGames[idx];
       if (!m) return;
       const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
@@ -10843,6 +10845,7 @@
 
     // Remove a completed result entirely
     function mdRemoveResult(idx) {
+      if (!currentUser?.is_admin) { toast('Only admins can remove results', 'error'); return; }
       const m = mdCompletedGames[idx];
       if (!m) return;
       if (!confirm(`Delete result for ${getTeam(m.t1)?.name || '?'} vs ${getTeam(m.t2)?.name || '?'}? This cannot be undone.`)) return;
@@ -10854,7 +10857,24 @@
       }
       // Remove from schedule so it doesn't reappear in queue
       if (m.sid) mdGeneratedSchedule = (mdGeneratedSchedule || []).filter(s => s.sid !== m.sid);
+      saveLocal();
       toast('Result removed', 'info');
+      renderMDLive();
+    }
+
+    function mdUndoResult(idx) {
+      if (!currentUser?.is_admin) { toast('Only admins can undo results', 'error'); return; }
+      const m = mdCompletedGames[idx];
+      if (!m) return;
+      if (!confirm(`Undo result for ${getTeam(m.t1)?.name || '?'} vs ${getTeam(m.t2)?.name || '?'}? Match will return to queue.`)) return;
+      mdCompletedGames.splice(idx, 1);
+      // Remove the saved match from matches array and Supabase
+      if (m.match_id) {
+        matches = matches.filter(x => x.id !== m.match_id);
+        if (supabaseClient) supabaseClient.from('matches').delete().eq('id', m.match_id);
+      }
+      saveLocal();
+      toast('Result undone — match returned to queue', 'info');
       renderMDLive();
     }
 
