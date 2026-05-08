@@ -467,7 +467,7 @@
     
     /* Match Day Header */
     .matchday-header { background: var(--bg-card); border-radius: var(--radius-xl); padding: 24px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-    .matchday-header.active { border-color: var(--clay); background: linear-gradient(135deg, rgba(61,46,26,0.03) 0%, rgba(224,120,80,0.06) 100%); box-shadow: 0 8px 32px rgba(224,120,80,0.1); }
+    .matchday-header.active { border-color: var(--clay); background: linear-gradient(135deg, rgba(61,46,26,0.06) 0%, rgba(224,120,80,0.12) 100%); box-shadow: 0 8px 32px rgba(224,120,80,0.1); }
     .matchday-info { flex: 1; }
     .matchday-status { font-family: 'Sublime', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--brown-dark); }
     .matchday-status.live { color: var(--clay); display: flex; align-items: center; gap: 12px; }
@@ -1964,7 +1964,7 @@
     .matchday-header { border-radius: 20px !important; }
     .matchday-header.active { 
       border-width: 2px !important;
-      background: linear-gradient(135deg, rgba(61,46,26,0.04) 0%, rgba(224,120,80,0.07) 100%) !important;
+      background: linear-gradient(135deg, rgba(61,46,26,0.06) 0%, rgba(224,120,80,0.12) 100%) !important;
     }
     
     /* Hero sections - all use the rich brown→clay gradient */
@@ -2299,10 +2299,9 @@
       filter: blur(50px); pointer-events: none;
     }
     .matchday-header.active {
-      border-color: rgba(224,120,80,0.15) !important;
-      background: rgba(255,255,255,0.72) !important;
-      backdrop-filter: blur(20px) !important;
-      box-shadow: 0 8px 32px rgba(224,120,80,0.08) !important;
+      border-color: rgba(224,120,80,0.25) !important;
+      background: linear-gradient(135deg, rgba(68,64,60,0.06) 0%, rgba(224,120,80,0.12) 100%) !important;
+      box-shadow: 0 8px 32px rgba(224,120,80,0.1) !important;
       border-radius: 20px !important;
     }
     .matchday-header { border-radius: 20px !important; }
@@ -6163,7 +6162,8 @@
           </div>
         `;
       } else {
-        vc.style.display = 'none';
+        vc.style.display = '';
+        vc.innerHTML = `<div class="no-villain"><div class="no-villain-icon">⚔️</div><h3>No Villains Yet</h3><p>Win a match to become the Villains!</p></div>`;
       }
       
       // Matches with edit option (only editable if not viewing past)
