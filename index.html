@@ -3128,6 +3128,16 @@
         <div id="mdInfoOngoing" style="display:none;margin-bottom:16px">
           <!-- Inline Court Cards for scoring -->
           <div id="mdInfoCourtGrid" style="display:grid;gap:16px;margin-bottom:16px"></div>
+          <!-- Sitting Out + Court Management -->
+          <div id="mdInfoSittingOut" style="display:none;margin-bottom:12px">
+            <div class="md-sitting-label">🪑 Sitting out</div>
+            <div class="md-sitting-chips" id="mdInfoSittingChips"></div>
+          </div>
+          <div style="text-align:center;margin-bottom:16px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="mdAddCourt()" style="border-radius:12px;font-size:12px"><i class="fas fa-plus"></i> Add Court</button>
+            <button class="btn btn-secondary btn-sm" onclick="mdRemoveCourt()" id="mdInfoRemoveCourtBtn" style="border-radius:12px;font-size:12px;display:none"><i class="fas fa-minus"></i> Remove Court</button>
+            <button class="btn btn-secondary btn-sm" onclick="mdReallocateCourts();renderMDLive();toast('Matches redistributed','success')" style="border-radius:12px;font-size:12px"><i class="fas fa-shuffle"></i> Reallocate</button>
+          </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <h3 style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><span class="pulse-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse 1.5s infinite"></span> Queue</h3>
             <span style="font-size:12px;color:var(--text-muted)" id="mdInfoQueueCount"></span>
@@ -3424,14 +3434,14 @@
           <div id="mdCourtQueue" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
 
-        <!-- Sitting Out -->
+        <!-- Sitting Out — now in Info Hub -->
         <div class="md-sitting" id="mdSittingOut" style="display:none">
           <div class="md-sitting-label">🪑 Sitting out</div>
           <div class="md-sitting-chips" id="mdSittingChips"></div>
         </div>
 
-        <!-- Add Court Button -->
-        <div style="text-align:center;margin-bottom:24px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
+        <!-- Add Court Button — now in Info Hub -->
+        <div style="display:none">
           <button class="btn btn-secondary btn-sm" onclick="mdAddCourt()" style="border-radius:12px;font-size:12px"><i class="fas fa-plus"></i> Add Court</button>
           <button class="btn btn-secondary btn-sm" onclick="mdRemoveCourt()" id="mdRemoveCourtBtn" style="border-radius:12px;font-size:12px;display:none"><i class="fas fa-minus"></i> Remove Court</button>
           <button class="btn btn-secondary btn-sm" onclick="mdReallocateCourts();renderMDLive();toast('Matches redistributed','success')" style="border-radius:12px;font-size:12px"><i class="fas fa-shuffle"></i> Reallocate</button>
@@ -10431,6 +10441,8 @@
       // Remove court button visibility
       const removeBtn = document.getElementById('mdRemoveCourtBtn');
       if (removeBtn) removeBtn.style.display = mdCourts > 1 ? '' : 'none';
+      const infoRemoveBtn = document.getElementById('mdInfoRemoveCourtBtn');
+      if (infoRemoveBtn) infoRemoveBtn.style.display = mdCourts > 1 ? '' : 'none';
 
       // Queue: remaining scheduled matches not on court and not completed
       const completedSids = new Set(mdCompletedGames.map(m => m.sid));
@@ -10974,6 +10986,13 @@
         }
         return `<span class="md-sitting-chip"><span class="md-sitting-av">${(t?.name||'?').charAt(0)}</span>${t?.name||'?'}${waitTime ? ` <span class="md-sitting-time">${waitTime}</span>` : ''}</span>`;
       }).join('');
+      // Sync to Info Hub
+      const infoSitting = document.getElementById('mdInfoSittingOut');
+      const infoChips = document.getElementById('mdInfoSittingChips');
+      if (infoSitting && infoChips) {
+        infoSitting.style.display = container.style.display;
+        infoChips.innerHTML = chips.innerHTML;
+      }
     }
 
     // Render live standings for today
