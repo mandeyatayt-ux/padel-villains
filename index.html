@@ -2609,9 +2609,9 @@
           </div>
         </div>
         <div class="stats-grid">
-          <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon clay" id="statIconMatches"></div><span id="statTrendMatches" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statMatches">0</div><div class="stat-label">MATCHES PLAYED</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">This season</div></div>
+          <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon clay" id="statIconMatches"></div><span id="statTrendMatches" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statMatches">0</div><div class="stat-label">MATCHES TODAY</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">Match day</div></div>
+          <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon emerald" id="statIconAvailable"></div><span id="statTrendAvailable" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statAvailable">0</div><div class="stat-label">PLAYERS TODAY</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">Played today</div></div>
           <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon violet" id="statIconPlayers"></div><span id="statTrendPlayers" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statPlayers">0</div><div class="stat-label">ACTIVE PLAYERS</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">In circuit</div></div>
-          <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon emerald" id="statIconAvailable"></div><span id="statTrendAvailable" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statAvailable">0</div><div class="stat-label">PLAYING TODAY</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">Confirmed</div></div>
           <div class="stat-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px"><div class="stat-icon rose" id="statIconVenue"></div><span id="statTrendVenue" class="stat-trend" style="display:none"></span></div><div class="stat-value" id="statVenue">-</div><div class="stat-label">VENUE</div><div class="stat-sub" style="font-size:11px;color:var(--text-light);margin-top:2px">Today's location</div></div>
         </div>
         
@@ -6180,7 +6180,14 @@
       
       document.getElementById('statMatches').textContent = tm.length;
       document.getElementById('statPlayers').textContent = activePlayers().length;
-      document.getElementById('statAvailable').textContent = availablePlayers.length || '-';
+      // Count unique players who played today
+      const playedPlayerIds = new Set();
+      tm.forEach(m => {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+        if (t1) { playedPlayerIds.add(t1.player1_id); playedPlayerIds.add(t1.player2_id); }
+        if (t2) { playedPlayerIds.add(t2.player1_id); playedPlayerIds.add(t2.player2_id); }
+      });
+      document.getElementById('statAvailable').textContent = playedPlayerIds.size || '–';
       document.getElementById('statVenue').textContent = displayMatchday?.venue || '-';
       
       // Render villains card based on day rankings
