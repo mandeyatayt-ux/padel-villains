@@ -9773,33 +9773,13 @@
       // --- ONGOING QUEUE ---
       if (dayOngoing.length > 0) {
         ongoingEl.style.display = '';
-        
-        // Determine which teams are currently on court (first match per court)
-        const infoHubBusyTeams = new Set();
-        for (let c = 1; c <= mdCourts; c++) {
-          const cm = dayOngoing.find(m => m.md_round && (m.court === `Court ${c}` || m.court === c || m.court === `C${c}`));
-          if (cm) {
-            if (cm.team1_id) infoHubBusyTeams.add(cm.team1_id);
-            if (cm.team2_id) infoHubBusyTeams.add(cm.team2_id);
-          }
-        }
-        
-        // Filter queue: exclude matches currently on court
-        const onCourtPairs = new Set();
-        for (let c = 1; c <= mdCourts; c++) {
-          const cm = dayOngoing.find(m => m.md_round && (m.court === `Court ${c}` || m.court === c || m.court === `C${c}`));
-          if (cm) onCourtPairs.add(cm.id);
-        }
-        const queueOnly = dayOngoing.filter(m => !onCourtPairs.has(m.id));
-        
-        document.getElementById('mdInfoQueueCount').textContent = `${queueOnly.length} match${queueOnly.length !== 1 ? 'es' : ''}`;
-        document.getElementById('mdInfoOngoingList').innerHTML = queueOnly.map(m => {
+        document.getElementById('mdInfoQueueCount').textContent = `${dayOngoing.length} match${dayOngoing.length !== 1 ? 'es' : ''}`;
+        document.getElementById('mdInfoOngoingList').innerHTML = dayOngoing.map(m => {
           const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
           const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
           const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
           const roundBadge = m.md_round ? `<span style="background:var(--clay);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">R${m.md_round}</span>` : '';
-          const isBusy = (m.team1_id && infoHubBusyTeams.has(m.team1_id)) || (m.team2_id && infoHubBusyTeams.has(m.team2_id));
-          return `<div class="ongoing-match" onclick="openFinalizeMatch(${m.id})" style="margin-bottom:8px;${isBusy ? 'opacity:0.45;border-left:3px solid var(--clay)' : ''}">
+          return `<div class="ongoing-match" onclick="openFinalizeMatch(${m.id})" style="margin-bottom:8px">>
             <div class="ongoing-match-header">
               <div class="ongoing-match-status"><span class="live-dot"></span> ${roundBadge}</div>
               <span class="ongoing-match-court">${m.court || ''}</span>
