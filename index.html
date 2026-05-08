@@ -5691,6 +5691,7 @@
     }
     const activePlayers = () => players.filter(p => p.active !== false);
     const activeTeams = () => teams.filter(t => t.active !== false);
+    const regularTeams = () => teams.filter(t => t.active !== false && !t.is_draft);
     const getCurrentVenue = () => activeMatchday ? venues.find(v => v.name === activeMatchday.venue) : venues[0];
     
     
@@ -8319,7 +8320,7 @@
     
     // ===== TEAMS =====
     function renderTeams() {
-      const allTeamsRanked = rankTeamsByMatches();
+      const allTeamsRanked = rankTeamsByMatches().filter(t => !t.is_draft);
       const top = allTeamsRanked[0];
       const dayVillain = getDayVillains();
       
@@ -8330,8 +8331,8 @@
         document.getElementById('teamsHeroContent').innerHTML = '<p style="color:#888">No matches played yet</p>';
       }
       
-      // Show ALL teams (including inactive) with stats from match history
-      const teamsWithStats = teams.map(t => {
+      // Show ALL teams (including inactive) with stats from match history — exclude draft teams
+      const teamsWithStats = teams.filter(t => !t.is_draft).map(t => {
         const stats = getTeamStats(t.id);
         return { ...t, ...stats, rate: winRate(stats.wins, stats.losses) };
       });
@@ -9116,9 +9117,9 @@
       const query = (document.getElementById('teamPickerSearch').value || '').toLowerCase().trim();
       const activeIds = getActiveIdsForPicker();
 
-      let filtered = teams;
+      let filtered = teams.filter(t => !t.is_draft);
       if (query) {
-        filtered = teams.filter(t => {
+        filtered = filtered.filter(t => {
           const p1 = getPlayer(t.player1_id), p2 = getPlayer(t.player2_id);
           const searchStr = `${t.name} ${p1?.name||''} ${p2?.name||''}`.toLowerCase();
           return searchStr.includes(query);
@@ -9160,9 +9161,9 @@
     function teamPickerSelectAll() {
       const query = (document.getElementById('teamPickerSearch').value || '').toLowerCase().trim();
       const activeIds = getActiveIdsForPicker();
-      let toSelect = teams;
+      let toSelect = teams.filter(t => !t.is_draft);
       if (query) {
-        toSelect = teams.filter(t => {
+        toSelect = toSelect.filter(t => {
           const p1 = getPlayer(t.player1_id), p2 = getPlayer(t.player2_id);
           return `${t.name} ${p1?.name||''} ${p2?.name||''}`.toLowerCase().includes(query);
         });
@@ -9348,6 +9349,7 @@
           player1_id: dt.player1_id,
           player2_id: dt.player2_id,
           wins: 0, losses: 0, active: true,
+          is_draft: true,
           created_at: new Date().toISOString()
         };
         
