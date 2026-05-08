@@ -10335,10 +10335,32 @@
       const courtGrid = document.getElementById('mdCourtGrid');
       courtGrid.style.gridTemplateColumns = mdCourts === 1 ? '1fr' : `repeat(${mdCourts}, 1fr)`;
 
-      // Build court cards
+      // Build court cards — ensure no team plays on two courts simultaneously
       let courtHtml = '';
+      const busyTeamIds = new Set(); // teams already assigned to a court this render
+      const courtAssignments = []; // [{court, match}]
+      
+      // First pass: assign matches to courts respecting team exclusivity
       for (let c = 1; c <= mdCourts; c++) {
-        const courtMatch = ongoingMatches.find(m => m.md_round && (m.court === `Court ${c}` || m.court === c || m.court === `C${c}`));
+        const courtMatches = ongoingMatches.filter(m => m.md_round && (m.court === `Court ${c}` || m.court === c || m.court === `C${c}`));
+        let assigned = null;
+        for (const m of courtMatches) {
+          const t1 = m.team1_id || null;
+          const t2 = m.team2_id || null;
+          // Skip if either team is already on another court
+          if ((t1 && busyTeamIds.has(t1)) || (t2 && busyTeamIds.has(t2))) continue;
+          assigned = m;
+          break;
+        }
+        if (assigned) {
+          if (assigned.team1_id) busyTeamIds.add(assigned.team1_id);
+          if (assigned.team2_id) busyTeamIds.add(assigned.team2_id);
+        }
+        courtAssignments.push({ court: c, match: assigned });
+      }
+      
+      // Second pass: render court cards
+      for (const { court: c, match: courtMatch } of courtAssignments) {
         
         if (courtMatch) {
           let t1Name = '?', t2Name = '?', t1Players = '', t2Players = '', t1Color = '#888', t2Color = '#888';
@@ -10576,32 +10598,49 @@
     function mdAutoAssignCourts() {
       if (mdStep !== 'live' || mdCourts < 1) return;
       
+      // Find which teams are currently "first on court" (actively playing)
+      const teamsOnCourt = new Set();
+      for (let c = 1; c <= mdCourts; c++) {
+        const courtLabel = `Court ${c}`;
+        const cm = ongoingMatches.find(m => m.md_round && (m.court === courtLabel || m.court === c || m.court === `C${c}`));
+        if (cm) {
+          if (cm.team1_id) teamsOnCourt.add(cm.team1_id);
+          if (cm.team2_id) teamsOnCourt.add(cm.team2_id);
+        }
+      }
+      
       for (let c = 1; c <= mdCourts; c++) {
         const courtLabel = `Court ${c}`;
         const hasMatch = ongoingMatches.some(m => m.md_round && (m.court === courtLabel || m.court === c || m.court === `C${c}`));
         if (hasMatch) continue; // Court is busy
         
-        // Find the first waiting match on an overloaded court
-        // Count matches per court
+        // Find the first waiting match whose teams are NOT already on court
+        const waiting = ongoingMatches.filter(m => m.md_round && m.court !== courtLabel && m.court !== c && m.court !== `C${c}`);
+        
+        // Count matches per court to find overloaded courts
         const courtCounts = {};
         for (let cc = 1; cc <= mdCourts; cc++) {
           const label = `Court ${cc}`;
           courtCounts[label] = ongoingMatches.filter(m => m.md_round && (m.court === label || m.court === cc || m.court === `C${cc}`)).length;
         }
         
-        // Find court with most matches
-        let busiestCourt = null, busiestCount = 0;
+        // Find a match from an overloaded court where neither team is already playing
+        let moved = false;
         for (const [court, count] of Object.entries(courtCounts)) {
-          if (count > 1 && count > busiestCount) { busiestCourt = court; busiestCount = count; }
-        }
-        
-        if (busiestCourt) {
-          // Move the LAST match from the busiest court to this free court (keep the first one playing)
-          const busiestMatches = ongoingMatches.filter(m => m.md_round && (m.court === busiestCourt));
-          if (busiestMatches.length > 1) {
-            const toMove = busiestMatches[busiestMatches.length - 1];
-            toMove.court = courtLabel;
+          if (count <= 1) continue;
+          const courtQueued = ongoingMatches.filter(m => m.md_round && m.court === court);
+          // Try from the end (last queued = least urgent)
+          for (let i = courtQueued.length - 1; i >= 1; i--) {
+            const candidate = courtQueued[i];
+            const t1 = candidate.team1_id, t2 = candidate.team2_id;
+            if ((t1 && teamsOnCourt.has(t1)) || (t2 && teamsOnCourt.has(t2))) continue;
+            candidate.court = courtLabel;
+            if (t1) teamsOnCourt.add(t1);
+            if (t2) teamsOnCourt.add(t2);
+            moved = true;
+            break;
           }
+          if (moved) break;
         }
       }
     }
