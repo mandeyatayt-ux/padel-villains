@@ -4822,6 +4822,24 @@
         document.body.classList.remove('test-mode');
         if (switchEl) switchEl.classList.remove('on');
         if (labelEl) labelEl.textContent = 'OFF';
+        // Reset all match day cockpit state so test data doesn't linger
+        mdMode = 'roundrobin';
+        mdCourts = 1;
+        mdDuration = 3;
+        mdActiveTeamIds = [];
+        mdDraftPlayerIds = [];
+        mdDraftState = { drawnTeams: null, starPlayerId: null, createdTeamIds: [] };
+        mdGeneratedSchedule = null;
+        mdStep = 'setup';
+        mdCompletedGames = [];
+        mdSessionStart = null;
+        mdCurrentRound = 1;
+        mdViewTeamId = null;
+        viewingMatchday = null;
+        kotcTeamIds = [];
+        kotcState = { active: false, kingsId: null, streak: 0, challengerId: null, queue: [], scores: {}, matchLog: [], matchCount: 0 };
+        randomiserPlayerIds = [];
+        randomiserState = { active: false, schedule: null, playerStats: {}, currentRound: 1 };
         toast('Test Mode OFF — reloading live data...', 'info');
         // Reload from Supabase to discard test changes
         if (supabaseClient) fetchFromDatabase();
