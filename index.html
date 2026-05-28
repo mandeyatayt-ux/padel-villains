@@ -8652,7 +8652,7 @@
       // Update summary stats
       if (playerStats.length > 0) {
         const topByWins = [...playerStats].sort((a, b) => b.wins - a.wins)[0];
-        const topByRate = playerStats.filter(p => p.played >= 3).sort((a, b) => b.rating - a.rating)[0];
+        const topByRate = playerStats.filter(p => p.played >= MIN_RANKED_GAMES).sort((a, b) => b.rate - a.rate)[0];
         const topByGames = [...playerStats].sort((a, b) => b.played - a.played)[0];
         const topByStreak = [...playerStats].sort((a, b) => b.streak - a.streak)[0];
         
