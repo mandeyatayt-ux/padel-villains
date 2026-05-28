@@ -11040,7 +11040,7 @@
           const mins = Math.floor((Date.now() - new Date(lastMatch.completedAt).getTime()) / 60000);
           waitTime = `${mins}m`;
         }
-        return `<span class="md-sitting-chip"><span class="md-sitting-av">${(t?.name||'?').charAt(0)}</span>${t?.name||'?'}${waitTime ? ` <span class="md-sitting-time">${waitTime}</span>` : ''}</span>`;
+        return `<span class="md-sitting-chip" onclick="mdMessageSittingTeam(${id})" style="cursor:pointer" title="Tap to WhatsApp"><span class="md-sitting-av">${(t?.name||'?').charAt(0)}</span>${t?.name||'?'}${waitTime ? ` <span class="md-sitting-time">${waitTime}</span>` : ''}<i class="fab fa-whatsapp" style="margin-left:4px;color:#25D366;font-size:12px"></i></span>`;
       }).join('');
       // Sync to Info Hub
       const infoSitting = document.getElementById('mdInfoSittingOut');
@@ -11052,6 +11052,34 @@
     }
 
     // Render live standings for today
+    function mdMessageSittingTeam(teamId) {
+      const t = getTeam(teamId);
+      if (!t) return;
+      const p1 = getPlayer(t.player1_id);
+      const p2 = getPlayer(t.player2_id);
+      const playersWithPhone = [p1, p2].filter(p => p && p.phone);
+      if (playersWithPhone.length === 0) {
+        toast('No phone numbers set for this team', 'error');
+        return;
+      }
+      const venue = activeMatchday?.venue || 'the courts';
+      const msg = (name) => `Hey ${name}! 🎾 You're up next at Padel Villains — head to ${venue}! 🏃`;
+      // Message first player
+      const first = playersWithPhone[0];
+      const phone = first.phone.replace(/[^0-9]/g, '');
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg(first.name))}`, '_blank');
+      // If second player also has a phone, offer to message them too
+      if (playersWithPhone.length > 1) {
+        const second = playersWithPhone[1];
+        setTimeout(() => {
+          if (confirm(`Also message ${second.name}?`)) {
+            const phone2 = second.phone.replace(/[^0-9]/g, '');
+            window.open(`https://wa.me/${phone2}?text=${encodeURIComponent(msg(second.name))}`, '_blank');
+          }
+        }, 500);
+      }
+    }
+
     function renderMDLiveStandings() {
       const container = document.getElementById('mdLiveStandings');
       const body = document.getElementById('mdStandingsBody');
@@ -14429,7 +14457,22 @@
           break;
         case 'whatsapp':
           if (player.phone) {
-            window.open(`https://wa.me/${player.phone.replace(/[^0-9]/g, '')}`, '_blank');
+            const phone = player.phone.replace(/[^0-9]/g, '');
+            let msg = '';
+            if (activeMatchday) {
+              const mdDate = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+              const isToday = activeMatchday.date === getLocalDateStr();
+              if (isToday && mdStep === 'live') {
+                msg = `Hey ${player.name}! 🎾 You're up next at Padel Villains — get to ${activeMatchday.venue}! 🏃`;
+              } else if (isToday) {
+                msg = `Hey ${player.name}! 🎾 Padel Villains match day TODAY at ${activeMatchday.venue}, ${activeMatchday.start_time}. See you there!`;
+              } else {
+                msg = `Hey ${player.name}! 🎾 Padel Villains match day on ${mdDate} at ${activeMatchday.venue}, ${activeMatchday.start_time}–${activeMatchday.end_time}. Are you in?`;
+              }
+            } else {
+              msg = `Hey ${player.name}! 🎾`;
+            }
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
           } else {
             toast('No phone number set', 'error');
           }
