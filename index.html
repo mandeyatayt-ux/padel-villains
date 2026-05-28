@@ -5658,15 +5658,15 @@
     const winRate = (w, l) => (w + l) > 0 ? Math.round((w / (w + l)) * 100) : 0;
     
     // ===== COMPOSITE RANKING SYSTEM =====
-    // Rating = (Bayesian WR × 0.45) + (Games Played × 0.30) + (Attendance × 0.25)
+    // Rating = (Bayesian WR × 0.50) + (Games Played × 0.30) + (Attendance × 0.20)
     // Bayesian WR = (wins + K*0.5) / (games + K) — regresses small samples toward 50%
     // Games Played = your_games / max_games — rewards volume of participation
     // Each component normalized to 0–100, final rating is 0–100
     const BAYESIAN_K = 6;
     const MIN_RANKED_GAMES = 5;
-    const WEIGHT_WINRATE = 0.45;
+    const WEIGHT_WINRATE = 0.50;
     const WEIGHT_GAMES = 0.30;
-    const WEIGHT_ATTENDANCE = 0.25;
+    const WEIGHT_ATTENDANCE = 0.20;
     
     // Get closed matchday dates for attendance tracking
     function getClosedMatchdayDates() {
