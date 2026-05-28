@@ -10510,16 +10510,24 @@
           const t1Form = mdMode === 'roundrobin' || mdMode === 'draft' ? renderFormDots(m.t1) : '';
           const t2Form = mdMode === 'roundrobin' || mdMode === 'draft' ? renderFormDots(m.t2) : '';
           const isBusy = (m.t1 && busyTeamIds.has(m.t1)) || (m.t2 && busyTeamIds.has(m.t2));
-          return `<div class="md-queue-item card" draggable="true" data-idx="${idx}" style="padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:grab;border-radius:12px;margin:0;${isBusy ? 'opacity:0.5;border-left:3px solid var(--clay)' : ''}">${isBusy ? '<span style="font-size:10px;color:var(--clay)" title="Team currently on court">⏳</span>' : ''}
-            <div style="color:var(--text-muted);font-size:16px;cursor:grab;user-select:none;padding:0 2px">≡</div>
-            <span style="background:var(--clay);color:white;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;min-width:24px;text-align:center">R${m.round}</span>
-            <div style="flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <span style="display:inline-flex;align-items:center;gap:4px"><span style="font-weight:600;font-size:13px">${t1Name}</span>${t1Form}</span>
-              <span style="color:var(--text-muted);font-size:10px">vs</span>
-              <span style="display:inline-flex;align-items:center;gap:4px"><span style="font-weight:600;font-size:13px">${t2Name}</span>${t2Form}</span>
+          const t1Recent = (mdMode === 'roundrobin' || mdMode === 'draft') ? mdGetRecentOpponents(m.t1) : [];
+          const t2Recent = (mdMode === 'roundrobin' || mdMode === 'draft') ? mdGetRecentOpponents(m.t2) : [];
+          const t1RecentHtml = t1Recent.length ? `<div style="font-size:9px;color:var(--text-muted);margin-top:1px">Last: ${t1Recent.map(o => '<span style="color:' + (o.won ? 'var(--emerald)' : 'var(--danger)') + '">' + o.name + '</span>').join(', ')}</div>` : '';
+          const t2RecentHtml = t2Recent.length ? `<div style="font-size:9px;color:var(--text-muted);margin-top:1px">Last: ${t2Recent.map(o => '<span style="color:' + (o.won ? 'var(--emerald)' : 'var(--danger)') + '">' + o.name + '</span>').join(', ')}</div>` : '';
+          const hasFreeCourt = (() => { for (let c = 1; c <= mdCourts; c++) { if (!ongoingMatches.some(om => om.md_round && (om.court === 'Court ' + c || om.court === c || om.court === 'C' + c))) return true; } return false; })();
+          return `<div class="md-queue-item card" draggable="true" data-idx="${idx}" style="padding:10px 12px;display:flex;align-items:flex-start;gap:10px;cursor:grab;border-radius:12px;margin:0;${isBusy ? 'opacity:0.5;border-left:3px solid var(--clay)' : ''}">
+            ${!isBusy && hasFreeCourt ? '<button onclick="mdSendToCourt(' + idx + ');event.stopPropagation()" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--emerald);color:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0" title="Send to Court"><i class="fas fa-play"></i></button>' : '<div style="color:var(--text-muted);font-size:16px;cursor:grab;user-select:none;padding:0 2px">≡</div>'}
+            <span style="background:var(--clay);color:white;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;min-width:24px;text-align:center;flex-shrink:0;margin-top:4px">R${m.round}</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <span style="display:inline-flex;align-items:center;gap:4px"><span style="font-weight:600;font-size:13px">${t1Name}</span>${t1Form}</span>
+                <span style="color:var(--text-muted);font-size:10px">vs</span>
+                <span style="display:inline-flex;align-items:center;gap:4px"><span style="font-weight:600;font-size:13px">${t2Name}</span>${t2Form}</span>
+              </div>
+              ${t1RecentHtml || t2RecentHtml ? '<div style="display:flex;gap:16px;flex-wrap:wrap">' + t1RecentHtml + t2RecentHtml + '</div>' : ''}
             </div>
-            <span style="font-size:11px;color:var(--text-muted)">C${m.court}</span>
-            <button class="md-queue-cancel" onclick="mdCancelQueueMatch(${idx});event.stopPropagation()" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--danger);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" title="Remove"><i class="fas fa-trash"></i></button>
+            <span style="font-size:11px;color:var(--text-muted);flex-shrink:0;margin-top:4px">C${m.court}</span>
+            <button class="md-queue-cancel" onclick="mdCancelQueueMatch(${idx});event.stopPropagation()" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--danger);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0" title="Remove"><i class="fas fa-trash"></i></button>
           </div>`;
         }).join('');
         
@@ -10748,6 +10756,66 @@
       }
     }
 
+    // Get last N opponents for a team from today's completed games
+    function mdGetRecentOpponents(teamId, n = 3) {
+      return mdCompletedGames
+        .filter(m => m.t1 === teamId || m.t2 === teamId)
+        .slice(-n)
+        .map(m => {
+          const oppId = m.t1 === teamId ? m.t2 : m.t1;
+          const won = (m.t1 === teamId && m.score1 > m.score2) || (m.t2 === teamId && m.score2 > m.score1);
+          return { name: getTeam(oppId)?.name || '?', won };
+        });
+    }
+
+    // Send a queued match to the next free court
+    async function mdSendToCourt(queueIdx) {
+      if (!mdGeneratedSchedule) return;
+      const completedSids = new Set(mdCompletedGames.map(m => m.sid));
+      const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`));
+      const queueMatches = mdGeneratedSchedule.filter(m => {
+        if (completedSids.has(m.sid)) return false;
+        const key = `${m.round}-${m.t1 || ''}-${m.t2 || ''}`;
+        const keyAlt = `${m.round}-${m.t2 || ''}-${m.t1 || ''}`;
+        return !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
+      });
+      const match = queueMatches[queueIdx];
+      if (!match) return;
+      // Check if either team is already on court
+      const teamsOnCourt = new Set();
+      ongoingMatches.filter(m => m.md_round).forEach(m => {
+        if (m.team1_id) teamsOnCourt.add(m.team1_id);
+        if (m.team2_id) teamsOnCourt.add(m.team2_id);
+      });
+      if ((match.t1 && teamsOnCourt.has(match.t1)) || (match.t2 && teamsOnCourt.has(match.t2))) {
+        toast('One of these teams is already on court', 'error');
+        return;
+      }
+      // Find a free court
+      let freeCourt = null;
+      for (let c = 1; c <= mdCourts; c++) {
+        const label = `Court ${c}`;
+        const busy = ongoingMatches.some(m => m.md_round && (m.court === label || m.court === c || m.court === `C${c}`));
+        if (!busy) { freeCourt = c; break; }
+      }
+      if (!freeCourt) { toast('All courts are busy', 'error'); return; }
+      const matchData = {
+        id: generateNumericId(), match_uid: generateMatchUID(),
+        date: activeMatchday?.date || getLocalDateStr(),
+        location: activeMatchday?.venue || '',
+        court: 'Court ' + freeCourt,
+        team1_id: match.t1, team2_id: match.t2,
+        status: 'ongoing', started_at: new Date().toISOString(),
+        md_round: match.round, device_id: PV_DEVICE_ID
+      };
+      const result = await queueMatchToSupabase(matchData);
+      ongoingMatches.unshift(result.data || matchData);
+      saveLocal();
+      renderMDLive();
+      renderOngoingMatches();
+      toast(`${getTeam(match.t1)?.name} vs ${getTeam(match.t2)?.name} → Court ${freeCourt}`, 'success');
+    }
+
     // Drag and drop for queue
     function mdSetupQueueDrag() {
       const queue = document.getElementById('mdCourtQueue');
@@ -10842,12 +10910,11 @@
       if (m.match_id) {
         const savedMatch = matches.find(x => x.id === m.match_id);
         if (savedMatch) {
-          savedMatch.score1 = s1;
-          savedMatch.score2 = s2;
+          savedMatch.scores = [[s1, s2]];
           savedMatch.winner_id = s1 > s2 ? m.t1 : m.t2;
           // Push to Supabase
           if (supabaseClient) {
-            supabaseClient.from('matches').update({ score1: s1, score2: s2, winner_id: savedMatch.winner_id }).eq('id', m.match_id);
+            supabaseClient.from('matches').update({ scores: [[s1, s2]], winner_id: savedMatch.winner_id }).eq('id', m.match_id);
           }
         }
       }
@@ -10981,7 +11048,11 @@
     }
 
     // Inline score finalize (no modal)
+    let _mdSaving = false;
     async function mdInlineFinalize(matchId) {
+      if (_mdSaving) return;
+      _mdSaving = true;
+      try {
       const s1El = document.getElementById(`inlineScore1_${matchId}`);
       const s2El = document.getElementById(`inlineScore2_${matchId}`);
       if (!s1El || !s2El) return;
@@ -11015,6 +11086,7 @@
       }
       renderAll();
       toast(`${getTeam(m.team1_id)?.name || '?'} ${scoreA}-${scoreB} ${getTeam(m.team2_id)?.name || '?'} ✓`, 'success');
+      } finally { _mdSaving = false; }
     }
 
     // Render who's sitting out
