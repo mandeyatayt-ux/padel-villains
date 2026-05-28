@@ -5658,11 +5658,15 @@
     const winRate = (w, l) => (w + l) > 0 ? Math.round((w / (w + l)) * 100) : 0;
     
     // ===== COMPOSITE RANKING SYSTEM =====
-    // Rating = (Win% × 0.5) + (Wins score × 0.3) + (Attendance × 0.2)
+    // Rating = (Bayesian WR × 0.45) + (Games Played × 0.30) + (Attendance × 0.25)
+    // Bayesian WR = (wins + K*0.5) / (games + K) — regresses small samples toward 50%
+    // Games Played = your_games / max_games — rewards volume of participation
     // Each component normalized to 0–100, final rating is 0–100
-    const WEIGHT_WINRATE = 0.5;
-    const WEIGHT_WINS = 0.3;
-    const WEIGHT_ATTENDANCE = 0.2;
+    const BAYESIAN_K = 6;
+    const MIN_RANKED_GAMES = 5;
+    const WEIGHT_WINRATE = 0.45;
+    const WEIGHT_GAMES = 0.30;
+    const WEIGHT_ATTENDANCE = 0.25;
     
     // Get closed matchday dates for attendance tracking
     function getClosedMatchdayDates() {
@@ -5695,25 +5699,25 @@
     }
     
     // Compute composite rating for a player (all-time)
-    function computePlayerRating(wins, games, playerId, maxWinsInLeague) {
-      if (games === 0) return { rating: 0, wrScore: 0, winScore: 0, attScore: 0 };
-      const wrScore = Math.round((wins / games) * 100);
-      const winScore = maxWinsInLeague > 0 ? Math.round((wins / maxWinsInLeague) * 100) : 0;
+    function computePlayerRating(wins, games, playerId, maxGamesInLeague) {
+      if (games === 0) return { rating: 0, wrScore: 0, gpScore: 0, attScore: 0 };
+      const wrScore = Math.round((wins + BAYESIAN_K * 0.5) / (games + BAYESIAN_K) * 100);
+      const gpScore = maxGamesInLeague > 0 ? Math.round((games / maxGamesInLeague) * 100) : 0;
       const att = getPlayerAttendance(playerId);
       const attScore = att.pct;
-      const rating = Math.round(wrScore * WEIGHT_WINRATE + winScore * WEIGHT_WINS + attScore * WEIGHT_ATTENDANCE);
-      return { rating, wrScore, winScore, attScore, daysAttended: att.attended, totalDays: att.total };
+      const rating = Math.round(wrScore * WEIGHT_WINRATE + gpScore * WEIGHT_GAMES + attScore * WEIGHT_ATTENDANCE);
+      return { rating, wrScore, gpScore, attScore, daysAttended: att.attended, totalDays: att.total, qualified: games >= MIN_RANKED_GAMES };
     }
     
     // Compute composite rating for a team (all-time)
-    function computeTeamRating(wins, totalMatches, teamId, maxWinsInLeague) {
-      if (totalMatches === 0) return { rating: 0, wrScore: 0, winScore: 0, attScore: 0 };
-      const wrScore = Math.round((wins / totalMatches) * 100);
-      const winScore = maxWinsInLeague > 0 ? Math.round((wins / maxWinsInLeague) * 100) : 0;
+    function computeTeamRating(wins, totalMatches, teamId, maxGamesInLeague) {
+      if (totalMatches === 0) return { rating: 0, wrScore: 0, gpScore: 0, attScore: 0 };
+      const wrScore = Math.round((wins + BAYESIAN_K * 0.5) / (totalMatches + BAYESIAN_K) * 100);
+      const gpScore = maxGamesInLeague > 0 ? Math.round((totalMatches / maxGamesInLeague) * 100) : 0;
       const att = getTeamAttendance(teamId);
       const attScore = att.pct;
-      const rating = Math.round(wrScore * WEIGHT_WINRATE + winScore * WEIGHT_WINS + attScore * WEIGHT_ATTENDANCE);
-      return { rating, wrScore, winScore, attScore, daysAttended: att.attended, totalDays: att.total };
+      const rating = Math.round(wrScore * WEIGHT_WINRATE + gpScore * WEIGHT_GAMES + attScore * WEIGHT_ATTENDANCE);
+      return { rating, wrScore, gpScore, attScore, daysAttended: att.attended, totalDays: att.total, qualified: totalMatches >= MIN_RANKED_GAMES };
     }
     
     // Simple rating for single-day views (just win rate, no attendance)
@@ -5763,15 +5767,15 @@
         return { ...t, ...stats, rate: winRate(stats.wins, stats.losses) };
       }).filter(t => t.matches > 0 || !filterDate);
       
-      // Find max wins for normalization
-      const maxWins = Math.max(1, ...allTeamStats.map(t => t.wins));
+      // Find max games for normalization
+      const maxGames = Math.max(1, ...allTeamStats.map(t => t.matches));
       
       return allTeamStats.map(t => {
         if (filterDate) {
           // Single-day: just win rate
           return { ...t, rating: simpleDayRating(t.wins, t.matches) };
         }
-        const comp = computeTeamRating(t.wins, t.matches, t.id, maxWins);
+        const comp = computeTeamRating(t.wins, t.matches, t.id, maxGames);
         return { ...t, ...comp };
       }).sort((a, b) => {
         if (filterDate) {
@@ -5780,7 +5784,9 @@
           if (b.rating !== a.rating) return b.rating - a.rating;
           return a.losses - b.losses;
         }
-        // Overall rankings: rating first, then wins
+        // Overall rankings: qualified first, then by rating
+        if (a.qualified !== false && b.qualified === false) return -1;
+        if (a.qualified === false && b.qualified !== false) return 1;
         if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
@@ -5794,13 +5800,13 @@
         return { ...p, ...stats, rate: winRate(stats.wins, stats.losses) };
       }).filter(p => p.games > 0 || !filterDate);
       
-      const maxWins = Math.max(1, ...allPlayerStats.map(p => p.wins));
+      const maxGames = Math.max(1, ...allPlayerStats.map(p => p.games));
       
       return allPlayerStats.map(p => {
         if (filterDate) {
           return { ...p, rating: simpleDayRating(p.wins, p.games) };
         }
-        const comp = computePlayerRating(p.wins, p.games, p.id, maxWins);
+        const comp = computePlayerRating(p.wins, p.games, p.id, maxGames);
         return { ...p, ...comp };
       }).sort((a, b) => {
         if (a.active !== false && b.active === false) return -1;
@@ -5811,7 +5817,9 @@
           if (b.rating !== a.rating) return b.rating - a.rating;
           return a.losses - b.losses;
         }
-        // Overall rankings: rating first, then wins
+        // Overall rankings: qualified first, then by rating
+        if (a.qualified !== false && b.qualified === false) return -1;
+        if (a.qualified === false && b.qualified !== false) return 1;
         if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
@@ -8801,7 +8809,7 @@
       // Calculate rates, ratings, and streaks
       const totalClosedDays = matchdays.filter(md => md.status === 'closed').length;
       const statsArr = Object.values(stats);
-      const maxWins = Math.max(1, ...statsArr.map(s => s.wins));
+      const maxGames = Math.max(1, ...statsArr.map(s => s.played));
       
       statsArr.forEach(s => {
         s.rate = s.played > 0 ? Math.round((s.wins / s.played) * 100) : 0;
@@ -8814,10 +8822,10 @@
         if (filterDate || filterMonth) {
           s.rating = simpleDayRating(s.wins, s.played);
           s.wrScore = s.rate;
-          s.winScore = 0;
+          s.gpScore = 0;
           s.attScore = 0;
         } else {
-          const comp = computePlayerRating(s.wins, s.played, s.id, maxWins);
+          const comp = computePlayerRating(s.wins, s.played, s.id, maxGames);
           Object.assign(s, comp);
         }
         
@@ -16176,8 +16184,8 @@
       const stats = getPlayerStats(p.id);
       const att = getPlayerAttendance(p.id);
       const allStats = players.map(pl => getPlayerStats(pl.id));
-      const maxWins = Math.max(1, ...allStats.map(s => s.wins));
-      const comp = computePlayerRating(stats.wins, stats.games, p.id, maxWins);
+      const maxGames = Math.max(1, ...allStats.map(s => s.games));
+      const comp = computePlayerRating(stats.wins, stats.games, p.id, maxGames);
       
       // Calculate additional stats
       const playerTeams = teams.filter(t => t.player1_id === p.id || t.player2_id === p.id);
@@ -16201,7 +16209,7 @@
       
       // Stat bars
       const winPct = stats.games > 0 ? Math.round((stats.wins / stats.games) * 100) : 0;
-      const winVolume = Math.round((stats.wins / maxWins) * 100);
+      const winVolume = Math.round((stats.games / maxGames) * 100);
       const attPct = att.pct;
       const clutch = Math.min(100, bestStreak.count * 20);
       
@@ -16554,9 +16562,9 @@
       const att1 = getPlayerAttendance(id1);
       const att2 = getPlayerAttendance(id2);
       const allStats = players.map(pl => getPlayerStats(pl.id));
-      const maxWins = Math.max(1, ...allStats.map(s => s.wins));
-      const r1 = computePlayerRating(s1.wins, s1.games, id1, maxWins);
-      const r2 = computePlayerRating(s2.wins, s2.games, id2, maxWins);
+      const maxGames = Math.max(1, ...allStats.map(s => s.games));
+      const r1 = computePlayerRating(s1.wins, s1.games, id1, maxGames);
+      const r2 = computePlayerRating(s2.wins, s2.games, id2, maxGames);
       
       const wr1 = s1.games > 0 ? Math.round((s1.wins / s1.games) * 100) : 0;
       const wr2 = s2.games > 0 ? Math.round((s2.wins / s2.games) * 100) : 0;
