@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Padel Villains — Merch | THE CIRCUIT</title>
+<meta name="description" content="Official Padel Villains merch. Wear the villain. Harare's padel circuit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --clay: #E07850; --clay-dark: #C4623D; --clay-light: #F5A882;
+  --clay-wash: #FFF5F0;
+  --cream: #FAF8F5; --cream-dark: #EDE8E1;
+  --bg-card: #FFFFFF; --bg-warm: #FDF6ED;
+  --brown-dark: #44403C; --brown-medium: #78716C; --brown-light: #A8A29E;
+  --text: #1C1917; --text-muted: #78716C; --white: #FFF;
+  --divider: #F3EEE8; --border: #EDE8E1; --border-hover: #DDD6CC;
+  --success: #16A34A; --danger: #DC2626; --gold: #D97706;
+  --shadow-sm: 0 1px 3px rgba(28,25,23,0.04);
+  --shadow-md: 0 4px 16px rgba(28,25,23,0.06);
+  --shadow-lg: 0 12px 40px rgba(28,25,23,0.08);
+  --radius-sm: 10px; --radius-md: 14px; --radius-lg: 20px; --radius-xl: 28px;
+  --display: 'Montserrat', sans-serif;
+  --body: 'DM Sans', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--body);
+  background: var(--cream);
+  color: var(--text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Header ---------- */
+header {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(250,248,245,0.88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav {
+  max-width: 1120px; margin: 0 auto; padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--display); font-weight: 800; font-size: 15px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--text);
+  text-decoration: none;
+}
+.nav-badge {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--clay);
+  display: grid; place-items: center;
+  color: var(--white); font-family: var(--display); font-weight: 900; font-size: 15px;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.35), var(--shadow-sm);
+  flex-shrink: 0;
+}
+.nav-brand span em { font-style: normal; color: var(--clay); }
+.nav-links { display: flex; align-items: center; gap: 8px; }
+.nav-link {
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  text-decoration: none; padding: 8px 14px; border-radius: var(--radius-sm);
+  transition: color .18s, background .18s;
+}
+.nav-link:hover { color: var(--clay-dark); background: var(--clay-wash); }
+.nav-cta {
+  font-size: 13px; font-weight: 700; color: var(--white);
+  background: var(--text); text-decoration: none;
+  padding: 9px 18px; border-radius: 999px;
+  transition: background .18s, transform .18s;
+}
+.nav-cta:hover { background: var(--clay-dark); transform: translateY(-1px); }
+
+/* ---------- Hero ---------- */
+.hero {
+  max-width: 1120px; margin: 0 auto;
+  padding: 72px 24px 56px;
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 40px;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--clay-dark);
+  background: var(--clay-wash); border: 1px solid #F0D8CC;
+  padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+}
+.hero-eyebrow::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--clay);
+}
+.hero h1 {
+  font-family: var(--display); font-weight: 900;
+  font-size: clamp(44px, 7vw, 84px);
+  line-height: 0.98; letter-spacing: -0.01em; text-transform: uppercase;
+}
+.hero h1 .clay { color: var(--clay); display: block; }
+.hero p {
+  margin-top: 20px; max-width: 480px;
+  font-size: 17px; color: var(--text-muted); font-weight: 400;
+}
+.hero-actions { margin-top: 32px; display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-primary {
+  font-family: var(--display); font-weight: 800; font-size: 14px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--white); background: var(--clay);
+  padding: 15px 30px; border-radius: 999px; text-decoration: none;
+  box-shadow: var(--shadow-md);
+  transition: background .18s, transform .18s, box-shadow .18s;
+}
+.btn-primary:hover { background: var(--clay-dark); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.btn-ghost {
+  font-family: var(--display); font-weight: 700; font-size: 14px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text); background: transparent;
+  border: 1.5px solid var(--border-hover);
+  padding: 14px 26px; border-radius: 999px; text-decoration: none;
+  transition: border-color .18s, color .18s;
+}
+.btn-ghost:hover { border-color: var(--clay); color: var(--clay-dark); }
+
+/* Signature: rotating circuit ring, echoing the badge geometry */
+.ring-wrap { position: relative; width: 240px; height: 240px; display: grid; place-items: center; }
+.ring-wrap svg { position: absolute; inset: 0; animation: spin 28s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ring-wrap svg { animation: none; }
+  * { transition: none !important; }
+}
+.ring-core {
+  width: 132px; height: 132px; border-radius: 50%;
+  background: var(--clay);
+  display: grid; place-items: center;
+  color: var(--white); font-family: var(--display); font-weight: 900;
+  font-size: 40px; letter-spacing: 0.02em;
+  box-shadow: inset 0 0 0 6px rgba(255,255,255,0.3), var(--shadow-lg);
+}
+.ring-text { font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: 4.5px; fill: var(--brown-dark); text-transform: uppercase; }
+
+/* ---------- Marquee strip ---------- */
+.strip {
+  background: var(--text); color: var(--cream);
+  overflow: hidden; padding: 12px 0;
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.strip-track {
+  display: flex; gap: 48px; white-space: nowrap;
+  font-family: var(--display); font-weight: 700; font-size: 13px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  animation: marquee 26s linear infinite;
+  width: max-content;
+}
+.strip-track span { opacity: 0.9; }
+.strip-track .dot { color: var(--clay-light); }
+@keyframes marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .strip-track { animation: none; } }
+
+/* ---------- Shop grid ---------- */
+.shop {
+  max-width: 1120px; margin: 0 auto; padding: 64px 24px 32px;
+}
+.shop-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 16px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.shop-head h2 {
+  font-family: var(--display); font-weight: 900; font-size: clamp(26px, 4vw, 38px);
+  text-transform: uppercase; letter-spacing: 0.01em;
+}
+.shop-head h2 em { font-style: normal; color: var(--clay); }
+.shop-sub { font-size: 14px; color: var(--text-muted); }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0 30px; }
+.chip {
+  font-family: var(--body); font-size: 13px; font-weight: 600;
+  color: var(--text-muted); background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 8px 16px; cursor: pointer;
+  transition: all .16s;
+}
+.chip:hover { border-color: var(--clay-light); color: var(--clay-dark); }
+.chip.active { background: var(--text); color: var(--cream); border-color: var(--text); }
+
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 22px;
+}
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+  display: flex; flex-direction: column;
+}
+.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--border-hover); }
+.card-img {
+  aspect-ratio: 1; background: var(--bg-warm);
+  display: grid; place-items: center; position: relative; overflow: hidden;
+}
+.card-img img { width: 100%; height: 100%; object-fit: cover; }
+.card-img .ph {
+  font-family: var(--display); font-weight: 900; font-size: 15px;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--clay-light);
+  text-align: center; padding: 0 20px;
+}
+.card-tag {
+  position: absolute; top: 12px; left: 12px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--text); color: var(--cream);
+  padding: 5px 11px; border-radius: 999px;
+}
+.card-tag.gold { background: var(--gold); }
+.card-body { padding: 18px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.card-name { font-family: var(--display); font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: 0.03em; }
+.card-desc { font-size: 13px; color: var(--text-muted); flex: 1; }
+.card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+.card-price { font-family: var(--display); font-weight: 800; font-size: 17px; color: var(--clay-dark); }
+.card-btn {
+  font-family: var(--display); font-weight: 800; font-size: 12px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--white); background: var(--clay);
+  padding: 10px 18px; border-radius: 999px; text-decoration: none;
+  transition: background .16s;
+}
+.card-btn:hover { background: var(--clay-dark); }
+.card.soon .card-btn { background: var(--cream-dark); color: var(--brown-medium); pointer-events: none; }
+
+.empty {
+  text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 15px;
+  grid-column: 1 / -1;
+}
+
+/* ---------- How it works ---------- */
+.how {
+  max-width: 1120px; margin: 0 auto; padding: 40px 24px 72px;
+}
+.how-inner {
+  background: var(--bg-warm); border: 1px solid var(--border);
+  border-radius: var(--radius-xl); padding: 40px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;
+}
+.how-item h3 {
+  font-family: var(--display); font-weight: 800; font-size: 14px;
+  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;
+  color: var(--clay-dark);
+}
+.how-item p { font-size: 14px; color: var(--text-muted); }
+
+/* ---------- Footer ---------- */
+footer {
+  border-top: 1px solid var(--border); background: var(--cream);
+}
+.foot {
+  max-width: 1120px; margin: 0 auto; padding: 36px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.foot-brand { font-family: var(--display); font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; }
+.foot-brand em { font-style: normal; color: var(--clay); }
+.foot-links { display: flex; gap: 20px; }
+.foot-links a { font-size: 13px; color: var(--text-muted); text-decoration: none; font-weight: 500; }
+.foot-links a:hover { color: var(--clay-dark); }
+.foot-note { width: 100%; font-size: 12px; color: var(--brown-light); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 820px) {
+  .hero { grid-template-columns: 1fr; padding-top: 48px; }
+  .ring-wrap { display: none; }
+  .how-inner { grid-template-columns: 1fr; padding: 28px; gap: 24px; }
+  .nav-links .nav-link { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="nav">
+    <a class="nav-brand" href="#top">
+      <span class="nav-badge">PV</span>
+      <span>Padel <em>Villains</em></span>
+    </a>
+    <div class="nav-links">
+      <a class="nav-link" href="#shop">Shop</a>
+      <a class="nav-link" href="#how">How it works</a>
+      <a class="nav-cta" href="https://padel-villains.vercel.app" target="_blank" rel="noopener">The App</a>
+    </div>
+  </nav>
+</header>
+
+<section class="hero" id="top">
+  <div>
+    <span class="hero-eyebrow">Official circuit merch</span>
+    <h1>Wear the<span class="clay">Villain.</span></h1>
+    <p>Official Padel Villains gear, printed on demand and shipped to your door. Rep the circuit on court, off court, and everywhere in between.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="#shop">Gear up</a>
+      <a class="btn-ghost" href="https://padel-villains.vercel.app" target="_blank" rel="noopener">See the circuit</a>
+    </div>
+  </div>
+  <div class="ring-wrap" aria-hidden="true">
+    <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <path id="circlePath" d="M 120,120 m -96,0 a 96,96 0 1,1 192,0 a 96,96 0 1,1 -192,0"/>
+      </defs>
+      <text class="ring-text">
+        <textPath href="#circlePath">PADEL VILLAINS &#183; THE CIRCUIT &#183; HARARE &#183; </textPath>
+      </text>
+    </svg>
+    <div class="ring-core">PV</div>
+  </div>
+</section>
+
+<div class="strip" aria-hidden="true">
+  <div class="strip-track" id="stripTrack"></div>
+</div>
+
+<main class="shop" id="shop">
+  <div class="shop-head">
+    <h2>The <em>Drop</em></h2>
+    <span class="shop-sub">Printed on demand &middot; fulfilled by Printful &middot; checkout on Shopify</span>
+  </div>
+  <div class="filters" id="filters"></div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<section class="how" id="how">
+  <div class="how-inner">
+    <div class="how-item">
+      <h3>01 &mdash; Pick your gear</h3>
+      <p>Every piece carries the official badge. Tap any item and you'll land on our secure Shopify store to choose your size and colour.</p>
+    </div>
+    <div class="how-item">
+      <h3>02 &mdash; Printed to order</h3>
+      <p>Nothing sits in a warehouse. Your order is printed when you place it, which keeps the drop fresh and waste at zero.</p>
+    </div>
+    <div class="how-item">
+      <h3>03 &mdash; Shipped to you</h3>
+      <p>Printful produces and ships worldwide. Track everything from your Shopify order confirmation.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot">
+    <span class="foot-brand">Padel <em>Villains</em> &middot; The Circuit</span>
+    <div class="foot-links">
+      <a href="https://padel-villains.vercel.app" target="_blank" rel="noopener">The App</a>
+      <a href="#" id="storeLink" target="_blank" rel="noopener">Full Store</a>
+    </div>
+    <span class="foot-note">&copy; <span id="year"></span> Padel Villains &mdash; Harare Padel Circuit. Good vibes only.</span>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   SHOP CONFIG — the only thing you need to edit.
+   1. Set storeUrl to your Shopify storefront root.
+   2. For each product: paste the Shopify product URL and the
+      Printful mockup image URL (right-click > copy image address
+      from your Shopify admin or Printful mockups).
+   3. image: null shows a branded placeholder tile until you
+      have the real mockup.
+   ============================================================ */
+const SHOP_CONFIG = {
+  storeUrl: "https://padel-villains-2.myshopify.com", // <-- replace
+  currency: "$",
+  products: [
+    {
+      name: "Circuit Tee",
+      desc: "Heavyweight cotton tee, full-colour badge front and centre.",
+      price: "28.00",
+      tag: "Apparel",
+      badge: null,             // e.g. "New" or "Best seller" (gold pill)
+      image: null,             // Printful mockup URL
+      url: "https://padel-villains-2.myshopify.com/products/circuit-tee",
+      available: true
+    },
+    {
+      name: "Villain Hoodie",
+      desc: "Mid-weight fleece hoodie for cold-morning match days.",
+      price: "52.00",
+      tag: "Apparel",
+      badge: "Best seller",
+      image: null,
+      url: "https://padel-villains-2.myshopify.com/products/villain-hoodie",
+      available: true
+    },
+    {
+      name: "Court Cap",
+      desc: "Embroidered one-ink badge, curved brim, adjustable strap.",
+      price: "24.00",
+      tag: "Headwear",
+      badge: null,
+      image: null,
+      url: "https://padel-villains-2.myshopify.com/products/court-cap",
+      available: true
+    },
+    {
+      name: "Circuit Bottle",
+      desc: "Stainless bottle. Hydrate between showdowns.",
+      price: "22.00",
+      tag: "Gear",
+      badge: null,
+      image: null,
+      url: "https://padel-villains-2.myshopify.com/products/circuit-bottle",
+      available: true
+    },
+    {
+      name: "Match Day Towel",
+      desc: "Court-side towel with the wordmark. Sweat happens.",
+      price: "18.00",
+      tag: "Gear",
+      badge: null,
+      image: null,
+      url: "https://padel-villains-2.myshopify.com/products/match-day-towel",
+      available: true
+    },
+    {
+      name: "Villain Socks",
+      desc: "Crew socks. Small flex, big energy.",
+      price: "14.00",
+      tag: "Apparel",
+      badge: "New",
+      image: null,
+      url: "https://padel-villains-2.myshopify.com/products/villain-socks",
+      available: false        // shows "Soon" until listed
+    }
+  ]
+};
+
+/* ============================================================
+   Render — no edits needed below this line.
+   ============================================================ */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+const grid = document.getElementById("grid");
+const filtersEl = document.getElementById("filters");
+let activeFilter = "All";
+
+function tags() {
+  return ["All", ...new Set(SHOP_CONFIG.products.map(p => p.tag))];
+}
+
+function renderFilters() {
+  filtersEl.innerHTML = tags().map(t =>
+    `<button class="chip${t === activeFilter ? " active" : ""}" data-tag="${esc(t)}">${esc(t)}</button>`
+  ).join("");
+}
+
+function renderGrid() {
+  const items = SHOP_CONFIG.products.filter(
+    p => activeFilter === "All" || p.tag === activeFilter
+  );
+  if (!items.length) {
+    grid.innerHTML = `<div class="empty">Nothing here yet &mdash; the drop is coming. Check back soon.</div>`;
+    return;
+  }
+  grid.innerHTML = items.map(p => `
+    <article class="card${p.available ? "" : " soon"}">
+      <div class="card-img">
+        ${p.image
+          ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`
+          : `<span class="ph">${esc(p.name)}<br>&mdash; mockup coming &mdash;</span>`}
+        ${p.badge ? `<span class="card-tag gold">${esc(p.badge)}</span>`
+                  : `<span class="card-tag">${esc(p.tag)}</span>`}
+      </div>
+      <div class="card-body">
+        <div class="card-name">${esc(p.name)}</div>
+        <div class="card-desc">${esc(p.desc)}</div>
+        <div class="card-foot">
+          <span class="card-price">${esc(SHOP_CONFIG.currency)}${esc(p.price)}</span>
+          ${p.available
+            ? `<a class="card-btn" href="${esc(p.url)}" target="_blank" rel="noopener">Get it</a>`
+            : `<span class="card-btn">Soon</span>`}
+        </div>
+      </div>
+    </article>
+  `).join("");
+}
+
+filtersEl.addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  activeFilter = chip.dataset.tag;
+  renderFilters();
+  renderGrid();
+});
+
+// Marquee strip content (duplicated for seamless loop)
+const stripWords = `<span>The Circuit</span><span class="dot">&#9679;</span><span>Good Vibes Only</span><span class="dot">&#9679;</span><span>Game Time</span><span class="dot">&#9679;</span><span>Harare Padel</span><span class="dot">&#9679;</span><span>Wear the Villain</span><span class="dot">&#9679;</span>`;
+document.getElementById("stripTrack").innerHTML = stripWords.repeat(4);
+
+document.getElementById("storeLink").href = SHOP_CONFIG.storeUrl;
+document.getElementById("year").textContent = new Date().getFullYear();
+
+renderFilters();
+renderGrid();
+</script>
+</body>
+</html>
