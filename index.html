@@ -9042,6 +9042,9 @@
     // Courts excluded from auto-fill (e.g. saved for a final, or resting)
     let mdHeldCourts = new Set(JSON.parse(localStorage.getItem('pv_mdHeldCourts') || '[]'));
     function mdSaveHeldCourts() { localStorage.setItem('pv_mdHeldCourts', JSON.stringify([...mdHeldCourts])); }
+    // Up Next queue: collapsed by default, shows a preview + the UP NEXT match
+    let mdQueueExpanded = false;
+    function mdToggleQueueExpand() { mdQueueExpanded = !mdQueueExpanded; renderMdInfoHub(); }
     async function mdToggleHold(c) {
       if (mdHeldCourts.has(c)) {
         mdHeldCourts.delete(c);
@@ -9863,14 +9866,25 @@
           }
           return false;
         })();
-        let nextTagged = false;
+        // Determine busy state per entry once, so we can find UP NEXT before rendering
+        const entryBusy = pendingQueue.map(m => {
+          if (mdMode === 'randomiser') return (m.team1 || []).concat(m.team2 || []).some(p => qBusyPlayers.has(p));
+          return (m.t1 && qBusyTeams.has(m.t1)) || (m.t2 && qBusyTeams.has(m.t2));
+        });
+        const upNextIdx = entryBusy.findIndex(b => !b);
+        // Collapsed: first 3 by position, plus the UP NEXT match if it sits deeper
+        const COLLAPSED_COUNT = 3;
+        let visibleIdx = null; // null = show all
+        if (!mdQueueExpanded && pendingQueue.length > COLLAPSED_COUNT) {
+          visibleIdx = new Set([0, 1, 2].slice(0, pendingQueue.length));
+          if (upNextIdx > -1) visibleIdx.add(upNextIdx);
+        }
         document.getElementById('mdInfoOngoingList').innerHTML = pendingQueue.map((m, idx) => {
+          if (visibleIdx && !visibleIdx.has(idx)) return '';
           let t1Name = '?', t2Name = '?', t1Av = '', t2Av = '';
-          let isBusy;
           if (mdMode === 'randomiser') {
             t1Name = (m.team1 || []).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
             t2Name = (m.team2 || []).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
-            isBusy = (m.team1 || []).concat(m.team2 || []).some(p => qBusyPlayers.has(p));
           } else {
             const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
             const tp1 = getTeamPlayers(t1), tp2 = getTeamPlayers(t2);
@@ -9878,10 +9892,9 @@
             t2Name = t2?.name || '?';
             t1Av = `${av(tp1.p1,'sm')}${av(tp1.p2,'sm')}`;
             t2Av = `${av(tp2.p1,'sm')}${av(tp2.p2,'sm')}`;
-            isBusy = (m.t1 && qBusyTeams.has(m.t1)) || (m.t2 && qBusyTeams.has(m.t2));
           }
-          const isNext = !isBusy && !nextTagged;
-          if (isNext) nextTagged = true;
+          const isBusy = entryBusy[idx];
+          const isNext = idx === upNextIdx;
           const posBadge = isNext
             ? '<span style="background:var(--emerald);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:0.5px">UP NEXT</span>'
             : `<span style="background:var(--cream-dark);color:var(--text-muted);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">#${idx + 1}</span>`;
@@ -9907,7 +9920,9 @@
               </div>
             </div>
           </div>`;
-        }).join('');
+        }).join('') + (pendingQueue.length > COLLAPSED_COUNT
+          ? `<button onclick="mdToggleQueueExpand()" style="width:100%;padding:10px;border:1.5px dashed var(--cream-dark);border-radius:12px;background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">${mdQueueExpanded ? '<i class="fas fa-chevron-up"></i> Show less' : `<i class="fas fa-chevron-down"></i> Show all ${pendingQueue.length} matches`}</button>`
+          : '');
       } else {
         ongoingEl.style.display = 'none';
       }
