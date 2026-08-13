@@ -9921,12 +9921,33 @@
           return (m.t1 && qBusyTeams.has(m.t1)) || (m.t2 && qBusyTeams.has(m.t2));
         });
         const upNextIdx = entryBusy.findIndex(b => !b);
-        // Collapsed: first 3 by position, plus the UP NEXT match if it sits deeper
+        // When nothing is playable right now (all queued teams busy), predict
+        // what auto-fill will pull when each court finishes: free that court's
+        // teams and find the first entry that becomes eligible.
+        const predictedByIdx = {}; // idx -> [court numbers]
+        if (upNextIdx === -1) {
+          for (let c = 1; c <= mdCourts; c++) {
+            const cm = ongoingMatches.find(m => m.md_round && (m.court === 'Court ' + c || m.court === c || m.court === 'C' + c));
+            if (!cm) continue;
+            const freedTeams = new Set(qBusyTeams);
+            const freedPlayers = new Set(qBusyPlayers);
+            if (cm.team1_id) freedTeams.delete(cm.team1_id);
+            if (cm.team2_id) freedTeams.delete(cm.team2_id);
+            (cm.team1_players || []).concat(cm.team2_players || []).forEach(p => freedPlayers.delete(p));
+            const pIdx = pendingQueue.findIndex(m => {
+              if (mdMode === 'randomiser') return !(m.team1 || []).concat(m.team2 || []).some(p => freedPlayers.has(p));
+              return !((m.t1 && freedTeams.has(m.t1)) || (m.t2 && freedTeams.has(m.t2)));
+            });
+            if (pIdx > -1) (predictedByIdx[pIdx] = predictedByIdx[pIdx] || []).push(c);
+          }
+        }
+        // Collapsed: first 3 by position, plus UP NEXT / predicted-next entries
         const COLLAPSED_COUNT = 3;
         let visibleIdx = null; // null = show all
         if (!mdQueueExpanded && pendingQueue.length > COLLAPSED_COUNT) {
           visibleIdx = new Set([0, 1, 2].slice(0, pendingQueue.length));
           if (upNextIdx > -1) visibleIdx.add(upNextIdx);
+          Object.keys(predictedByIdx).forEach(i => visibleIdx.add(parseInt(i)));
         }
         document.getElementById('mdInfoOngoingList').innerHTML = pendingQueue.map((m, idx) => {
           if (visibleIdx && !visibleIdx.has(idx)) return '';
@@ -9944,15 +9965,18 @@
           }
           const isBusy = entryBusy[idx];
           const isNext = idx === upNextIdx;
+          const predCourts = predictedByIdx[idx];
           const posBadge = isNext
             ? '<span style="background:var(--emerald);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:0.5px">UP NEXT</span>'
-            : `<span style="background:var(--cream-dark);color:var(--text-muted);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">#${idx + 1}</span>`;
+            : predCourts
+              ? `<span style="background:var(--gold);color:var(--brown-dark);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:0.5px">NEXT · ${predCourts.map(c => 'COURT ' + c).join(' / ')}</span>`
+              : `<span style="background:var(--cream-dark);color:var(--text-muted);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">#${idx + 1}</span>`;
           const roundBadge = `<span style="background:var(--clay);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">R${m.round}</span>`;
-          const busyTag = isBusy ? '<span style="font-size:10px;color:var(--clay);font-weight:600">team on court</span>' : '';
+          const busyTag = (isBusy && !predCourts) ? '<span style="font-size:10px;color:var(--clay);font-weight:600">team on court</span>' : '';
           const playBtn = (!isBusy && freeUnheldCourt && currentUser?.is_admin)
             ? `<button onclick="mdSendToCourt(${idx});event.stopPropagation()" title="Send to court" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--emerald);color:white;font-size:11px;cursor:pointer;padding:0;flex-shrink:0"><i class="fas fa-play"></i></button>`
             : '';
-          return `<div class="ongoing-match" style="margin-bottom:8px${isBusy ? ';opacity:0.55' : ''}${isNext ? ';border:1.5px solid var(--emerald)' : ''}">
+          return `<div class="ongoing-match" style="margin-bottom:8px${isBusy && !predCourts ? ';opacity:0.55' : ''}${isNext ? ';border:1.5px solid var(--emerald)' : ''}${predCourts ? ';border:1.5px solid var(--gold)' : ''}">
             <div class="ongoing-match-header">
               <div class="ongoing-match-status" style="display:flex;align-items:center;gap:6px">${posBadge} ${roundBadge} ${busyTag}</div>
               ${playBtn}
