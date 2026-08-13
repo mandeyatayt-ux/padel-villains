@@ -2399,6 +2399,11 @@
       /* Match Day Info Hub mobile */
       #mdInfoResults > div { grid-template-columns: 1fr !important; }
       #mdInfoHub .ongoing-match { padding: 12px !important; }
+      #mdCockpit { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+      #mdCockpitCourts { display: grid; gap: 12px; }
+      @media (max-width: 820px) { #mdCockpit { grid-template-columns: 1fr; } }
+      .md-cc-input { width: 100%; height: 44px; border: 1.5px solid var(--cream-dark); background: var(--bg-warm); border-radius: 10px; text-align: center; font-size: 22px; font-weight: 700; font-family: inherit; color: var(--text); }
+      .md-cc-input:focus { outline: none; border-color: var(--clay); }
       .nav { 
         position: static !important; width: auto !important;
         flex-direction: row !important; border-right: none !important;
@@ -3124,24 +3129,26 @@
         <!-- Action toolbar — Queue, Add Result, Share Today -->
         <div id="mdActionToolbar" style="display:none;margin-bottom:16px;flex-wrap:wrap;gap:8px"></div>
         
-        <!-- Ongoing Matches on Match Day page -->
+        <!-- Live Cockpit: courts (left) + queue rail (right); stacks on narrow screens -->
         <div id="mdInfoOngoing" style="display:none;margin-bottom:16px">
-          <!-- Inline Court Cards for scoring -->
-          <div id="mdInfoCourtGrid" style="display:grid;gap:16px;margin-bottom:16px"></div>
-          <!-- Sitting Out + Court Management -->
-          <div id="mdInfoSittingOut" style="display:none;margin-bottom:12px">
-            <div class="md-sitting-label">🪑 Sitting out</div>
-            <div class="md-sitting-chips" id="mdInfoSittingChips"></div>
+          <div id="mdCockpit">
+            <div id="mdCockpitCourts"></div>
+            <div id="mdCockpitRail">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <h3 style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--brown-dark);display:flex;align-items:center;gap:6px"><i class="fas fa-list-ol" style="color:var(--clay);font-size:12px"></i> Up Next</h3>
+                <span style="font-size:11px;color:var(--text-muted)" id="mdInfoQueueCount"></span>
+              </div>
+              <div id="mdInfoOngoingList"></div>
+              <div id="mdRailSitting" style="display:none;margin-top:12px">
+                <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px">🪑 Sitting out</div>
+                <div class="md-sitting-chips" id="mdRailSittingChips"></div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+                <button class="btn btn-secondary btn-sm" onclick="mdAddCourt()" style="border-radius:10px;font-size:11px;padding:6px 10px"><i class="fas fa-plus"></i> Court</button>
+                <button class="btn btn-secondary btn-sm" onclick="mdRemoveCourt()" id="mdInfoRemoveCourtBtn" style="border-radius:10px;font-size:11px;padding:6px 10px;display:none"><i class="fas fa-minus"></i> Court</button>
+              </div>
+            </div>
           </div>
-          <div style="text-align:center;margin-bottom:16px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-secondary btn-sm" onclick="mdAddCourt()" style="border-radius:12px;font-size:12px"><i class="fas fa-plus"></i> Add Court</button>
-            <button class="btn btn-secondary btn-sm" onclick="mdRemoveCourt()" id="mdInfoRemoveCourtBtn" style="border-radius:12px;font-size:12px;display:none"><i class="fas fa-minus"></i> Remove Court</button>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <h3 style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-list-ol" style="color:var(--clay);font-size:13px"></i> Up Next</h3>
-            <span style="font-size:12px;color:var(--text-muted)" id="mdInfoQueueCount"></span>
-          </div>
-          <div id="mdInfoOngoingList"></div>
         </div>
         
         <!-- Results + Rankings row -->
@@ -9056,6 +9063,8 @@
     // Up Next queue: collapsed by default, shows a preview + the UP NEXT match
     let mdQueueExpanded = false;
     function mdToggleQueueExpand() { mdQueueExpanded = !mdQueueExpanded; renderMdInfoHub(); }
+    // Refresh elapsed-time displays once a minute during a live session
+    setInterval(() => { if (mdStep === 'live') { try { renderMDLive(); } catch (e) {} } }, 60000);
     async function mdToggleHold(c) {
       if (mdHeldCourts.has(c)) {
         mdHeldCourts.delete(c);
@@ -9951,17 +9960,13 @@
         }
         document.getElementById('mdInfoOngoingList').innerHTML = pendingQueue.map((m, idx) => {
           if (visibleIdx && !visibleIdx.has(idx)) return '';
-          let t1Name = '?', t2Name = '?', t1Av = '', t2Av = '';
+          let t1Name = '?', t2Name = '?';
           if (mdMode === 'randomiser') {
             t1Name = (m.team1 || []).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
             t2Name = (m.team2 || []).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
           } else {
-            const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
-            const tp1 = getTeamPlayers(t1), tp2 = getTeamPlayers(t2);
-            t1Name = t1?.name || '?';
-            t2Name = t2?.name || '?';
-            t1Av = `${av(tp1.p1,'sm')}${av(tp1.p2,'sm')}`;
-            t2Av = `${av(tp2.p1,'sm')}${av(tp2.p2,'sm')}`;
+            t1Name = getTeam(m.t1)?.name || '?';
+            t2Name = getTeam(m.t2)?.name || '?';
           }
           const isBusy = entryBusy[idx];
           const isNext = idx === upNextIdx;
@@ -9976,22 +9981,10 @@
           const playBtn = (!isBusy && freeUnheldCourt && currentUser?.is_admin)
             ? `<button onclick="mdSendToCourt(${idx});event.stopPropagation()" title="Send to court" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--emerald);color:white;font-size:11px;cursor:pointer;padding:0;flex-shrink:0"><i class="fas fa-play"></i></button>`
             : '';
-          return `<div class="ongoing-match" style="margin-bottom:8px${isBusy && !predCourts ? ';opacity:0.55' : ''}${isNext ? ';border:1.5px solid var(--emerald)' : ''}${predCourts ? ';border:1.5px solid var(--gold)' : ''}">
-            <div class="ongoing-match-header">
-              <div class="ongoing-match-status" style="display:flex;align-items:center;gap:6px">${posBadge} ${roundBadge} ${busyTag}</div>
-              ${playBtn}
-            </div>
-            <div class="ongoing-match-teams">
-              <div class="ongoing-match-team">
-                <div class="ongoing-match-team-avatars">${t1Av}</div>
-                <span class="ongoing-match-team-name">${esc(t1Name)}</span>
-              </div>
-              <span class="ongoing-match-vs">VS</span>
-              <div class="ongoing-match-team">
-                <span class="ongoing-match-team-name">${esc(t2Name)}</span>
-                <div class="ongoing-match-team-avatars">${t2Av}</div>
-              </div>
-            </div>
+          return `<div style="background:var(--bg-card);border:1px solid ${isNext ? 'var(--emerald)' : predCourts ? 'var(--gold)' : 'var(--border)'};border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:6px${isBusy && !predCourts ? ';opacity:0.55' : ''}">
+            ${posBadge}${roundBadge}
+            <span style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t1Name)} <span style="color:var(--clay);font-weight:400;font-size:11px">v</span> ${esc(t2Name)}</span>
+            ${busyTag}${playBtn}
           </div>`;
         }).join('') + (pendingQueue.length > COLLAPSED_COUNT
           ? `<button onclick="mdToggleQueueExpand()" style="width:100%;padding:10px;border:1.5px dashed var(--cream-dark);border-radius:12px;background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">${mdQueueExpanded ? '<i class="fas fa-chevron-up"></i> Show less' : `<i class="fas fa-chevron-down"></i> Show all ${pendingQueue.length} matches`}</button>`
@@ -10567,47 +10560,29 @@
             t2Color = getPlayerColor(t2?.player1_id);
           }
           const roundBadge = courtMatch.md_round ? `R${courtMatch.md_round}` : '';
-          
-          courtHtml += `<div class="card" style="border-radius:16px;overflow:hidden;padding:0">
-            <div style="background:var(--brown-dark);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
-              <span style="color:var(--cream);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
+          const elapsedMins = courtMatch.started_at ? Math.max(0, Math.floor((Date.now() - new Date(courtMatch.started_at).getTime()) / 60000)) : null;
+          const heldOcc = mdHeldCourts.has(c);
+          courtHtml += `<div class="card" style="border-radius:14px;overflow:hidden;padding:0">
+            <div style="background:var(--brown-dark);padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
+              <span style="color:var(--cream);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
               <div style="display:flex;align-items:center;gap:8px">
-                <span style="background:var(--clay);color:white;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700">${roundBadge}</span>
-                <span style="background:#059669;color:white;font-size:10px;padding:2px 10px;border-radius:99px;font-weight:600">In play</span>
-                <button onclick="mdToggleHold(${c})" title="${mdHeldCourts.has(c) ? 'Held: will not auto-fill after this game' : 'Hold court after this game'}" style="background:${mdHeldCourts.has(c) ? 'var(--gold)' : 'rgba(255,255,255,0.15)'};border:none;color:${mdHeldCourts.has(c) ? 'var(--brown-dark)' : 'var(--cream)'};width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:11px;padding:0"><i class="fas fa-thumbtack"></i></button>
+                <span style="color:var(--clay-light);font-size:11px;font-weight:600">${roundBadge}${elapsedMins !== null ? ` · ${elapsedMins}m` : ''}</span>
+                <button onclick="mdToggleHold(${c})" title="${heldOcc ? 'Held: will not auto-fill after this game' : 'Hold court after this game'}" style="background:${heldOcc ? 'var(--gold)' : 'rgba(255,255,255,0.15)'};border:none;color:${heldOcc ? 'var(--brown-dark)' : 'var(--cream)'};width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;padding:0"><i class="fas fa-thumbtack"></i></button>
               </div>
             </div>
-            <div style="padding:16px">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px">
-                <div style="flex:1;text-align:left">
-                  <div class="avatar" style="width:36px;height:36px;background:${t1Color};margin-bottom:6px">${t1Name.charAt(0)}</div>
-                  <div style="font-weight:700;font-size:14px">${t1Name} ${courtMatch.team1_id ? renderFormDots(courtMatch.team1_id) : ''}</div>
-                  ${t1Players ? `<div style="font-size:11px;color:var(--text-muted)">${t1Players}</div>` : ''}
-                </div>
-                <div style="font-family:'SaltyAges',serif;font-size:18px;color:var(--clay);flex-shrink:0;padding:0 8px">VS</div>
-                <div style="flex:1;text-align:right">
-                  <div class="avatar" style="width:36px;height:36px;background:${t2Color};margin-bottom:6px;margin-left:auto">${t2Name.charAt(0)}</div>
-                  <div style="font-weight:700;font-size:14px">${courtMatch.team2_id ? renderFormDots(courtMatch.team2_id) : ''} ${t2Name}</div>
-                  ${t2Players ? `<div style="font-size:11px;color:var(--text-muted)">${t2Players}</div>` : ''}
-                </div>
+            <div style="padding:12px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px">
+                <span style="font-size:15px;font-weight:700;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t1Name)}</span>
+                <span style="font-family:'SaltyAges',serif;font-size:13px;color:var(--clay);flex-shrink:0">vs</span>
+                <span style="font-size:15px;font-weight:700;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right">${esc(t2Name)}</span>
               </div>
-              ${courtMatch.team1_id && courtMatch.team2_id ? (() => {
-                const h2h = getTeamH2H(courtMatch.team1_id, courtMatch.team2_id);
-                const total = h2h.t1Wins + h2h.t2Wins;
-                if (total > 0) {
-                  const pct1 = Math.round(h2h.t1Wins / total * 100);
-                  return `<div class="md-h2h-bar"><div class="md-h2h-fill" style="flex:${h2h.t1Wins || 1};background:var(--clay)"></div><div class="md-h2h-fill" style="flex:${h2h.t2Wins || 1};background:var(--brown-dark)"></div></div>
-                  <div class="md-h2h-labels"><span>${t1Name} ${h2h.t1Wins}W (${pct1}%)</span><span>${t2Name} ${h2h.t2Wins}W (${100-pct1}%)</span></div>`;
-                }
-                return '';
-              })() : ''}
-              <div class="md-inline-score">
-                <input class="md-score-input" type="number" min="0" max="99" id="inlineScore1_${courtMatch.id}" placeholder="0" inputmode="numeric">
-                <span class="md-score-dash">–</span>
-                <input class="md-score-input" type="number" min="0" max="99" id="inlineScore2_${courtMatch.id}" placeholder="0" inputmode="numeric">
-                <button class="md-score-save" onclick="mdInlineFinalize(${courtMatch.id})">SAVE</button>
-                <button class="btn btn-secondary" style="width:40px;height:40px;border-radius:12px;color:var(--gold);font-size:14px;flex-shrink:0;padding:0" onclick="mdReturnToQueue(${courtMatch.id})" title="Return to Queue"><i class="fas fa-rotate-left"></i></button>
-                <button class="btn btn-secondary" style="width:40px;height:40px;border-radius:12px;color:var(--danger);font-size:14px;flex-shrink:0;padding:0" onclick="mdCancelCourtMatch(${courtMatch.id})" title="Cancel Match"><i class="fas fa-trash"></i></button>
+              ${t1Players || t2Players ? `<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:10px"><span style="font-size:11px;color:var(--text-muted)">${t1Players}</span><span style="font-size:11px;color:var(--text-muted);text-align:right">${t2Players}</span></div>` : '<div style="margin-bottom:10px"></div>'}
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="md-cc-input" type="number" min="0" max="99" id="inlineScore1_${courtMatch.id}" placeholder="0" inputmode="numeric" style="flex:1">
+                <input class="md-cc-input" type="number" min="0" max="99" id="inlineScore2_${courtMatch.id}" placeholder="0" inputmode="numeric" style="flex:1">
+                <button class="md-score-save" onclick="mdInlineFinalize(${courtMatch.id})" style="height:44px">SAVE</button>
+                <button class="btn btn-secondary" style="width:36px;height:44px;border-radius:10px;color:var(--gold);font-size:13px;flex-shrink:0;padding:0" onclick="mdReturnToQueue(${courtMatch.id})" title="Return to Queue"><i class="fas fa-rotate-left"></i></button>
+                <button class="btn btn-secondary" style="width:36px;height:44px;border-radius:10px;color:var(--danger);font-size:13px;flex-shrink:0;padding:0" onclick="mdCancelCourtMatch(${courtMatch.id})" title="Cancel Match"><i class="fas fa-trash"></i></button>
               </div>
             </div>
           </div>`;
@@ -10648,13 +10623,8 @@
           </div>`;
         }
       }
-      courtGrid.innerHTML = courtHtml;
-      // Sync court cards to Info Hub view
-      const infoCourtGrid = document.getElementById('mdInfoCourtGrid');
-      if (infoCourtGrid) {
-        infoCourtGrid.innerHTML = courtHtml;
-        infoCourtGrid.style.gridTemplateColumns = `repeat(${Math.min(mdCourts, 3)}, 1fr)`;
-      }
+      const cockpitCourts = document.getElementById('mdCockpitCourts');
+      if (cockpitCourts) cockpitCourts.innerHTML = courtHtml;
 
       // Remove court button visibility
       const removeBtn = document.getElementById('mdRemoveCourtBtn');
@@ -11266,12 +11236,12 @@
         }
         return `<span class="md-sitting-chip" onclick="mdMessageSittingTeam(${id})" style="cursor:pointer" title="Tap to WhatsApp"><span class="md-sitting-av">${(t?.name||'?').charAt(0)}</span>${t?.name||'?'}${waitTime ? ` <span class="md-sitting-time">${waitTime}</span>` : ''}<i class="fab fa-whatsapp" style="margin-left:4px;color:#25D366;font-size:12px"></i></span>`;
       }).join('');
-      // Sync to Info Hub
-      const infoSitting = document.getElementById('mdInfoSittingOut');
-      const infoChips = document.getElementById('mdInfoSittingChips');
-      if (infoSitting && infoChips) {
-        infoSitting.style.display = container.style.display;
-        infoChips.innerHTML = chips.innerHTML;
+      // Sync to the cockpit rail
+      const railSitting = document.getElementById('mdRailSitting');
+      const railChips = document.getElementById('mdRailSittingChips');
+      if (railSitting && railChips) {
+        railSitting.style.display = container.style.display;
+        railChips.innerHTML = chips.innerHTML;
       }
     }
 
