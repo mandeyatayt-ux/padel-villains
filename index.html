@@ -4846,6 +4846,7 @@
         mdCompletedGames = [];
         mdSessionStart = null;
         mdCurrentRound = 1;
+        mdClearSession();
         mdViewTeamId = null;
         viewingMatchday = null;
         kotcTeamIds = [];
@@ -5613,6 +5614,7 @@
         ongoingMatches = JSON.parse(localStorage.getItem('pv_ongoing') || '[]');
         matchdays = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
         determineActiveMatchday();
+        mdRestoreSession();
         
         // Initialize auth after data is loaded
         setTimeout(() => initializeAuth(), 100);
@@ -5634,6 +5636,7 @@
         localStorage.setItem('pv_venues', JSON.stringify(venues));
         localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
         localStorage.setItem('pv_matchdays', JSON.stringify(matchdays));
+        mdSaveSession();
       } catch (e) {
         console.warn('localStorage quota exceeded, clearing old data');
         clearLocalStorage();
@@ -8147,6 +8150,14 @@
         }
         ongoingMatches = ongoingMatches.filter(m => m.date !== activeMatchday.date);
         
+        // End the live session — clear queue engine state
+        mdStep = 'setup';
+        mdGeneratedSchedule = null;
+        mdCompletedGames = [];
+        mdSessionStart = null;
+        mdCurrentRound = 1;
+        mdClearSession();
+        
         determineActiveMatchday();
         closeModal('confirm');
         renderAll();
@@ -9067,6 +9078,43 @@
     let mdCompletedGames = [];
     let mdSessionStart = null;
     let mdCurrentRound = 1;
+
+    // ===== MATCH DAY SESSION PERSISTENCE =====
+    // The new queue engine keeps pending matches in mdGeneratedSchedule
+    // (memory), so the whole session must survive reloads.
+    function mdSaveSession() {
+      try {
+        if (mdStep === 'live' || mdStep === 'preview') {
+          localStorage.setItem('pv_mdSession', JSON.stringify({
+            step: mdStep, mode: mdMode, courts: mdCourts,
+            schedule: mdGeneratedSchedule, completed: mdCompletedGames,
+            activeTeamIds: mdActiveTeamIds, sessionStart: mdSessionStart,
+            currentRound: mdCurrentRound
+          }));
+        } else {
+          localStorage.removeItem('pv_mdSession');
+        }
+      } catch (e) { console.warn('mdSaveSession failed:', e); }
+    }
+    function mdClearSession() { localStorage.removeItem('pv_mdSession'); }
+    function mdRestoreSession() {
+      try {
+        const raw = localStorage.getItem('pv_mdSession');
+        if (!raw) return false;
+        const s = JSON.parse(raw);
+        if (!s || !s.step || !s.schedule) return false;
+        mdStep = s.step;
+        mdMode = s.mode || 'roundrobin';
+        mdCourts = s.courts || 1;
+        mdGeneratedSchedule = s.schedule;
+        mdCompletedGames = s.completed || [];
+        mdActiveTeamIds = s.activeTeamIds || [];
+        mdSessionStart = s.sessionStart || Date.now();
+        mdCurrentRound = s.currentRound || 1;
+        console.log('Match day session restored:', mdStep, mdGeneratedSchedule?.length, 'scheduled');
+        return true;
+      } catch (e) { console.warn('mdRestoreSession failed:', e); return false; }
+    }
     let mdViewTeamId = null;
 
     // Draft Mode team name pools (mix-and-match)
@@ -9656,6 +9704,7 @@
       // NEW ENGINE: only fill the courts. Everything else stays in the
       // schedule queue and flows onto courts as games finish.
       await mdAutoFill();
+      mdSaveSession();
       renderMatchDay();
       toast(`Match Day started! ${mdGeneratedSchedule.length} matches in the queue 🎮`, 'success');
     }
