@@ -9040,6 +9040,22 @@
     // ===== MATCH DAY =====
     let mdMode = 'roundrobin'; // roundrobin | draft | kotc | randomiser
     let mdCourts = 1;
+    // Courts excluded from auto-fill (e.g. saved for a final, or resting)
+    let mdHeldCourts = new Set(JSON.parse(localStorage.getItem('pv_mdHeldCourts') || '[]'));
+    function mdSaveHeldCourts() { localStorage.setItem('pv_mdHeldCourts', JSON.stringify([...mdHeldCourts])); }
+    async function mdToggleHold(c) {
+      if (mdHeldCourts.has(c)) {
+        mdHeldCourts.delete(c);
+        mdSaveHeldCourts();
+        toast(`Court ${c} released — auto-fill on`, 'success');
+        await mdAutoFill();
+      } else {
+        mdHeldCourts.add(c);
+        mdSaveHeldCourts();
+        toast(`Court ${c} on hold — won't auto-fill`, 'info');
+      }
+      renderMatchDay();
+    }
     let mdDuration = 3;
     let mdActiveTeamIds = [];
     let mdDraftPlayerIds = [];
@@ -9635,13 +9651,11 @@
       mdStep = 'live';
       mdSessionStart = Date.now();
       mdCurrentRound = 1;
-      // Queue ALL matches into the ongoing matches system at once
-      const allRounds = [...new Set(mdGeneratedSchedule.map(m => m.round))].sort((a,b) => a-b);
-      for (const r of allRounds) {
-        await mdQueueRoundMatches(r);
-      }
+      // NEW ENGINE: only fill the courts. Everything else stays in the
+      // schedule queue and flows onto courts as games finish.
+      await mdAutoFill();
       renderMatchDay();
-      toast(`Match Day started! ${mdGeneratedSchedule.length} matches queued 🎮`, 'success');
+      toast(`Match Day started! ${mdGeneratedSchedule.length} matches in the queue 🎮`, 'success');
     }
 
     async function mdQueueRoundMatches(roundNum) {
@@ -10435,6 +10449,7 @@
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="background:var(--clay);color:white;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700">${roundBadge}</span>
                 <span style="background:#059669;color:white;font-size:10px;padding:2px 10px;border-radius:99px;font-weight:600">In play</span>
+                <button onclick="mdToggleHold(${c})" title="${mdHeldCourts.has(c) ? 'Held: will not auto-fill after this game' : 'Hold court after this game'}" style="background:${mdHeldCourts.has(c) ? 'var(--gold)' : 'rgba(255,255,255,0.15)'};border:none;color:${mdHeldCourts.has(c) ? 'var(--brown-dark)' : 'var(--cream)'};width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:11px;padding:0"><i class="fas fa-thumbtack"></i></button>
               </div>
             </div>
             <div style="padding:16px">
@@ -10472,12 +10487,16 @@
             </div>
           </div>`;
         } else {
-          courtHtml += `<div class="card" style="border-radius:16px;overflow:hidden;padding:0">
+          const held = mdHeldCourts.has(c);
+          courtHtml += `<div class="card" style="border-radius:16px;overflow:hidden;padding:0${held ? ';opacity:0.85' : ''}">
             <div style="background:var(--brown-dark);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
               <span style="color:var(--cream);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
-              <span style="font-size:10px;padding:2px 10px;border-radius:99px;color:var(--text-muted);background:rgba(255,255,255,0.1)">Idle</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:10px;padding:2px 10px;border-radius:99px;font-weight:600;${held ? 'color:var(--brown-dark);background:var(--gold)' : 'color:var(--text-muted);background:rgba(255,255,255,0.1)'}">${held ? 'ON HOLD' : 'Idle'}</span>
+                <button onclick="mdToggleHold(${c})" title="${held ? 'Release court to auto-fill' : 'Hold court (no auto-fill)'}" style="background:${held ? 'var(--gold)' : 'rgba(255,255,255,0.15)'};border:none;color:${held ? 'var(--brown-dark)' : 'var(--cream)'};width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:11px;padding:0"><i class="fas fa-thumbtack"></i></button>
+              </div>
             </div>
-            <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Waiting for next match</div>
+            <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">${held ? 'Held — tap the pin to release' : 'Waiting for next match'}</div>
           </div>`;
         }
       }
@@ -10629,126 +10648,144 @@
       renderMDLive();
     }
 
-    // Redistribute all queued (not currently first-on-court) matches evenly across courts
+    // NEW ENGINE: courts are assigned at fill time, so there is nothing to
+    // reallocate. Kept as a thin auto-fill trigger for the Add Court flow.
     function mdReallocateCourts() {
-      if (!mdGeneratedSchedule || mdCourts < 1) return;
-      const completedSids = new Set(mdCompletedGames.map(m => m.sid));
-      
-      // Find which matches are currently "on court" (first match per court in ongoingMatches)
-      const onCourtIds = new Set();
-      for (let c = 1; c <= mdCourts; c++) {
-        const courtMatch = ongoingMatches.find(m => m.md_round && (m.court === `Court ${c}` || m.court === c || m.court === `C${c}`));
-        if (courtMatch) onCourtIds.add(courtMatch.id);
-      }
-
-      // Get waiting matches (in ongoingMatches but not currently on court)
-      const waiting = ongoingMatches.filter(m => m.md_round && !onCourtIds.has(m.id));
-      
-      // Redistribute waiting matches across courts round-robin
-      waiting.forEach((m, i) => {
-        const newCourt = `Court ${(i % mdCourts) + 1}`;
-        m.court = newCourt;
-      });
-      
-      // Also update schedule for any future reference
-      let courtIdx = 0;
-      mdGeneratedSchedule.forEach(m => {
-        if (!completedSids.has(m.sid)) {
-          m.court = (courtIdx % mdCourts) + 1;
-          courtIdx++;
-        }
-      });
+      mdAutoFill().then(() => renderMatchDay());
     }
 
     // Auto-assign: when a court becomes free, pull the next waiting match onto it
-    function mdAutoAssignCourts() {
-      if (mdStep !== 'live' || mdCourts < 1) return;
-      
-      // Find which teams are currently "first on court" (actively playing)
-      const teamsOnCourt = new Set();
+    // NEW QUEUE ENGINE: fill every free, un-held court with the first
+    // eligible match from the schedule queue. A match is eligible when it
+    // isn't completed, isn't already on a court, and none of its teams
+    // (or players, in randomiser mode) are currently playing.
+    async function mdAutoFill() {
+      if (mdStep !== 'live' || !mdGeneratedSchedule || mdCourts < 1) return;
+      const completedSids = new Set(mdCompletedGames.map(m => m.sid));
+
+      // Who is on court right now?
+      const busyTeams = new Set();
+      const busyPlayers = new Set();
+      const onCourtKeys = new Set();
+      ongoingMatches.filter(m => m.md_round).forEach(m => {
+        if (m.team1_id) busyTeams.add(m.team1_id);
+        if (m.team2_id) busyTeams.add(m.team2_id);
+        (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(p));
+        onCourtKeys.add(`${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`);
+      });
+
+      const isEligible = (s) => {
+        if (completedSids.has(s.sid)) return false;
+        const key = `${s.round}-${s.t1 || ''}-${s.t2 || ''}`;
+        const keyAlt = `${s.round}-${s.t2 || ''}-${s.t1 || ''}`;
+        if (onCourtKeys.has(key) || onCourtKeys.has(keyAlt)) return false;
+        if (mdMode === 'randomiser') {
+          return !(s.team1 || []).concat(s.team2 || []).some(p => busyPlayers.has(p));
+        }
+        if (s.t1 && busyTeams.has(s.t1)) return false;
+        if (s.t2 && busyTeams.has(s.t2)) return false;
+        return true;
+      };
+
       for (let c = 1; c <= mdCourts; c++) {
-        const courtLabel = `Court ${c}`;
-        const cm = ongoingMatches.find(m => m.md_round && (m.court === courtLabel || m.court === c || m.court === `C${c}`));
-        if (cm) {
-          if (cm.team1_id) teamsOnCourt.add(cm.team1_id);
-          if (cm.team2_id) teamsOnCourt.add(cm.team2_id);
-        }
+        if (mdHeldCourts.has(c)) continue; // court on hold — skip auto-fill
+        const label = `Court ${c}`;
+        const occupied = ongoingMatches.some(m => m.md_round && (m.court === label || m.court === c || m.court === `C${c}`));
+        if (occupied) continue;
+
+        const next = mdGeneratedSchedule.find(isEligible);
+        if (!next) continue; // nothing eligible for this court right now
+
+        const base = {
+          id: generateNumericId(),
+          match_uid: generateMatchUID(),
+          date: activeMatchday?.date || getLocalDateStr(),
+          location: activeMatchday?.venue || '',
+          court: label,
+          status: 'ongoing',
+          started_at: new Date().toISOString(),
+          md_round: next.round,
+          device_id: PV_DEVICE_ID
+        };
+        const matchData = (mdMode === 'randomiser')
+          ? { ...base, team1_players: next.team1, team2_players: next.team2, is_americano: true }
+          : { ...base, team1_id: next.t1, team2_id: next.t2 };
+
+        const result = await queueMatchToSupabase(matchData);
+        ongoingMatches.unshift(result.data || matchData);
+
+        // Update busy sets so the next court can't grab overlapping teams
+        if (next.t1) busyTeams.add(next.t1);
+        if (next.t2) busyTeams.add(next.t2);
+        (next.team1 || []).concat(next.team2 || []).forEach(p => busyPlayers.add(p));
+        onCourtKeys.add(`${next.round}-${next.t1 || ''}-${next.t2 || ''}`);
       }
-      
-      for (let c = 1; c <= mdCourts; c++) {
-        const courtLabel = `Court ${c}`;
-        const hasMatch = ongoingMatches.some(m => m.md_round && (m.court === courtLabel || m.court === c || m.court === `C${c}`));
-        if (hasMatch) continue; // Court is busy
-        
-        // Find the first waiting match whose teams are NOT already on court
-        const waiting = ongoingMatches.filter(m => m.md_round && m.court !== courtLabel && m.court !== c && m.court !== `C${c}`);
-        
-        // Count matches per court to find overloaded courts
-        const courtCounts = {};
-        for (let cc = 1; cc <= mdCourts; cc++) {
-          const label = `Court ${cc}`;
-          courtCounts[label] = ongoingMatches.filter(m => m.md_round && (m.court === label || m.court === cc || m.court === `C${cc}`)).length;
-        }
-        
-        // Find a match from an overloaded court where neither team is already playing
-        let moved = false;
-        for (const [court, count] of Object.entries(courtCounts)) {
-          if (count <= 1) continue;
-          const courtQueued = ongoingMatches.filter(m => m.md_round && m.court === court);
-          // Try from the end (last queued = least urgent)
-          for (let i = courtQueued.length - 1; i >= 1; i--) {
-            const candidate = courtQueued[i];
-            const t1 = candidate.team1_id, t2 = candidate.team2_id;
-            if ((t1 && teamsOnCourt.has(t1)) || (t2 && teamsOnCourt.has(t2))) continue;
-            candidate.court = courtLabel;
-            if (t1) teamsOnCourt.add(t1);
-            if (t2) teamsOnCourt.add(t2);
-            moved = true;
-            break;
-          }
-          if (moved) break;
-        }
-      }
+      saveLocal();
     }
-    
+
+    // Legacy alias — old code paths called this name
+    function mdAutoAssignCourts() { mdAutoFill().then(() => renderMatchDay()); }
+
     function mdRemoveCourt() {
       if (mdCourts <= 1) return;
       const courtLabel = `Court ${mdCourts}`;
       const hasMatch = ongoingMatches.some(m => m.court === courtLabel || m.court === mdCourts || m.court === `C${mdCourts}`);
       if (hasMatch) { toast('Cannot remove court with active match', 'error'); return; }
+      mdHeldCourts.delete(mdCourts);
+      mdSaveHeldCourts();
       mdCourts--;
       toast('Court removed', 'info');
       renderMDLive();
     }
 
     // Cancel a match on court
-    function mdCancelCourtMatch(matchId) {
+    async function mdCancelCourtMatch(matchId) {
       if (!confirm('Cancel this match? It will be removed entirely.')) return;
+      const match = ongoingMatches.find(m => m.id === matchId);
       ongoingMatches = ongoingMatches.filter(m => m.id !== matchId);
       if (supabaseClient) {
         supabaseClient.from('ongoing_matches').delete().eq('id', matchId).then(({ error }) => {
           if (error) console.error('Delete ongoing error:', error);
         });
       }
+      // Also remove it from the schedule so auto-fill doesn't re-pick it
+      if (match) {
+        mdGeneratedSchedule = (mdGeneratedSchedule || []).filter(s => !(
+          s.round === match.md_round &&
+          ((s.t1 === match.team1_id && s.t2 === match.team2_id) ||
+           (s.t1 === match.team2_id && s.t2 === match.team1_id))));
+      }
       localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
-      renderMDLive();
+      await mdAutoFill();
+      renderMatchDay();
       renderOngoingMatches();
       toast('Match cancelled', 'info');
     }
 
-    function mdReturnToQueue(matchId) {
+    async function mdReturnToQueue(matchId) {
       const match = ongoingMatches.find(m => m.id === matchId);
       if (!match) return;
+      if (!confirm('Return this match to the back of the queue?')) return;
       ongoingMatches = ongoingMatches.filter(m => m.id !== matchId);
       if (supabaseClient) {
         supabaseClient.from('ongoing_matches').delete().eq('id', matchId).then(({ error }) => {
           if (error) console.error('Delete ongoing error:', error);
         });
       }
+      // Move its schedule entry to the back so auto-fill picks something else
+      const si = (mdGeneratedSchedule || []).findIndex(s =>
+        s.round === match.md_round &&
+        ((s.t1 === match.team1_id && s.t2 === match.team2_id) ||
+         (s.t1 === match.team2_id && s.t2 === match.team1_id)));
+      if (si > -1) {
+        const [item] = mdGeneratedSchedule.splice(si, 1);
+        mdGeneratedSchedule.push(item);
+      }
       localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
-      renderMDLive();
+      await mdAutoFill();
+      renderMatchDay();
       renderOngoingMatches();
-      toast('Match returned to queue', 'info');
+      toast('Match sent to the back of the queue', 'info');
     }
 
     // Cancel a queued match
@@ -10887,24 +10924,13 @@
         match_uid: completedMatch.match_uid,
         completedAt: new Date().toISOString()
       });
-      // Check if current round is complete
-      const roundMatches = (mdGeneratedSchedule || []).filter(m => m.round === completedMatch.md_round);
-      const roundOngoing = ongoingMatches.filter(m => m.md_round === completedMatch.md_round);
-      if (roundOngoing.length === 0 && roundMatches.length > 0) {
-        // Round complete - auto-queue next
-        const maxRound = Math.max(...(mdGeneratedSchedule || []).map(m => m.round));
-        const nextRound = completedMatch.md_round + 1;
-        if (nextRound <= maxRound) {
-          mdCurrentRound = nextRound;
-          mdQueueRoundMatches(nextRound);
-          toast(`Round ${completedMatch.md_round} complete! Starting Round ${nextRound} 🔥`, 'success');
-        } else {
-          toast('🏆 All matches complete! Match Day is over!', 'success');
-        }
+      // NEW ENGINE: no round-based flooding. Free court auto-fills from the queue.
+      const completedSidsNow = new Set(mdCompletedGames.map(m => m.sid));
+      const remaining = (mdGeneratedSchedule || []).filter(m => !completedSidsNow.has(m.sid)).length;
+      if (remaining === 0 && ongoingMatches.filter(m => m.md_round).length === 0) {
+        toast('🏆 All matches complete! Match Day is over!', 'success');
       }
-      // Auto-assign waiting matches to any free courts
-      mdAutoAssignCourts();
-      renderMatchDay();
+      mdAutoFill().then(() => renderMatchDay());
     }
     function mdEditResult(idx) {
       if (!currentUser?.is_admin) { toast('Only admins can edit results', 'error'); return; }
@@ -10936,26 +10962,8 @@
       renderMDLive();
     }
 
-    // Return a completed match back to the queue
-    function mdReturnToQueue(idx) {
-      const m = mdCompletedGames[idx];
-      if (!m) return;
-      if (!confirm(`Return ${getTeam(m.t1)?.name || '?'} vs ${getTeam(m.t2)?.name || '?'} to queue?`)) return;
-      // Remove from completed
-      mdCompletedGames.splice(idx, 1);
-      // Add back to schedule if sid not already there
-      if (m.sid && !(mdGeneratedSchedule || []).some(s => s.sid === m.sid)) {
-        mdGeneratedSchedule = mdGeneratedSchedule || [];
-        mdGeneratedSchedule.push({ sid: m.sid, t1: m.t1, t2: m.t2, round: m.round, court: parseInt(String(m.court).replace(/\D/g,'')) || 1 });
-      }
-      // Delete the saved match from memory and Supabase
-      if (m.match_id) {
-        matches = matches.filter(x => x.id !== m.match_id);
-        if (supabaseClient) supabaseClient.from('matches').delete().eq('id', m.match_id);
-      }
-      toast('Match returned to queue', 'info');
-      renderMDLive();
-    }
+    // (removed: duplicate index-based mdReturnToQueue — it shadowed the id-based
+    //  function above and broke the court-card Return to Queue button)
 
     // Remove a completed result entirely
     function mdRemoveResult(idx) {
@@ -11004,26 +11012,10 @@
       const maxRound = mdGeneratedSchedule ? Math.max(0, ...mdGeneratedSchedule.map(m => m.round)) : 0;
       const adjusted = newScheduled.map(m => ({ ...m, round: m.round + maxRound }));
       mdGeneratedSchedule = [...(mdGeneratedSchedule || []), ...adjusted];
-      // Queue new matches to ongoingMatches
-      for (const m of adjusted) {
-        const matchData = {
-          id: generateNumericId(),
-          match_uid: generateMatchUID(),
-          date: activeMatchday?.date || getLocalDateStr(),
-          location: activeMatchday?.venue || '',
-          court: 'Court ' + m.court,
-          team1_id: m.t1,
-          team2_id: m.t2,
-          status: 'ongoing',
-          started_at: new Date().toISOString(),
-          md_round: m.round,
-          device_id: PV_DEVICE_ID
-        };
-        const result = await queueMatchToSupabase(matchData);
-        ongoingMatches.push(result.data || matchData);
-      }
+      // NEW ENGINE: matches wait in the queue; only fill free courts now
+      await mdAutoFill();
       saveLocal();
-      toast(`${adjusted.length} new matches generated & queued!`, 'success');
+      toast(`${adjusted.length} new matches added to the queue!`, 'success');
       renderMDLive();
     }
 
