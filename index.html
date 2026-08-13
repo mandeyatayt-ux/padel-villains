@@ -10613,6 +10613,29 @@
           </div>`;
         } else {
           const held = mdHeldCourts.has(c);
+          // Explain WHY the court is idle: held, queue empty, or all queued teams busy
+          let idleMsg = 'Waiting for next match';
+          if (held) {
+            idleMsg = 'Held — tap the pin to release';
+          } else {
+            const idlePending = mdGetPendingQueue();
+            if (idlePending.length === 0) {
+              idleMsg = 'Queue empty — no matches left';
+            } else {
+              const idleBusyTeams = new Set();
+              const idleBusyPlayers = new Set();
+              ongoingMatches.filter(m => m.md_round).forEach(m => {
+                if (m.team1_id) idleBusyTeams.add(m.team1_id);
+                if (m.team2_id) idleBusyTeams.add(m.team2_id);
+                (m.team1_players || []).concat(m.team2_players || []).forEach(p => idleBusyPlayers.add(p));
+              });
+              const anyEligible = idlePending.some(s => {
+                if (mdMode === 'randomiser') return !(s.team1 || []).concat(s.team2 || []).some(p => idleBusyPlayers.has(p));
+                return !((s.t1 && idleBusyTeams.has(s.t1)) || (s.t2 && idleBusyTeams.has(s.t2)));
+              });
+              if (!anyEligible) idleMsg = 'No playable match — queued teams are on other courts. Fills when a game finishes.';
+            }
+          }
           courtHtml += `<div class="card" style="border-radius:16px;overflow:hidden;padding:0${held ? ';opacity:0.85' : ''}">
             <div style="background:var(--brown-dark);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
               <span style="color:var(--cream);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
@@ -10621,7 +10644,7 @@
                 <button onclick="mdToggleHold(${c})" title="${held ? 'Release court to auto-fill' : 'Hold court (no auto-fill)'}" style="background:${held ? 'var(--gold)' : 'rgba(255,255,255,0.15)'};border:none;color:${held ? 'var(--brown-dark)' : 'var(--cream)'};width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:11px;padding:0"><i class="fas fa-thumbtack"></i></button>
               </div>
             </div>
-            <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">${held ? 'Held — tap the pin to release' : 'Waiting for next match'}</div>
+            <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">${idleMsg}</div>
           </div>`;
         }
       }
