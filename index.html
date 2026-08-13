@@ -3436,32 +3436,8 @@
           <div class="md-sticky-progress"><div class="md-sticky-progress-fill" id="mdStickyBar" style="width:0%"></div></div>
         </div>
 
-        <!-- Court Cards (dynamic grid) -->
-        <div id="mdCourtGrid" style="display:grid;gap:16px;margin-bottom:16px"></div>
-
-        <!-- Queue (draggable) — hidden, now shown in Info Hub -->
-        <div style="display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div style="font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted)">Queue — <span id="mdQueueCount">0</span> matches</div>
-            <div style="font-size:11px;color:var(--text-muted)">Drag to reorder</div>
-          </div>
-          <div id="mdCourtQueue" style="display:flex;flex-direction:column;gap:6px"></div>
-        </div>
-
-        <!-- Sitting Out — now in Info Hub, keep elements for JS refs -->
-        <div style="display:none">
-          <div class="md-sitting" id="mdSittingOut">
-            <div class="md-sitting-label">🪑 Sitting out</div>
-            <div class="md-sitting-chips" id="mdSittingChips"></div>
-          </div>
-        </div>
-
-        <!-- Add Court Button — now in Info Hub -->
-        <div style="display:none">
-          <button class="btn btn-secondary btn-sm" onclick="mdAddCourt()" style="border-radius:12px;font-size:12px"><i class="fas fa-plus"></i> Add Court</button>
-          <button class="btn btn-secondary btn-sm" onclick="mdRemoveCourt()" id="mdRemoveCourtBtn" style="border-radius:12px;font-size:12px;display:none"><i class="fas fa-minus"></i> Remove Court</button>
-          <button class="btn btn-secondary btn-sm" onclick="mdReallocateCourts();renderMDLive();toast('Matches redistributed','success')" style="border-radius:12px;font-size:12px"><i class="fas fa-shuffle"></i> Reallocate</button>
-        </div>
+        <!-- (legacy court grid, hidden queue, sitting-out, and court buttons removed —
+             the live cockpit in the Info Hub is the single source of these now) -->
 
         <!-- Live Standings -->
         <div class="md-standings" id="mdLiveStandings" style="display:none">
@@ -10520,9 +10496,6 @@
         timerEl.textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
       }
 
-      // Court grid columns — render but only show in Info Hub (avoid duplication)
-      const courtGrid = document.getElementById('mdCourtGrid');
-      courtGrid.style.display = 'none'; // Court cards now rendered in Info Hub
 
       // Build court cards — ensure no team plays on two courts simultaneously
       let courtHtml = '';
@@ -10635,59 +10608,10 @@
       if (cockpitCourts) cockpitCourts.innerHTML = courtHtml;
 
       // Remove court button visibility
-      const removeBtn = document.getElementById('mdRemoveCourtBtn');
-      if (removeBtn) removeBtn.style.display = mdCourts > 1 ? '' : 'none';
       const infoRemoveBtn = document.getElementById('mdInfoRemoveCourtBtn');
       if (infoRemoveBtn) infoRemoveBtn.style.display = mdCourts > 1 ? '' : 'none';
 
-      // Queue: remaining scheduled matches not on court and not completed
-      const completedSids = new Set(mdCompletedGames.map(m => m.sid));
-      const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`));
-      
-      const queueMatches = mdGetPendingQueue();
-
-      document.getElementById('mdQueueCount').textContent = queueMatches.length;
-      const queueContainer = document.getElementById('mdCourtQueue');
-      
-      if (queueMatches.length === 0) {
-        queueContainer.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">No more matches in queue</div>';
-      } else {
-        queueContainer.innerHTML = queueMatches.map((m, idx) => {
-          let t1Name = '?', t2Name = '?';
-          if (mdMode === 'americano') {
-            t1Name = (m.team1||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
-            t2Name = (m.team2||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
-          } else {
-            t1Name = getTeam(m.t1)?.name || '?';
-            t2Name = getTeam(m.t2)?.name || '?';
-          }
-          const t1Form = mdMode === 'roundrobin' || mdMode === 'draft' ? renderFormDots(m.t1) : '';
-          const t2Form = mdMode === 'roundrobin' || mdMode === 'draft' ? renderFormDots(m.t2) : '';
-          const isBusy = (m.t1 && busyTeamIds.has(m.t1)) || (m.t2 && busyTeamIds.has(m.t2));
-          const t1Recent = (mdMode === 'roundrobin' || mdMode === 'draft') ? mdGetRecentOpponents(m.t1) : [];
-          const t2Recent = (mdMode === 'roundrobin' || mdMode === 'draft') ? mdGetRecentOpponents(m.t2) : [];
-          const t1RecentHtml = t1Recent.length ? `<div style="font-size:9px;color:var(--text-muted);margin-top:1px">Last: ${t1Recent.map(o => '<span style="color:' + (o.won ? 'var(--emerald)' : 'var(--danger)') + '">' + o.name + '</span>').join(', ')}</div>` : '';
-          const t2RecentHtml = t2Recent.length ? `<div style="font-size:9px;color:var(--text-muted);margin-top:1px">Last: ${t2Recent.map(o => '<span style="color:' + (o.won ? 'var(--emerald)' : 'var(--danger)') + '">' + o.name + '</span>').join(', ')}</div>` : '';
-          const hasFreeCourt = (() => { for (let c = 1; c <= mdCourts; c++) { if (!ongoingMatches.some(om => om.md_round && (om.court === 'Court ' + c || om.court === c || om.court === 'C' + c))) return true; } return false; })();
-          return `<div class="md-queue-item card" draggable="true" data-idx="${idx}" style="padding:10px 12px;display:flex;align-items:flex-start;gap:10px;cursor:grab;border-radius:12px;margin:0;${isBusy ? 'opacity:0.5;border-left:3px solid var(--clay)' : ''}">
-            ${!isBusy && hasFreeCourt ? '<button onclick="mdSendToCourt(' + idx + ');event.stopPropagation()" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--emerald);color:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0" title="Send to Court"><i class="fas fa-play"></i></button>' : '<div style="color:var(--text-muted);font-size:16px;cursor:grab;user-select:none;padding:0 2px">≡</div>'}
-            <span style="background:var(--clay);color:white;font-size:10px;padding:2px 8px;border-radius:6px;font-weight:700;min-width:24px;text-align:center;flex-shrink:0;margin-top:4px">R${m.round}</span>
-            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                <span style="display:inline-flex;align-items:center;gap:4px"><span style="font-weight:600;font-size:13px">${t1Name}</span>${t1Form}</span>
-                <span style="color:var(--text-muted);font-size:10px">vs</span>
-                <span style="display:inline-flex;align-items:center;gap:4px"><span style="font-weight:600;font-size:13px">${t2Name}</span>${t2Form}</span>
-              </div>
-              ${t1RecentHtml || t2RecentHtml ? '<div style="display:flex;gap:16px;flex-wrap:wrap">' + t1RecentHtml + t2RecentHtml + '</div>' : ''}
-            </div>
-            <span style="font-size:11px;color:var(--text-muted);flex-shrink:0;margin-top:4px">C${esc(m.court)}</span>
-            <button class="md-queue-cancel" onclick="mdCancelQueueMatch(${idx});event.stopPropagation()" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--danger);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0" title="Remove"><i class="fas fa-trash"></i></button>
-          </div>`;
-        }).join('');
-        
-        // Setup drag and drop
-        mdSetupQueueDrag();
-      }
+      // (legacy hidden-queue rendering removed — rail in Info Hub is canonical)
 
       // Results section (Timeline)
       const compCard = document.getElementById('mdCompletedCard');
@@ -10792,14 +10716,12 @@
         if (m.team1_id) busyTeams.add(m.team1_id);
         if (m.team2_id) busyTeams.add(m.team2_id);
         (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(p));
-        onCourtKeys.add(`${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`);
+        onCourtKeys.add(mdOngoingMatchKey(m));
       });
 
       const isEligible = (s) => {
         if (completedSids.has(s.sid)) return false;
-        const key = `${s.round}-${s.t1 || ''}-${s.t2 || ''}`;
-        const keyAlt = `${s.round}-${s.t2 || ''}-${s.t1 || ''}`;
-        if (onCourtKeys.has(key) || onCourtKeys.has(keyAlt)) return false;
+        if (onCourtKeys.has(mdSchedMatchKey(s))) return false;
         if (mdMode === 'randomiser') {
           return !(s.team1 || []).concat(s.team2 || []).some(p => busyPlayers.has(p));
         }
@@ -10839,7 +10761,7 @@
         if (next.t1) busyTeams.add(next.t1);
         if (next.t2) busyTeams.add(next.t2);
         (next.team1 || []).concat(next.team2 || []).forEach(p => busyPlayers.add(p));
-        onCourtKeys.add(`${next.round}-${next.t1 || ''}-${next.t2 || ''}`);
+        onCourtKeys.add(mdSchedMatchKey(next));
       }
       saveLocal();
     }
@@ -10936,15 +10858,25 @@
     // Shared derivation: schedule entries that are neither completed nor on court.
     // EVERY queue view and every index-based action MUST use this same list so
     // indices always agree.
+    // Canonical match keys — order-independent, valid for team AND americano matches
+    function mdSideKey(a, b) { return [String(a ?? ''), String(b ?? '')].sort().join('~'); }
+    function mdSchedMatchKey(s) {
+      if (s.t1 || s.t2) return `${s.round}|${mdSideKey(s.t1, s.t2)}`;
+      const p = (arr) => (arr || []).slice().sort().join('.');
+      return `${s.round}|${[p(s.team1), p(s.team2)].sort().join('~')}`;
+    }
+    function mdOngoingMatchKey(m) {
+      if (m.team1_id || m.team2_id) return `${m.md_round}|${mdSideKey(m.team1_id, m.team2_id)}`;
+      const p = (arr) => (arr || []).slice().sort().join('.');
+      return `${m.md_round}|${[p(m.team1_players), p(m.team2_players)].sort().join('~')}`;
+    }
     function mdGetPendingQueue() {
       if (!mdGeneratedSchedule) return [];
       const completedSids = new Set(mdCompletedGames.map(m => m.sid));
-      const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`));
+      const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(mdOngoingMatchKey));
       return mdGeneratedSchedule.filter(m => {
         if (completedSids.has(m.sid)) return false;
-        const key = `${m.round}-${m.t1 || ''}-${m.t2 || ''}`;
-        const keyAlt = `${m.round}-${m.t2 || ''}-${m.t1 || ''}`;
-        return !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
+        return !onCourtKeys.has(mdSchedMatchKey(m));
       });
     }
 
@@ -10991,51 +10923,15 @@
       toast(`${getTeam(match.t1)?.name} vs ${getTeam(match.t2)?.name} → Court ${freeCourt}`, 'success');
     }
 
-    // Drag and drop for queue
-    function mdSetupQueueDrag() {
-      const queue = document.getElementById('mdCourtQueue');
-      if (!queue) return;
-      let dragItem = null;
-      const placeholder = document.createElement('div');
-      placeholder.style.cssText = 'height:4px;background:var(--clay);border-radius:2px;margin:2px 0;transition:all 0.15s';
-
-      queue.addEventListener('dragstart', function(e) {
-        dragItem = e.target.closest('.md-queue-item');
-        if (!dragItem) return;
-        setTimeout(() => { if (dragItem) dragItem.style.opacity = '0.3'; }, 0);
-        e.dataTransfer.effectAllowed = 'move';
-      });
-      queue.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        const target = e.target.closest('.md-queue-item');
-        if (!target || target === dragItem) return;
-        const rect = target.getBoundingClientRect();
-        const mid = rect.top + rect.height / 2;
-        if (e.clientY < mid) queue.insertBefore(placeholder, target);
-        else queue.insertBefore(placeholder, target.nextSibling);
-      });
-      queue.addEventListener('drop', function(e) {
-        e.preventDefault();
-        if (dragItem && placeholder.parentNode) queue.insertBefore(dragItem, placeholder);
-        mdCleanupDrag();
-      });
-      queue.addEventListener('dragend', mdCleanupDrag);
-      function mdCleanupDrag() {
-        if (dragItem) dragItem.style.opacity = '1';
-        if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-        dragItem = null;
-      }
-    }
+    // (drag-to-reorder removed with the hidden legacy queue; rail reorder is a planned feature)
+    function mdSetupQueueDrag() {}
 
     // Hook into match completion to advance rounds
     function mdOnMatchComplete(completedMatch) {
       if (!completedMatch.md_round || mdStep !== 'live') return;
       // Find the schedule item by matching teams and round
-      const schedItem = (mdGeneratedSchedule || []).find(m => 
-        m.round === completedMatch.md_round && 
-        ((m.t1 === completedMatch.team1_id && m.t2 === completedMatch.team2_id) ||
-         (m.t1 === completedMatch.team2_id && m.t2 === completedMatch.team1_id))
-      );
+      const ck = mdOngoingMatchKey(completedMatch);
+      const schedItem = (mdGeneratedSchedule || []).find(m => m.round === completedMatch.md_round && mdSchedMatchKey(m) === ck);
       mdCompletedGames.push({
         sid: schedItem?.sid || `c_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
         t1: completedMatch.team1_id,
@@ -11195,15 +11091,18 @@
       if (m.match_uid && matches.some(x => x.match_uid === m.match_uid)) {
         toast('Already finalized', 'error'); ongoingMatches = ongoingMatches.filter(x => x.id !== matchId); renderAll(); return;
       }
-      const wid = scoreA > scoreB ? m.team1_id : m.team2_id;
+      const isAmericano = !!m.is_americano;
+      const wid = isAmericano ? null : (scoreA > scoreB ? m.team1_id : m.team2_id);
       const matchData = {
         id: generateNumericId(), match_uid: m.match_uid || generateMatchUID(),
         date: m.date, location: m.location, court: m.court,
-        team1_id: m.team1_id, team2_id: m.team2_id,
         scores: [[scoreA, scoreB]], score1: scoreA, score2: scoreB,
         winner_id: wid, started_at: m.started_at || null,
         finalized_at: new Date().toISOString(), md_round: m.md_round || null,
-        device_id: PV_DEVICE_ID, created_at: new Date().toISOString()
+        device_id: PV_DEVICE_ID, created_at: new Date().toISOString(),
+        ...(isAmericano
+          ? { team1_players: m.team1_players, team2_players: m.team2_players, is_americano: true }
+          : { team1_id: m.team1_id, team2_id: m.team2_id })
       };
       const result = await saveMatchToSupabase(matchData);
       const savedMatch = result.data || matchData;
@@ -11212,17 +11111,19 @@
       await deleteOngoingFromSupabase(matchId);
       saveLocal();
       if (m.md_round) {
-        mdOnMatchComplete({ team1_id: m.team1_id, team2_id: m.team2_id, md_round: m.md_round, score1: scoreA, score2: scoreB, court: m.court, id: savedMatch.id, match_uid: savedMatch.match_uid });
+        mdOnMatchComplete({ team1_id: m.team1_id, team2_id: m.team2_id, team1_players: m.team1_players, team2_players: m.team2_players, is_americano: isAmericano, md_round: m.md_round, score1: scoreA, score2: scoreB, court: m.court, id: savedMatch.id, match_uid: savedMatch.match_uid });
       }
       renderAll();
-      toast(`${getTeam(m.team1_id)?.name || '?'} ${scoreA}-${scoreB} ${getTeam(m.team2_id)?.name || '?'} ✓`, 'success');
+      const n1 = isAmericano ? (m.team1_players||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ') : (getTeam(m.team1_id)?.name || '?');
+      const n2 = isAmericano ? (m.team2_players||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ') : (getTeam(m.team2_id)?.name || '?');
+      toast(`${n1} ${scoreA}-${scoreB} ${n2} ✓`, 'success');
       } finally { _mdSaving = false; }
     }
 
     // Render who's sitting out
     function renderMDSittingOut() {
-      const container = document.getElementById('mdSittingOut');
-      const chips = document.getElementById('mdSittingChips');
+      const container = document.getElementById('mdRailSitting');
+      const chips = document.getElementById('mdRailSittingChips');
       if (!container || !chips || (mdMode !== 'roundrobin' && mdMode !== 'draft')) { if (container) container.style.display = 'none'; return; }
       // Find teams currently on court
       const playingIds = new Set();
@@ -11244,13 +11145,7 @@
         }
         return `<span class="md-sitting-chip" onclick="mdMessageSittingTeam(${id})" style="cursor:pointer" title="Tap to WhatsApp"><span class="md-sitting-av">${(t?.name||'?').charAt(0)}</span>${t?.name||'?'}${waitTime ? ` <span class="md-sitting-time">${waitTime}</span>` : ''}<i class="fab fa-whatsapp" style="margin-left:4px;color:#25D366;font-size:12px"></i></span>`;
       }).join('');
-      // Sync to the cockpit rail
-      const railSitting = document.getElementById('mdRailSitting');
-      const railChips = document.getElementById('mdRailSittingChips');
-      if (railSitting && railChips) {
-        railSitting.style.display = container.style.display;
-        railChips.innerHTML = chips.innerHTML;
-      }
+
     }
 
     // Render live standings for today
