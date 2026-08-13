@@ -3919,7 +3919,7 @@
         <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-key" style="color:var(--clay);margin-right:8px"></i>User Passwords</h3>
         <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Each user has their own password. Use the <i class="fas fa-key"></i> button next to each account to set or reset a user's password.</p>
         <div style="padding:12px 16px;background:var(--cream);border-radius:12px;font-size:13px">
-          <strong>Default password for new accounts:</strong> <code id="defaultPasswordDisplay" style="background:var(--cream-dark);padding:2px 8px;border-radius:4px;font-family:monospace">PVSLT_26</code>
+          New accounts get a randomly generated temporary password — it's shown once at creation. Share it with the player and ask them to change it after first login.
         </div>
       </div>
       
@@ -4727,7 +4727,20 @@
     // ===== CONFIG =====
     const SUPABASE_URL = 'https://hihujmoapelzuvcrdhfh.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpaHVqbW9hcGVsenV2Y3JkaGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NTM4OTUsImV4cCI6MjA4MzUyOTg5NX0.BjCkaElKR6lj057FLOmryWH7CbCn8Ssg-Agp2BbSJeI';
-    const APP_PASSWORD = 'PVSLT_26';
+    // Generate a random temporary password for new accounts (shown to admin once)
+    function genTempPassword() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      let pw = '';
+      const buf = new Uint8Array(8);
+      crypto.getRandomValues(buf);
+      buf.forEach(b => pw += chars[b % chars.length]);
+      return pw;
+    }
+    // Escape user-supplied strings before HTML interpolation (XSS protection)
+    function esc(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
     
     // SHA-256 password hashing using Web Crypto API
     async function hashPassword(password) {
@@ -5837,10 +5850,11 @@
     }
     
     const av = (p, size = '') => {
-      const initial = p?.name?.charAt(0).toUpperCase() || '?';
+      let initial = p?.name?.charAt(0).toUpperCase() || '?';
+      if (!/^[A-Z0-9]$/i.test(initial)) initial = '?';
       const photo = p?.photo || photoCache[p?.id];
       if (photo) {
-        return `<div class="avatar ${size}"><img src="${photo}" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${initial}'"></div>`;
+        return `<div class="avatar ${size}"><img src="${esc(photo)}" alt="${esc(p.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${initial}'"></div>`;
       }
       return `<div class="avatar ${size}">${initial}</div>`;
     };
@@ -5969,7 +5983,7 @@
           statusEl.className = statusClass;
           detailsEl.innerHTML = `
             <span><i class="fas fa-calendar"></i> ${dateStr}</span>
-            <span><i class="fas fa-map-marker-alt"></i> ${activeMatchday.venue}</span>
+            <span><i class="fas fa-map-marker-alt"></i> ${esc(activeMatchday.venue)}</span>
             <span><i class="fas fa-clock"></i> ${activeMatchday.start_time} - ${activeMatchday.end_time}</span>
           `;
           createBtn.classList.add('hidden');
@@ -6043,7 +6057,7 @@
             statusEl.className = 'matchday-status';
             detailsEl.innerHTML = `
               <span><i class="fas fa-calendar"></i> ${dateStr}</span>
-              <span><i class="fas fa-map-marker-alt"></i> ${event.venue || 'TBD'}</span>
+              <span><i class="fas fa-map-marker-alt"></i> ${esc(event.venue || 'TBD')}</span>
               <span><i class="fas fa-clock"></i> ${evStartTime} - ${evEndTime}</span>
               <span style="color:var(--text-muted);font-weight:600">Session complete ✓</span>
             `;
@@ -6068,9 +6082,9 @@
             statusEl.className = 'matchday-status';
             detailsEl.innerHTML = `
               <span><i class="fas fa-calendar"></i> ${dateStr}</span>
-              <span><i class="fas fa-map-marker-alt"></i> ${event.venue || 'TBD'}</span>
+              <span><i class="fas fa-map-marker-alt"></i> ${esc(event.venue || 'TBD')}</span>
               <span><i class="fas fa-clock"></i> ${evStartTime} - ${evEndTime}</span>
-              ${event.title ? `<span style="font-weight:600">${event.title}</span>` : ''}
+              ${event.title ? `<span style="font-weight:600">${esc(event.title)}</span>` : ''}
             `;
             createBtn.classList.remove('hidden');
             closeBtn.classList.add('hidden');
@@ -6097,7 +6111,7 @@
         statusEl.className = 'matchday-status';
         detailsEl.innerHTML = `
           <span><i class="fas fa-calendar"></i> ${dateStr}</span>
-          <span><i class="fas fa-map-marker-alt"></i> ${viewingMatchday.venue}</span>
+          <span><i class="fas fa-map-marker-alt"></i> ${esc(viewingMatchday.venue)}</span>
           <span><i class="fas fa-clock"></i> ${viewingMatchday.start_time} - ${viewingMatchday.end_time}</span>
         `;
         createBtn.classList.add('hidden');
@@ -6119,7 +6133,7 @@
             return `<div class="upcoming-item">
               <div class="upcoming-item-info">
                 <span class="upcoming-item-date">${dateStr}</span>
-                <span class="upcoming-item-venue">${md.venue}</span>
+                <span class="upcoming-item-venue">${esc(md.venue)}</span>
               </div>
               <span class="upcoming-item-time">${md.start_time} - ${md.end_time}</span>
             </div>`;
@@ -6224,9 +6238,9 @@
         vc.innerHTML = `
           <div class="villain-crown">👑</div>
           <div class="villain-label">${isViewingPast ? 'DAY WINNER' : 'THE VILLAINS'}</div>
-          <div class="villain-team">${villain.name}</div>
+          <div class="villain-team">${esc(villain.name)}</div>
           <div class="villain-players">${av(p1,'lg')}<span class="villain-amp">&</span>${av(p2,'lg')}</div>
-          <div class="villain-names">${p1?.name || '?'} & ${p2?.name || '?'}</div>
+          <div class="villain-names">${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}</div>
           <div class="villain-arch">
             <span class="villain-arch-label">${isViewingPast ? 'FINAL RECORD' : "TODAY'S RECORD"}</span>
             <span class="villain-arch-count">${villain.wins}W - ${villain.losses}L</span>
@@ -6242,11 +6256,11 @@
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id), w1 = m.winner_id === t1?.id;
         return `<div class="quick-match" onclick="openEditMatch(${m.id})" style="cursor:pointer">
           <div class="quick-match-info">
-            <span class="quick-match-court">${m.court}</span>
+            <span class="quick-match-court">${esc(m.court)}</span>
             <div class="quick-match-teams">
-              <span class="quick-match-team ${w1?'winner':''}">${t1?.name||'?'}</span>
+              <span class="quick-match-team ${w1?'winner':''}">${esc(t1?.name||'?')}</span>
               <span class="quick-match-vs">vs</span>
-              <span class="quick-match-team ${!w1?'winner':''}">${t2?.name||'?'}</span>
+              <span class="quick-match-team ${!w1?'winner':''}">${esc(t2?.name||'?')}</span>
             </div>
           </div>
           <div class="quick-match-scores">${(m.scores||[]).map(s=>`<span class="quick-match-score">${s[0]}-${s[1]}</span>`).join('')}</div>
@@ -6259,7 +6273,7 @@
         return `<div style="display:flex;align-items:center;gap:16px;padding:12px;background:${i===0?'rgba(224,120,80,0.1)':'var(--cream)'};border-radius:10px;margin-bottom:8px;${i===0?'border:2px solid var(--clay)':''}">
           <div style="font-family:'Sublime',sans-serif;font-size:24px;color:${i===0?'var(--clay)':'var(--text-muted)'}">#${i+1}</div>
           <div style="display:flex;gap:4px">${av(p1,'xs')}${av(p2,'xs')}</div>
-          <div style="flex:1"><div style="font-weight:600">${t.name}</div></div>
+          <div style="flex:1"><div style="font-weight:600">${esc(t.name)}</div></div>
           <div style="display:flex;gap:6px">
             <span style="padding:4px 10px;background:var(--success);color:white;border-radius:6px;font-size:12px;font-weight:700">${t.wins}W</span>
             <span style="padding:4px 10px;background:var(--danger);color:white;border-radius:6px;font-size:12px;font-weight:700">${t.losses}L</span>
@@ -6282,13 +6296,13 @@
           const roundBadge = m.md_round ? `<span style="background:var(--clay);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">R${m.md_round}</span>` : '';
           return `<div class="dashboard-ongoing-match" onclick="openFinalizeMatch(${m.id})">
             <div class="dashboard-ongoing-teams">
-              <div class="dashboard-ongoing-team">${av(t1p1,'sm')}${av(t1p2,'sm')} <span style="font-weight:600;margin-left:4px">${t1?.name || '?'}</span></div>
+              <div class="dashboard-ongoing-team">${av(t1p1,'sm')}${av(t1p2,'sm')} <span style="font-weight:600;margin-left:4px">${esc(t1?.name || '?')}</span></div>
               <span class="dashboard-ongoing-vs">VS</span>
-              <div class="dashboard-ongoing-team"><span style="font-weight:600;margin-right:4px">${t2?.name || '?'}</span> ${av(t2p1,'sm')}${av(t2p2,'sm')}</div>
+              <div class="dashboard-ongoing-team"><span style="font-weight:600;margin-right:4px">${esc(t2?.name || '?')}</span> ${av(t2p1,'sm')}${av(t2p2,'sm')}</div>
             </div>
             <div class="dashboard-ongoing-meta">
               ${roundBadge}
-              <div class="dashboard-ongoing-court">${m.court}</div>
+              <div class="dashboard-ongoing-court">${esc(m.court)}</div>
               ${startTime ? `<div>Queued ${startTime}</div>` : ''}
             </div>
           </div>`;
@@ -6352,8 +6366,8 @@
           const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
           const startTime = m.started_at ? new Date(m.started_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
           html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(224,120,80,0.06);border-radius:10px;margin-bottom:6px;border-left:3px solid var(--clay)">
-            <span style="font-weight:600;font-size:13px;flex:1">${t1?.name||'?'} vs ${t2?.name||'?'}</span>
-            <span style="font-size:11px;color:var(--text-muted)">${m.court} ${startTime ? '• ' + startTime : ''}</span>
+            <span style="font-weight:600;font-size:13px;flex:1">${esc(t1?.name||'?')} vs ${esc(t2?.name||'?')}</span>
+            <span style="font-size:11px;color:var(--text-muted)">${esc(m.court)} ${startTime ? '• ' + startTime : ''}</span>
           </div>`;
         });
       }
@@ -6368,7 +6382,7 @@
           const time = m.finalized_at ? new Date(m.finalized_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
           html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin-bottom:4px;background:${isWin ? 'rgba(5,150,105,0.06)' : 'rgba(225,29,72,0.04)'};border-left:3px solid ${isWin ? '#059669' : '#E11D48'}">
             <span style="font-weight:700;font-size:12px;color:${isWin ? '#059669' : '#E11D48'};width:16px">${isWin ? 'W' : 'L'}</span>
-            <span style="font-weight:600;font-size:13px;flex:1">${t1?.name||'?'} vs ${t2?.name||'?'}</span>
+            <span style="font-weight:600;font-size:13px;flex:1">${esc(t1?.name||'?')} vs ${esc(t2?.name||'?')}</span>
             <span style="font-family:'DirtyWeather',sans-serif;font-size:15px;color:var(--brown-dark)">${score}</span>
             ${time ? `<span style="font-size:11px;color:var(--text-muted)">${time}</span>` : ''}
           </div>`;
@@ -6396,11 +6410,11 @@
         
         return `<div class="matchday-log-item" onclick="viewMatchdayHistory('${md.date}')">
           <div class="matchday-log-date">${dateStr}</div>
-          <div class="matchday-log-venue">${md.venue}</div>
+          <div class="matchday-log-venue">${esc(md.venue)}</div>
           ${winner ? `
             <div class="matchday-log-winner">
               <span class="matchday-log-crown">👑</span>
-              <span class="matchday-log-team">${winner.name}</span>
+              <span class="matchday-log-team">${esc(winner.name)}</span>
             </div>
           ` : ''}
           <div class="matchday-log-stats">${dayMatches.length} matches</div>
@@ -6513,7 +6527,7 @@
         const isAvailable = availablePlayers.some(aid => Number(aid) === Number(p.id));
         return `<div class="available-player-chip ${isAvailable ? 'available' : ''}" onclick="togglePlayerAvailability(${p.id})">
           ${av(p, '')}
-          <span class="name">${p.name}</span>
+          <span class="name">${esc(p.name)}</span>
           ${isAvailable ? '<i class="fas fa-check check"></i>' : ''}
         </div>`;
       }).join('');
@@ -6546,7 +6560,7 @@
       
       let message = `🎾 *PADEL VILLAINS*\n\n`;
       message += `📅 *Match Day: ${dateStr}*\n`;
-      message += `📍 ${activeMatchday.venue}\n`;
+      message += `📍 ${esc(activeMatchday.venue)}\n`;
       message += `⏰ ${activeMatchday.start_time} - ${activeMatchday.end_time}\n\n`;
       
       if (availableNames.length > 0) {
@@ -6696,13 +6710,13 @@
       const dayRankings = rankTeamsByMatches(activeMatchday.date);
       
       let message = `🎾 *PADEL VILLAINS RESULTS*\n`;
-      message += `📅 ${dateStr} @ ${activeMatchday.venue}\n\n`;
+      message += `📅 ${dateStr} @ ${esc(activeMatchday.venue)}\n\n`;
       
       if (dayRankings.length > 0) {
         const winner = dayRankings[0];
         const { p1, p2 } = getTeamPlayers(winner);
-        message += `👑 *Today's Villains:* ${winner.name}\n`;
-        message += `   ${p1?.name || '?'} & ${p2?.name || '?'}\n`;
+        message += `👑 *Today's Villains:* ${esc(winner.name)}\n`;
+        message += `   ${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}\n`;
         message += `   Record: ${winner.wins}W - ${winner.losses}L\n\n`;
       }
       
@@ -6710,7 +6724,7 @@
       dayRankings.slice(0, 5).forEach((t, i) => {
         const { p1, p2 } = getTeamPlayers(t);
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-        message += `${medal} ${t.name} (${t.wins}W-${t.losses}L)\n`;
+        message += `${medal} ${esc(t.name)} (${t.wins}W-${t.losses}L)\n`;
       });
       
       message += `\n🏆 Total Matches: ${dayMatches.length}`;
@@ -6730,9 +6744,9 @@
       
       let message = `🎾 *PADEL VILLAINS*\n\n`;
       message += `🏆 *Match Result*\n\n`;
-      message += `${t1?.name || '?'} vs ${t2?.name || '?'}\n`;
+      message += `${esc(t1?.name || '?')} vs ${esc(t2?.name || '?')}\n`;
       message += `📊 ${scores}\n\n`;
-      message += `🥇 *Winner: ${winner?.name || '?'}*\n\n`;
+      message += `🥇 *Winner: ${esc(winner?.name || '?')}*\n\n`;
       message += `padel-villains.vercel.app`;
       
       const encoded = encodeURIComponent(message);
@@ -6782,9 +6796,9 @@
         html += `<div style="text-align:center;margin-bottom:20px;padding:20px;background:linear-gradient(135deg,rgba(212,168,83,0.08),rgba(212,168,83,0.02));border-radius:16px;border:1px solid rgba(212,168,83,0.15)">
           <div style="font-size:32px">👑</div>
           <div style="font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:700;margin:4px 0">TODAY'S VILLAINS</div>
-          <div style="font-family:'Sublime',sans-serif;font-size:26px;color:var(--brown-dark);letter-spacing:2px">${villain.name}</div>
+          <div style="font-family:'Sublime',sans-serif;font-size:26px;color:var(--brown-dark);letter-spacing:2px">${esc(villain.name)}</div>
           <div style="display:flex;gap:6px;justify-content:center;margin:8px 0">${av(villainPlayers.p1,'sm')}${av(villainPlayers.p2,'sm')}</div>
-          <div style="font-size:13px;color:var(--text-muted)">${villainPlayers.p1?.name||'?'} & ${villainPlayers.p2?.name||'?'}</div>
+          <div style="font-size:13px;color:var(--text-muted)">${esc(villainPlayers.p1?.name||'?')} & ${esc(villainPlayers.p2?.name||'?')}</div>
           <div style="font-family:'DirtyWeather',sans-serif;font-size:22px;color:var(--clay);margin-top:6px">${villain.wins}W - ${villain.losses}L</div>
         </div>`;
       }
@@ -6801,8 +6815,8 @@
             <span style="font-family:'Sublime',sans-serif;font-size:18px;width:32px;text-align:center">${medal}</span>
             <div style="display:flex;gap:2px">${av(p1,'xs')}${av(p2,'xs')}</div>
             <div style="flex:1">
-              <div style="font-weight:600;font-size:14px">${t.name}</div>
-              <div style="font-size:11px;color:var(--text-muted)">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+              <div style="font-weight:600;font-size:14px">${esc(t.name)}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${esc(p1?.name||'?')} & ${esc(p2?.name||'?')}</div>
             </div>
             <div style="text-align:right">
               <div style="font-family:'DirtyWeather',sans-serif;font-size:18px;color:var(--brown-dark)">${t.wins}W ${t.losses}L</div>
@@ -6831,14 +6845,14 @@
           <span style="font-size:11px;color:var(--text-muted);width:40px;text-align:center;flex-shrink:0">${time}</span>
           <div style="flex:1;display:flex;align-items:center;gap:6px">
             <div style="display:flex;gap:1px">${av(t1p1,'xs')}${av(t1p2,'xs')}</div>
-            <span style="font-weight:${w1 ? '700' : '400'};font-size:13px;${w1 ? 'color:var(--brown-dark)' : 'color:var(--text-muted)'}">${t1?.name || '?'}</span>
+            <span style="font-weight:${w1 ? '700' : '400'};font-size:13px;${w1 ? 'color:var(--brown-dark)' : 'color:var(--text-muted)'}">${esc(t1?.name || '?')}</span>
           </div>
           <div style="text-align:center;min-width:50px">
             <div style="font-family:'DirtyWeather',sans-serif;font-size:18px;color:var(--clay)">${score}</div>
             ${mode ? `<div style="font-size:10px">${mode}</div>` : ''}
           </div>
           <div style="flex:1;display:flex;align-items:center;gap:6px;justify-content:flex-end">
-            <span style="font-weight:${!w1 ? '700' : '400'};font-size:13px;${!w1 ? 'color:var(--brown-dark)' : 'color:var(--text-muted)'}">${t2?.name || '?'}</span>
+            <span style="font-weight:${!w1 ? '700' : '400'};font-size:13px;${!w1 ? 'color:var(--brown-dark)' : 'color:var(--text-muted)'}">${esc(t2?.name || '?')}</span>
             <div style="display:flex;gap:1px">${av(t2p1,'xs')}${av(t2p2,'xs')}</div>
           </div>
         </div>`;
@@ -6856,7 +6870,7 @@
           html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${i < topPlayers.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
             <span style="font-family:'Sublime',sans-serif;font-size:16px;width:28px;text-align:center">${medal}</span>
             ${av(player, 'sm')}
-            <div style="flex:1"><span style="font-weight:600;font-size:13px">${player?.name || '?'}</span></div>
+            <div style="flex:1"><span style="font-weight:600;font-size:13px">${esc(player?.name || '?')}</span></div>
             <span style="font-size:12px;color:var(--text-muted)">${p.wins}W ${p.losses}L</span>
             <span style="font-size:12px;color:var(--clay);font-weight:600">${p.wins + p.losses > 0 ? Math.round(p.wins / (p.wins + p.losses) * 100) : 0}%</span>
           </div>`;
@@ -6889,15 +6903,15 @@
       if (dayRankings.length > 0) {
         const v = dayRankings[0];
         const { p1, p2 } = getTeamPlayers(v);
-        msg += `👑 *Today's Villains: ${v.name}*\n`;
-        msg += `   ${p1?.name||'?'} & ${p2?.name||'?'} (${v.wins}W-${v.losses}L)\n\n`;
+        msg += `👑 *Today's Villains: ${esc(v.name)}*\n`;
+        msg += `   ${esc(p1?.name||'?')} & ${esc(p2?.name||'?')} (${v.wins}W-${v.losses}L)\n\n`;
       }
       
       // Standings
       msg += `🏆 *Standings:*\n`;
       dayRankings.forEach((t, i) => {
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
-        msg += `${medal} ${t.name} (${t.wins}W-${t.losses}L)\n`;
+        msg += `${medal} ${esc(t.name)} (${t.wins}W-${t.losses}L)\n`;
       });
       
       // Results
@@ -6928,12 +6942,12 @@
       msg += `🏟️ ${dayMatches.length} matches played\n\n`;
       if (dayRankings.length > 0) {
         const v = dayRankings[0]; const { p1, p2 } = getTeamPlayers(v);
-        msg += `👑 Today's Villains: ${v.name}\n   ${p1?.name||'?'} & ${p2?.name||'?'} (${v.wins}W-${v.losses}L)\n\n`;
+        msg += `👑 Today's Villains: ${esc(v.name)}\n   ${esc(p1?.name||'?')} & ${esc(p2?.name||'?')} (${v.wins}W-${v.losses}L)\n\n`;
       }
       msg += `🏆 Standings:\n`;
       dayRankings.forEach((t, i) => {
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
-        msg += `${medal} ${t.name} (${t.wins}W-${t.losses}L)\n`;
+        msg += `${medal} ${esc(t.name)} (${t.wins}W-${t.losses}L)\n`;
       });
       msg += `\n📋 Results:\n`;
       dayMatches.forEach(m => {
@@ -6941,7 +6955,7 @@
         const w1 = m.winner_id === t1?.id;
         const score = (m.scores||[]).map(s => `${s[0]}-${s[1]}`).join(', ');
         const time = m.finalized_at ? new Date(m.finalized_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
-        msg += `${time ? time + ' ' : ''}${w1 ? t1?.name : t1?.name} ${score} ${t2?.name}\n`;
+        msg += `${time ? time + ' ' : ''}${w1 ? t1?.name : t1?.name} ${score} ${esc(t2?.name)}\n`;
       });
       msg += `\n🔗 padel-villains.vercel.app`;
       return msg;
@@ -7103,7 +7117,7 @@
         
         ctx.fillStyle = muted;
         ctx.font = '400 20px "DM Sans", sans-serif';
-        ctx.fillText(`${villainPlayers.p1?.name||'?'} & ${villainPlayers.p2?.name||'?'}`, W/2, y);
+        ctx.fillText(`${esc(villainPlayers.p1?.name||'?')} & ${esc(villainPlayers.p2?.name||'?')}`, W/2, y);
         y += 30;
         
         ctx.fillStyle = clay;
@@ -7152,7 +7166,7 @@
         
         ctx.font = '400 16px "DM Sans", sans-serif';
         ctx.fillStyle = muted;
-        ctx.fillText(`${p1?.name||'?'} & ${p2?.name||'?'}`, pad + 48, y + 26);
+        ctx.fillText(`${esc(p1?.name||'?')} & ${esc(p2?.name||'?')}`, pad + 48, y + 26);
         
         ctx.font = '700 20px "DM Sans", sans-serif';
         ctx.fillStyle = clay;
@@ -7993,7 +8007,7 @@
           const winner = getTeam(m.winner_id);
           const scores = (m.scores || []).map(s => `${s[0]}-${s[1]}`).join(', ');
           const w1 = m.winner_id === t1?.id;
-          message += `${w1 ? '🏆' : '  '}  *${t1?.name || '?'}* vs *${t2?.name || '?'}*  ${!w1 ? '🏆' : ''}\n`;
+          message += `${w1 ? '🏆' : '  '}  *${esc(t1?.name || '?')}* vs *${esc(t2?.name || '?')}*  ${!w1 ? '🏆' : ''}\n`;
           message += `   📊 ${scores}\n\n`;
         });
         
@@ -8003,7 +8017,7 @@
           message += `📊 *Standings:*\n`;
           dayRankings.slice(0, 5).forEach((t, i) => {
             const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-            message += `${medal} ${t.name} (${t.wins}W-${t.losses}L)\n`;
+            message += `${medal} ${esc(t.name)} (${t.wins}W-${t.losses}L)\n`;
           });
           message += `\n`;
         }
@@ -8016,9 +8030,9 @@
           const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
           const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
           const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
-          message += `*${i + 1}. ${t1?.name || '?'} vs ${t2?.name || '?'}*\n`;
-          message += `   ${t1p1?.name || '?'} & ${t1p2?.name || '?'} vs ${t2p1?.name || '?'} & ${t2p2?.name || '?'}\n`;
-          message += `   🏟 ${m.court}\n\n`;
+          message += `*${i + 1}. ${esc(t1?.name || '?')} vs ${esc(t2?.name || '?')}*\n`;
+          message += `   ${esc(t1p1?.name || '?')} & ${esc(t1p2?.name || '?')} vs ${esc(t2p1?.name || '?')} & ${esc(t2p2?.name || '?')}\n`;
+          message += `   🏟 ${esc(m.court)}\n\n`;
         });
       }
       
@@ -8161,7 +8175,7 @@
       // Populate venue dropdown
       const venueSelect = document.getElementById('editMatchdayVenue');
       venueSelect.innerHTML = venues.map(v => 
-        `<option value="${v.name}" ${v.name === activeMatchday.venue ? 'selected' : ''}>${v.name}</option>`
+        `<option value="${esc(v.name)}" ${v.name === activeMatchday.venue ? 'selected' : ''}>${esc(v.name)}</option>`
       ).join('');
       
       openModal('editMatchday');
@@ -8301,7 +8315,7 @@
     function updateMatchdayVenueDropdown() {
       const venueSelect = document.getElementById('newMatchdayVenue');
       if (venueSelect) {
-        venueSelect.innerHTML = venues.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+        venueSelect.innerHTML = venues.map(v => `<option value="${v.id}">${esc(v.name)}</option>`).join('');
       }
     }
     
@@ -8345,15 +8359,15 @@
         const fullPlayer = players.find(pl => pl.id === p.id) || p;
         const playerPhoto = fullPlayer.photo || photoCache[fullPlayer.id];
         const photoHtml = playerPhoto 
-          ? `<div class="avatar lg"><img src="${playerPhoto}" alt="${fullPlayer.name}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${(fullPlayer.name?.charAt(0) || '?').toUpperCase()}'"></div>`
+          ? `<div class="avatar lg"><img src="${playerPhoto}" alt="${esc(fullPlayer.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${(fullPlayer.name?.charAt(0) || '?').toUpperCase()}'"></div>`
           : `<div class="avatar lg">${fullPlayer.name?.charAt(0).toUpperCase() || '?'}</div>`;
         
         return `<div class="player-card ${top} ${inactive}" onclick="openPlayerProfile(${p.id})">
           ${isVillain ? '<div class="player-villain-crown">👑</div>' : ''}
           <div class="player-rank ${rc}">${i + 1}</div>
           <div class="player-avatar-wrap">${photoHtml}</div>
-          <div class="player-name">${p.name}</div>
-          ${p.nickname ? `<div class="player-nickname">"${p.nickname}"</div>` : ''}
+          <div class="player-name">${esc(p.name)}</div>
+          ${p.nickname ? `<div class="player-nickname">"${esc(p.nickname)}"</div>` : ''}
           ${p.position ? `<div class="player-position-tag">${p.position}</div>` : ''}
           <div class="player-stats-row">
             <div class="player-stat"><div class="player-stat-value wins">${p.wins}</div><div class="player-stat-label">Wins</div></div>
@@ -8374,7 +8388,7 @@
       
       if (top && top.matches > 0) {
         const { p1, p2 } = getTeamPlayers(top);
-        document.getElementById('teamsHeroContent').innerHTML = `<div class="teams-hero-team"><div style="display:flex;gap:-8px">${av(p1)}${av(p2)}</div><div class="teams-hero-info"><h3>${top.name}</h3><p>${p1?.name||'?'} & ${p2?.name||'?'}</p></div></div><div class="teams-hero-stats"><div class="teams-hero-stat"><div class="teams-hero-stat-value">${top.wins}</div><div class="teams-hero-stat-label">Wins</div></div><div class="teams-hero-stat"><div class="teams-hero-stat-value">${top.losses}</div><div class="teams-hero-stat-label">Losses</div></div><div class="teams-hero-stat"><div class="teams-hero-stat-value">${top.rate}%</div><div class="teams-hero-stat-label">Win Rate</div></div></div>`;
+        document.getElementById('teamsHeroContent').innerHTML = `<div class="teams-hero-team"><div style="display:flex;gap:-8px">${av(p1)}${av(p2)}</div><div class="teams-hero-info"><h3>${esc(top.name)}</h3><p>${esc(p1?.name||'?')} & ${esc(p2?.name||'?')}</p></div></div><div class="teams-hero-stats"><div class="teams-hero-stat"><div class="teams-hero-stat-value">${top.wins}</div><div class="teams-hero-stat-label">Wins</div></div><div class="teams-hero-stat"><div class="teams-hero-stat-value">${top.losses}</div><div class="teams-hero-stat-label">Losses</div></div><div class="teams-hero-stat"><div class="teams-hero-stat-value">${top.rate}%</div><div class="teams-hero-stat-label">Win Rate</div></div></div>`;
       } else {
         document.getElementById('teamsHeroContent').innerHTML = '<p style="color:#888">No matches played yet</p>';
       }
@@ -8406,9 +8420,9 @@
           ${isVillain ? '<div class="team-villain-badge">👑 TODAY\'S VILLAINS</div>' : ''}
           <div class="team-rank-badge">#${i + 1}</div>
           <div class="team-avatars ${isVillain ? 'has-badge' : ''}">${av(p1)}<span class="team-amp">&</span>${av(p2)}</div>
-          <div class="team-name">${t.name}</div>
+          <div class="team-name">${esc(t.name)}</div>
           <span class="team-status ${t.active === false ? 'inactive' : 'active'}">${t.active === false ? 'Inactive' : 'Active'}</span>
-          <div class="team-players-names">${p1?.name || '?'} & ${p2?.name || '?'}</div>
+          <div class="team-players-names">${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}</div>
           <div class="team-record">
             <div class="team-record-item"><div class="team-record-value wins">${t.wins}</div><div class="team-record-label">Wins</div></div>
             <div class="team-record-item"><div class="team-record-value losses">${t.losses}</div><div class="team-record-label">Losses</div></div>
@@ -8439,16 +8453,16 @@
         return `<div class="ongoing-match" onclick="openFinalizeMatch(${m.id})">
           <div class="ongoing-match-header">
             <div class="ongoing-match-status"><span class="live-dot"></span> MATCH ${i + 1}${modeBadge}${roundBadge}</div>
-            <span class="ongoing-match-court">${m.court}</span>
+            <span class="ongoing-match-court">${esc(m.court)}</span>
           </div>
           <div class="ongoing-match-teams">
             <div class="ongoing-match-team">
               <div class="ongoing-match-team-avatars">${av(t1p1, 'sm')}${av(t1p2, 'sm')}</div>
-              <span class="ongoing-match-team-name">${t1?.name || '?'}</span>
+              <span class="ongoing-match-team-name">${esc(t1?.name || '?')}</span>
             </div>
             <span class="ongoing-match-vs">VS</span>
             <div class="ongoing-match-team">
-              <span class="ongoing-match-team-name">${t2?.name || '?'}</span>
+              <span class="ongoing-match-team-name">${esc(t2?.name || '?')}</span>
               <div class="ongoing-match-team-avatars">${av(t2p1, 'sm')}${av(t2p2, 'sm')}</div>
             </div>
           </div>
@@ -8492,7 +8506,7 @@
       }).sort((a, b) => a.name.localeCompare(b.name));
       
       const optionsHtml = '<option value="">All Teams</option>' + teamOptions.map(t => 
-        `<option value="${t.id}" ${t.id == currentTeamId ? 'selected' : ''}>${t.name}</option>`
+        `<option value="${t.id}" ${t.id == currentTeamId ? 'selected' : ''}>${esc(t.name)}</option>`
       ).join('');
       if (teamSelect.innerHTML !== optionsHtml) teamSelect.innerHTML = optionsHtml;
       if (currentTeamId) teamSelect.value = currentTeamId;
@@ -8503,7 +8517,7 @@
         const mdOptsHtml = '<option value="">All Match Days</option>' + mdOptions.map(md => {
           const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
           const selected = String(md.id) === String(selectedMatchdayId) ? 'selected' : '';
-          return `<option value="${md.id}" ${selected}>${dateStr} • ${md.venue || '—'}</option>`;
+          return `<option value="${md.id}" ${selected}>${dateStr} • ${esc(md.venue || '—')}</option>`;
         }).join('');
         if (matchdayFilterEl.innerHTML !== mdOptsHtml) matchdayFilterEl.innerHTML = mdOptsHtml;
         if (selectedMatchdayId) matchdayFilterEl.value = selectedMatchdayId;
@@ -8544,8 +8558,8 @@
             <div class="match-team-stats-header">
               <div style="display:flex;gap:4px">${av(p1, 'sm')}${av(p2, 'sm')}</div>
               <div>
-                <div class="match-team-stats-name">${team?.name || '?'}</div>
-                <div style="font-size:12px;color:var(--text-muted)">${p1?.name || '?'} & ${p2?.name || '?'}</div>
+                <div class="match-team-stats-name">${esc(team?.name || '?')}</div>
+                <div style="font-size:12px;color:var(--text-muted)">${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}</div>
               </div>
               ${streakCount >= 2 ? `<span class="match-team-stats-streak ${isHot ? 'hot' : isCold ? 'cold' : ''}">🔥 ${streakText} streak</span>` : ''}
             </div>
@@ -8572,15 +8586,15 @@
             </div>
             <div style="display:flex;align-items:center;gap:12px">
               ${m.game_mode ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:${m.game_mode === 'kotc' ? 'rgba(212,168,83,0.15);color:#B8942F' : 'rgba(124,58,237,0.1);color:#7C3AED'}">${m.game_mode === 'kotc' ? '👑 KOTC' : '🎲 RANDOM'}</span>` : ''}
-              <div class="match-location"><i class="fas fa-map-marker-alt"></i> ${m.court}</div>
+              <div class="match-location"><i class="fas fa-map-marker-alt"></i> ${esc(m.court)}</div>
               <i class="fas fa-edit" style="color:var(--text-muted);font-size:12px"></i>
             </div>
           </div>
           <div class="match-body">
             <div class="match-team-card ${w1 ? 'winner' : ''}">
               <div class="match-team-avatars">${av(t1p1, 'sm')}${av(t1p2, 'sm')}</div>
-              <div class="match-team-name">${t1?.name || '?'}</div>
-              <div class="match-team-players">${t1p1?.name || '?'} & ${t1p2?.name || '?'}</div>
+              <div class="match-team-name">${esc(t1?.name || '?')}</div>
+              <div class="match-team-players">${esc(t1p1?.name || '?')} & ${esc(t1p2?.name || '?')}</div>
               ${w1 ? '<span class="match-winner-badge">WINNER</span>' : ''}
             </div>
             <div class="match-scores">
@@ -8588,8 +8602,8 @@
             </div>
             <div class="match-team-card ${!w1 ? 'winner' : ''}">
               <div class="match-team-avatars">${av(t2p1, 'sm')}${av(t2p2, 'sm')}</div>
-              <div class="match-team-name">${t2?.name || '?'}</div>
-              <div class="match-team-players">${t2p1?.name || '?'} & ${t2p2?.name || '?'}</div>
+              <div class="match-team-name">${esc(t2?.name || '?')}</div>
+              <div class="match-team-players">${esc(t2p1?.name || '?')} & ${esc(t2p2?.name || '?')}</div>
               ${!w1 ? '<span class="match-winner-badge">WINNER</span>' : ''}
             </div>
           </div>
@@ -8614,8 +8628,8 @@
           <span class="rank-team">
             <div class="rank-avatars">${av(p1, 'sm')}${av(p2, 'sm')}</div>
             <div class="rank-info">
-              <h4>${t.name}${isVillain ? '<span class="rank-villain-tag">👑 VILLAINS</span>' : ''}</h4>
-              <p>${p1?.name || '?'} & ${p2?.name || '?'}${t.totalDays ? ` · ${t.daysAttended || 0}/${t.totalDays} days` : ''}</p>
+              <h4>${esc(t.name)}${isVillain ? '<span class="rank-villain-tag">👑 VILLAINS</span>' : ''}</h4>
+              <p>${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}${t.totalDays ? ` · ${t.daysAttended || 0}/${t.totalDays} days` : ''}</p>
             </div>
           </span>
           <span class="rank-record">
@@ -8674,7 +8688,7 @@
           <span class="rank-team">
             ${av(player, 'sm')}
             <div class="rank-info">
-              <h4>${p.name}${p.isVillain ? '<span class="rank-villain-tag">👑</span>' : ''}</h4>
+              <h4>${esc(p.name)}${p.isVillain ? '<span class="rank-villain-tag">👑</span>' : ''}</h4>
               <p style="font-size:11px">${p.partners} partners${p.totalDays > 0 ? ` · ${p.daysAttended}/${p.totalDays} days` : ''}</p>
             </div>
           </span>
@@ -8943,8 +8957,8 @@
             <div style="display:flex;align-items:center;gap:8px">
               <div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t.player1_id)}">${(p1?.name||'?').charAt(0)}</div>
               <div>
-                <div style="font-weight:700;font-size:14px">${t.name} ${formDots}</div>
-                <div style="font-size:11px;color:var(--text-muted)">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+                <div style="font-weight:700;font-size:14px">${esc(t.name)} ${formDots}</div>
+                <div style="font-size:11px;color:var(--text-muted)">${esc(p1?.name||'?')} & ${esc(p2?.name||'?')}</div>
               </div>
             </div>
           </div>
@@ -9169,7 +9183,7 @@
       if (query) {
         filtered = filtered.filter(t => {
           const p1 = getPlayer(t.player1_id), p2 = getPlayer(t.player2_id);
-          const searchStr = `${t.name} ${p1?.name||''} ${p2?.name||''}`.toLowerCase();
+          const searchStr = `${esc(t.name)} ${esc(p1?.name||'')} ${esc(p2?.name||'')}`.toLowerCase();
           return searchStr.includes(query);
         });
       }
@@ -9196,8 +9210,8 @@
             <div class="avatar" style="background:${getPlayerColor(t.player2_id)}">${(p2?.name||'?').charAt(0)}</div>
           </div>
           <div>
-            <div class="md-team-name">${t.name}</div>
-            <div class="md-team-players">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+            <div class="md-team-name">${esc(t.name)}</div>
+            <div class="md-team-players">${esc(p1?.name||'?')} & ${esc(p2?.name||'?')}</div>
           </div>
           ${active ? '<div class="md-team-check">✓</div>' : ''}
         </button>`;
@@ -9213,7 +9227,7 @@
       if (query) {
         toSelect = toSelect.filter(t => {
           const p1 = getPlayer(t.player1_id), p2 = getPlayer(t.player2_id);
-          return `${t.name} ${p1?.name||''} ${p2?.name||''}`.toLowerCase().includes(query);
+          return `${esc(t.name)} ${esc(p1?.name||'')} ${esc(p2?.name||'')}`.toLowerCase().includes(query);
         });
       }
       toSelect.forEach(t => {
@@ -9253,7 +9267,7 @@
         return `<div class="md-team-chip">
           <div class="avatar" style="background:${getPlayerColor(t.player1_id)}">${(p1?.name||'?').charAt(0)}</div>
           <div class="avatar" style="background:${getPlayerColor(t.player2_id)}">${(p2?.name||'?').charAt(0)}</div>
-          <span>${t.name}</span>
+          <span>${esc(t.name)}</span>
           <button class="md-team-chip-remove" onclick="removeTeamChip(${id},'${mode}')" title="Remove">✕</button>
         </div>`;
       }).join('');
@@ -9286,7 +9300,7 @@
         const active = mdDraftPlayerIds.includes(p.id);
         return `<button class="md-americano-btn ${active ? 'active' : ''}" onclick="draftTogglePlayer(${p.id})" style="${active ? 'border-color:var(--clay);background:rgba(224,120,80,0.06)' : ''}">
           ${av(p, 'xs')}
-          <span class="md-americano-name">${p.name}</span>
+          <span class="md-americano-name">${esc(p.name)}</span>
           ${active ? '<span class="md-americano-check" style="background:var(--clay)"><i class="fas fa-check"></i></span>' : ''}
         </button>`;
       }).join('');
@@ -9352,7 +9366,7 @@
           <div style="font-size:28px">⭐</div>
           <div style="font-size:11px;letter-spacing:3px;color:var(--gold);font-weight:700;margin:4px 0">STAR PLAYER</div>
           <div style="display:flex;justify-content:center;margin:8px 0">${av(sp,'lg')}</div>
-          <div style="font-weight:700;font-size:16px">${sp?.name || '?'}</div>
+          <div style="font-weight:700;font-size:16px">${esc(sp?.name || '?')}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Rotates as fill-in · No record</div>
         </div>`;
       } else {
@@ -9367,11 +9381,11 @@
         return `<div style="background:linear-gradient(135deg,var(--brown-dark) 0%,var(--clay) 100%);color:white;border-radius:16px;padding:20px;text-align:center;position:relative;overflow:hidden">
           <div style="position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
           <div style="font-size:11px;letter-spacing:2px;opacity:0.7">TEAM ${i+1}</div>
-          <div style="font-family:'Sublime',sans-serif;font-size:22px;letter-spacing:2px;margin:6px 0">${t.name}</div>
+          <div style="font-family:'Sublime',sans-serif;font-size:22px;letter-spacing:2px;margin:6px 0">${esc(t.name)}</div>
           <div style="display:flex;gap:6px;justify-content:center;margin:12px 0">
             ${av(p1,'md')}${av(p2,'md')}
           </div>
-          <div style="font-size:13px;opacity:0.9">${p1?.name || '?'} & ${p2?.name || '?'}</div>
+          <div style="font-size:13px;opacity:0.9">${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}</div>
         </div>`;
       }).join('');
     }
@@ -9828,16 +9842,16 @@
           return `<div class="ongoing-match" onclick="openFinalizeMatch(${m.id})" style="margin-bottom:8px">>
             <div class="ongoing-match-header">
               <div class="ongoing-match-status"><span class="live-dot"></span> ${roundBadge}</div>
-              <span class="ongoing-match-court">${m.court || ''}</span>
+              <span class="ongoing-match-court">${esc(m.court || '')}</span>
             </div>
             <div class="ongoing-match-teams">
               <div class="ongoing-match-team">
                 <div class="ongoing-match-team-avatars">${av(t1p1,'sm')}${av(t1p2,'sm')}</div>
-                <span class="ongoing-match-team-name">${t1?.name || '?'}</span>
+                <span class="ongoing-match-team-name">${esc(t1?.name || '?')}</span>
               </div>
               <span class="ongoing-match-vs">VS</span>
               <div class="ongoing-match-team">
-                <span class="ongoing-match-team-name">${t2?.name || '?'}</span>
+                <span class="ongoing-match-team-name">${esc(t2?.name || '?')}</span>
                 <div class="ongoing-match-team-avatars">${av(t2p1,'sm')}${av(t2p2,'sm')}</div>
               </div>
             </div>
@@ -9861,9 +9875,9 @@
           const time = m.finalized_at ? new Date(m.finalized_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
           return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(93,78,55,0.06);font-size:13px">
             ${time ? `<span style="font-size:11px;color:var(--text-muted);min-width:36px">${time}</span>` : ''}
-            <span style="font-weight:${w1?'700':'400'};color:${w1?'var(--brown-dark)':'var(--text-muted)'};flex:1">${t1?.name||'?'}</span>
+            <span style="font-weight:${w1?'700':'400'};color:${w1?'var(--brown-dark)':'var(--text-muted)'};flex:1">${esc(t1?.name||'?')}</span>
             <span style="font-weight:800;color:var(--clay);font-size:15px">${score}</span>
-            <span style="font-weight:${!w1?'700':'400'};color:${!w1?'var(--brown-dark)':'var(--text-muted)'};flex:1;text-align:right">${t2?.name||'?'}</span>
+            <span style="font-weight:${!w1?'700':'400'};color:${!w1?'var(--brown-dark)':'var(--text-muted)'};flex:1;text-align:right">${esc(t2?.name||'?')}</span>
             ${currentUser?.is_admin ? `<button onclick="openFinalizeMatch(${m.id});event.stopPropagation()" title="Edit" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted);padding:0;flex-shrink:0"><i class="fas fa-pen"></i></button>` : ''}
           </div>`;
         }).join('');
@@ -9875,8 +9889,8 @@
           return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(93,78,55,0.06)">
             <span style="font-size:16px;width:24px;text-align:center">${i < 3 ? medals[i] : '#'+(i+1)}</span>
             <div style="flex:1">
-              <div style="font-weight:600;font-size:13px">${t.name}</div>
-              <div style="font-size:10px;color:var(--text-muted)">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+              <div style="font-weight:600;font-size:13px">${esc(t.name)}</div>
+              <div style="font-size:10px;color:var(--text-muted)">${esc(p1?.name||'?')} & ${esc(p2?.name||'?')}</div>
             </div>
             <span style="font-weight:700;color:var(--success);font-size:13px">${t.wins}W</span>
             <span style="font-weight:700;color:var(--danger);font-size:13px">${t.losses}L</span>
@@ -9916,7 +9930,7 @@
             </div>
             ${myOngoing.length > 0 ? `<div style="font-size:11px;font-weight:700;color:var(--clay);letter-spacing:1px;margin-bottom:6px">⏳ NEXT UP</div>` + myOngoing.map(m => {
               const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
-              return `<div style="padding:8px 10px;background:rgba(224,120,80,0.05);border-radius:8px;border-left:3px solid var(--clay);font-size:12px;font-weight:600;margin-bottom:4px">${t1?.name||'?'} vs ${t2?.name||'?'} • ${m.court||''}</div>`;
+              return `<div style="padding:8px 10px;background:rgba(224,120,80,0.05);border-radius:8px;border-left:3px solid var(--clay);font-size:12px;font-weight:600;margin-bottom:4px">${esc(t1?.name||'?')} vs ${esc(t2?.name||'?')} • ${esc(m.court||'')}</div>`;
             }).join('') : ''}
           `;
         } else {
@@ -9962,7 +9976,7 @@
         const isActive = activeMatchday && md.id === activeMatchday.id;
         const isClosed = md.status === 'closed';
         const tag = isActive ? ' • LIVE' : isClosed ? ' • completed' : '';
-        const venue = md.venue ? ` • ${md.venue}` : '';
+        const venue = md.venue ? ` • ${esc(md.venue)}` : '';
         return `<option value="${md.id}" ${md.id === viewedId ? 'selected' : ''}>${dateStr}${venue}${tag}</option>`;
       }).join('');
       const emptyOpt = `<option value="" ${!viewedId ? 'selected' : ''}>— Select a match day —</option>`;
@@ -10075,7 +10089,7 @@
       dayMatches.forEach(m => { teamIdsInDay.add(m.team1_id); teamIdsInDay.add(m.team2_id); });
       const teamOptions = Array.from(teamIdsInDay).map(id => getTeam(id)).filter(Boolean).sort((a,b) => a.name.localeCompare(b.name));
       const opts = '<option value="">Select a team to see their performance</option>' + teamOptions.map(t => 
-        `<option value="${t.id}" ${t.id == mdTeamFilterId ? 'selected' : ''}>${t.name}</option>`
+        `<option value="${t.id}" ${t.id == mdTeamFilterId ? 'selected' : ''}>${esc(t.name)}</option>`
       ).join('');
       if (select.innerHTML !== opts) select.innerHTML = opts;
       if (mdTeamFilterId) select.value = String(mdTeamFilterId);
@@ -10112,8 +10126,8 @@
             <div class="match-team-stats-header">
               <div style="display:flex;gap:4px">${av(p1, 'sm')}${av(p2, 'sm')}</div>
               <div>
-                <div class="match-team-stats-name">${team.name}</div>
-                <div style="font-size:12px;color:var(--text-muted)">${p1?.name || '?'} & ${p2?.name || '?'}</div>
+                <div class="match-team-stats-name">${esc(team.name)}</div>
+                <div style="font-size:12px;color:var(--text-muted)">${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}</div>
               </div>
             </div>
             <div class="match-team-stats-row">
@@ -10134,9 +10148,9 @@
           const w1 = m.winner_id === t1?.id;
           const score = (m.scores||[]).map(s => `${s[0]}-${s[1]}`).join(', ');
           return `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid rgba(93,78,55,0.06);font-size:13px">
-            <span style="font-weight:${w1?'700':'400'};color:${w1?'var(--brown-dark)':'var(--text-muted)'};flex:1">${t1?.name||'?'}</span>
+            <span style="font-weight:${w1?'700':'400'};color:${w1?'var(--brown-dark)':'var(--text-muted)'};flex:1">${esc(t1?.name||'?')}</span>
             <span style="font-weight:800;color:var(--clay);font-size:15px">${score}</span>
-            <span style="font-weight:${!w1?'700':'400'};color:${!w1?'var(--brown-dark)':'var(--text-muted)'};flex:1;text-align:right">${t2?.name||'?'}</span>
+            <span style="font-weight:${!w1?'700':'400'};color:${!w1?'var(--brown-dark)':'var(--text-muted)'};flex:1;text-align:right">${esc(t2?.name||'?')}</span>
           </div>`;
         }).join('');
       }
@@ -10312,16 +10326,16 @@
                 const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
                 const p1 = getPlayer(t1?.player1_id);
                 html += `<div class="md-schedule-match ${m.isNew ? 'new-team' : ''}">
-                  <div class="md-schedule-court">C${m.court}</div>
-                  <div class="md-schedule-team"><div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t1?.player1_id)}">${(p1?.name||'?').charAt(0)}</div><span class="md-schedule-team-name">${t1?.name||'?'}</span></div>
+                  <div class="md-schedule-court">C${esc(m.court)}</div>
+                  <div class="md-schedule-team"><div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t1?.player1_id)}">${(p1?.name||'?').charAt(0)}</div><span class="md-schedule-team-name">${esc(t1?.name||'?')}</span></div>
                   <span class="md-schedule-vs">VS</span>
-                  <div class="md-schedule-team" style="justify-content:flex-end"><span class="md-schedule-team-name">${t2?.name||'?'}</span><div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t2?.player1_id)}">${(getPlayer(t2?.player1_id)?.name||'?').charAt(0)}</div></div>
+                  <div class="md-schedule-team" style="justify-content:flex-end"><span class="md-schedule-team-name">${esc(t2?.name||'?')}</span><div class="avatar" style="width:28px;height:28px;font-size:11px;background:${getPlayerColor(t2?.player1_id)}">${(getPlayer(t2?.player1_id)?.name||'?').charAt(0)}</div></div>
                 </div>`;
               } else {
                 const names1 = m.team1.map(id => getPlayer(id)?.name || '?');
                 const names2 = m.team2.map(id => getPlayer(id)?.name || '?');
                 html += `<div class="md-schedule-match">
-                  <div class="md-schedule-court">C${m.court}</div>
+                  <div class="md-schedule-court">C${esc(m.court)}</div>
                   <div class="md-schedule-team"><span class="md-schedule-team-name">${names1.join(' & ')}</span></div>
                   <span class="md-schedule-vs">VS</span>
                   <div class="md-schedule-team" style="justify-content:flex-end"><span class="md-schedule-team-name">${names2.join(' & ')}</span></div>
@@ -10408,8 +10422,8 @@
             const p2a = getPlayer(t2?.player1_id), p2b = getPlayer(t2?.player2_id);
             t1Name = t1?.name || '?';
             t2Name = t2?.name || '?';
-            t1Players = `${p1a?.name||'?'} & ${p1b?.name||'?'}`;
-            t2Players = `${p2a?.name||'?'} & ${p2b?.name||'?'}`;
+            t1Players = `${esc(p1a?.name||'?')} & ${esc(p1b?.name||'?')}`;
+            t2Players = `${esc(p2a?.name||'?')} & ${esc(p2b?.name||'?')}`;
             t1Color = getPlayerColor(t1?.player1_id);
             t2Color = getPlayerColor(t2?.player1_id);
           }
@@ -10526,7 +10540,7 @@
               </div>
               ${t1RecentHtml || t2RecentHtml ? '<div style="display:flex;gap:16px;flex-wrap:wrap">' + t1RecentHtml + t2RecentHtml + '</div>' : ''}
             </div>
-            <span style="font-size:11px;color:var(--text-muted);flex-shrink:0;margin-top:4px">C${m.court}</span>
+            <span style="font-size:11px;color:var(--text-muted);flex-shrink:0;margin-top:4px">C${esc(m.court)}</span>
             <button class="md-queue-cancel" onclick="mdCancelQueueMatch(${idx});event.stopPropagation()" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--danger);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0" title="Remove"><i class="fas fa-trash"></i></button>
           </div>`;
         }).join('');
@@ -10548,7 +10562,7 @@
             const teamsInResults = [...new Set(mdCompletedGames.flatMap(m => [m.t1, m.t2]))];
             filterEl.innerHTML = '<option value="">All Teams</option>' + teamsInResults.map(id => {
               const t = getTeam(id);
-              return t ? `<option value="${id}" ${currentVal == id ? 'selected' : ''}>${t.name}</option>` : '';
+              return t ? `<option value="${id}" ${currentVal == id ? 'selected' : ''}>${esc(t.name)}</option>` : '';
             }).join('');
           }
           const filterTeamId = filterEl?.value ? parseInt(filterEl.value) : null;
@@ -10570,7 +10584,7 @@
               <div class="md-tl-dot-col"><div class="md-tl-dot" style="${idx === 0 ? 'background:var(--clay)' : 'background:var(--clay-light)'}"></div>${!isLast ? '<div class="md-tl-line"></div>' : ''}</div>
               <div class="md-tl-content">
                 <div class="md-tl-match"><strong>${winnerName}</strong> beat ${loserName} <strong>${wScore}-${lScore}</strong></div>
-                <div class="md-tl-meta">${timeAgo}${m.court ? ` · ${m.court}` : ''} · R${m.round||'?'}
+                <div class="md-tl-meta">${timeAgo}${m.court ? ` · ${esc(m.court)}` : ''} · R${m.round||'?'}
                   ${currentUser?.is_admin ? `<span style="margin-left:6px">
                     <button onclick="mdEditResult(${realIdx})" title="Edit" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted);padding:0"><i class="fas fa-pen"></i></button>
                     <button onclick="mdUndoResult(${realIdx})" title="Undo" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--clay);padding:0"><i class="fas fa-undo"></i></button>
@@ -10597,7 +10611,7 @@
         const available = teams.filter(t => !mdActiveTeamIds.includes(t.id));
         if (available.length > 0) {
           document.getElementById('mdLateAdd').style.display = '';
-          lateContainer.innerHTML = available.map(t => `<button class="md-late-btn" onclick="mdAddLateTeam(${t.id})">+ ${t.name}</button>`).join('');
+          lateContainer.innerHTML = available.map(t => `<button class="md-late-btn" onclick="mdAddLateTeam(${t.id})">+ ${esc(t.name)}</button>`).join('');
         } else {
           document.getElementById('mdLateAdd').style.display = 'none';
         }
@@ -11178,7 +11192,7 @@
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`;
         return `<div class="md-stand-row">
           <span class="md-stand-rank">${medal}</span>
-          <span class="md-stand-name">${t?.name || '?'} ${renderFormDots(s.id, 3)}</span>
+          <span class="md-stand-name">${esc(t?.name || '?')} ${renderFormDots(s.id, 3)}</span>
           <span class="md-stand-wl">${s.wins}W-${s.losses}L</span>
           <div class="md-stand-bar"><div class="md-stand-fill" style="width:${s.rate}%"></div></div>
         </div>`;
@@ -11230,7 +11244,7 @@
           <div class="matchday-history-header">
             <div>
               <div class="matchday-history-date">${dateStr}</div>
-              <div class="matchday-history-venue"><i class="fas fa-map-marker-alt"></i> ${md.venue}</div>
+              <div class="matchday-history-venue"><i class="fas fa-map-marker-alt"></i> ${esc(md.venue)}</div>
             </div>
             ${statusBadge}
           </div>
@@ -11250,7 +11264,7 @@
           </div>
           ${winner ? `<div class="matchday-history-winner">
             <span class="matchday-history-winner-label">👑 ${isClosed ? 'DAY WINNER' : 'CURRENT LEADER'}:</span>
-            <span class="matchday-history-winner-name">${winner.name} (${winner.wins}W - ${winner.losses}L)</span>
+            <span class="matchday-history-winner-name">${esc(winner.name)} (${winner.wins}W - ${winner.losses}L)</span>
           </div>` : ''}
         </div>`;
       }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Match Filters</h3><p>Try clearing filters or creating a match day.</p></div>';
@@ -11334,7 +11348,7 @@
         logEntry.challenger = challengerTeam?.name;
         logEntry.winner = 'kings';
         logEntry.kingsStreak = newStreak;
-        logEntry.points = `+${pointsAwarded} to ${kingsTeam?.name}`;
+        logEntry.points = `+${pointsAwarded} to ${esc(kingsTeam?.name)}`;
         logEntry.badge = newStreak >= 3 ? '🔥' : '👑';
         
       } else {
@@ -11356,7 +11370,7 @@
         logEntry.challenger = challengerTeam?.name;
         logEntry.winner = 'challenger';
         logEntry.kingsStreak = streak;
-        logEntry.points = `+${pointsAwarded} to ${challengerTeam?.name}${slayerBonus > 0 ? ` (👑 Slayer +${slayerBonus})` : ''}`;
+        logEntry.points = `+${pointsAwarded} to ${esc(challengerTeam?.name)}${slayerBonus > 0 ? ` (👑 Slayer +${slayerBonus})` : ''}`;
         logEntry.badge = slayerBonus >= 3 ? '⚔️' : '🎯';
       }
       
@@ -11433,7 +11447,7 @@
           <span style="font-family:'Sublime',sans-serif;font-size:18px;width:32px;text-align:center">${medal}</span>
           <div style="display:flex;gap:2px">${av(p1,'xs')}${av(p2,'xs')}</div>
           <div style="flex:1">
-            <div style="font-weight:600;font-size:14px">${t?.name || '?'} ${isKing ? '👑' : ''}</div>
+            <div style="font-weight:600;font-size:14px">${esc(t?.name || '?')} ${isKing ? '👑' : ''}</div>
             <div style="font-size:11px;color:var(--text-muted)">${s.wins}W ${s.losses}L${s.defenses > 0 ? ` · ${s.defenses} defenses` : ''}${s.slays > 0 ? ` · ${s.slays} slays` : ''}${s.bestStreak > 0 ? ` · best: ${s.bestStreak}🔥` : ''}</div>
           </div>
           <div style="font-family:'DirtyWeather',sans-serif;font-size:22px;color:var(--clay)">${s.points}</div>
@@ -11487,7 +11501,7 @@
         const active = randomiserPlayerIds.includes(p.id);
         return `<button class="md-americano-btn ${active ? 'active' : ''}" onclick="randomiserTogglePlayer(${p.id})" style="${active ? 'border-color:#7C3AED;background:rgba(124,58,237,0.06)' : ''}">
           ${av(p, 'xs')}
-          <span class="md-americano-name">${p.name}</span>
+          <span class="md-americano-name">${esc(p.name)}</span>
           ${active ? '<span class="md-americano-check"><i class="fas fa-check"></i></span>' : ''}
         </button>`;
       }).join('');
@@ -11566,7 +11580,7 @@
           ${roundMatches.map(m => {
             const p = (ids) => ids.map(id => getPlayer(id)?.name || '?').join(' & ');
             return `<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--cream);border-radius:12px;margin-bottom:6px">
-              <span style="font-size:11px;color:var(--text-muted)">Court ${m.court}</span>
+              <span style="font-size:11px;color:var(--text-muted)">Court ${esc(m.court)}</span>
               <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">
                 <span style="font-weight:600;font-size:13px">${p(m.team1)}</span>
                 <span style="color:var(--clay);font-family:'SaltyAges',serif;font-size:14px">vs</span>
@@ -11694,7 +11708,7 @@
         return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
           <span style="font-family:'Sublime',sans-serif;font-size:16px;width:28px;text-align:center">${medal}</span>
           ${av(p, 'xs')}
-          <div style="flex:1"><span style="font-weight:600;font-size:13px">${p?.name || '?'}</span></div>
+          <div style="flex:1"><span style="font-weight:600;font-size:13px">${esc(p?.name || '?')}</span></div>
           <span style="font-size:12px;color:var(--text-muted)">${s.wins}W ${s.losses}L</span>
           <span style="font-family:'DirtyWeather',sans-serif;font-size:18px;color:var(--clay)">${s.points}</span>
         </div>`;
@@ -11751,7 +11765,7 @@
         return `<div class="matchday-select-item" onclick="viewMatchday(${md.id})">
           <div class="matchday-select-info">
             <div class="matchday-select-date">${dateStr} ${!isClosed ? '<span style="color:var(--clay);font-size:11px">(OPEN)</span>' : ''}</div>
-            <div class="matchday-select-meta"><i class="fas fa-map-marker-alt"></i> ${md.venue}</div>
+            <div class="matchday-select-meta"><i class="fas fa-map-marker-alt"></i> ${esc(md.venue)}</div>
           </div>
           <div class="matchday-select-matches">${dayMatches.length} matches</div>
         </div>`;
@@ -11767,7 +11781,7 @@
           <div class="venue-item-info">
             <i class="fas fa-map-marker-alt" style="color:var(--clay)"></i>
             <div>
-              <div class="venue-item-name">${v.name}</div>
+              <div class="venue-item-name">${esc(v.name)}</div>
               <div class="venue-item-courts">${v.courts.join(', ')}</div>
             </div>
           </div>
@@ -11877,9 +11891,9 @@
     function updateDropdowns() {
       const active = activePlayers();
       const activeT = activeTeams();
-      const po = '<option value="">Select player</option>' + active.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-      const allPo = '<option value="">Select player</option>' + players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-      const to = '<option value="">Select team</option>' + activeT.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+      const po = '<option value="">Select player</option>' + active.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+      const allPo = '<option value="">Select player</option>' + players.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+      const to = '<option value="">Select team</option>' + activeT.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
       
       document.getElementById('teamPlayer1').innerHTML = po;
       document.getElementById('teamPlayer2').innerHTML = po;
@@ -11891,7 +11905,7 @@
       const mdTeamList = (mdStep === 'live' && mdActiveTeamIds.length > 0)
         ? activeT.filter(t => mdActiveTeamIds.includes(t.id))
         : activeT;
-      const qto = '<option value="">Select team</option>' + mdTeamList.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+      const qto = '<option value="">Select team</option>' + mdTeamList.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
       document.getElementById('queueTeam1').innerHTML = qto;
       document.getElementById('queueTeam2').innerHTML = qto;
       
@@ -11902,8 +11916,8 @@
       if (liveTeam2) liveTeam2.innerHTML = to;
       
       // Venue dropdowns
-      const venueOptions = venues.map(v => `<option value="${v.name}">${v.name}</option>`).join('');
-      document.getElementById('newMatchdayVenue').innerHTML = venues.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+      const venueOptions = venues.map(v => `<option value="${esc(v.name)}">${esc(v.name)}</option>`).join('');
+      document.getElementById('newMatchdayVenue').innerHTML = venues.map(v => `<option value="${v.id}">${esc(v.name)}</option>`).join('');
       const eventVenue = document.getElementById('eventVenue');
       if (eventVenue) eventVenue.innerHTML = '<option value="">Select venue</option>' + venueOptions;
       
@@ -12006,7 +12020,7 @@
       document.getElementById('editPlayerActive').checked = p.active !== false;
       const preview = document.getElementById('editPlayerPhotoPreview');
       const editPhoto = p.photo || photoCache[p.id];
-      preview.innerHTML = editPhoto ? `<img src="${editPhoto}" alt="${p.name}">` : '<i class="fas fa-camera"></i>';
+      preview.innerHTML = editPhoto ? `<img src="${editPhoto}" alt="${esc(p.name)}">` : '<i class="fas fa-camera"></i>';
       tempPhotoData.editPlayer = editPhoto || null;
       
       // Show/hide delete button based on games and admin status
@@ -12173,7 +12187,7 @@
         return; 
       }
       
-      let confirmText = `Are you sure you want to delete ${p?.name}?`;
+      let confirmText = `Are you sure you want to delete ${esc(p?.name)}?`;
       if (teamsWithoutMatches.length > 0) {
         const teamNames = teamsWithoutMatches.map(t => t.name).join(', ');
         confirmText += ` This will also delete ${teamsWithoutMatches.length} team${teamsWithoutMatches.length > 1 ? 's' : ''}: ${teamNames}.`;
@@ -12497,15 +12511,15 @@
         <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px">
           <div style="display:flex;align-items:center;gap:8px">
             ${av(t1p1, 'xs')}${av(t1p2, 'xs')}
-            <strong>${t1?.name || '?'}</strong>
+            <strong>${esc(t1?.name || '?')}</strong>
           </div>
           <span style="color:var(--clay);font-weight:700">VS</span>
           <div style="display:flex;align-items:center;gap:8px">
-            <strong>${t2?.name || '?'}</strong>
+            <strong>${esc(t2?.name || '?')}</strong>
             ${av(t2p1, 'xs')}${av(t2p2, 'xs')}
           </div>
         </div>
-        <div style="font-size:12px;color:var(--text-muted)">${m.court}</div>
+        <div style="font-size:12px;color:var(--text-muted)">${esc(m.court)}</div>
       `;
       document.getElementById('finalScoreA').value = '';
       document.getElementById('finalScoreB').value = '';
@@ -12647,15 +12661,15 @@
       const changed = (editMatchPendingTeam1Id !== m.team1_id) || (editMatchPendingTeam2Id !== m.team2_id);
       const editHint = '<i class="fas fa-pen" style="font-size:10px;color:var(--clay);margin-left:6px;opacity:0.7"></i>';
       document.getElementById('editMatchInfo').innerHTML = `
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${new Date(m.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} • ${m.court || ''}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${new Date(m.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} • ${esc(m.court || '')}</div>
         <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap">
           <button type="button" onclick="openTeamPicker(1)" style="background:rgba(255,255,255,0.6);border:1px dashed var(--clay-light);border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:inherit;font-size:inherit;color:inherit" title="Tap to change team">
             ${av(t1p1, 'xs')}${av(t1p2, 'xs')}
-            <strong>${t1?.name || '?'}</strong>${editHint}
+            <strong>${esc(t1?.name || '?')}</strong>${editHint}
           </button>
           <span style="color:var(--clay);font-weight:700">VS</span>
           <button type="button" onclick="openTeamPicker(2)" style="background:rgba(255,255,255,0.6);border:1px dashed var(--clay-light);border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:inherit;font-size:inherit;color:inherit" title="Tap to change team">
-            <strong>${t2?.name || '?'}</strong>${editHint}
+            <strong>${esc(t2?.name || '?')}</strong>${editHint}
             ${av(t2p1, 'xs')}${av(t2p2, 'xs')}
           </button>
         </div>
@@ -12684,8 +12698,8 @@
             ${av(p1)}${av(p2)}
           </div>
           <div>
-            <div class="md-team-name">${t.name}</div>
-            <div class="md-team-players">${p1?.name||'?'} & ${p2?.name||'?'}</div>
+            <div class="md-team-name">${esc(t.name)}</div>
+            <div class="md-team-players">${esc(p1?.name||'?')} & ${esc(p2?.name||'?')}</div>
           </div>
           ${badge}
         </button>`;
@@ -12873,7 +12887,7 @@
         const isUnlocked = unlocked[key];
         return `<div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'}">
           <div class="achievement-icon">${ach.icon}</div>
-          <div class="achievement-name">${ach.name}</div>
+          <div class="achievement-name">${esc(ach.name)}</div>
           <div class="achievement-desc">${ach.desc}</div>
           ${isUnlocked ? '<div class="achievement-date">Unlocked ✓</div>' : ''}
         </div>`;
@@ -13018,7 +13032,7 @@
       courtSelect.innerHTML = courts.map(c => `<option value="${c}">${c}</option>`).join('');
       
       const activeTeams = teams.filter(t => t.active !== false);
-      const teamOptions = '<option value="">Select team</option>' + activeTeams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+      const teamOptions = '<option value="">Select team</option>' + activeTeams.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
       document.getElementById('liveScoreTeam1').innerHTML = teamOptions;
       document.getElementById('liveScoreTeam2').innerHTML = teamOptions;
     }
@@ -13053,8 +13067,8 @@
       document.getElementById('liveCourtDisplay').textContent = court;
       document.getElementById('liveTeam1Name').textContent = team1.name;
       document.getElementById('liveTeam2Name').textContent = team2.name;
-      document.getElementById('scoreBtn1').innerHTML = `<i class="fas fa-plus"></i> ${team1.name}`;
-      document.getElementById('scoreBtn2').innerHTML = `<i class="fas fa-plus"></i> ${team2.name}`;
+      document.getElementById('scoreBtn1').innerHTML = `<i class="fas fa-plus"></i> ${esc(team1.name)}`;
+      document.getElementById('scoreBtn2').innerHTML = `<i class="fas fa-plus"></i> ${esc(team2.name)}`;
       
       const { p1: t1p1 } = getTeamPlayers(team1);
       const { p1: t2p1 } = getTeamPlayers(team2);
@@ -13062,7 +13076,7 @@
       document.getElementById('liveTeam2Avatar').innerHTML = t2p1?.photo ? `<img src="${t2p1.photo}" class="loaded">` : (t2p1?.name?.charAt(0) || '?');
       
       updateLiveScoreDisplay();
-      addNotification('match_start', `${team1.name} vs ${team2.name} started`, 'fa-play');
+      addNotification('match_start', `${esc(team1.name)} vs ${esc(team2.name)} started`, 'fa-play');
     }
     
     function scorePoint(team) {
@@ -13481,8 +13495,8 @@
             <div style="display:flex;align-items:center;gap:12px;padding:10px;background:white;border-radius:10px;margin-bottom:8px;opacity:${isActive ? '1' : '0.5'}">
               <div class="avatar sm" style="flex-shrink:0">${partner?.photo ? `<img src="${partner.photo}" class="loaded">` : (partner?.name?.charAt(0) || '?')}</div>
               <div style="flex:1;min-width:0">
-                <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
-                <div style="font-size:11px;color:var(--text-muted)">with ${partner?.name || 'Unknown'}</div>
+                <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.name)}</div>
+                <div style="font-size:11px;color:var(--text-muted)">with ${esc(partner?.name || 'Unknown')}</div>
               </div>
               <div style="text-align:right">
                 <div style="font-size:13px;font-weight:600"><span style="color:var(--success)">${stats.wins}W</span> - <span style="color:var(--danger)">${stats.losses}L</span></div>
@@ -13553,7 +13567,7 @@
           <div class="share-profile-logo">🎾 PADEL VILLAINS</div>
           <div class="share-profile-avatar">${avatarHtml}</div>
           <div class="share-profile-name">${name}</div>
-          ${p.nickname ? `<div class="share-profile-nickname">"${p.nickname}"</div>` : '<div style="height:8px"></div>'}
+          ${p.nickname ? `<div class="share-profile-nickname">"${esc(p.nickname)}"</div>` : '<div style="height:8px"></div>'}
           <div style="font-size:12px;opacity:0.8;margin-bottom:16px">${position}</div>
           <div class="share-profile-stats">
             <div><div class="share-profile-stat-value">${wins}</div><div class="share-profile-stat-label">Wins</div></div>
@@ -13618,7 +13632,7 @@
       });
       const rate = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
       
-      navigator.clipboard.writeText(`🎾 PADEL VILLAINS\n${p.name}\n${wins}W - ${losses}L (${rate}%)\npadel-villains.vercel.app`);
+      navigator.clipboard.writeText(`🎾 PADEL VILLAINS\n${esc(p.name)}\n${wins}W - ${losses}L (${rate}%)\npadel-villains.vercel.app`);
       toast('Copied!', 'success');
     }
     
@@ -13636,8 +13650,8 @@
         <div class="share-card-logo">🎾 PADEL VILLAINS</div>
         <div class="share-card-title">MATCH RESULT</div>
         <div class="share-card-result">${scoreStr}</div>
-        <div class="share-card-teams">${t1?.name || '?'} vs ${t2?.name || '?'}</div>
-        <div style="color:var(--clay);font-weight:700;margin-top:8px">🏆 ${winner?.name || '?'} Wins!</div>
+        <div class="share-card-teams">${esc(t1?.name || '?')} vs ${esc(t2?.name || '?')}</div>
+        <div style="color:var(--clay);font-weight:700;margin-top:8px">🏆 ${esc(winner?.name || '?')} Wins!</div>
         <div class="share-card-date">${new Date(m.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
       `;
       
@@ -13701,7 +13715,7 @@
           <div class="summary-header">
             <div class="summary-logo">🎾 PADEL VILLAINS</div>
             <div class="summary-date">${dateStr}</div>
-            <div class="summary-venue">📍 ${md.venue || 'Unknown Venue'}</div>
+            <div class="summary-venue">📍 ${esc(md.venue || 'Unknown Venue')}</div>
           </div>
           <div class="summary-stats">
             <div class="summary-stat"><div class="summary-stat-value">${dayMatches.length}</div><div class="summary-stat-label">Matches</div></div>
@@ -13714,7 +13728,7 @@
               <div class="summary-highlight-icon">👑</div>
               <div class="summary-highlight-info">
                 <div class="summary-highlight-label">Day Winner</div>
-                <div class="summary-highlight-value">${winnerTeam.name}</div>
+                <div class="summary-highlight-value">${esc(winnerTeam.name)}</div>
               </div>
             </div>
           </div>` : ''}
@@ -13960,7 +13974,7 @@
       const mdEvents = hasMatchdayEvent ? [] : matchdays.filter(md => md.date === dateStr).map(md => ({
         ...md,
         type: 'matchday',
-        title: `Match Day @ ${md.venue}`
+        title: `Match Day @ ${esc(md.venue)}`
       }));
       return [...calEvents, ...mdEvents];
     }
@@ -13993,8 +14007,8 @@
         return `<div class="event-item" onclick="viewEvent('${e.id || e.date}')">
           <div class="event-item-type ${e.type}">${e.type === 'matchday' ? '🎾' : e.type === 'vibes' ? '🎉' : '💪'}</div>
           <div class="event-item-info">
-            <div class="event-item-title">${e.title || 'Match Day'}</div>
-            <div class="event-item-details"><i class="fas fa-map-marker-alt"></i> ${e.venue || 'TBD'}</div>
+            <div class="event-item-title">${esc(e.title || 'Match Day')}</div>
+            <div class="event-item-details"><i class="fas fa-map-marker-alt"></i> ${esc(e.venue || 'TBD')}</div>
           </div>
           <div class="event-item-time">${dayName}<br><strong>${dayNum}</strong></div>
         </div>`;
@@ -14050,13 +14064,13 @@
       document.getElementById('viewEventContent').innerHTML = `
         <div style="text-align:center;padding:20px 0">
           <div style="font-size:48px;margin-bottom:16px">${typeEmoji}</div>
-          <h3 style="font-size:20px;font-weight:700;margin-bottom:8px">${event.title || typeName}</h3>
+          <h3 style="font-size:20px;font-weight:700;margin-bottom:8px">${esc(event.title || typeName)}</h3>
           <div style="color:var(--text-muted);font-size:14px;margin-bottom:20px">
             <div style="margin-bottom:4px"><i class="fas fa-calendar"></i> ${dateStr}</div>
-            <div style="margin-bottom:4px"><i class="fas fa-map-marker-alt"></i> ${event.venue || 'TBD'}</div>
+            <div style="margin-bottom:4px"><i class="fas fa-map-marker-alt"></i> ${esc(event.venue || 'TBD')}</div>
             <div><i class="fas fa-clock"></i> ${timeStr}</div>
           </div>
-          ${event.description ? `<div style="background:var(--cream);padding:12px 16px;border-radius:10px;font-size:13px;text-align:left">${event.description}</div>` : ''}
+          ${event.description ? `<div style="background:var(--cream);padding:12px 16px;border-radius:10px;font-size:13px;text-align:left">${esc(event.description)}</div>` : ''}
           ${isPast ? '<div style="margin-top:16px;padding:8px 16px;background:var(--cream);border-radius:8px;font-size:12px;color:var(--text-muted)">📋 Past event</div>' : ''}
           ${isToday ? '<div style="margin-top:16px;padding:8px 16px;background:rgba(224,120,80,0.1);border-radius:8px;font-size:12px;color:var(--clay);font-weight:600">🔴 Today</div>' : ''}
         </div>
@@ -14108,8 +14122,8 @@
               <div class="event-item" onclick="closeModal('viewEvent');setTimeout(()=>showEventSummary(${JSON.stringify(e).replace(/"/g, '&quot;')}),100)" style="margin-bottom:8px">
                 <div class="event-item-type ${e.type}">${typeEmoji}</div>
                 <div class="event-item-info">
-                  <div class="event-item-title">${e.title || 'Event'}</div>
-                  <div class="event-item-details"><i class="fas fa-map-marker-alt"></i> ${e.venue || 'TBD'}</div>
+                  <div class="event-item-title">${esc(e.title || 'Event')}</div>
+                  <div class="event-item-details"><i class="fas fa-map-marker-alt"></i> ${esc(e.venue || 'TBD')}</div>
                 </div>
                 <div class="event-item-time">${timeStr}</div>
               </div>
@@ -14139,7 +14153,7 @@
       
       const venueSelect = document.getElementById('editMatchdayVenue');
       venueSelect.innerHTML = venues.map(v => 
-        `<option value="${v.name}" ${v.name === md.venue ? 'selected' : ''}>${v.name}</option>`
+        `<option value="${esc(v.name)}" ${v.name === md.venue ? 'selected' : ''}>${esc(v.name)}</option>`
       ).join('');
       
       openModal('editMatchday');
@@ -14234,7 +14248,7 @@
           event = {
             ...md,
             type: 'matchday',
-            title: `Match Day @ ${md.venue}`,
+            title: `Match Day @ ${esc(md.venue)}`,
             startTime: md.start_time,
             endTime: md.end_time
           };
@@ -14261,7 +14275,7 @@
       
       // Update venue dropdown
       const venueSelect = document.getElementById('editEventVenue');
-      venueSelect.innerHTML = venues.map(v => `<option value="${v.name}" ${v.name === event.venue ? 'selected' : ''}>${v.name}</option>`).join('');
+      venueSelect.innerHTML = venues.map(v => `<option value="${esc(v.name)}" ${v.name === event.venue ? 'selected' : ''}>${esc(v.name)}</option>`).join('');
       
       // Select the event type
       document.querySelectorAll('#editEventTypeSelector .position-option').forEach(o => {
@@ -14477,7 +14491,7 @@
         : `<div class="avatar">${player.name?.charAt(0).toUpperCase() || '?'}</div>`;
       
       menu.innerHTML = `
-        <div class="qa-header">${photoHtml}<span>${player.name}</span></div>
+        <div class="qa-header">${photoHtml}<span>${esc(player.name)}</span></div>
         <div class="qa-item" onclick="quickAction('profile', ${playerId})"><i class="fas fa-user"></i> View Profile</div>
         <div class="qa-item" onclick="quickAction('availability', ${playerId})"><i class="fas fa-calendar-check"></i> Toggle Availability</div>
         <div class="qa-item" onclick="quickAction('whatsapp', ${playerId})"><i class="fab fa-whatsapp"></i> Message on WhatsApp</div>
@@ -14680,7 +14694,7 @@
         <div class="weather-play-recommendation">
           <i class="fas fa-${recommendation.icon}"></i>
           <div class="rec-text">
-            <div class="rec-title">${recommendation.title}</div>
+            <div class="rec-title">${esc(recommendation.title)}</div>
             <div class="rec-desc">${recommendation.desc}</div>
           </div>
         </div>
@@ -14947,8 +14961,12 @@
       const existingAccount = userAccounts.find(acc => Number(acc.player_id) === Number(matchedPlayer.id));
       
       if (existingAccount) {
-        // Get stored password
-        const storedPassword = existingAccount.settings?.password || APP_PASSWORD;
+        // Get stored password — no default fallback
+        const storedPassword = existingAccount.settings?.password;
+        if (!storedPassword) {
+          showLoginError('No password set for this account. Contact an admin to reset it.');
+          return;
+        }
         const inputHash = await hashPassword(password);
         
         // Compare: check against hash first, then plaintext for migration
@@ -15174,7 +15192,7 @@
           <div class="user-account-card">
             <div class="avatar md">${avatarContent}</div>
             <div class="user-account-info">
-              <div class="user-account-name">${player?.name || 'Unknown'}${isSelf ? ' <span style="color:var(--clay);font-size:11px">(You)</span>' : ''}</div>
+              <div class="user-account-name">${esc(player?.name || 'Unknown')}${isSelf ? ' <span style="color:var(--clay);font-size:11px">(You)</span>' : ''}</div>
               <div class="user-account-role">${acc.is_admin ? '<span style="color:var(--gold)">👑 Admin</span>' : 'Player'}</div>
             </div>
             <div class="user-account-actions">
@@ -15203,8 +15221,8 @@
       
       const newPassword = prompt(`Set new password for ${name}:\n(min 4 characters)`);
       if (newPassword === null) return;
-      if (!newPassword.trim() || newPassword.trim().length < 4) {
-        toast('Password must be at least 4 characters', 'error');
+      if (!newPassword.trim() || newPassword.trim().length < 6) {
+        toast('Password must be at least 6 characters', 'error');
         return;
       }
       
@@ -15222,26 +15240,26 @@
       
       select.innerHTML = '<option value="">Choose a player...</option>';
       players.filter(p => !existingPlayerIds.includes(Number(p.id))).forEach(p => {
-        select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+        select.innerHTML += `<option value="${p.id}">${esc(p.name)}</option>`;
       });
       
       document.getElementById('createAccountAdmin').checked = false;
-      document.getElementById('createAccountPassword').value = APP_PASSWORD;
+      document.getElementById('createAccountPassword').value = genTempPassword();
       openModal('createAccount');
     }
     
     async function createUserAccount() {
       const playerId = parseInt(document.getElementById('createAccountPlayer').value);
       const isAdmin = document.getElementById('createAccountAdmin').checked;
-      const passwordRaw = document.getElementById('createAccountPassword').value.trim() || APP_PASSWORD;
+      const passwordRaw = document.getElementById('createAccountPassword').value.trim() || genTempPassword();
       
       if (!playerId) {
         toast('Please select a player', 'error');
         return;
       }
       
-      if (passwordRaw.length < 4) {
-        toast('Password must be at least 4 characters', 'error');
+      if (passwordRaw.length < 6) {
+        toast('Password must be at least 6 characters', 'error');
         return;
       }
       
@@ -15306,8 +15324,8 @@
       }
       
       // Validate new password if provided
-      if (newPassword && newPassword.length < 4) {
-        toast('Password must be at least 4 characters', 'error');
+      if (newPassword && newPassword.length < 6) {
+        toast('Password must be at least 6 characters', 'error');
         return;
       }
       
@@ -15451,8 +15469,8 @@
         return;
       }
       
-      if (newPw.length < 4) {
-        toast('New password must be at least 4 characters', 'error');
+      if (newPw.length < 6) {
+        toast('New password must be at least 6 characters', 'error');
         return;
       }
       
@@ -15462,7 +15480,8 @@
       }
       
       // Verify current password
-      const storedPassword = currentUser.settings?.password || APP_PASSWORD;
+      const storedPassword = currentUser.settings?.password;
+      if (!storedPassword) { toast('No password set for this account. Contact an admin.', 'error'); return; }
       const currentHash = await hashPassword(currentPw);
       let verified = false;
       
@@ -15666,8 +15685,8 @@
             <div class="my-team-partner">
               <div class="avatar md">${partner?.photo ? `<img src="${partner.photo}" class="loaded">` : (partner?.name?.charAt(0) || '?')}</div>
               <div class="my-team-info">
-                <h4>${t.name}</h4>
-                <p>with ${partner?.name || 'Unknown'}</p>
+                <h4>${esc(t.name)}</h4>
+                <p>with ${esc(partner?.name || 'Unknown')}</p>
               </div>
             </div>
             <div class="my-team-stats">
@@ -15827,7 +15846,7 @@
           <div class="message-item ${m.read ? '' : 'unread'}" onclick="viewMessage(${m.id})">
             <div class="avatar sm message-avatar">${sender?.photo ? `<img src="${sender.photo}" class="loaded">` : (sender?.name?.charAt(0) || '?')}</div>
             <div class="message-content">
-              <div class="message-sender">${sender?.name || 'Unknown'}</div>
+              <div class="message-sender">${esc(sender?.name || 'Unknown')}</div>
               <div class="message-preview">${m.message.substring(0, 50)}${m.message.length > 50 ? '...' : ''}</div>
             </div>
             <div class="message-time">${timeAgo}</div>
@@ -15872,7 +15891,7 @@
       const select = document.getElementById('messageRecipient');
       select.innerHTML = '<option value="">Select a player...</option>';
       players.filter(p => p.id !== currentUser?.player_id).forEach(p => {
-        select.innerHTML += `<option value="${p.id}" ${p.id === toPlayerId ? 'selected' : ''}>${p.name}</option>`;
+        select.innerHTML += `<option value="${p.id}" ${p.id === toPlayerId ? 'selected' : ''}>${esc(p.name)}</option>`;
       });
       
       document.getElementById('messageText').value = '';
@@ -15924,7 +15943,7 @@
       document.getElementById('viewMessageFrom').innerHTML = `
         <div class="avatar sm">${(sender?.photo || photoCache[sender?.id]) ? `<img src="${sender?.photo || photoCache[sender?.id]}" class="loaded">` : (sender?.name?.charAt(0) || '?')}</div>
         <div>
-          <div style="font-weight:600">${sender?.name || 'Unknown'}</div>
+          <div style="font-weight:600">${esc(sender?.name || 'Unknown')}</div>
         </div>
       `;
       document.getElementById('viewMessageContent').textContent = msg.message;
@@ -16319,7 +16338,7 @@
       
       const photo = p.photo || photoCache[p.id];
       const photoHtml = photo 
-        ? `<img src="${photo}" alt="${p.name}">` 
+        ? `<img src="${photo}" alt="${esc(p.name)}">` 
         : `<div class="fifa-card-photo-placeholder">${p.name.charAt(0)}</div>`;
       
       // Stat bars
@@ -16342,7 +16361,7 @@
         </div>
         <div class="fifa-card-photo">${photoHtml}</div>
         <div class="fifa-card-name">${p.name.toUpperCase()}</div>
-        ${p.nickname ? `<div class="fifa-card-nickname">"${p.nickname}"</div>` : '<div style="height:16px"></div>'}
+        ${p.nickname ? `<div class="fifa-card-nickname">"${esc(p.nickname)}"</div>` : '<div style="height:16px"></div>'}
         <div class="fifa-card-divider"></div>
         <div class="fifa-card-stats">
           <div class="fifa-card-stat"><div class="fifa-card-stat-value">${stats.wins}</div><div class="fifa-card-stat-label">Wins</div></div>
@@ -16805,11 +16824,11 @@
         
         // Basic win
         if (idx === 0) {
-          templates.push({ icon: '🏁', text: `<strong>${winner.name}</strong> kicks off the day with a win over ${loser.name}!`, type: 'match' });
+          templates.push({ icon: '🏁', text: `<strong>${esc(winner.name)}</strong> kicks off the day with a win over ${esc(loser.name)}!`, type: 'match' });
         } else {
           const winMsgs = [
             `<strong>${wNames}</strong> take down ${lNames}! 💪`,
-            `<strong>${winner.name}</strong> wins against ${loser.name}!`,
+            `<strong>${esc(winner.name)}</strong> wins against ${esc(loser.name)}!`,
             `Victory for <strong>${wNames}</strong> over ${lNames}!`,
           ];
           templates.push({ icon: '🎾', text: winMsgs[idx % winMsgs.length], type: 'match' });
@@ -16817,13 +16836,13 @@
         
         // Streak commentary
         if (teamStreaks[winner.id] >= 3) {
-          templates.push({ icon: '🔥', text: `<strong>${winner.name}</strong> on a ${teamStreaks[winner.id]}-win streak! Who can stop them?`, type: 'streak' });
+          templates.push({ icon: '🔥', text: `<strong>${esc(winner.name)}</strong> on a ${teamStreaks[winner.id]}-win streak! Who can stop them?`, type: 'streak' });
         }
         
         // Player on fire
         [wp1, wp2].filter(Boolean).forEach(p => {
           if (playerWins[p.id] >= 3 && playerWins[p.id] === playerGames[p.id]) {
-            templates.push({ icon: '⚡', text: `<strong>${p.name}</strong> is UNDEFEATED today with ${playerWins[p.id]} straight wins!`, type: 'hot' });
+            templates.push({ icon: '⚡', text: `<strong>${esc(p.name)}</strong> is UNDEFEATED today with ${playerWins[p.id]} straight wins!`, type: 'hot' });
           }
         });
         
@@ -16852,7 +16871,7 @@
             const games = playerGames[p.id] || 0;
             newCommentary.push({
               icon: '👑',
-              text: `<strong>${p.name}</strong> leads today with ${topPlayer[1]} wins from ${games} games!`,
+              text: `<strong>${esc(p.name)}</strong> leads today with ${topPlayer[1]} wins from ${games} games!`,
               type: 'summary',
               time: 'now'
             });
