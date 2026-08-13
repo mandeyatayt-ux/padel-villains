@@ -3136,10 +3136,9 @@
           <div style="text-align:center;margin-bottom:16px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
             <button class="btn btn-secondary btn-sm" onclick="mdAddCourt()" style="border-radius:12px;font-size:12px"><i class="fas fa-plus"></i> Add Court</button>
             <button class="btn btn-secondary btn-sm" onclick="mdRemoveCourt()" id="mdInfoRemoveCourtBtn" style="border-radius:12px;font-size:12px;display:none"><i class="fas fa-minus"></i> Remove Court</button>
-            <button class="btn btn-secondary btn-sm" onclick="mdReallocateCourts();renderMDLive();toast('Matches redistributed','success')" style="border-radius:12px;font-size:12px"><i class="fas fa-shuffle"></i> Reallocate</button>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <h3 style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><span class="pulse-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse 1.5s infinite"></span> Queue</h3>
+            <h3 style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-list-ol" style="color:var(--clay);font-size:13px"></i> Up Next</h3>
             <span style="font-size:12px;color:var(--text-muted)" id="mdInfoQueueCount"></span>
           </div>
           <div id="mdInfoOngoingList"></div>
@@ -9844,29 +9843,67 @@
         statusEl.style.display = 'none';
       }
       
-      // --- ONGOING QUEUE ---
-      if (dayOngoing.length > 0) {
+      // --- UP NEXT QUEUE (new engine: pending schedule matches, NOT on-court) ---
+      const pendingQueue = (isActiveView && mdStep === 'live') ? mdGetPendingQueue() : [];
+      if (pendingQueue.length > 0) {
         ongoingEl.style.display = '';
-        document.getElementById('mdInfoQueueCount').textContent = `${dayOngoing.length} match${dayOngoing.length !== 1 ? 'es' : ''}`;
-        document.getElementById('mdInfoOngoingList').innerHTML = dayOngoing.map(m => {
-          const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
-          const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1);
-          const { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
-          const roundBadge = m.md_round ? `<span style="background:var(--clay);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">R${m.md_round}</span>` : '';
-          return `<div class="ongoing-match" onclick="openFinalizeMatch(${m.id})" style="margin-bottom:8px">>
+        document.getElementById('mdInfoQueueCount').textContent = `${pendingQueue.length} match${pendingQueue.length !== 1 ? 'es' : ''}`;
+        // Which teams/players are busy on court right now?
+        const qBusyTeams = new Set();
+        const qBusyPlayers = new Set();
+        ongoingMatches.filter(m => m.md_round).forEach(m => {
+          if (m.team1_id) qBusyTeams.add(m.team1_id);
+          if (m.team2_id) qBusyTeams.add(m.team2_id);
+          (m.team1_players || []).concat(m.team2_players || []).forEach(p => qBusyPlayers.add(p));
+        });
+        const freeUnheldCourt = (() => {
+          for (let c = 1; c <= mdCourts; c++) {
+            if (mdHeldCourts.has(c)) continue;
+            if (!ongoingMatches.some(om => om.md_round && (om.court === 'Court ' + c || om.court === c || om.court === 'C' + c))) return true;
+          }
+          return false;
+        })();
+        let nextTagged = false;
+        document.getElementById('mdInfoOngoingList').innerHTML = pendingQueue.map((m, idx) => {
+          let t1Name = '?', t2Name = '?', t1Av = '', t2Av = '';
+          let isBusy;
+          if (mdMode === 'randomiser') {
+            t1Name = (m.team1 || []).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
+            t2Name = (m.team2 || []).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ');
+            isBusy = (m.team1 || []).concat(m.team2 || []).some(p => qBusyPlayers.has(p));
+          } else {
+            const t1 = getTeam(m.t1), t2 = getTeam(m.t2);
+            const tp1 = getTeamPlayers(t1), tp2 = getTeamPlayers(t2);
+            t1Name = t1?.name || '?';
+            t2Name = t2?.name || '?';
+            t1Av = `${av(tp1.p1,'sm')}${av(tp1.p2,'sm')}`;
+            t2Av = `${av(tp2.p1,'sm')}${av(tp2.p2,'sm')}`;
+            isBusy = (m.t1 && qBusyTeams.has(m.t1)) || (m.t2 && qBusyTeams.has(m.t2));
+          }
+          const isNext = !isBusy && !nextTagged;
+          if (isNext) nextTagged = true;
+          const posBadge = isNext
+            ? '<span style="background:var(--emerald);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:0.5px">UP NEXT</span>'
+            : `<span style="background:var(--cream-dark);color:var(--text-muted);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">#${idx + 1}</span>`;
+          const roundBadge = `<span style="background:var(--clay);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">R${m.round}</span>`;
+          const busyTag = isBusy ? '<span style="font-size:10px;color:var(--clay);font-weight:600">team on court</span>' : '';
+          const playBtn = (!isBusy && freeUnheldCourt && currentUser?.is_admin)
+            ? `<button onclick="mdSendToCourt(${idx});event.stopPropagation()" title="Send to court" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--emerald);color:white;font-size:11px;cursor:pointer;padding:0;flex-shrink:0"><i class="fas fa-play"></i></button>`
+            : '';
+          return `<div class="ongoing-match" style="margin-bottom:8px${isBusy ? ';opacity:0.55' : ''}${isNext ? ';border:1.5px solid var(--emerald)' : ''}">
             <div class="ongoing-match-header">
-              <div class="ongoing-match-status"><span class="live-dot"></span> ${roundBadge}</div>
-              <span class="ongoing-match-court">${esc(m.court || '')}</span>
+              <div class="ongoing-match-status" style="display:flex;align-items:center;gap:6px">${posBadge} ${roundBadge} ${busyTag}</div>
+              ${playBtn}
             </div>
             <div class="ongoing-match-teams">
               <div class="ongoing-match-team">
-                <div class="ongoing-match-team-avatars">${av(t1p1,'sm')}${av(t1p2,'sm')}</div>
-                <span class="ongoing-match-team-name">${esc(t1?.name || '?')}</span>
+                <div class="ongoing-match-team-avatars">${t1Av}</div>
+                <span class="ongoing-match-team-name">${esc(t1Name)}</span>
               </div>
               <span class="ongoing-match-vs">VS</span>
               <div class="ongoing-match-team">
-                <span class="ongoing-match-team-name">${esc(t2?.name || '?')}</span>
-                <div class="ongoing-match-team-avatars">${av(t2p1,'sm')}${av(t2p2,'sm')}</div>
+                <span class="ongoing-match-team-name">${esc(t2Name)}</span>
+                <div class="ongoing-match-team-avatars">${t2Av}</div>
               </div>
             </div>
           </div>`;
@@ -10518,12 +10555,7 @@
       const completedSids = new Set(mdCompletedGames.map(m => m.sid));
       const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`));
       
-      const queueMatches = allScheduled.filter(m => {
-        if (completedSids.has(m.sid)) return false;
-        const key = `${m.round}-${m.t1 || ''}-${m.t2 || ''}`;
-        const keyAlt = `${m.round}-${m.t2 || ''}-${m.t1 || ''}`;
-        return !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
-      });
+      const queueMatches = mdGetPendingQueue();
 
       document.getElementById('mdQueueCount').textContent = queueMatches.length;
       const queueContainer = document.getElementById('mdCourtQueue');
@@ -10790,15 +10822,8 @@
 
     // Cancel a queued match
     function mdCancelQueueMatch(idx) {
-      if (!mdGeneratedSchedule) return;
-      const completedSids = new Set(mdCompletedGames.map(m => m.sid));
-      const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`));
-      const queueMatches = mdGeneratedSchedule.filter(m => {
-        if (completedSids.has(m.sid)) return false;
-        const key = `${m.round}-${m.t1 || ''}-${m.t2 || ''}`;
-        const keyAlt = `${m.round}-${m.t2 || ''}-${m.t1 || ''}`;
-        return !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
-      });
+      const queueMatches = mdGetPendingQueue();
+      if (!queueMatches.length) return;
       if (idx >= 0 && idx < queueMatches.length) {
         const match = queueMatches[idx];
         mdGeneratedSchedule = mdGeneratedSchedule.filter(m => m.sid !== match.sid);
@@ -10819,17 +10844,24 @@
         });
     }
 
-    // Send a queued match to the next free court
-    async function mdSendToCourt(queueIdx) {
-      if (!mdGeneratedSchedule) return;
+    // Shared derivation: schedule entries that are neither completed nor on court.
+    // EVERY queue view and every index-based action MUST use this same list so
+    // indices always agree.
+    function mdGetPendingQueue() {
+      if (!mdGeneratedSchedule) return [];
       const completedSids = new Set(mdCompletedGames.map(m => m.sid));
       const onCourtKeys = new Set(ongoingMatches.filter(m => m.md_round).map(m => `${m.md_round}-${m.team1_id || ''}-${m.team2_id || ''}`));
-      const queueMatches = mdGeneratedSchedule.filter(m => {
+      return mdGeneratedSchedule.filter(m => {
         if (completedSids.has(m.sid)) return false;
         const key = `${m.round}-${m.t1 || ''}-${m.t2 || ''}`;
         const keyAlt = `${m.round}-${m.t2 || ''}-${m.t1 || ''}`;
         return !onCourtKeys.has(key) && !onCourtKeys.has(keyAlt);
       });
+    }
+
+    // Send a queued match to the next free court
+    async function mdSendToCourt(queueIdx) {
+      const queueMatches = mdGetPendingQueue();
       const match = queueMatches[queueIdx];
       if (!match) return;
       // Check if either team is already on court
@@ -10842,13 +10874,16 @@
         toast('One of these teams is already on court', 'error');
         return;
       }
-      // Find a free court
-      let freeCourt = null;
+      // Find a free court — prefer un-held; manual send may use a held court as last resort
+      let freeCourt = null, heldFallback = null;
       for (let c = 1; c <= mdCourts; c++) {
         const label = `Court ${c}`;
         const busy = ongoingMatches.some(m => m.md_round && (m.court === label || m.court === c || m.court === `C${c}`));
-        if (!busy) { freeCourt = c; break; }
+        if (busy) continue;
+        if (mdHeldCourts.has(c)) { if (!heldFallback) heldFallback = c; continue; }
+        freeCourt = c; break;
       }
+      if (!freeCourt) freeCourt = heldFallback;
       if (!freeCourt) { toast('All courts are busy', 'error'); return; }
       const matchData = {
         id: generateNumericId(), match_uid: generateMatchUID(),
