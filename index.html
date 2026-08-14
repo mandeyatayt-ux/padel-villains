@@ -3142,11 +3142,13 @@
           <div id="mdCockpit">
             <div id="mdCockpitCourts"></div>
             <div id="mdCockpitRail">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <h3 style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--brown-dark);display:flex;align-items:center;gap:6px"><i class="fas fa-list-ol" style="color:var(--clay);font-size:12px"></i> Up Next</h3>
-                <span style="font-size:11px;color:var(--text-muted)" id="mdInfoQueueCount"></span>
+              <div id="mdRailQueueWrap">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                  <h3 style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--brown-dark);display:flex;align-items:center;gap:6px"><i class="fas fa-list-ol" style="color:var(--clay);font-size:12px"></i> Up Next</h3>
+                  <span style="font-size:11px;color:var(--text-muted)" id="mdInfoQueueCount"></span>
+                </div>
+                <div id="mdInfoOngoingList"></div>
               </div>
-              <div id="mdInfoOngoingList"></div>
               <div id="mdRailSitting" style="display:none;margin-top:12px">
                 <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px">🪑 Sitting out</div>
                 <div class="md-sitting-chips" id="mdRailSittingChips"></div>
@@ -9049,6 +9051,41 @@
     function mdToggleQueueExpand() { mdQueueExpanded = !mdQueueExpanded; renderMdInfoHub(); }
     // Refresh elapsed-time displays once a minute during a live session
     setInterval(() => { if (mdStep === 'live') { try { renderMDLive(); } catch (e) {} } }, 60000);
+
+    // ===== LIVE POLL: keep shared viewers in sync during a match day =====
+    // Lean fetch (ongoing + today's matches + matchday status) every 20s.
+    // Never fires while someone is typing a score, in test mode, or in a
+    // hidden tab. Renders only the match-day surfaces.
+    let _mdPollBusy = false;
+    function mdScoreEntryInProgress() {
+      const a = document.activeElement;
+      if (a && a.classList && a.classList.contains('md-cc-input')) return true;
+      return [...document.querySelectorAll('.md-cc-input')].some(i => i.value !== '');
+    }
+    setInterval(async () => {
+      if (_mdPollBusy || testMode || document.hidden || !supabaseClient) return;
+      const liveContext = mdStep === 'live' || ongoingMatches.some(m => m.md_round) || (activeMatchday && activeMatchday.status !== 'closed');
+      if (!liveContext) return;
+      if (mdScoreEntryInProgress()) return;
+      _mdPollBusy = true;
+      try {
+        const today = activeMatchday?.date || getLocalDateStr();
+        const [o, m, md] = await Promise.all([
+          supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false }),
+          supabaseClient.from('matches').select('*').eq('date', today),
+          supabaseClient.from('matchdays').select('*').order('date', { ascending: true })
+        ]);
+        if (!o.error && o.data) ongoingMatches = o.data;
+        if (!m.error && m.data) {
+          const ids = new Set(m.data.map(x => x.id));
+          matches = [...m.data, ...matches.filter(x => x.date !== today && !ids.has(x.id))];
+        }
+        if (!md.error && md.data) { matchdays = md.data; determineActiveMatchday(); }
+        localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
+        if (!mdScoreEntryInProgress()) renderMatchDay();
+      } catch (e) { console.log('live poll skipped:', e); }
+      finally { _mdPollBusy = false; }
+    }, 20000);
     async function mdToggleHold(c) {
       if (mdHeldCourts.has(c)) {
         mdHeldCourts.delete(c);
@@ -9890,8 +9927,12 @@
       
       // --- UP NEXT QUEUE (new engine: pending schedule matches, NOT on-court) ---
       const pendingQueue = (isActiveView && mdStep === 'live') ? mdGetPendingQueue() : [];
+      const railQueueWrap = document.getElementById('mdRailQueueWrap');
+      // Cockpit shows when THIS device has a queue OR the server has live
+      // matches for the day (spectator mode: courts visible, rail hidden)
+      ongoingEl.style.display = (pendingQueue.length > 0 || dayOngoing.length > 0) ? '' : 'none';
+      if (railQueueWrap) railQueueWrap.style.display = pendingQueue.length > 0 ? '' : 'none';
       if (pendingQueue.length > 0) {
-        ongoingEl.style.display = '';
         document.getElementById('mdInfoQueueCount').textContent = `${pendingQueue.length} match${pendingQueue.length !== 1 ? 'es' : ''}`;
         // Which teams/players are busy on court right now?
         const qBusyTeams = new Set();
@@ -9973,8 +10014,6 @@
         }).join('') + (pendingQueue.length > COLLAPSED_COUNT
           ? `<button onclick="mdToggleQueueExpand()" style="width:100%;padding:10px;border:1.5px dashed var(--cream-dark);border-radius:12px;background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">${mdQueueExpanded ? '<i class="fas fa-chevron-up"></i> Show less' : `<i class="fas fa-chevron-down"></i> Show all ${pendingQueue.length} matches`}</button>`
           : '');
-      } else {
-        ongoingEl.style.display = 'none';
       }
       
       // --- RESULTS + STANDINGS ---
@@ -10476,8 +10515,12 @@
     }
 
     function renderMDLive() {
-      if (!mdGeneratedSchedule) return;
-      const allScheduled = mdGeneratedSchedule;
+      // Spectator devices have no local session (mdGeneratedSchedule is
+      // per-device) but must still see live courts from server-synced
+      // ongoing matches.
+      const hasLiveOngoing = ongoingMatches.some(m => m.md_round);
+      if (!mdGeneratedSchedule && !hasLiveOngoing) return;
+      const allScheduled = mdGeneratedSchedule || [];
       const totalGames = allScheduled.length;
       const completedCount = mdCompletedGames.length;
 
@@ -10498,6 +10541,10 @@
 
 
       // Build court cards — ensure no team plays on two courts simultaneously
+      // Spectators default mdCourts=1; derive the real count from ongoing labels
+      const renderCourts = ongoingMatches.filter(m => m.md_round)
+        .map(m => parseInt(String(m.court).replace(/\D/g, '')) || 1)
+        .reduce((mx, n) => Math.max(mx, n), mdCourts);
       let courtHtml = '';
       const busyTeamIds = new Set(); // teams already assigned to a court this render
       const courtAssignments = []; // [{court, match}]
