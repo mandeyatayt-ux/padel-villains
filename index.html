@@ -5111,15 +5111,66 @@
       updateSyncBadge();
     }
     
+    // ===== RECOVERY: restore any locally-held games the server is missing =====
+    // Sources: pv_pending_sync ops, pv_sync_dead archive, local matches[],
+    // and the live-session completed list. Upserts on match_uid conflict, so
+    // it is safe to run repeatedly.
+    async function mdRecoverLocalData() {
+      if (!supabaseClient) return { restored: 0 };
+      const candidates = new Map(); // match_uid -> row
+      const addCand = (r) => {
+        if (r && r.match_uid && r.date && (r.team1_id || r.team1_players) && r.scores) {
+          if (!candidates.has(r.match_uid)) candidates.set(r.match_uid, r);
+        }
+      };
+      try { JSON.parse(localStorage.getItem('pv_sync_dead') || '[]').forEach(d => { if (d.op?.table === 'matches') addCand(d.op.data); }); } catch (e) {}
+      (pendingSync || []).forEach(op => { if (op.table === 'matches' && op.type !== 'delete') addCand(op.data); });
+      (matches || []).forEach(addCand);
+      (mdCompletedGames || []).forEach(g => {
+        if (g.match_uid && g.t1 && g.t2) addCand({
+          id: g.id || generateNumericId(), match_uid: g.match_uid,
+          date: activeMatchday?.date || getLocalDateStr(),
+          location: activeMatchday?.venue || '', court: g.court || '',
+          team1_id: g.t1, team2_id: g.t2,
+          scores: [[g.score1 ?? g.s1 ?? 0, g.score2 ?? g.s2 ?? 0]],
+          winner_id: (g.score1 ?? g.s1 ?? 0) > (g.score2 ?? g.s2 ?? 0) ? g.t1 : g.t2,
+          created_at: new Date().toISOString(), device_id: PV_DEVICE_ID
+        });
+      });
+      if (candidates.size === 0) return { restored: 0 };
+      let restored = 0, already = 0, errors = [];
+      for (const row of candidates.values()) {
+        const clean = {
+          id: row.id, match_uid: row.match_uid, date: row.date,
+          location: row.location || '', court: row.court || '',
+          team1_id: row.team1_id ?? null, team2_id: row.team2_id ?? null,
+          scores: row.scores, winner_id: row.winner_id ?? null,
+          created_at: row.created_at || new Date().toISOString(),
+          device_id: row.device_id || PV_DEVICE_ID
+        };
+        if (row.started_at) clean.started_at = row.started_at;
+        if (row.finalized_at) clean.finalized_at = row.finalized_at;
+        if (row.md_round != null) clean.md_round = row.md_round;
+        try {
+          const { error } = await supabaseClient.from('matches').upsert([clean], { onConflict: 'match_uid', ignoreDuplicates: true });
+          if (error) { if (error.code === '23505') already++; else errors.push(`${row.match_uid}: ${error.message}`); }
+          else restored++;
+        } catch (e) { errors.push(`${row.match_uid}: ${e.message}`); }
+      }
+      try { logAudit('recovery_flush', { candidates: candidates.size, restored, already, errors: errors.slice(0, 5) }, `Recovery: ${restored} pushed, ${errors.length} errors`); } catch (e) {}
+      if (restored > 0) toast(`Recovered ${restored} game${restored > 1 ? 's' : ''} to the server`, 'success');
+      if (errors.length > 0) toast(`${errors.length} game(s) could not be restored — tap Sync to retry`, 'error');
+      return { restored, errors };
+    }
+
     async function processPendingSync() {
       if (!supabaseClient || pendingSync.length === 0) return;
       syncStatus.syncing = true;
       updateSyncBadge();
       
       const queue = [...pendingSync];
-      pendingSync = [];
-      localStorage.setItem('pv_pending_sync', '[]');
       let synced = 0, failed = 0;
+      const resolved = new Set();
       
       for (const op of queue) {
         try {
@@ -5131,26 +5182,30 @@
             if (!insertData.device_id) insertData.device_id = PV_DEVICE_ID;
             
             const { error } = await supabaseClient.from(op.table).insert([insertData]);
+            if (!error) resolved.add(op);
             if (error) {
               // ANY unique violation (pkey OR match_uid) means the row already
               // exists server-side — the data is safe, so this is success.
               // The old check only forgave match_uid messages; retried rows hit
               // the PRIMARY KEY first and looped forever.
-              if (error.code === '23505') { synced++; continue; }
+              if (error.code === '23505') { synced++; resolved.add(op); continue; }
+              op._lastError = error.message || error.code;
               throw error;
             }
             synced++;
           } else if (op.type === 'delete') {
             await supabaseClient.from(op.table).delete().eq('id', op.id);
-            synced++;
+            synced++; resolved.add(op);
           } else if (op.type === 'upsert') {
-            await supabaseClient.from(op.table).upsert([op.data]);
-            synced++;
+            const { error: ue } = await supabaseClient.from(op.table).upsert([op.data]);
+            if (ue && ue.code !== '23505') { op._lastError = ue.message; throw ue; }
+            synced++; resolved.add(op);
           }
         } catch (e) {
           console.error('Sync failed for:', op.type, op.table, e.message);
           op._attempts = (op._attempts || 0) + 1;
-          if (op._attempts >= 5) {
+          op._lastError = op._lastError || e.message;
+          if (op._attempts >= 8) {
             // Stop poisoning the queue — archive for inspection instead
             try {
               const dead = JSON.parse(localStorage.getItem('pv_sync_dead') || '[]');
@@ -5158,13 +5213,14 @@
               localStorage.setItem('pv_sync_dead', JSON.stringify(dead.slice(-50)));
             } catch (e2) {}
           } else {
-            pendingSync.push(op); // Re-queue with attempt count
             failed++;
           }
         }
       }
-      
-      if (failed > 0) localStorage.setItem('pv_pending_sync', JSON.stringify(pendingSync));
+      // Persist exactly what remains unresolved (crash-safe: nothing was
+      // wiped upfront, so an interrupted run loses nothing)
+      pendingSync = queue.filter(op => !resolved.has(op) && (op._attempts || 0) < 8);
+      localStorage.setItem('pv_pending_sync', JSON.stringify(pendingSync));
       if (synced > 0) toast(`Synced ${synced} offline change${synced > 1 ? 's' : ''}`, 'success');
       if (failed > 0) toast(`${failed} change${failed > 1 ? 's' : ''} failed to sync`, 'error');
       
@@ -5542,6 +5598,7 @@
         
         // Push pending writes to Supabase FIRST
         await processPendingSync();
+        await mdRecoverLocalData();
         
         // Fetch all tables in parallel
         const results = await Promise.all([
@@ -9087,8 +9144,12 @@
         ]);
         if (!o.error && o.data) ongoingMatches = o.data;
         if (!m.error && m.data) {
-          const ids = new Set(m.data.map(x => x.id));
-          matches = [...m.data, ...matches.filter(x => x.date !== today && !ids.has(x.id))];
+          // ADDITIVE merge: server rows win on id collision, but local rows
+          // the server lacks (unsynced games) are PRESERVED — never dropped.
+          const serverIds = new Set(m.data.map(x => String(x.id)));
+          const serverUids = new Set(m.data.map(x => x.match_uid).filter(Boolean));
+          matches = [...m.data, ...matches.filter(x =>
+            !serverIds.has(String(x.id)) && !(x.match_uid && serverUids.has(x.match_uid)))];
         }
         if (!md.error && md.data) { matchdays = md.data; determineActiveMatchday(); }
         localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
