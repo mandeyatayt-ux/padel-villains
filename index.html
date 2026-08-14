@@ -5118,7 +5118,10 @@
     async function mdRecoverLocalData() {
       if (!supabaseClient) return { restored: 0 };
       const candidates = new Map(); // match_uid -> row
+      let tombstones = new Set();
+      try { tombstones = new Set(JSON.parse(localStorage.getItem('pv_deleted_uids') || '[]')); } catch (e) {}
       const addCand = (r) => {
+        if (r && r.match_uid && tombstones.has(r.match_uid)) return;
         if (r && r.match_uid && r.date && (r.team1_id || r.team1_players) && r.scores) {
           if (!candidates.has(r.match_uid)) candidates.set(r.match_uid, r);
         }
@@ -5196,6 +5199,11 @@
         try {
           if (op.type === 'insert') {
             let insertData = { ...op.data };
+            // Skip inserts for deliberately deleted matches
+            try {
+              const tombs = JSON.parse(localStorage.getItem('pv_deleted_uids') || '[]');
+              if (insertData.match_uid && tombs.includes(insertData.match_uid)) { synced++; resolved.add(op); continue; }
+            } catch (e) {}
             // Ensure ID exists
             if (!insertData.id) insertData.id = generateNumericId();
             // Ensure device_id
@@ -10128,7 +10136,7 @@
             <span style="font-weight:${w1?'700':'400'};color:${w1?'var(--brown-dark)':'var(--text-muted)'};flex:1">${esc(t1?.name||'?')}</span>
             <span style="font-weight:800;color:var(--clay);font-size:15px">${score}</span>
             <span style="font-weight:${!w1?'700':'400'};color:${!w1?'var(--brown-dark)':'var(--text-muted)'};flex:1;text-align:right">${esc(t2?.name||'?')}</span>
-            ${currentUser?.is_admin ? `<button onclick="openFinalizeMatch(${m.id});event.stopPropagation()" title="Edit" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted);padding:0;flex-shrink:0"><i class="fas fa-pen"></i></button>` : ''}
+            ${currentUser?.is_admin ? `<button onclick="openEditMatch(${m.id});event.stopPropagation()" title="Edit" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted);padding:0;flex-shrink:0"><i class="fas fa-pen"></i></button>` : ''}
           </div>`;
         }).join('');
         
@@ -12797,7 +12805,7 @@
     let editMatchTeamSide = null; // 1 or 2 — which side the picker is editing
 
     function openEditMatch(id) {
-      const m = matches.find(match => match.id === id);
+      const m = matches.find(match => String(match.id) === String(id));
       if (!m) return;
       
       const scores = m.scores?.[0] || [0, 0];
@@ -12891,13 +12899,13 @@
     }
     
     async function saveMatch() {
-      const id = parseInt(document.getElementById('editMatchId').value);
+      const id = document.getElementById('editMatchId').value;
       const scoreA = parseInt(document.getElementById('editScoreA').value) || 0;
       const scoreB = parseInt(document.getElementById('editScoreB').value) || 0;
       
       if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); return; }
       
-      const idx = matches.findIndex(m => m.id === id);
+      const idx = matches.findIndex(m => String(m.id) === String(id));
       if (idx === -1) return;
       
       const m = matches[idx];
@@ -12949,8 +12957,8 @@
       toast(teamsChanged ? 'Match updated (teams changed)' : 'Match updated!', 'success');
     }
     function confirmDeleteMatch() {
-      const id = parseInt(document.getElementById('editMatchId').value);
-      const m = matches.find(match => match.id === id);
+      const id = document.getElementById('editMatchId').value;
+      const m = matches.find(match => String(match.id) === String(id));
       if (!m) return;
       
       const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
@@ -12963,7 +12971,7 @@
     }
     
     async function deleteMatch(id) {
-      const m = matches.find(match => match.id === id);
+      const m = matches.find(match => String(match.id) === String(id));
       
       if (supabaseClient) {
         try {
@@ -12976,11 +12984,27 @@
         scores: m?.scores 
       });
       
-      matches = matches.filter(m => m.id !== id);
-      if (!supabaseClient) saveLocal();
+      matches = matches.filter(m => String(m.id) !== String(id));
+      // Tombstone so recovery/pending sync can never resurrect this match
+      if (m?.match_uid) {
+        try {
+          const tombs = JSON.parse(localStorage.getItem('pv_deleted_uids') || '[]');
+          tombs.push(m.match_uid);
+          localStorage.setItem('pv_deleted_uids', JSON.stringify(tombs.slice(-300)));
+        } catch (e) {}
+        pendingSync = pendingSync.filter(op => op.data?.match_uid !== m.match_uid);
+        localStorage.setItem('pv_pending_sync', JSON.stringify(pendingSync));
+        try {
+          const dead = JSON.parse(localStorage.getItem('pv_sync_dead') || '[]');
+          localStorage.setItem('pv_sync_dead', JSON.stringify(dead.filter(d => d.op?.data?.match_uid !== m.match_uid)));
+        } catch (e) {}
+        mdCompletedGames = mdCompletedGames.filter(g => g.match_uid !== m.match_uid && String(g.match_id) !== String(id));
+      }
+      saveLocal();
       
       closeModal('confirm');
       renderAll();
+      renderMatchDay();
       toast('Match deleted - rankings updated', 'success');
     }
     
