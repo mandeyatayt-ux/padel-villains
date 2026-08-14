@@ -4988,7 +4988,6 @@
       // Optional columns — include if present
       if (matchData.started_at) sbData.started_at = matchData.started_at;
       if (matchData.finalized_at) sbData.finalized_at = matchData.finalized_at;
-      if (matchData.game_mode) sbData.game_mode = matchData.game_mode;
       if (matchData.md_round != null) sbData.md_round = matchData.md_round;
       
       if (supabaseClient && !isOffline) {
@@ -4996,7 +4995,7 @@
           const { data, error } = await supabaseClient.from('matches').insert([sbData]).select().single();
           if (error) {
             // If unique constraint violation on match_uid, it's a duplicate — not an error
-            if (error.message?.includes('match_uid') || error.code === '23505') {
+            if (error.code === '23505' || error.message?.includes('match_uid')) {
               console.log('Duplicate match_uid detected, skipping:', matchData.match_uid);
               return { success: true, duplicate: true, data: matchData };
             }
@@ -5133,10 +5132,11 @@
             
             const { error } = await supabaseClient.from(op.table).insert([insertData]);
             if (error) {
-              // Skip duplicate match_uid errors (already synced)
-              if (error.code === '23505' && error.message?.includes('match_uid')) {
-                synced++; continue;
-              }
+              // ANY unique violation (pkey OR match_uid) means the row already
+              // exists server-side — the data is safe, so this is success.
+              // The old check only forgave match_uid messages; retried rows hit
+              // the PRIMARY KEY first and looped forever.
+              if (error.code === '23505') { synced++; continue; }
               throw error;
             }
             synced++;
@@ -5149,8 +5149,18 @@
           }
         } catch (e) {
           console.error('Sync failed for:', op.type, op.table, e.message);
-          pendingSync.push(op); // Re-queue failed ops
-          failed++;
+          op._attempts = (op._attempts || 0) + 1;
+          if (op._attempts >= 5) {
+            // Stop poisoning the queue — archive for inspection instead
+            try {
+              const dead = JSON.parse(localStorage.getItem('pv_sync_dead') || '[]');
+              dead.push({ op, error: e.message, at: new Date().toISOString() });
+              localStorage.setItem('pv_sync_dead', JSON.stringify(dead.slice(-50)));
+            } catch (e2) {}
+          } else {
+            pendingSync.push(op); // Re-queue with attempt count
+            failed++;
+          }
         }
       }
       
@@ -12469,7 +12479,11 @@
     }
     
     // ===== MATCH ACTIONS =====
+    let _addMatchBusy = false;
     async function addMatch() {
+      if (_addMatchBusy) return;
+      _addMatchBusy = true;
+      setTimeout(() => { _addMatchBusy = false; }, 2500);
       if (!currentUser?.is_admin) { toast('Only admins can add match results', 'error'); return; }
       
       const btn = document.querySelector('#addMatch .btn-primary, #addMatch [onclick*="addMatch"]');
