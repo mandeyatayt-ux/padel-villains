@@ -5137,7 +5137,27 @@
           created_at: new Date().toISOString(), device_id: PV_DEVICE_ID
         });
       });
-      if (candidates.size === 0) return { restored: 0 };
+      // Phase 1: entities first — matches may reference a team/player that
+      // only exists locally (e.g. a team created during a network outage).
+      const TEAM_COLS = ['id','name','player1_id','player2_id','wins','losses','active','created_at','updated_at','is_draft'];
+      const PLAYER_COLS = ['id','name','photo','wins','losses','games_played','active','created_at','updated_at','available','phone','nickname','bio','position','email'];
+      const pick = (row, cols) => { const o = {}; cols.forEach(c => { if (row[c] !== undefined) o[c] = row[c]; }); return o; };
+      const entityRows = { teams: new Map(), players: new Map() };
+      const addEntity = (table, r) => { if (r && r.id && r.name && entityRows[table] && !entityRows[table].has(r.id)) entityRows[table].set(r.id, r); };
+      try { JSON.parse(localStorage.getItem('pv_sync_dead') || '[]').forEach(d => addEntity(d.op?.table, d.op?.data)); } catch (e) {}
+      (pendingSync || []).forEach(op => { if (op.type !== 'delete') addEntity(op.table, op.data); });
+      (teams || []).forEach(t => addEntity('teams', t));
+      let entitiesPushed = 0;
+      for (const [table, cols] of [['teams', TEAM_COLS], ['players', PLAYER_COLS]]) {
+        for (const row of entityRows[table].values()) {
+          try {
+            const { error } = await supabaseClient.from(table).upsert([pick(row, cols)], { onConflict: 'id', ignoreDuplicates: true });
+            if (!error) entitiesPushed++;
+          } catch (e) { console.warn('entity recover failed:', table, row.id, e.message); }
+        }
+      }
+
+      if (candidates.size === 0 && entitiesPushed === 0) return { restored: 0 };
       let restored = 0, already = 0, errors = [];
       for (const row of candidates.values()) {
         const clean = {
@@ -5157,7 +5177,7 @@
           else restored++;
         } catch (e) { errors.push(`${row.match_uid}: ${e.message}`); }
       }
-      try { logAudit('recovery_flush', { candidates: candidates.size, restored, already, errors: errors.slice(0, 5) }, `Recovery: ${restored} pushed, ${errors.length} errors`); } catch (e) {}
+      try { logAudit('recovery_flush', { candidates: candidates.size, restored, already, entitiesPushed, errors: errors.slice(0, 5) }, `Recovery: ${restored} pushed, ${errors.length} errors`); } catch (e) {}
       if (restored > 0) toast(`Recovered ${restored} game${restored > 1 ? 's' : ''} to the server`, 'success');
       if (errors.length > 0) toast(`${errors.length} game(s) could not be restored — tap Sync to retry`, 'error');
       return { restored, errors };
@@ -5523,10 +5543,14 @@
       }
     }
     
+    function mergeAdditive(serverRows, localRows) {
+      const sIds = new Set((serverRows || []).map(x => String(x.id)));
+      return [...(serverRows || []), ...(localRows || []).filter(x => !sIds.has(String(x.id)))];
+    }
     function applyData(data) {
-      players = data.players || [];
-      teams = data.teams || [];
-      matches = data.matches || [];
+      players = mergeAdditive(data.players, players);
+      teams = mergeAdditive(data.teams, teams);
+      matches = mergeAdditive(data.matches, matches);
       venues = data.venues?.length ? data.venues : defaultVenues;
       ongoingMatches = data.ongoing_matches || [];
       matchdays = data.matchdays || [];
@@ -13957,9 +13981,9 @@
         const cached = localStorage.getItem('pv_offline_cache');
         if (cached) {
           const data = JSON.parse(cached);
-          players = data.players || [];
-          teams = data.teams || [];
-          matches = data.matches || [];
+          players = mergeAdditive(data.players, players);
+          teams = mergeAdditive(data.teams, teams);
+          matches = mergeAdditive(data.matches, matches);
           venues = data.venues?.length ? data.venues : defaultVenues;
           ongoingMatches = data.ongoingMatches || [];
           matchdays = data.matchdays || [];
