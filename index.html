@@ -972,8 +972,8 @@
     .notification-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; background: var(--danger); color: white; border-radius: 10px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
     .notifications-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; opacity: 0; visibility: hidden; transition: all 0.3s; }
     .notifications-overlay.open { opacity: 1; visibility: visible; }
-    .notifications-panel { position: fixed; top: 0; right: -400px; width: 400px; max-width: 100%; height: 100vh; background: var(--bg-card); box-shadow: -4px 0 30px rgba(28,25,23,0.12); z-index: 1000; transition: right 0.3s; overflow-y: auto; }
-    .notifications-panel.open { right: 0; }
+    .notifications-panel { position: fixed; top: 0; right: 0; width: 400px; max-width: 100%; height: 100vh; height: 100dvh; background: var(--bg-card); box-shadow: -4px 0 30px rgba(28,25,23,0.12); z-index: 1000; transform: translateX(100%); visibility: hidden; transition: transform 0.3s, visibility 0s linear 0.3s; overflow-y: auto; }
+    .notifications-panel.open { transform: translateX(0); visibility: visible; transition: transform 0.3s, visibility 0s; }
     .notifications-header { padding: 20px 24px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg-card); }
     .notifications-header h3 { font-family: 'Sublime', sans-serif; font-size: 24px; letter-spacing: 2px; }
     .notifications-list { padding: 16px; }
