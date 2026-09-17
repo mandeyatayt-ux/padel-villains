@@ -438,7 +438,7 @@
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
     .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
     @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr 1fr; } .grid-2 { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr 1fr; } .grid-2 { grid-template-columns: minmax(0, 1fr); } }
     @media (max-width: 600px) { .grid-3, .grid-4 { grid-template-columns: 1fr; } }
     
     /* ===== DASHBOARD ===== */
@@ -1521,7 +1521,7 @@
     
     /* Enhanced grid for web layout */
     @media (min-width: 1024px) {
-      .grid-2 { grid-template-columns: 1fr 1fr; gap: 20px; }
+      .grid-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
       .stats-grid { grid-template-columns: repeat(4, 1fr); }
       .grid-3 { grid-template-columns: repeat(3, 1fr); }
     }
@@ -2793,7 +2793,57 @@
     /* -- section titles in the display face -- */
     [data-theme="court-lines"] .section-title { font-family: 'Archivo', sans-serif; font-variation-settings: "wdth" 112, "wght" 800; text-transform: uppercase; letter-spacing: -.005em; color: var(--text); }
 
-      /* ================= COURT LINES — ticker-tab match-day banner ================= */
+      /* Live Matches rows: avoid team names forcing the dashboard column wider than the phone */
+    @media (max-width: 600px) {
+      .dashboard-ongoing-match { padding: 12px; gap: 10px; min-width: 0; }
+      .dashboard-ongoing-teams { flex: 1 1 auto; min-width: 0; gap: 8px; }
+      .dashboard-ongoing-team { min-width: 0; }
+      .dashboard-ongoing-team span, .dashboard-ongoing-team div { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .dashboard-ongoing-meta { flex: 0 0 auto; }
+    }
+    /* ===== MY MATCH DAY scorecard ===== */
+    .myd-card { padding: 0 !important; overflow: hidden; min-width: 0; }
+    .myd-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .myd-title b { font-family: 'Sublime', sans-serif; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px; }
+    .myd-title b .nav-icon { width: 16px; height: 16px; color: var(--clay); }
+    .myd-title small { color: var(--text-muted); font-size: 11px; text-align: right; }
+    .myd-rec { display: grid; grid-template-columns: auto minmax(0, 1fr); border-bottom: 1px solid var(--border); }
+    .myd-big { padding: 16px 16px 12px; border-right: 1px solid var(--border); }
+    .myd-n { font-family: 'DirtyWeather', 'Sublime', sans-serif; font-size: 48px; line-height: .95; letter-spacing: -.01em; }
+    .myd-n b { color: var(--success); font-weight: inherit; }
+    .myd-n i { font-style: normal; color: var(--danger); }
+    .myd-n s { text-decoration: none; color: var(--text-muted); margin: 0 3px; font-size: .7em; vertical-align: middle; }
+    .myd-l { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
+    .myd-side { display: flex; flex-direction: column; justify-content: center; padding: 12px 16px; gap: 5px; font-size: 12px; color: var(--text-muted); min-width: 0; }
+    .myd-side > div { display: flex; justify-content: space-between; gap: 10px; }
+    .myd-side > div b { color: var(--text); font-weight: 600; text-align: right; }
+    .myd-form { justify-content: flex-start !important; gap: 4px; margin-bottom: 4px; }
+    .myd-sq { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; border: 1px solid var(--border); color: var(--text-muted); border-radius: var(--radius-sm); }
+    .myd-sq.w { background: var(--success); border-color: var(--success); color: #fff; }
+    .myd-sq.l { background: var(--danger); border-color: var(--danger); color: #fff; }
+    .myd-sq.n { border-style: dashed; }
+    .myd-sec { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); padding: 10px 16px 6px; border-bottom: 1px solid var(--border); font-weight: 600; }
+    .myd-row { display: grid; grid-template-columns: 36px 1fr auto 56px; align-items: center; border-bottom: 1px solid var(--border); min-height: 44px; }
+    .myd-row:last-child { border-bottom: 0; }
+    .myd-wl { align-self: stretch; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; border-right: 1px solid var(--border); }
+    .myd-wl.w { color: var(--success); box-shadow: inset 3px 0 0 var(--success); }
+    .myd-wl.l { color: var(--danger); box-shadow: inset 3px 0 0 var(--danger); }
+    .myd-wl.q { color: var(--clay); box-shadow: inset 3px 0 0 var(--clay); font-size: 11px; }
+    .myd-opp { padding: 6px 14px; font-weight: 600; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .myd-opp small { display: block; color: var(--text-muted); font-weight: 500; font-size: 11px; }
+    .myd-sc { font-family: 'DirtyWeather', 'Sublime', sans-serif; font-size: 17px; padding: 0 14px; border-left: 1px solid var(--border); align-self: stretch; display: flex; align-items: center; white-space: nowrap; }
+    .myd-sc.q { color: var(--clay); font-size: 11px; font-family: inherit; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .myd-tm { color: var(--text-muted); font-size: 11px; text-align: right; padding-right: 14px; font-variant-numeric: tabular-nums; }
+    @media (max-width: 480px) {
+      .myd-rec { grid-template-columns: 1fr; }
+      .myd-big { border-right: 0; border-bottom: 1px solid var(--border); }
+      .myd-n { font-size: 40px; }
+    }
+    [data-theme="court-lines"] .myd-title b { font-family: 'Archivo', Impact, sans-serif; font-variation-settings: "wdth" 112, "wght" 700; letter-spacing: .02em; }
+    [data-theme="court-lines"] .myd-n, [data-theme="court-lines"] .myd-sc { font-family: 'Archivo', Impact, sans-serif; font-variation-settings: "wdth" 118, "wght" 800; }
+    [data-theme="court-lines"] .myd-sq { font-family: 'Archivo', Impact, sans-serif; font-variation-settings: "wdth" 118, "wght" 800; }
+    [data-theme="court-lines"] .myd-sq.w { color: #141312; }
+    /* ================= COURT LINES — ticker-tab match-day banner ================= */
     [data-theme="court-lines"] .matchday-header {
       display: flex !important; align-items: stretch !important; flex-wrap: wrap; gap: 0 !important;
       padding: 0 !important; margin-bottom: 20px !important; border: 1px solid var(--border) !important; min-height: 56px;
@@ -3046,10 +3096,7 @@
         </div>
         
         <!-- My Match Day - Personal game tracker -->
-        <div class="card" id="myMatchDayCard" style="display:none;margin-bottom:16px">
-          <div class="section-header" style="margin-bottom:16px">
-            <div><h3 style="font-size:18px;font-weight:700">🎯 My Match Day</h3></div>
-          </div>
+        <div class="card myd-card" id="myMatchDayCard" style="display:none;margin-bottom:16px">
           <div id="myMatchDayContent"></div>
         </div>
         
@@ -3593,8 +3640,7 @@
         </div>
         
         <!-- My Match Day on Match Day page -->
-        <div id="mdInfoMyDay" class="card" style="display:none;margin-bottom:16px;padding:16px">
-          <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">🎯 My Match Day</h3>
+        <div id="mdInfoMyDay" class="card myd-card" style="display:none;margin-bottom:16px">
           <div id="mdInfoMyDayContent"></div>
         </div>
       </div>
@@ -5882,7 +5928,7 @@
     // ===== DATA =====
     const CACHE_KEY = 'pv_cache';
     const CACHE_TIMESTAMP_KEY = 'pv_cache_time';
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24h — cache is only ever shown while a background refresh runs
     
     async function fetchData() {
       try {
@@ -6890,78 +6936,89 @@
     }
     
     // ===== PLAYER SPOTLIGHT =====
+    // ===== MY MATCH DAY — shared scorecard renderer (dashboard + Match Day tab) =====
+    // Returns HTML or '' when the current user has nothing on this match day.
+    function buildMyDayScorecard(dayMatches, dayOngoing) {
+      if (!currentUser?.player_id) return '';
+      const myPlayerId = currentUser.player_id;
+      const myTeams = teams.filter(t => String(t.player1_id) === String(myPlayerId) || String(t.player2_id) === String(myPlayerId));
+      const myTeamIds = new Set(myTeams.map(t => String(t.id)));
+      const mine = m => myTeamIds.has(String(m.team1_id)) || myTeamIds.has(String(m.team2_id));
+      const completed = (dayMatches || []).filter(mine)
+        .sort((a, b) => new Date(a.finalized_at || a.created_at || 0) - new Date(b.finalized_at || b.created_at || 0)); // oldest -> newest
+      const queued = (dayOngoing || []).filter(mine)
+        .sort((a, b) => (a.md_round || 0) - (b.md_round || 0) || new Date(a.started_at || 0) - new Date(b.started_at || 0));
+      if (completed.length === 0 && queued.length === 0) return '';
+
+      const hhmm = iso => iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+      // Everything from *my* side: opponent, my score first
+      const view = m => {
+        const iAmT1 = myTeamIds.has(String(m.team1_id));
+        const myTeam = getTeam(iAmT1 ? m.team1_id : m.team2_id);
+        const opp = getTeam(iAmT1 ? m.team2_id : m.team1_id);
+        const sets = (m.scores || []).map(sc => iAmT1 ? [sc[0], sc[1]] : [sc[1], sc[0]]);
+        const won = m.winner_id != null ? myTeamIds.has(String(m.winner_id)) : null;
+        return { myTeam, opp, sets, won };
+      };
+      let wins = 0, losses = 0, gf = 0, ga = 0;
+      const results = completed.map(m => { const v = view(m); if (v.won) wins++; else losses++; v.sets.forEach(sc => { gf += +sc[0] || 0; ga += +sc[1] || 0; }); return { m, v }; });
+      // streak from the newest backwards
+      let streak = 0, streakType = null;
+      for (let i = results.length - 1; i >= 0; i--) { const w = results[i].v.won ? 'W' : 'L'; if (streakType === null) streakType = w; if (w !== streakType) break; streak++; }
+      const best = results.filter(r => r.v.won).sort((a, b) => (b.v.sets.reduce((x, sc) => x + (sc[0] - sc[1]), 0)) - (a.v.sets.reduce((x, sc) => x + (sc[0] - sc[1]), 0)))[0];
+      const partner = myTeams.length ? myTeams.map(t => { const pid = String(t.player1_id) === String(myPlayerId) ? t.player2_id : t.player1_id; return getPlayer(pid)?.name; }).filter(Boolean)[0] : null;
+      const teamName = results[0]?.v.myTeam?.name || (queued[0] && view(queued[0]).myTeam?.name) || '';
+      const played = completed.length;
+      const pct = played ? Math.round(wins / played * 100) : 0;
+
+      // form guide: last 5 completed, oldest -> newest, then dashed squares for the queue (max 2)
+      const last5 = results.slice(-5);
+      const form = last5.map(r => `<span class="myd-sq ${r.v.won ? 'w' : 'l'}">${r.v.won ? 'W' : 'L'}</span>`).join('')
+        + queued.slice(0, Math.max(0, 5 - last5.length) || 1).slice(0, 2).map(() => `<span class="myd-sq n"></span>`).join('');
+
+      const scoreStr = sets => sets.length ? sets.map(sc => `${sc[0]}–${sc[1]}`).join(', ') : '—';
+      const rows = [];
+      if (queued.length) {
+        rows.push(`<div class="myd-sec">In queue · ${queued.length}</div>`);
+        queued.forEach((m, i) => { const v = view(m);
+          rows.push(`<div class="myd-row"><div class="myd-wl q">${m.md_round ? 'R' + m.md_round : '·'}</div><div class="myd-opp">${esc(v.opp?.name || '?')}<small>${esc(m.court || '')}${i === 0 ? ' · up next' : ''}</small></div><div class="myd-sc q">Queued</div><div class="myd-tm">${hhmm(m.started_at)}</div></div>`);
+        });
+      }
+      if (results.length) {
+        rows.push(`<div class="myd-sec">Completed · ${results.length}</div>`);
+        results.slice().reverse().forEach(({ m, v }) => {
+          rows.push(`<div class="myd-row"><div class="myd-wl ${v.won ? 'w' : 'l'}">${v.won ? 'W' : 'L'}</div><div class="myd-opp">${esc(v.opp?.name || '?')}</div><div class="myd-sc">${scoreStr(v.sets)}</div><div class="myd-tm">${hhmm(m.finalized_at)}</div></div>`);
+        });
+      }
+      const sub = [partner ? `with ${esc(partner)}` : '', teamName ? esc(teamName) : ''].filter(Boolean).join(' · ');
+      return `<div class="myd">
+        <div class="myd-title"><b><span class="nav-icon" data-icon="player"></span>My match day</b><small>${sub}</small></div>
+        <div class="myd-rec">
+          <div class="myd-big"><div class="myd-n"><b>${wins}</b><s>–</s><i>${losses}</i></div><div class="myd-l">${played} played${played ? ` · ${pct}% today` : ''}</div></div>
+          <div class="myd-side">
+            <div class="myd-form">${form}</div>
+            <div><span>Streak</span><b>${streak ? streakType + streak : '—'}</b></div>
+            <div><span>Games for / against</span><b>${gf} / ${ga}</b></div>
+            ${best ? `<div><span>Best win</span><b>vs ${esc(best.v.opp?.name || '?')}</b></div>` : ''}
+          </div>
+        </div>
+        ${rows.join('')}
+      </div>`;
+    }
+
+    // Dashboard card
     function renderMyMatchDay() {
       const card = document.getElementById('myMatchDayCard');
       const content = document.getElementById('myMatchDayContent');
-      if (!card || !content || !currentUser?.player_id) { if (card) card.style.display = 'none'; return; }
-      
-      const myPlayerId = currentUser.player_id;
-      const today = getLocalDateStr();
-      const matchdayDate = activeMatchday?.date || today;
-      
-      // Find my teams
-      const myTeams = teams.filter(t => t.player1_id === myPlayerId || t.player2_id === myPlayerId);
-      const myTeamIds = myTeams.map(t => t.id);
-      
-      // My completed matches today
-      const myCompleted = matches.filter(m => m.date === matchdayDate && (myTeamIds.includes(m.team1_id) || myTeamIds.includes(m.team2_id)));
-      
-      // My ongoing/queued matches
-      const myOngoing = ongoingMatches.filter(m => myTeamIds.includes(m.team1_id) || myTeamIds.includes(m.team2_id));
-      
-      if (myCompleted.length === 0 && myOngoing.length === 0) { card.style.display = 'none'; return; }
-      
+      if (!card || !content) return;
+      const matchdayDate = activeMatchday?.date || getLocalDateStr();
+      const html = buildMyDayScorecard(matches_for(matchdayDate), ongoingMatches);
+      if (!html) { card.style.display = 'none'; return; }
       card.style.display = '';
-      let wins = 0, losses = 0;
-      myCompleted.forEach(m => { if (myTeamIds.includes(m.winner_id)) wins++; else losses++; });
-      
-      let html = `<div style="display:flex;gap:16px;margin-bottom:16px">
-        <div style="text-align:center;flex:1;padding:12px;background:var(--cream);border-radius:12px">
-          <div style="font-family:'DirtyWeather',sans-serif;font-size:28px;color:#059669">${wins}</div>
-          <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:1px">WINS</div>
-        </div>
-        <div style="text-align:center;flex:1;padding:12px;background:var(--cream);border-radius:12px">
-          <div style="font-family:'DirtyWeather',sans-serif;font-size:28px;color:#E11D48">${losses}</div>
-          <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:1px">LOSSES</div>
-        </div>
-        <div style="text-align:center;flex:1;padding:12px;background:var(--cream);border-radius:12px">
-          <div style="font-family:'DirtyWeather',sans-serif;font-size:28px;color:var(--clay)">${myCompleted.length}</div>
-          <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:1px">PLAYED</div>
-        </div>
-      </div>`;
-      
-      // Ongoing matches (in queue)
-      if (myOngoing.length > 0) {
-        html += `<div style="font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--clay);margin-bottom:8px">⏳ IN QUEUE</div>`;
-        myOngoing.forEach(m => {
-          const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
-          const startTime = m.started_at ? new Date(m.started_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
-          html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(224,120,80,0.06);border-radius:10px;margin-bottom:6px;border-left:3px solid var(--clay)">
-            <span style="font-weight:600;font-size:13px;flex:1">${esc(t1?.name||'?')} vs ${esc(t2?.name||'?')}</span>
-            <span style="font-size:11px;color:var(--text-muted)">${esc(m.court)} ${startTime ? '• ' + startTime : ''}</span>
-          </div>`;
-        });
-      }
-      
-      // Completed matches
-      if (myCompleted.length > 0) {
-        html += `<div style="font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);margin-top:12px;margin-bottom:8px">✅ COMPLETED</div>`;
-        myCompleted.slice().reverse().forEach(m => {
-          const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
-          const isWin = myTeamIds.includes(m.winner_id);
-          const score = (m.scores||[]).map(s => s.join('-')).join(', ');
-          const time = m.finalized_at ? new Date(m.finalized_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
-          html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;margin-bottom:4px;background:${isWin ? 'rgba(5,150,105,0.06)' : 'rgba(225,29,72,0.04)'};border-left:3px solid ${isWin ? '#059669' : '#E11D48'}">
-            <span style="font-weight:700;font-size:12px;color:${isWin ? '#059669' : '#E11D48'};width:16px">${isWin ? 'W' : 'L'}</span>
-            <span style="font-weight:600;font-size:13px;flex:1">${esc(t1?.name||'?')} vs ${esc(t2?.name||'?')}</span>
-            <span style="font-family:'DirtyWeather',sans-serif;font-size:15px;color:var(--brown-dark)">${score}</span>
-            ${time ? `<span style="font-size:11px;color:var(--text-muted)">${time}</span>` : ''}
-          </div>`;
-        });
-      }
-      
       content.innerHTML = html;
+      injectPadelIcons();
     }
+    const matches_for = date => matches.filter(m => m.date === date);
 
     // ===== MATCHDAY HISTORY LOG =====
     function renderMatchdayHistoryLog() {
@@ -10635,44 +10692,11 @@
         resultsEl.style.display = 'none';
       }
       
-      // --- MY MATCH DAY ---
-      if (currentUser?.player_id) {
-        const myPlayerId = currentUser.player_id;
-        const myTeams = teams.filter(t => t.player1_id === myPlayerId || t.player2_id === myPlayerId);
-        const myTeamIds = myTeams.map(t => t.id);
-        const myCompleted = dayMatches.filter(m => myTeamIds.includes(m.team1_id) || myTeamIds.includes(m.team2_id));
-        const myOngoing = dayOngoing.filter(m => myTeamIds.includes(m.team1_id) || myTeamIds.includes(m.team2_id));
-        
-        if (myCompleted.length > 0 || myOngoing.length > 0) {
-          myDayEl.style.display = '';
-          let wins = 0, losses = 0;
-          myCompleted.forEach(m => { if (myTeamIds.includes(m.winner_id)) wins++; else losses++; });
-          
-          document.getElementById('mdInfoMyDayContent').innerHTML = `
-            <div style="display:flex;gap:12px;margin-bottom:12px">
-              <div style="flex:1;text-align:center;padding:10px;background:rgba(5,150,105,0.06);border-radius:12px">
-                <div style="font-size:24px;font-weight:900;color:var(--success)">${wins}</div>
-                <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text-muted)">WINS</div>
-              </div>
-              <div style="flex:1;text-align:center;padding:10px;background:rgba(225,29,72,0.04);border-radius:12px">
-                <div style="font-size:24px;font-weight:900;color:var(--danger)">${losses}</div>
-                <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text-muted)">LOSSES</div>
-              </div>
-              <div style="flex:1;text-align:center;padding:10px;background:rgba(224,120,80,0.06);border-radius:12px">
-                <div style="font-size:24px;font-weight:900;color:var(--clay)">${myCompleted.length}</div>
-                <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text-muted)">PLAYED</div>
-              </div>
-            </div>
-            ${myOngoing.length > 0 ? `<div style="font-size:11px;font-weight:700;color:var(--clay);letter-spacing:1px;margin-bottom:6px">⏳ NEXT UP</div>` + myOngoing.map(m => {
-              const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
-              return `<div style="padding:8px 10px;background:rgba(224,120,80,0.05);border-radius:8px;border-left:3px solid var(--clay);font-size:12px;font-weight:600;margin-bottom:4px">${esc(t1?.name||'?')} vs ${esc(t2?.name||'?')} • ${esc(m.court||'')}</div>`;
-            }).join('') : ''}
-          `;
-        } else {
-          myDayEl.style.display = 'none';
-        }
-      } else {
-        myDayEl.style.display = 'none';
+      // --- MY MATCH DAY (shared scorecard) ---
+      {
+        const html = buildMyDayScorecard(dayMatches, dayOngoing);
+        if (html) { myDayEl.style.display = ''; document.getElementById('mdInfoMyDayContent').innerHTML = html; injectPadelIcons(); }
+        else myDayEl.style.display = 'none';
       }
     }
     
@@ -16372,6 +16396,21 @@
       }).join('');
     }
     
+    function compressAvatarDataUrl(dataUrl, maxSize = 200, quality = 0.7) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas'); canvas.width = maxSize; canvas.height = maxSize;
+            const minDim = Math.min(img.width, img.height);
+            canvas.getContext('2d').drawImage(img, (img.width - minDim) / 2, (img.height - minDim) / 2, minDim, minDim, 0, 0, maxSize, maxSize);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } catch (e) { resolve(dataUrl); }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
     function updateMyProfilePhoto(input) {
       if (!input.files || !input.files[0]) return;
       
@@ -16379,7 +16418,9 @@
       const reader = new FileReader();
       
       reader.onload = async (e) => {
-        const photoData = e.target.result;
+        // Resize/crop to 200px square JPEG (same as the admin Add/Edit path) — raw phone photos
+        // were being stored as multi-MB base64 and downloaded by every client on every load.
+        const photoData = await compressAvatarDataUrl(e.target.result);
         
         // Update local player
         const playerIdx = players.findIndex(p => p.id === currentUser.player_id);
