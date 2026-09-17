@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
   <!-- Load fonts with display swap for faster text rendering -->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Preload critical icon font -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
@@ -2441,6 +2441,147 @@
       }
     }
 
+  
+    /* ===================================================================
+       THEME: COURT LINES  —  dark editorial direction
+       Charcoal ground, hairline rules instead of shadows, square corners,
+       terracotta used sparingly, Archivo variable for display + numerals.
+       Scoped entirely to [data-theme="court-lines"] — no other theme is
+       touched, and removing this block removes the theme cleanly.
+       =================================================================== */
+    [data-theme="court-lines"] {
+      --clay: #C84E28; --clay-dark: #B5532E; --clay-light: #E07850;
+      --clay-subtle: #C84E2814; --clay-10: #C84E2822; --clay-wash: #2C2A27;
+      --cream: #141312; --cream-dark: #1F1D1B;
+      --bg-card: #1F1D1B; --bg-warm: #1F1D1B;
+      --brown-dark: #F5F0E6; --brown-medium: #948C7E; --brown-light: #6E675C;
+      --text: #F5F0E6; --text-muted: #948C7E;
+      --divider: #2C2A27; --border: #3C3935; --border-hover: #C84E28;
+      --success: #7FA85C; --emerald: var(--success); --danger: #C0392B; --gold: #D9A441;
+      --success-bg: #7FA85C1F; --danger-bg: #C0392B1F; --gold-bg: #D9A4411F;
+      --purple: #B5532E; --blue: #7FA85C;
+      --shadow-sm: none; --shadow-md: none; --shadow-lg: none;
+      --radius-sm: 0px; --radius-md: 0px; --radius-lg: 0px; --radius-xl: 0px;
+      color-scheme: dark;
+    }
+
+    /* -- geometry: square corners, no shadows -- */
+    [data-theme="court-lines"],
+    [data-theme="court-lines"] *,
+    [data-theme="court-lines"] *::before,
+    [data-theme="court-lines"] *::after { border-radius: 0 !important; box-shadow: none !important; }
+
+    /* -- things that are meant to be round stay round -- */
+    [data-theme="court-lines"] .avatar,
+  [data-theme="court-lines"] .btn-icon,
+  [data-theme="court-lines"] .commentary-icon,
+  [data-theme="court-lines"] .event-calendar-day.has-event::after,
+  [data-theme="court-lines"] .event-calendar-day.has-multiple .event-dots span,
+  [data-theme="court-lines"] .event-legend-dot,
+  [data-theme="court-lines"] .fifa-card-photo,
+  [data-theme="court-lines"] .live-indicator::before,
+  [data-theme="court-lines"] .live-dot,
+  [data-theme="court-lines"] .logo-img,
+  [data-theme="court-lines"] .matchday-status.live::before,
+  [data-theme="court-lines"] .md-americano-check,
+  [data-theme="court-lines"] .md-hero::before,
+  [data-theme="court-lines"] .md-hero::after,
+  [data-theme="court-lines"] .md-sitting-av,
+  [data-theme="court-lines"] .md-team-check,
+  [data-theme="court-lines"] .md-team-chip-remove,
+  [data-theme="court-lines"] .md-tl-dot,
+  [data-theme="court-lines"] .message-item.unread::before,
+  [data-theme="court-lines"] .modal-close,
+  [data-theme="court-lines"] .my-profile-avatar .edit-avatar-btn,
+  [data-theme="court-lines"] .my-profile-header::before,
+  [data-theme="court-lines"] .photo-preview,
+  [data-theme="court-lines"] .player-rank,
+  [data-theme="court-lines"] .players-hero::after,
+  [data-theme="court-lines"] .teams-hero::after,
+  [data-theme="court-lines"] .villain-card::after,
+  [data-theme="court-lines"] .rank-num,
+  [data-theme="court-lines"] .rule-number,
+  [data-theme="court-lines"] .share-btn,
+  [data-theme="court-lines"] .team-rank-badge,
+  [data-theme="court-lines"] .test-mode-toggle-switch::after,
+  [data-theme="court-lines"] .theme-card.active::after,
+  [data-theme="court-lines"] .toggle-slider:before,
+  [data-theme="court-lines"] .weather-widget::before,
+  [data-theme="court-lines"] .win-indicator,
+  [data-theme="court-lines"] .app::before,
+  [data-theme="court-lines"] .app::after,
+  [data-theme="court-lines"] .login-logo img,
+  [data-theme="court-lines"] .loading-splash-logo { border-radius: 50% !important; }
+    [data-theme="court-lines"] .login-logo img,
+    [data-theme="court-lines"] .loading-splash-logo { outline: 1px solid var(--border); outline-offset: 4px; }
+
+    /* -- surfaces that were hardcoded white -- */
+    [data-theme="court-lines"] .card,
+    [data-theme="court-lines"] .stat-card,
+    [data-theme="court-lines"] .match-card,
+    [data-theme="court-lines"] .player-card,
+    [data-theme="court-lines"] .team-card,
+    [data-theme="court-lines"] .md-pill,
+    [data-theme="court-lines"] .md-sitting-chip,
+    [data-theme="court-lines"] .profile-position,
+    [data-theme="court-lines"] .nav,
+    [data-theme="court-lines"] .modal-content,
+    [data-theme="court-lines"] .theme-card { background: var(--bg-card); border: 1px solid var(--border); }
+    [data-theme="court-lines"] .card:hover,
+    [data-theme="court-lines"] .player-card:hover,
+    [data-theme="court-lines"] .team-card:hover,
+    [data-theme="court-lines"] .match-card:hover { border-color: var(--clay); background: #2C2A27; transform: none; }
+    [data-theme="court-lines"] .theme-card.active { border-color: var(--clay); }
+    [data-theme="court-lines"] .score-input:focus { background: #2C2A27; }
+    [data-theme="court-lines"] .toggle-slider:before,
+    [data-theme="court-lines"] .test-mode-toggle-switch::after,
+    [data-theme="court-lines"] .my-profile-avatar .edit-avatar-btn { background: #F5F0E6; }
+
+    /* -- typography: Archivo variable replaces Sublime/DirtyWeather -- */
+    [data-theme="court-lines"] body { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
+    [data-theme="court-lines"] .font-display,
+    [data-theme="court-lines"] .font-score,
+    [data-theme="court-lines"] h1, [data-theme="court-lines"] h2,
+    [data-theme="court-lines"] h3, [data-theme="court-lines"] h4 {
+      font-family: 'Archivo', Impact, 'Arial Narrow', sans-serif;
+      font-variation-settings: "wdth" 112, "wght" 800;
+      text-transform: uppercase; letter-spacing: -0.005em; line-height: 0.92;
+    }
+    [data-theme="court-lines"] .font-score,
+    [data-theme="court-lines"] .rank-num,
+    [data-theme="court-lines"] .player-rank,
+    [data-theme="court-lines"] .team-rank-badge,
+    [data-theme="court-lines"] .live-score-display { font-variant-numeric: tabular-nums; }
+    [data-theme="court-lines"] .font-accent { font-family: 'Archivo', serif; font-variation-settings: "wdth" 70, "wght" 600; }
+
+    /* -- accent discipline: terracotta reads as the single active state -- */
+    [data-theme="court-lines"] .nav-item.active,
+    [data-theme="court-lines"] .tab.active { color: var(--clay); }
+    [data-theme="court-lines"] input,
+    [data-theme="court-lines"] select,
+    [data-theme="court-lines"] textarea { background: #141312; color: var(--text); border-color: var(--border); }
+    [data-theme="court-lines"] ::placeholder { color: #6E675C; }
+
+    /* -- login: charcoal field with court hairlines instead of a clay wash -- */
+    [data-theme="court-lines"] .login-screen {
+      background:
+        repeating-linear-gradient(90deg, transparent 0 119px, #3C3935 119px 120px),
+        repeating-linear-gradient(0deg, transparent 0 119px, #3C3935 119px 120px),
+        #141312;
+    }
+    [data-theme="court-lines"] .login-card { border: 1px solid var(--border); }
+    [data-theme="court-lines"] .login-suggestion { border-bottom-color: var(--border); }
+    [data-theme="court-lines"] .login-suggestion:hover { background: #2C2A27; }
+    [data-theme="court-lines"] .login-error { background: var(--danger-bg); }
+    [data-theme="court-lines"] .loading-splash {
+      background:
+        repeating-linear-gradient(90deg, transparent 0 119px, #3C3935 119px 120px),
+        repeating-linear-gradient(0deg, transparent 0 119px, #3C3935 119px 120px),
+        #141312;
+    }
+    [data-theme="court-lines"] .loading-splash-bar { background: #3C3935; }
+    [data-theme="court-lines"] .loading-splash-bar-fill { background: var(--clay); }
+
   </style>
 </head>
 <body>
@@ -3872,6 +4013,15 @@
               <div class="theme-color" style="background:#E6D8C4"></div>
             </div>
             <div class="theme-name">Summer Breeze</div>
+          </div>
+          <div class="theme-card" data-theme="court-lines" onclick="setTheme('court-lines')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#141312"></div>
+              <div class="theme-color" style="background:#C84E28"></div>
+              <div class="theme-color" style="background:#F5F0E6"></div>
+              <div class="theme-color" style="background:#7FA85C"></div>
+            </div>
+            <div class="theme-name">Court Lines</div>
           </div>
         </div>
       </div>
@@ -13524,7 +13674,8 @@
         'tropical-punch': 'Tropical Punch',
         'cobalt-sky': 'Cobalt Sky',
         'harvest-moon': 'Harvest Moon',
-        'summer-breeze': 'Summer Breeze'
+        'summer-breeze': 'Summer Breeze',
+        'court-lines': 'Court Lines'
       };
       return names[themeName] || themeName;
     }
