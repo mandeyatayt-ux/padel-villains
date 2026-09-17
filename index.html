@@ -5389,6 +5389,23 @@
     
     // ===== CORE INFRASTRUCTURE: Device ID, Match UID, Sync =====
     
+    // Season guard — bump PV_SEASON when the server is reset. Any device whose
+    // local caches predate this season has them wiped BEFORE mdRecoverLocalData /
+    // processPendingSync run, so stale matches can't be re-upserted to the server.
+    // Master data caches (players, teams, venues, accounts, theme, settings) are kept.
+    const PV_SEASON = '2';
+    (() => {
+      try {
+        if (localStorage.getItem('pv_season') === PV_SEASON) return;
+        ['pv_matches','pv_matchdays','pv_ongoing','pv_pending_sync','pv_sync_dead',
+         'pv_deleted_uids','pv_audit_log','pv_offline_cache','pv_cache','pv_mdSession',
+         'pv_mdHeldCourts','pv_events','pv_notifications','pv_messages'
+        ].forEach(k => localStorage.removeItem(k));
+        localStorage.setItem('pv_season', PV_SEASON);
+        console.log('Season guard: cleared pre-season-' + PV_SEASON + ' local caches');
+      } catch (e) {}
+    })();
+
     // Device fingerprint — persists across sessions, identifies which device sent data
     const PV_DEVICE_ID = (() => {
       let id = localStorage.getItem('pv_device_id');
