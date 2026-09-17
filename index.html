@@ -548,7 +548,7 @@
     .player-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--border-hover); }
     .player-card.inactive { opacity: 0.5; }
     .player-card.top-player { border: 2px solid var(--gold); }
-    .player-card.top-player::before { content: '👑'; position: absolute; top: 12px; left: 12px; font-size: 20px; }
+    .player-card.top-player::before { content: 'TOP'; font-family: 'Sublime', sans-serif; letter-spacing: 1px; position: absolute; top: 12px; left: 12px; font-size: 11px; color: var(--clay); }
     .player-rank { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; background: var(--clay); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
     .player-rank.gold { background: linear-gradient(135deg, #D97706, #B45309); }
     .player-rank.silver { background: linear-gradient(135deg, #9CA3AF, #6B7280); }
@@ -1387,42 +1387,50 @@
     .my-team-record { font-size: 16px; font-weight: 700; }
     .my-team-rate { font-size: 12px; color: var(--clay); }
 
-    /* ===== FIFA PLAYER CARD ===== */
-    .fifa-card-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
+    /* ===== PLAYER CARD (ticket) ===== */
+    .fifa-card-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); padding: 20px; }
     .fifa-card-overlay.active { display: flex; }
-    .fifa-card-wrapper { position: relative; animation: cardReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    @keyframes cardReveal { 0% { transform: scale(0.3) rotateY(180deg); opacity: 0; } 60% { transform: scale(1.05) rotateY(0); } 100% { transform: scale(1) rotateY(0); opacity: 1; } }
-    .fifa-card { width: 320px; min-height: 460px; border-radius: 24px; position: relative; overflow: hidden; font-family: 'DM Sans', 'Outfit', sans-serif; }
-    .fifa-card-bg { position: absolute; inset: 0; background: linear-gradient(145deg, #1a1a2e 0%, #16213e 30%, #0f3460 70%, #e94560 100%); }
-    .fifa-card-bg::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.1) 0%, transparent 50%); }
-    .fifa-card-bg::after { content: ''; position: absolute; top: -50%; right: -30%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(233,69,96,0.3) 0%, transparent 60%); }
-    .fifa-card-content { position: relative; z-index: 2; padding: 24px; display: flex; flex-direction: column; align-items: center; }
-    .fifa-card-rating-row { display: flex; align-items: flex-start; justify-content: space-between; width: 100%; margin-bottom: 12px; }
-    .fifa-card-rating { font-family: 'Sublime', sans-serif; font-size: 72px; color: #FFD700; line-height: 1; text-shadow: 0 2px 20px rgba(255,215,0,0.5); }
-    .fifa-card-position { font-family: 'Sublime', sans-serif; font-size: 24px; color: rgba(255,255,255,0.7); letter-spacing: 3px; text-align: right; }
-    .fifa-card-league { font-size: 11px; color: rgba(255,255,255,0.5); text-align: right; margin-top: 4px; }
-    .fifa-card-photo { width: 140px; height: 140px; border-radius: 50%; border: 3px solid rgba(255,215,0,0.5); overflow: hidden; margin-bottom: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-    .fifa-card-photo img { width: 100%; height: 100%; object-fit: cover; }
-    .fifa-card-photo-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 56px; font-weight: 700; color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); }
-    .fifa-card-name { font-family: 'Sublime', sans-serif; font-size: 32px; color: white; letter-spacing: 4px; margin-bottom: 2px; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-    .fifa-card-nickname { font-size: 13px; color: #FFD700; margin-bottom: 16px; font-style: italic; }
-    .fifa-card-divider { width: 80%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,215,0,0.5), transparent); margin-bottom: 16px; }
-    .fifa-card-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; width: 100%; }
-    .fifa-card-stat { text-align: center; }
-    .fifa-card-stat-value { font-family: 'Sublime', sans-serif; font-size: 28px; color: white; }
-    .fifa-card-stat-label { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 2px; }
-    .fifa-card-bars { width: 100%; margin-top: 16px; }
-    .fifa-card-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .fifa-card-bar-label { font-size: 10px; color: rgba(255,255,255,0.5); width: 40px; text-align: right; text-transform: uppercase; letter-spacing: 1px; }
-    .fifa-card-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-    .fifa-card-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
-    .fifa-card-bar-val { font-size: 11px; color: white; width: 28px; font-weight: 600; }
-    .fifa-card-close { position: absolute; top: -40px; right: 0; color: white; font-size: 24px; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; }
+    .fifa-card-wrapper { position: relative; animation: cardReveal 0.45s cubic-bezier(0.2, 0.9, 0.3, 1); }
+    @keyframes cardReveal { 0% { transform: scale(0.94); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    .fifa-card { width: 330px; max-width: 100%; border: 1px solid var(--border); background: var(--bg-card); overflow: hidden; font-family: 'DM Sans', 'Outfit', sans-serif; }
+    .pcard-band { background: var(--clay); color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .pcard-band b { font-family: 'Sublime', sans-serif; font-size: 13px; letter-spacing: 2.5px; text-transform: uppercase; }
+    .pcard-band span { font-size: 11px; letter-spacing: 1.5px; font-weight: 700; opacity: .85; }
+    .pcard-body { display: grid; grid-template-columns: 110px minmax(0, 1fr); border-bottom: 1px solid var(--border); }
+    .pcard-photo { border-right: 1px solid var(--border); background: var(--cream); min-height: 132px; overflow: hidden; }
+    .pcard-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pcard-photo-ph { width: 100%; height: 100%; min-height: 132px; display: flex; align-items: center; justify-content: center; font-family: 'Sublime', sans-serif; font-size: 44px; color: var(--text-muted); }
+    .pcard-who { padding: 14px; min-width: 0; }
+    .pcard-name { font-family: 'Sublime', sans-serif; font-size: 27px; line-height: 1; letter-spacing: 1.5px; text-transform: uppercase; word-break: break-word; }
+    .pcard-sub { color: var(--clay); font-size: 11px; margin-top: 4px; font-weight: 600; letter-spacing: .5px; }
+    .pcard-rating { margin-top: 12px; display: flex; align-items: baseline; gap: 7px; }
+    .pcard-rating b { font-family: 'DirtyWeather', 'Sublime', sans-serif; font-size: 34px; line-height: 1; }
+    .pcard-rating span { font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+    .pcard-bars { padding: 4px 0; }
+    .pcard-bar { display: grid; grid-template-columns: 62px minmax(0, 1fr) 34px; align-items: center; gap: 10px; padding: 7px 16px; border-bottom: 1px solid var(--border); }
+    .pcard-bar:last-child { border-bottom: 0; }
+    .pcard-bar .l { font-size: 9px; letter-spacing: 1.3px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+    .pcard-bar .t { height: 6px; background: var(--cream); border: 1px solid var(--border); position: relative; }
+    .pcard-bar .t i { position: absolute; top: 0; bottom: 0; left: 0; background: var(--clay); display: block; }
+    .pcard-bar .v { font-family: 'DirtyWeather', 'Sublime', sans-serif; font-size: 14px; text-align: right; }
+    .pcard-stub { border-top: 1px dashed var(--border); display: flex; }
+    .pcard-stub div { flex: 1; padding: 10px 8px; text-align: center; border-right: 1px solid var(--border); }
+    .pcard-stub div:last-child { border-right: 0; }
+    .pcard-stub b { display: block; font-family: 'DirtyWeather', 'Sublime', sans-serif; font-size: 17px; }
+    .pcard-stub span { font-size: 8px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+    .fifa-card-close { position: absolute; top: -38px; right: 0; color: white; font-size: 24px; cursor: pointer; opacity: .7; }
     .fifa-card-close:hover { opacity: 1; }
-    .fifa-card-actions { display: flex; gap: 12px; margin-top: 20px; }
-    .fifa-card-actions button { padding: 10px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer; border: none; transition: all 0.2s; }
-    .fifa-card-share { background: linear-gradient(135deg, #FFD700, #FFA500); color: #1a1a2e; }
-    .fifa-card-share:hover { transform: scale(1.05); }
+    .fifa-card-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .fifa-card-actions button { flex: 1; padding: 12px 18px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: var(--radius-sm); font-family: inherit; }
+    .fifa-card-share { background: var(--clay) !important; border-color: var(--clay) !important; color: #fff !important; }
+    [data-theme="court-lines"] .fifa-card,
+    [data-theme="court-lines"] .fifa-card-actions button { border-radius: 0 !important; }
+    [data-theme="court-lines"] .pcard-name,
+    [data-theme="court-lines"] .pcard-band b { font-family: 'Archivo', Impact, sans-serif; font-variation-settings: "wdth" 118, "wght" 800; letter-spacing: .02em; }
+    [data-theme="court-lines"] .pcard-rating b,
+    [data-theme="court-lines"] .pcard-bar .v,
+    [data-theme="court-lines"] .pcard-stub b { font-family: 'Archivo', Impact, sans-serif; font-variation-settings: "wdth" 118, "wght" 800; }
+    @media (max-width: 380px) { .fifa-card { width: 100%; } .pcard-body { grid-template-columns: 92px minmax(0, 1fr); } }
 
     /* ===== HEAD-TO-HEAD BATTLE ===== */
     .h2h-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 10000; display: none; flex-direction: column; backdrop-filter: blur(8px); overflow-y: auto; }
@@ -2801,6 +2809,34 @@
       .dashboard-ongoing-team span, .dashboard-ongoing-team div { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .dashboard-ongoing-meta { flex: 0 0 auto; }
     }
+    /* Match Day header actions: one shared shape, one filled primary, danger by colour not fill */
+    .md-act { border-radius: var(--radius-sm) !important; font-weight: 600; }
+    .md-act-danger { color: var(--danger) !important; }
+    .md-act-primary { background: var(--clay) !important; border-color: var(--clay) !important; color: #fff !important; }
+    [data-theme="court-lines"] .md-act { border-radius: 0 !important; }
+    /* Venue rows — one row per venue, hairline-separated meta, single primary action */
+    .venue-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; cursor: pointer; transition: border-color .2s; background: var(--bg-card); }
+    .venue-row:hover { border-color: var(--clay); }
+    .venue-row.selected { border-color: var(--clay); }
+    .venue-main { padding: 14px 16px; min-width: 0; }
+    .venue-main > b { font-family: 'Sublime', sans-serif; font-size: 17px; letter-spacing: 1.5px; text-transform: uppercase; display: block; }
+    .venue-meta { display: flex; flex-wrap: wrap; margin-top: 7px; color: var(--text-muted); font-size: 12px; }
+    .venue-meta span { padding-right: 12px; margin-right: 12px; border-right: 1px solid var(--border); white-space: nowrap; }
+    .venue-meta span:last-child { border-right: 0; margin-right: 0; padding-right: 0; }
+    .venue-meta b { display: inline; font-size: 13px; color: var(--text); font-weight: 700; }
+    .venue-act { display: flex; align-items: stretch; border-left: 1px solid var(--border); }
+    .venue-act button, .venue-act a { display: flex; align-items: center; padding: 0 16px; font-size: 12px; font-weight: 700; color: var(--text-muted); background: transparent; border: 0; border-right: 1px solid var(--border); white-space: nowrap; cursor: pointer; font-family: inherit; text-decoration: none; }
+    .venue-act > :last-child { border-right: 0; }
+    .venue-act button:hover { color: var(--text); }
+    .venue-act a.pri { background: var(--clay); color: #fff; letter-spacing: .06em; text-transform: uppercase; }
+    [data-theme="court-lines"] .venue-row { border-radius: 0; }
+    [data-theme="court-lines"] .venue-main > b { font-family: 'Archivo', Impact, sans-serif; font-variation-settings: "wdth" 112, "wght" 700; letter-spacing: .02em; }
+    @media (max-width: 600px) {
+      .venue-row { grid-template-columns: minmax(0, 1fr); }
+      .venue-act { border-left: 0; border-top: 1px solid var(--border); }
+      .venue-act button, .venue-act a { flex: 1; justify-content: center; padding: 12px 10px; }
+      .venue-meta span { padding-right: 10px; margin-right: 10px; }
+    }
     /* ===== MY MATCH DAY scorecard ===== */
     .myd-card { padding: 0 !important; overflow: hidden; min-width: 0; }
     .myd-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
@@ -3017,7 +3053,7 @@
         <div style="display:flex;align-items:center;gap:10px">
           <i class="fas fa-sync" id="syncIcon" style="color:var(--clay);font-size:14px"></i>
           <div>
-            <div style="font-size:12px;font-weight:600;color:var(--brown-dark)" id="syncStatusText">✅ Synced</div>
+            <div style="font-size:12px;font-weight:600;color:var(--brown-dark)" id="syncStatusText">Synced</div>
           </div>
           <span id="syncBadge" style="display:none;background:var(--danger);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;margin-left:auto">0</span>
         </div>
@@ -3065,7 +3101,7 @@
       
       <!-- Matchday Countdown (shown when matchday is today but not yet started) -->
       <div class="card matchday-countdown hidden" id="matchdayCountdown" style="background:linear-gradient(135deg, var(--clay) 0%, var(--clay-dark) 100%);color:white;text-align:center;padding:24px">
-        <div id="countdownLabel" style="font-size:14px;opacity:0.9;margin-bottom:8px">🏆 MATCH DAY STARTS IN</div>
+        <div id="countdownLabel" style="font-size:14px;opacity:0.9;margin-bottom:8px">MATCH DAY STARTS IN</div>
         <div id="countdownTimer" style="font-family:'Sublime',sans-serif;font-size:48px;letter-spacing:4px">--:--:--</div>
         <div id="countdownVenue" style="font-size:14px;opacity:0.8;margin-top:8px"></div>
       </div>
@@ -3116,14 +3152,14 @@
           <div id="todayMatches"><div class="empty"><p>No matches today yet</p></div></div>
         </div>
         <div class="card">
-          <h3 style="font-size:18px;font-weight:700;margin-bottom:20px">🏆 Today's Rankings</h3>
+          <h3 style="font-size:18px;font-weight:700;margin-bottom:20px">Today's Rankings</h3>
           <div id="dayRankings"><div class="empty"><p>No matches today yet</p></div></div>
         </div>
         
         <!-- Matchday History Log -->
         <div class="card">
           <div class="section-header" style="margin-bottom:16px">
-            <h3 style="font-size:18px;font-weight:700">📜 Matchday History</h3>
+            <h3 style="font-size:18px;font-weight:700">Matchday History</h3>
             <button class="btn btn-sm" onclick="openModal('matchdayHistory')">View All</button>
           </div>
           <div id="matchdayHistoryLog"></div>
@@ -3132,72 +3168,39 @@
         <!-- Court Booking Widget -->
         <div class="court-booking-widget" id="courtBookingWidget">
           <div class="court-booking-header">
-            <h3 class="court-booking-title">🏟️ Book a Court</h3>
+            <h3 class="court-booking-title">Book a Court</h3>
           </div>
           
-          <!-- Venue Cards -->
+          <!-- Venue rows -->
           <div id="venueCards">
-            <!-- Padel Zim / The Hub -->
-            <div class="venue-card" id="venueCardHub" onclick="selectVenueCard('hub')">
-              <div class="venue-card-header">
-                <div class="venue-card-name">
-                  <span style="font-size:24px">🎾</span> Padel Zim (The Hub)
-                </div>
-                <span class="venue-card-badge">Highlands</span>
-              </div>
-              <div class="venue-card-info">
-                <div class="venue-info-item">
-                  <div class="venue-info-value">2</div>
-                  <div class="venue-info-label">Courts</div>
-                </div>
-                <div class="venue-info-item">
-                  <div class="venue-info-value">$30</div>
-                  <div class="venue-info-label">Per Session</div>
-                </div>
-                <div class="venue-info-item">
-                  <div class="venue-info-value">$2.50</div>
-                  <div class="venue-info-label">Racket Hire</div>
+            <div class="venue-row" id="venueCardHub" onclick="selectVenueCard('hub')">
+              <div class="venue-main">
+                <b>Padel Zim</b>
+                <div class="venue-meta">
+                  <span>The Hub &middot; Highlands</span>
+                  <span><b>2</b> courts</span>
+                  <span><b>$30</b> session</span>
+                  <span><b>$2.50</b> racket</span>
                 </div>
               </div>
-              <div class="venue-card-actions">
-                <a href="https://padelzim-zw.matchpoint.com.es/Booking/Grid.aspx" target="_blank" class="btn btn-primary btn-sm" onclick="event.stopPropagation()">
-                  <i class="fas fa-external-link-alt"></i> Book Now
-                </a>
-                <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openCostCalculator('hub')">
-                  <i class="fas fa-calculator"></i> Split Cost
-                </button>
+              <div class="venue-act">
+                <button onclick="event.stopPropagation(); openCostCalculator('hub')">Split cost</button>
+                <a href="https://padelzim-zw.matchpoint.com.es/Booking/Grid.aspx" target="_blank" rel="noopener" class="pri" onclick="event.stopPropagation()">Book <span aria-hidden="true">&rarr;</span></a>
               </div>
             </div>
-            
-            <!-- Stables -->
-            <div class="venue-card" id="venueCardStables" onclick="selectVenueCard('stables')">
-              <div class="venue-card-header">
-                <div class="venue-card-name">
-                  <span style="font-size:24px">🐴</span> Stable Sports
-                </div>
-                <span class="venue-card-badge">Borrowdale</span>
-              </div>
-              <div class="venue-card-info">
-                <div class="venue-info-item">
-                  <div class="venue-info-value">6</div>
-                  <div class="venue-info-label">Courts</div>
-                </div>
-                <div class="venue-info-item">
-                  <div class="venue-info-value">$35</div>
-                  <div class="venue-info-label">Per Session</div>
-                </div>
-                <div class="venue-info-item">
-                  <div class="venue-info-value">$2.50</div>
-                  <div class="venue-info-label">Racket Hire</div>
+            <div class="venue-row" id="venueCardStables" onclick="selectVenueCard('stables')">
+              <div class="venue-main">
+                <b>Stable Sports</b>
+                <div class="venue-meta">
+                  <span>Borrowdale</span>
+                  <span><b>6</b> courts</span>
+                  <span><b>$35</b> session</span>
+                  <span><b>$2.50</b> racket</span>
                 </div>
               </div>
-              <div class="venue-card-actions">
-                <a href="https://stablesports-zw.matchpoint.com.es/Booking/Grid.aspx" target="_blank" class="btn btn-primary btn-sm" onclick="event.stopPropagation()">
-                  <i class="fas fa-external-link-alt"></i> Book Now
-                </a>
-                <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openCostCalculator('stables')">
-                  <i class="fas fa-calculator"></i> Split Cost
-                </button>
+              <div class="venue-act">
+                <button onclick="event.stopPropagation(); openCostCalculator('stables')">Split cost</button>
+                <a href="https://stablesports-zw.matchpoint.com.es/Booking/Grid.aspx" target="_blank" rel="noopener" class="pri" onclick="event.stopPropagation()">Book <span aria-hidden="true">&rarr;</span></a>
               </div>
             </div>
           </div>
@@ -3280,22 +3283,12 @@
             </button>
           </div>
           
-          <!-- Quick Links -->
-          <div style="display:flex;gap:10px;margin-top:16px;justify-content:center;flex-wrap:wrap">
-            <a href="https://padelzim-zw.matchpoint.com.es/Booking/Grid.aspx" target="_blank" style="font-size:12px;color:var(--text-muted);text-decoration:none">
-              <i class="fas fa-external-link-alt"></i> Padel Zim Availability
-            </a>
-            <span style="color:var(--cream-dark)">|</span>
-            <a href="https://stablesports-zw.matchpoint.com.es/Booking/Grid.aspx" target="_blank" style="font-size:12px;color:var(--text-muted);text-decoration:none">
-              <i class="fas fa-external-link-alt"></i> Stables Availability
-            </a>
-          </div>
         </div>
         
         <!-- Event Calendar -->
         <div class="card event-calendar" id="eventCalendarSection">
           <div class="event-calendar-header">
-            <h3 class="event-calendar-title">📅 Event Calendar</h3>
+            <h3 class="event-calendar-title">Event Calendar</h3>
             <div class="event-calendar-nav">
               <button onclick="prevMonth()"><i class="fas fa-chevron-left"></i></button>
               <span class="event-calendar-month" id="calendarMonth">January 2026</span>
@@ -3451,7 +3444,7 @@
     <!-- ===== TEAMS TAB ===== -->
     <section class="tab" id="teams">
       <div class="teams-hero" id="teamsHero">
-        <div class="teams-hero-title">🏆 TOP RANKED TEAM</div>
+        <div class="teams-hero-title">TOP RANKED TEAM</div>
         <div class="teams-hero-content" id="teamsHeroContent"><p style="color:#888">No teams created yet</p></div>
       </div>
       <div class="section-header">
@@ -3531,7 +3524,7 @@
         
         <!-- Individual Performance Details -->
         <div class="card" style="margin-top:24px">
-          <h4 style="font-size:16px;font-weight:700;margin-bottom:16px">📊 Performance Breakdown</h4>
+          <h4 style="font-size:16px;font-weight:700;margin-bottom:16px">Performance Breakdown</h4>
           <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Individual stats count each player's contribution in team matches. When your team wins, you get a win - regardless of who your partner was.</p>
           <div id="individualPerformanceNotes" style="font-size:13px;color:var(--text-muted)"></div>
         </div>
@@ -3975,13 +3968,13 @@
     <!-- ===== ACHIEVEMENTS TAB ===== -->
     <section class="tab" id="achievements">
       <div class="section-header">
-        <div><h2 class="section-title">🏅 ACHIEVEMENTS</h2><p class="section-subtitle">Unlock badges by playing matches and reaching milestones</p></div>
+        <div><h2 class="section-title">ACHIEVEMENTS</h2><p class="section-subtitle">Unlock badges by playing matches and reaching milestones</p></div>
       </div>
       <div class="card" style="margin-bottom:24px">
         <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">🔥 Records & Streaks</h3>
         <div class="records-grid" id="recordsGrid"></div>
       </div>
-      <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">🎖️ Badges</h3>
+      <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Badges</h3>
       <div class="achievements-grid" id="achievementsGrid"></div>
     </section>
 
@@ -5438,7 +5431,7 @@
           statusEl.textContent = `⚠️ ${count} pending`;
           statusEl.style.color = '#D97706';
         } else {
-          statusEl.textContent = '✅ Synced';
+          statusEl.textContent = 'Synced';
           statusEl.style.color = 'var(--success)';
         }
       }
@@ -10536,27 +10529,28 @@
         const isFuture = md.date > today;
         const hasMatches = dayMatches.length > 0;
         
-        const statusLabel = md.status === 'closed' ? '✅ COMPLETED' 
-          : (hasMatches || dayOngoing.length > 0) ? '🔴 LIVE' 
-          : isToday ? '📅 TODAY' 
-          : isFuture ? '📅 UPCOMING' : '📅 SCHEDULED';
+        const statusLabel = md.status === 'closed' ? 'COMPLETED' 
+          : (hasMatches || dayOngoing.length > 0) ? 'LIVE' 
+          : isToday ? 'TODAY' 
+          : isFuture ? 'UPCOMING' : 'SCHEDULED';
         
         document.getElementById('mdInfoStatusLabel').textContent = statusLabel;
         document.getElementById('mdInfoDate').textContent = dateStr;
-        document.getElementById('mdInfoVenueTime').textContent = `📍 ${md.venue || 'TBD'} • 🕐 ${md.start_time || '?'} – ${md.end_time || '?'}`;
+        document.getElementById('mdInfoVenueTime').textContent = `${md.venue || 'TBD'} \u00b7 ${md.start_time || '?'} \u2013 ${md.end_time || '?'}`;
         
         // Action buttons
         let actions = '';
         if (currentUser?.is_admin) {
           if (md.status !== 'closed') {
-            actions += `<button class="btn btn-sm btn-secondary" onclick="editActiveMatchday()" style="border-radius:10px"><i class="fas fa-edit"></i> Edit</button>`;
-            actions += `<button class="btn btn-sm btn-danger" onclick="closeMatchday()" style="border-radius:10px"><i class="fas fa-flag-checkered"></i> Close</button>`;
+            actions += `<button class="btn btn-sm btn-secondary md-act" onclick="editActiveMatchday()"><i class="fas fa-edit"></i> Edit</button>`;
+            actions += `<button class="btn btn-sm btn-secondary md-act md-act-danger" onclick="closeMatchday()"><i class="fas fa-flag-checkered"></i> Close</button>`;
           }
         }
-        actions += `<button class="btn btn-sm" onclick="shareEventImage()" style="background:var(--clay);color:white;border-radius:10px"><i class="fas fa-share-nodes"></i> Share</button>`;
         if (hasMatches) {
-          actions += `<button class="btn btn-sm btn-secondary" onclick="showMatchDaySummary()" style="border-radius:10px"><i class="fas fa-trophy"></i> Recap</button>`;
+          actions += `<button class="btn btn-sm btn-secondary md-act" onclick="showMatchDaySummary()"><i class="fas fa-trophy"></i> Recap</button>`;
         }
+        // Single filled primary, always last
+        actions += `<button class="btn btn-sm md-act md-act-primary" onclick="shareEventImage()"><i class="fas fa-share-nodes"></i> Share</button>`;
         document.getElementById('mdInfoActions').innerHTML = actions;
       } else {
         statusEl.style.display = 'none';
@@ -15478,7 +15472,7 @@
     let currentSessionCount = 1;
     
     function selectVenueCard(venue) {
-      document.querySelectorAll('.venue-card').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('.venue-row').forEach(c => c.classList.remove('selected'));
       document.getElementById(`venueCard${venue === 'hub' ? 'Hub' : 'Stables'}`).classList.add('selected');
     }
     
@@ -15508,7 +15502,7 @@
     
     function closeCostCalculator() {
       document.getElementById('costCalculator').classList.add('hidden');
-      document.querySelectorAll('.venue-card').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('.venue-row').forEach(c => c.classList.remove('selected'));
     }
     
     function setPlayerCount(count) {
@@ -17045,16 +17039,18 @@
       });
       
       // Best streak
+      // "Best streak" means best WINNING streak — an unscoped max would show a
+      // losing run as the player's best.
       let bestStreak = { count: 0, type: 'none' };
       playerTeams.forEach(t => {
         const s = calculateCurrentStreak(t.id);
-        if (s.count > bestStreak.count) bestStreak = s;
+        if (s.type === 'win' && s.count > bestStreak.count) bestStreak = s;
       });
       
       const photo = p.photo || photoCache[p.id];
       const photoHtml = photo 
         ? `<img src="${photo}" alt="${esc(p.name)}">` 
-        : `<div class="fifa-card-photo-placeholder">${p.name.charAt(0)}</div>`;
+        : `<div class="pcard-photo-ph">${p.name.charAt(0)}</div>`;
       
       // Stat bars
       const winPct = stats.games > 0 ? Math.round((stats.wins / stats.games) * 100) : 0;
@@ -17062,32 +17058,28 @@
       const attPct = att.pct;
       const clutch = Math.min(100, bestStreak.count * 20);
       
-      const barColor = (val) => val >= 70 ? '#4ade80' : val >= 40 ? '#FFD700' : '#e94560';
-      
+      // Squad number: stable per player, derived from creation order
+      const squadNo = String((players.findIndex(x => x.id === p.id) + 1) || 0).padStart(2, '0');
+      const streakLabel = bestStreak.count ? `W${bestStreak.count}` : '\u2014';
       document.getElementById('fifaCardContent').innerHTML = `
-        <div class="fifa-card-rating-row">
-          <div>
-            <div class="fifa-card-rating">${comp.rating}</div>
-          </div>
-          <div>
-            <div class="fifa-card-position">${(p.position || 'HYB').substring(0, 3).toUpperCase()}</div>
-            <div class="fifa-card-league">PADEL VILLAINS</div>
+        <div class="pcard-band"><b>Padel Villains</b><span>NO. ${squadNo}</span></div>
+        <div class="pcard-body">
+          <div class="pcard-photo">${photoHtml}</div>
+          <div class="pcard-who">
+            <div class="pcard-name">${esc(p.name.toUpperCase())}</div>
+            <div class="pcard-sub">${(p.position || 'HYB').substring(0, 3).toUpperCase()}${p.nickname ? ' &middot; ' + esc(p.nickname) : ''}</div>
+            <div class="pcard-rating"><b>${comp.rating}</b><span>Rating</span></div>
           </div>
         </div>
-        <div class="fifa-card-photo">${photoHtml}</div>
-        <div class="fifa-card-name">${p.name.toUpperCase()}</div>
-        ${p.nickname ? `<div class="fifa-card-nickname">"${esc(p.nickname)}"</div>` : '<div style="height:16px"></div>'}
-        <div class="fifa-card-divider"></div>
-        <div class="fifa-card-stats">
-          <div class="fifa-card-stat"><div class="fifa-card-stat-value">${stats.wins}</div><div class="fifa-card-stat-label">Wins</div></div>
-          <div class="fifa-card-stat"><div class="fifa-card-stat-value">${stats.games}</div><div class="fifa-card-stat-label">Played</div></div>
-          <div class="fifa-card-stat"><div class="fifa-card-stat-value">${uniquePartners.size}</div><div class="fifa-card-stat-label">Partners</div></div>
+        <div class="pcard-bars">
+          <div class="pcard-bar"><span class="l">Win %</span><span class="t"><i style="width:${winPct}%"></i></span><span class="v">${winPct}</span></div>
+          <div class="pcard-bar"><span class="l">Volume</span><span class="t"><i style="width:${winVolume}%"></i></span><span class="v">${winVolume}</span></div>
+          <div class="pcard-bar"><span class="l">Attend</span><span class="t"><i style="width:${attPct}%"></i></span><span class="v">${attPct}</span></div>
         </div>
-        <div class="fifa-card-bars">
-          <div class="fifa-card-bar-row"><span class="fifa-card-bar-label">WIN%</span><div class="fifa-card-bar-track"><div class="fifa-card-bar-fill" style="width:${winPct}%;background:${barColor(winPct)}"></div></div><span class="fifa-card-bar-val">${winPct}</span></div>
-          <div class="fifa-card-bar-row"><span class="fifa-card-bar-label">VOL</span><div class="fifa-card-bar-track"><div class="fifa-card-bar-fill" style="width:${winVolume}%;background:${barColor(winVolume)}"></div></div><span class="fifa-card-bar-val">${winVolume}</span></div>
-          <div class="fifa-card-bar-row"><span class="fifa-card-bar-label">ATT</span><div class="fifa-card-bar-track"><div class="fifa-card-bar-fill" style="width:${attPct}%;background:${barColor(attPct)}"></div></div><span class="fifa-card-bar-val">${attPct}</span></div>
-          <div class="fifa-card-bar-row"><span class="fifa-card-bar-label">STK</span><div class="fifa-card-bar-track"><div class="fifa-card-bar-fill" style="width:${clutch}%;background:${barColor(clutch)}"></div></div><span class="fifa-card-bar-val">${bestStreak.count}</span></div>
+        <div class="pcard-stub">
+          <div><b>${stats.wins}&ndash;${stats.games - stats.wins}</b><span>Record</span></div>
+          <div><b>${uniquePartners.size}</b><span>Partners</span></div>
+          <div><b>${streakLabel}</b><span>Best streak</span></div>
         </div>
       `;
       
@@ -17105,243 +17097,146 @@
       shareBtn.disabled = true;
       
       try {
-        // Get player data from the card
+        // Read everything straight off the rendered ticket so the PNG can't drift from the DOM.
         const content = document.getElementById('fifaCardContent');
-        const ratingEl = content.querySelector('.fifa-card-rating');
-        const nameEl = content.querySelector('.fifa-card-name');
-        const posEl = content.querySelector('.fifa-card-position');
-        const nicknameEl = content.querySelector('.fifa-card-nickname');
-        const statValues = content.querySelectorAll('.fifa-card-stat-value');
-        const statLabels = content.querySelectorAll('.fifa-card-stat-label');
-        const barRows = content.querySelectorAll('.fifa-card-bar-row');
-        const photoImg = content.querySelector('.fifa-card-photo img');
+        const txt = sel => content.querySelector(sel)?.textContent?.trim() || '';
+        const name = txt('.pcard-name') || 'PLAYER';
+        const sub = txt('.pcard-sub');
+        const rating = txt('.pcard-rating b') || '0';
+        const squad = txt('.pcard-band span') || '';
+        const photoImg = content.querySelector('.pcard-photo img');
+        const bars = [...content.querySelectorAll('.pcard-bar')].map(r => ({
+          label: r.querySelector('.l')?.textContent || '',
+          val: r.querySelector('.v')?.textContent || '0',
+          width: parseFloat(r.querySelector('.t i')?.style.width) || 0
+        }));
+        const stubs = [...content.querySelectorAll('.pcard-stub div')].map(d => ({
+          v: d.querySelector('b')?.textContent || '', l: d.querySelector('span')?.textContent || ''
+        }));
         
-        const rating = ratingEl?.textContent || '0';
-        const name = nameEl?.textContent || 'PLAYER';
-        const position = posEl?.textContent || 'HYB';
-        const nickname = nicknameEl?.textContent || '';
+        // Theme tokens, read live so the export matches whichever theme is active
+        const cs = getComputedStyle(document.documentElement);
+        const tok = (n, fb) => (cs.getPropertyValue(n) || '').trim() || fb;
+        const CLAY = tok('--clay', '#C84E28');
+        const BG = tok('--bg-card', '#1F1D1B');
+        const TEXT = tok('--text', '#F5F0E6');
+        const MUTED = tok('--text-muted', '#948C7E');
+        const BORDER = tok('--border', '#3C3935');
+        const WASH = tok('--cream', '#2C2A27');
         
-        // Helper: draw rounded rect (iOS compatible)
-        function roundedRect(ctx, x, y, w, h, r) {
-          ctx.beginPath();
-          ctx.moveTo(x + r, y);
-          ctx.lineTo(x + w - r, y);
-          ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-          ctx.lineTo(x + w, y + h - r);
-          ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-          ctx.lineTo(x + r, y + h);
-          ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-          ctx.lineTo(x, y + r);
-          ctx.quadraticCurveTo(x, y, x + r, y);
-          ctx.closePath();
-        }
-        
-        // Load photo as data URL to avoid cross-origin taint
         let photoLoaded = null;
         if (photoImg && photoImg.src) {
           try {
             const resp = await fetch(photoImg.src, { mode: 'cors' });
             const blob = await resp.blob();
-            const dataUrl = await new Promise(resolve => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.readAsDataURL(blob);
-            });
-            photoLoaded = await new Promise((resolve, reject) => {
-              const img = new Image();
-              img.onload = () => resolve(img);
-              img.onerror = () => resolve(null);
-              img.src = dataUrl;
-            });
-          } catch(e) {
-            photoLoaded = null;
-          }
+            const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
+            photoLoaded = await new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = dataUrl; });
+          } catch (e) { photoLoaded = null; }
         }
         
-        // Create canvas
-        const W = 640, H = 920;
+        // 2x of the on-screen ticket: 660 x 720
+        const W = 660, H = 720, P = 32;
         const canvas = document.createElement('canvas');
-        canvas.width = W;
-        canvas.height = H;
+        canvas.width = W; canvas.height = H;
         const ctx = canvas.getContext('2d');
+        const line = (x1, y1, x2, y2, col, dash) => {
+          ctx.save(); ctx.strokeStyle = col || BORDER; ctx.lineWidth = 2;
+          if (dash) ctx.setLineDash([10, 8]);
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+        };
         
-        // Background gradient
-        const bg = ctx.createLinearGradient(0, 0, W, H);
-        bg.addColorStop(0, '#1a1a2e');
-        bg.addColorStop(0.3, '#16213e');
-        bg.addColorStop(0.7, '#0f3460');
-        bg.addColorStop(1, '#e94560');
-        ctx.fillStyle = bg;
-        roundedRect(ctx, 0, 0, W, H, 48);
-        ctx.fill();
+        ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
         
-        // Glow effect
-        const glow = ctx.createRadialGradient(W * 0.7, H * 0.2, 0, W * 0.7, H * 0.2, 400);
-        glow.addColorStop(0, 'rgba(233,69,96,0.25)');
-        glow.addColorStop(1, 'transparent');
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, W, H);
-        
-        // Rating
-        ctx.font = 'bold 144px sans-serif';
-        ctx.fillStyle = '#FFD700';
-        ctx.shadowColor = 'rgba(255,215,0,0.4)';
-        ctx.shadowBlur = 30;
-        ctx.textAlign = 'left';
-        ctx.fillText(rating, 48, 150);
-        ctx.shadowBlur = 0;
-        
-        // Position + League
+        // Clay band
+        const BAND = 80;
+        ctx.fillStyle = CLAY; ctx.fillRect(0, 0, W, BAND);
+        ctx.fillStyle = '#fff';
+        ctx.font = '800 30px Archivo, Impact, sans-serif';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText('PADEL VILLAINS', P, BAND / 2);
+        ctx.font = '700 22px system-ui, sans-serif';
         ctx.textAlign = 'right';
-        ctx.font = 'bold 48px sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.fillText(position, W - 48, 100);
-        ctx.font = '22px sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.fillText('PADEL VILLAINS', W - 48, 130);
-        ctx.textAlign = 'left';
+        ctx.fillText(squad, W - P, BAND / 2);
         
-        // Player photo
-        const photoY = 180, photoSize = 240;
-        const cx = W / 2, cy = photoY + photoSize / 2;
-        
-        // Photo ring
-        ctx.beginPath();
-        ctx.arc(cx, cy, photoSize / 2 + 6, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,215,0,0.5)';
-        ctx.lineWidth = 5;
-        ctx.stroke();
-        
+        // Body: photo left, identity right
+        const BODY_Y = BAND, BODY_H = 268, PHOTO_W = 220;
+        ctx.fillStyle = WASH; ctx.fillRect(0, BODY_Y, PHOTO_W, BODY_H);
         if (photoLoaded) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(cx, cy, photoSize / 2, 0, Math.PI * 2);
-          ctx.clip();
-          // object-fit: cover — crop to fill circle
-          const iw = photoLoaded.naturalWidth || photoLoaded.width;
-          const ih = photoLoaded.naturalHeight || photoLoaded.height;
-          const scale = Math.max(photoSize / iw, photoSize / ih);
-          const sw = iw * scale, sh = ih * scale;
-          ctx.drawImage(photoLoaded, cx - sw / 2, cy - sh / 2, sw, sh);
+          ctx.save(); ctx.beginPath(); ctx.rect(0, BODY_Y, PHOTO_W, BODY_H); ctx.clip();
+          const scale = Math.max(PHOTO_W / photoLoaded.width, BODY_H / photoLoaded.height);
+          const dw = photoLoaded.width * scale, dh = photoLoaded.height * scale;
+          ctx.drawImage(photoLoaded, (PHOTO_W - dw) / 2, BODY_Y + (BODY_H - dh) / 2, dw, dh);
           ctx.restore();
         } else {
-          ctx.beginPath();
-          ctx.arc(cx, cy, photoSize / 2, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255,255,255,0.05)';
-          ctx.fill();
-          ctx.font = 'bold 96px sans-serif';
-          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.fillStyle = MUTED; ctx.font = '800 88px Archivo, Impact, sans-serif';
+          ctx.textAlign = 'center'; ctx.fillText((name[0] || '?').toUpperCase(), PHOTO_W / 2, BODY_Y + BODY_H / 2);
+        }
+        line(PHOTO_W, BODY_Y, PHOTO_W, BODY_Y + BODY_H);
+        
+        const TX = PHOTO_W + 28;
+        ctx.textAlign = 'left';
+        ctx.fillStyle = TEXT;
+        // Name, shrunk to fit the column
+        let fs = 54;
+        do { ctx.font = `800 ${fs}px Archivo, Impact, sans-serif`; fs -= 2; }
+        while (ctx.measureText(name).width > W - TX - P && fs > 22);
+        ctx.fillText(name, TX, BODY_Y + 62);
+        ctx.fillStyle = CLAY; ctx.font = '700 20px system-ui, sans-serif';
+        ctx.fillText(sub, TX, BODY_Y + 104);
+        ctx.fillStyle = TEXT; ctx.font = '800 68px Archivo, Impact, sans-serif';
+        ctx.fillText(rating, TX, BODY_Y + 186);
+        const rw = ctx.measureText(rating).width;
+        ctx.fillStyle = MUTED; ctx.font = '700 17px system-ui, sans-serif';
+        ctx.fillText('RATING', TX + rw + 14, BODY_Y + 186);
+        line(0, BODY_Y + BODY_H, W, BODY_Y + BODY_H);
+        
+        // Bars
+        let y = BODY_Y + BODY_H;
+        const ROW = 68, LX = P, LW = 140, VW = 70;
+        bars.forEach(b => {
+          const cy = y + ROW / 2;
+          ctx.fillStyle = MUTED; ctx.font = '700 18px system-ui, sans-serif'; ctx.textAlign = 'left';
+          ctx.fillText(b.label.toUpperCase(), LX, cy);
+          const bx = LX + LW, bw = W - LX - LW - VW - P, bh = 12, by = cy - bh / 2;
+          ctx.fillStyle = WASH; ctx.fillRect(bx, by, bw, bh);
+          ctx.strokeStyle = BORDER; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+          if (b.width > 0) { ctx.fillStyle = CLAY; ctx.fillRect(bx, by, Math.max(4, bw * (b.width / 100)), bh); }
+          ctx.fillStyle = TEXT; ctx.font = '800 26px Archivo, Impact, sans-serif'; ctx.textAlign = 'right';
+          ctx.fillText(b.val, W - P, cy);
+          y += ROW;
+          line(0, y, W, y);
+        });
+        
+        // Perforated stub
+        line(0, y, W, y, BORDER, true);
+        const sw = W / (stubs.length || 1);
+        stubs.forEach((st, i) => {
+          const cx = sw * i + sw / 2;
           ctx.textAlign = 'center';
-          ctx.fillText(name.charAt(0), cx, cy + 35);
-          ctx.textAlign = 'left';
-        }
-        
-        // Name
-        let nameY = photoY + photoSize + 60;
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 56px sans-serif';
-        ctx.fillStyle = 'white';
-        ctx.fillText(name, cx, nameY);
-        
-        // Nickname
-        if (nickname) {
-          nameY += 30;
-          ctx.font = 'italic 24px sans-serif';
-          ctx.fillStyle = '#FFD700';
-          ctx.fillText(nickname, cx, nameY);
-        }
-        
-        // Divider
-        nameY += 24;
-        const divGrad = ctx.createLinearGradient(W * 0.1, 0, W * 0.9, 0);
-        divGrad.addColorStop(0, 'transparent');
-        divGrad.addColorStop(0.5, 'rgba(255,215,0,0.5)');
-        divGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = divGrad;
-        ctx.fillRect(W * 0.1, nameY, W * 0.8, 2);
-        
-        // Stats row
-        nameY += 40;
-        const statsData = [];
-        statValues.forEach((el, i) => {
-          statsData.push({ value: el.textContent, label: statLabels[i]?.textContent || '' });
+          ctx.fillStyle = TEXT; ctx.font = '800 34px Archivo, Impact, sans-serif';
+          ctx.fillText(st.v, cx, y + 48);
+          ctx.fillStyle = MUTED; ctx.font = '700 15px system-ui, sans-serif';
+          ctx.fillText(st.l.toUpperCase(), cx, y + 80);
+          if (i) line(sw * i, y, sw * i, H);
         });
-        const statSpacing = W / (statsData.length + 1);
-        statsData.forEach((s, i) => {
-          const sx = statSpacing * (i + 1);
-          ctx.font = 'bold 52px sans-serif';
-          ctx.fillStyle = 'white';
-          ctx.fillText(s.value, sx, nameY);
-          ctx.font = '18px sans-serif';
-          ctx.fillStyle = 'rgba(255,255,255,0.5)';
-          ctx.fillText(s.label.toUpperCase(), sx, nameY + 24);
-        });
+        ctx.strokeStyle = BORDER; ctx.lineWidth = 4; ctx.strokeRect(0, 0, W, H);
         
-        // Stat bars
-        nameY += 56;
-        ctx.textAlign = 'left';
-        const barData = [];
-        barRows.forEach(row => {
-          const label = row.querySelector('.fifa-card-bar-label')?.textContent || '';
-          const fill = row.querySelector('.fifa-card-bar-fill');
-          const val = row.querySelector('.fifa-card-bar-val')?.textContent || '0';
-          const width = fill ? parseFloat(fill.style.width) : 0;
-          const color = fill ? (fill.style.background || fill.style.backgroundColor || '#FFD700') : '#FFD700';
-          barData.push({ label, val, width, color });
-        });
-        
-        const barX = 100, barW = W - 200, barH = 12;
-        barData.forEach((b, i) => {
-          const by = nameY + i * 36;
-          ctx.font = '18px sans-serif';
-          ctx.fillStyle = 'rgba(255,255,255,0.5)';
-          ctx.textAlign = 'right';
-          ctx.fillText(b.label.toUpperCase(), barX - 12, by + 10);
-          // Track
-          ctx.fillStyle = 'rgba(255,255,255,0.1)';
-          roundedRect(ctx, barX, by, barW, barH, 6);
-          ctx.fill();
-          // Fill
-          if (b.width > 0) {
-            ctx.fillStyle = b.color;
-            roundedRect(ctx, barX, by, Math.max(barH, barW * (b.width / 100)), barH, 6);
-            ctx.fill();
-          }
-          // Value
-          ctx.textAlign = 'left';
-          ctx.font = 'bold 20px sans-serif';
-          ctx.fillStyle = 'white';
-          ctx.fillText(b.val, barX + barW + 12, by + 12);
-        });
-        
-        ctx.textAlign = 'left';
-        
-        // Convert to blob and share
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
         const file = new File([blob], 'padel-villains-card.png', { type: 'image/png' });
         
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: 'Padel Villains Player Card',
-            text: '🏆 Check out this player card!'
-          });
+          await navigator.share({ files: [file], title: 'Padel Villains Player Card', text: '🏆 Check out this player card!' });
         } else {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
-          a.href = url;
-          a.download = 'padel-villains-card.png';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
+          a.href = url; a.download = 'padel-villains-card.png';
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
           URL.revokeObjectURL(url);
           toast('Card saved to downloads! 🎉', 'success');
         }
       } catch (e) {
         console.error('Share error:', e);
-        if (e.name !== 'AbortError') {
-          toast('Could not share card — try taking a screenshot instead', 'error');
-        }
+        if (e.name !== 'AbortError') toast('Could not share card — try taking a screenshot instead', 'error');
       } finally {
         shareBtn.innerHTML = origText;
         shareBtn.disabled = false;
