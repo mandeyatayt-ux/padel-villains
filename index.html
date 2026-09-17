@@ -2582,6 +2582,122 @@
     [data-theme="court-lines"] .loading-splash-bar { background: #3C3935; }
     [data-theme="court-lines"] .loading-splash-bar-fill { background: var(--clay); }
 
+    /* ================= COURT LINES v2 — beat the glassmorphism layer =================
+       The base stylesheet paints most surfaces with !important (rgba white glass,
+       brown→clay hero gradients). Everything below is scoped and !important so the
+       theme actually lands. Order of surfaces: night (page) → surface (cards) → raised. */
+
+    /* -- shell: sidebar, header, nav -- */
+    [data-theme="court-lines"] .header { background: rgba(20,19,18,.92) !important; border-bottom: 1px solid var(--border) !important; }
+    [data-theme="court-lines"] .nav { background: transparent !important; }
+    [data-theme="court-lines"] .nav button { font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text-muted); }
+    [data-theme="court-lines"] .nav button:hover { color: var(--text); background: var(--clay-wash) !important; }
+    [data-theme="court-lines"] .nav button.active { background: #2C2A27 !important; color: var(--text) !important; box-shadow: inset 2px 0 0 var(--clay) !important; }
+    [data-theme="court-lines"] .sidebar-user,
+    [data-theme="court-lines"] .sidebar-sync { background: #1F1D1B !important; border: 1px solid var(--border) !important; }
+    [data-theme="court-lines"] .bottom-nav { background: #141312 !important; border-top: 1px solid var(--border) !important; }
+
+    /* -- cards: hairline surfaces, no glass, no blur -- */
+    [data-theme="court-lines"] .card,
+    [data-theme="court-lines"] .stat-card,
+    [data-theme="court-lines"] .match-card,
+    [data-theme="court-lines"] .player-card,
+    [data-theme="court-lines"] .team-card,
+    [data-theme="court-lines"] .ongoing-match,
+    [data-theme="court-lines"] .dashboard-ongoing-match,
+    [data-theme="court-lines"] .matchday-header,
+    [data-theme="court-lines"] .matchday-header.active,
+    [data-theme="court-lines"] .rankings-table,
+    [data-theme="court-lines"] .achievement-card,
+    [data-theme="court-lines"] .event-calendar,
+    [data-theme="court-lines"] .weather-widget,
+    [data-theme="court-lines"] .modal,
+    [data-theme="court-lines"] .modal-content {
+      background: #1F1D1B !important;
+      background-image: none !important;
+      backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: none !important;
+      color: var(--text);
+    }
+    [data-theme="court-lines"] .matchday-header.active { border-color: var(--clay) !important; }
+    [data-theme="court-lines"] .ongoing-match,
+    [data-theme="court-lines"] .dashboard-ongoing-match { border-color: var(--clay) !important; }
+    [data-theme="court-lines"] .card:hover,
+    [data-theme="court-lines"] .stat-card:hover,
+    [data-theme="court-lines"] .player-card:hover,
+    [data-theme="court-lines"] .team-card:hover,
+    [data-theme="court-lines"] .match-card:hover,
+    [data-theme="court-lines"] .achievement-card:hover { background: #2C2A27 !important; border-color: var(--clay) !important; transform: none !important; box-shadow: none !important; }
+    [data-theme="court-lines"] .weather-widget { color: var(--text) !important; }
+    [data-theme="court-lines"] .weather-widget::before { display: none; }
+    [data-theme="court-lines"] .weather-play-recommendation { background: #2C2A27 !important; border: 1px solid var(--border); }
+    [data-theme="court-lines"] .stat-icon { background: rgba(200,78,40,.16) !important; border: 1px solid rgba(200,78,40,.35); color: var(--clay) !important; }
+    [data-theme="court-lines"] input:not([type=checkbox]):not([type=radio]),
+    [data-theme="court-lines"] select,
+    [data-theme="court-lines"] textarea { background: #141312 !important; color: var(--text) !important; border: 1px solid var(--border) !important; }
+    [data-theme="court-lines"] input:focus,
+    [data-theme="court-lines"] select:focus,
+    [data-theme="court-lines"] textarea:focus { border-color: var(--clay) !important; outline: none; }
+    [data-theme="court-lines"] select option { background: #1F1D1B; color: var(--text); }
+    /* -- places that used the ink token as a dark fill: keep them dark -- */
+    [data-theme="court-lines"] .rankings-head { background: #2C2A27 !important; color: var(--text-muted) !important; border-bottom: 1px solid var(--border); letter-spacing: .16em; }
+    [data-theme="court-lines"] .rankings-row.top-3 { background: rgba(200,78,40,.07) !important; }
+    [data-theme="court-lines"] .md-pill.active,
+    [data-theme="court-lines"] .score-btn.team2 { background: #2C2A27 !important; color: var(--text) !important; border: 1px solid var(--text) !important; }
+    [data-theme="court-lines"] .toast { background: #2C2A27 !important; color: var(--text) !important; border: 1px solid var(--border) !important; }
+
+    /* -- heroes: charcoal field with court lines; the champion card alone gets terracotta -- */
+    [data-theme="court-lines"] .players-hero,
+    [data-theme="court-lines"] .teams-hero,
+    [data-theme="court-lines"] .md-hero,
+    [data-theme="court-lines"] .rankings-hero,
+    [data-theme="court-lines"] .rules-hero,
+    [data-theme="court-lines"] .profile-header,
+    [data-theme="court-lines"] .my-profile-header,
+    [data-theme="court-lines"] .live-score-display,
+    [data-theme="court-lines"] .md-sticky {
+      background: repeating-linear-gradient(90deg, transparent 0 119px, rgba(245,240,230,.07) 119px 120px), repeating-linear-gradient(0deg, transparent 0 119px, rgba(245,240,230,.07) 119px 120px), #1F1D1B !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: inset 0 -2px 0 var(--clay) !important;
+      color: var(--text) !important;
+    }
+    [data-theme="court-lines"] .villain-card,
+    [data-theme="court-lines"] .matchday-countdown {
+      background: linear-gradient(160deg, #B5532E 0%, #8F3C1F 100%) !important;
+      border: 1px solid #B5532E !important;
+      box-shadow: none !important;
+    }
+    [data-theme="court-lines"] .players-hero::before, [data-theme="court-lines"] .players-hero::after,
+    [data-theme="court-lines"] .teams-hero::before,   [data-theme="court-lines"] .teams-hero::after,
+    [data-theme="court-lines"] .md-hero::before,      [data-theme="court-lines"] .md-hero::after,
+    [data-theme="court-lines"] .rankings-hero::before, [data-theme="court-lines"] .rules-hero::before,
+    [data-theme="court-lines"] .profile-header::before, [data-theme="court-lines"] .my-profile-header::before,
+    [data-theme="court-lines"] .villain-card::before, [data-theme="court-lines"] .villain-card::after { display: none !important; }
+    [data-theme="court-lines"] .teams-hero-stat,
+    [data-theme="court-lines"] .live-score-set,
+    [data-theme="court-lines"] .summary-stat,
+    [data-theme="court-lines"] .summary-highlight,
+    [data-theme="court-lines"] .h2h-record,
+    [data-theme="court-lines"] .h2h-pick,
+    [data-theme="court-lines"] .my-profile-role { background: #2C2A27 !important; border: 1px solid var(--border); }
+
+    /* -- buttons: flat terracotta, night text (the concept's CTA) -- */
+    [data-theme="court-lines"] .btn-primary,
+    [data-theme="court-lines"] .md-config-btn.active {
+      background: var(--clay) !important; background-image: none !important;
+      color: #141312 !important; border: 1px solid var(--clay) !important;
+      font-family: 'Archivo', sans-serif; font-variation-settings: "wdth" 105, "wght" 800; letter-spacing: .08em; text-transform: uppercase;
+    }
+    [data-theme="court-lines"] .btn-primary:hover { background: var(--text) !important; border-color: var(--text) !important; color: #141312 !important; }
+    [data-theme="court-lines"] .btn-secondary,
+    [data-theme="court-lines"] .btn-outline { background: transparent !important; color: var(--text) !important; border: 1px solid var(--border) !important; }
+    [data-theme="court-lines"] .btn-secondary:hover,
+    [data-theme="court-lines"] .btn-outline:hover { border-color: var(--text) !important; }
+
+    /* -- section titles in the display face -- */
+    [data-theme="court-lines"] .section-title { font-family: 'Archivo', sans-serif; font-variation-settings: "wdth" 112, "wght" 800; text-transform: uppercase; letter-spacing: -.005em; color: var(--text); }
+
   </style>
 </head>
 <body>
