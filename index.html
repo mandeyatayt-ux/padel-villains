@@ -1260,6 +1260,7 @@
     .login-screen.hidden { display: none; }
     .login-card { background: var(--bg-card); border-radius: var(--radius-xl); padding: 44px; width: 100%; max-width: 400px; margin: 20px; box-shadow: 0 20px 60px rgba(28,25,23,0.2); }
     .login-logo { text-align: center; margin-bottom: 32px; }
+    .login-poster-title, .login-btn-alt { display: none; }
     .login-logo h1 { font-family: 'Sublime', sans-serif; font-size: 32px; letter-spacing: 4px; color: var(--clay); margin-bottom: 4px; }
     .login-logo p { color: var(--text-muted); font-size: 13px; }
     .login-form { display: flex; flex-direction: column; gap: 16px; }
@@ -2564,14 +2565,50 @@
     [data-theme="court-lines"] textarea { background: #141312; color: var(--text); border-color: var(--border); }
     [data-theme="court-lines"] ::placeholder { color: #6E675C; }
 
-    /* -- login: charcoal field with court hairlines instead of a clay wash -- */
+    /* -- login: Option 02 "minimal court" — no card, a hairline court, form on the field -- */
     [data-theme="court-lines"] .login-screen {
-      background:
-        repeating-linear-gradient(90deg, transparent 0 119px, #3C3935 119px 120px),
-        repeating-linear-gradient(0deg, transparent 0 119px, #3C3935 119px 120px),
-        #141312;
+      background: linear-gradient(rgba(20,19,18,.35), rgba(20,19,18,.35)), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201200%20520%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%221200%22%20height%3D%22520%22%20fill%3D%22%23141312%22%2F%3E%3Cg%20stroke%3D%22%233C3935%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%3E%3Crect%20x%3D%22120%22%20y%3D%2260%22%20width%3D%22960%22%20height%3D%22400%22%2F%3E%3Cline%20x1%3D%22600%22%20y1%3D%2260%22%20x2%3D%22600%22%20y2%3D%22460%22%20stroke%3D%22%23C84E28%22%20stroke-opacity%3D%22.55%22%2F%3E%3Cline%20x1%3D%22120%22%20y1%3D%22260%22%20x2%3D%221080%22%20y2%3D%22260%22%2F%3E%3Cline%20x1%3D%22264%22%20y1%3D%2260%22%20x2%3D%22264%22%20y2%3D%22460%22%2F%3E%3Cline%20x1%3D%22936%22%20y1%3D%2260%22%20x2%3D%22936%22%20y2%3D%22460%22%2F%3E%3Crect%20x%3D%22264%22%20y%3D%2260%22%20width%3D%22672%22%20height%3D%22400%22%20stroke-dasharray%3D%225%207%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") 22% 50% / cover no-repeat #141312 !important;
+      align-items: center; justify-content: center;
     }
-    [data-theme="court-lines"] .login-card { border: 1px solid var(--border); }
+    [data-theme="court-lines"] #loginScreen .login-card {
+      background: transparent !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important;
+      padding: 24px 20px !important; max-width: 420px; width: 100%;
+    }
+    [data-theme="court-lines"] #loginScreen .login-logo { text-align: left; margin-bottom: 18px; }
+    [data-theme="court-lines"] #loginScreen .login-logo img { width: 56px !important; height: 56px !important; margin-bottom: 0 !important; box-shadow: none !important; outline-offset: 3px; }
+    [data-theme="court-lines"] #loginScreen .login-logo h1,
+    [data-theme="court-lines"] #loginScreen .login-logo p { display: none; }
+    [data-theme="court-lines"] #loginScreen .login-poster-title {
+      display: block; font-family: 'Archivo', Impact, sans-serif; font-variation-settings: "wdth" 118, "wght" 800;
+      font-size: clamp(56px, 12vw, 88px); line-height: .84; letter-spacing: -.005em; text-transform: uppercase; color: var(--text);
+      margin: 0 0 30px;
+    }
+    [data-theme="court-lines"] #loginScreen .login-poster-title span { -webkit-text-stroke: 1.5px var(--text); color: transparent; }
+    [data-theme="court-lines"] #loginScreen .login-form { gap: 22px; }
+    [data-theme="court-lines"] #loginScreen .form-label {
+      display: block; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 600;
+    }
+    /* underline fields, but with a 52px tap target and an obvious focus state */
+    [data-theme="court-lines"] #loginScreen .form-input {
+      background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important;
+      padding: 14px 0 !important; min-height: 52px; font-size: 17px !important; color: var(--text) !important; box-shadow: none !important;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    [data-theme="court-lines"] #loginScreen .form-input::placeholder { color: #6E675C; }
+    [data-theme="court-lines"] #loginScreen .form-input:focus { border-bottom-color: var(--clay) !important; box-shadow: inset 0 -1px 0 var(--clay) !important; outline: none; }
+    [data-theme="court-lines"] #loginScreen .form-input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #141312 inset !important; -webkit-text-fill-color: var(--text) !important; }
+    [data-theme="court-lines"] #loginScreen #loginBtn {
+      margin-top: 6px; padding: 18px 20px !important; min-height: 56px; font-size: 15px; letter-spacing: .12em;
+    }
+    [data-theme="court-lines"] #loginScreen .login-btn-std { display: none; }
+    [data-theme="court-lines"] #loginScreen .login-btn-alt { display: inline; }
+    [data-theme="court-lines"] #loginScreen .login-card > p { text-align: left !important; font-size: 12px !important; color: var(--text-muted) !important; margin-top: 18px !important; }
+    [data-theme="court-lines"] #loginScreen .login-error { background: var(--danger-bg) !important; border: 1px solid var(--danger); color: #E07A6C; margin-bottom: 14px; }
+    [data-theme="court-lines"] #loginScreen .login-suggestions { background: #1F1D1B !important; border: 1px solid var(--border) !important; box-shadow: none !important; }
+    @media (max-width: 480px) {
+      [data-theme="court-lines"] .login-screen { background: linear-gradient(rgba(20,19,18,.6), rgba(20,19,18,.6)), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201200%20520%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%221200%22%20height%3D%22520%22%20fill%3D%22%23141312%22%2F%3E%3Cg%20stroke%3D%22%233C3935%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%3E%3Crect%20x%3D%22120%22%20y%3D%2260%22%20width%3D%22960%22%20height%3D%22400%22%2F%3E%3Cline%20x1%3D%22600%22%20y1%3D%2260%22%20x2%3D%22600%22%20y2%3D%22460%22%20stroke%3D%22%23C84E28%22%20stroke-opacity%3D%22.55%22%2F%3E%3Cline%20x1%3D%22120%22%20y1%3D%22260%22%20x2%3D%221080%22%20y2%3D%22260%22%2F%3E%3Cline%20x1%3D%22264%22%20y1%3D%2260%22%20x2%3D%22264%22%20y2%3D%22460%22%2F%3E%3Cline%20x1%3D%22936%22%20y1%3D%2260%22%20x2%3D%22936%22%20y2%3D%22460%22%2F%3E%3Crect%20x%3D%22264%22%20y%3D%2260%22%20width%3D%22672%22%20height%3D%22400%22%20stroke-dasharray%3D%225%207%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") 0% 0% / 260% auto no-repeat #141312 !important; }
+      [data-theme="court-lines"] #loginScreen .login-card { padding: 20px 18px !important; }
+    }
     [data-theme="court-lines"] .login-suggestion { border-bottom-color: var(--border); }
     [data-theme="court-lines"] .login-suggestion:hover { background: #2C2A27; }
     [data-theme="court-lines"] .login-error { background: var(--danger-bg); }
@@ -2767,6 +2804,7 @@
         <h1>PADEL VILLAINS</h1>
         <p>Social League Tracker</p>
       </div>
+      <div class="login-poster-title" aria-hidden="true">Sign<br><span>in.</span></div>
       <div class="login-error" id="loginError">Invalid username or password</div>
       <form class="login-form" onsubmit="handleLogin(event)">
         <div class="form-group" style="position:relative">
@@ -2779,7 +2817,7 @@
           <input type="password" class="form-input" id="loginPassword" placeholder="Enter password" style="font-size:16px">
         </div>
         <button type="submit" class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;padding:16px">
-          <i class="fas fa-sign-in-alt"></i> Sign In
+          <span class="login-btn-std"><i class="fas fa-sign-in-alt"></i> Sign In</span><span class="login-btn-alt">Enter the circuit</span>
         </button>
       </form>
       <p style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)">
