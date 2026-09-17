@@ -5456,6 +5456,19 @@
     }
     function mdActiveId() { return activeMatchday?.id ?? null; }
     function mdIdForDate(date) { return (matchdays.find(md => md.date === date) || {}).id ?? null; }
+    // Canonical match <-> match day join. Primary key is matchday_id; a row
+    // with no matchday_id (manual add for a day with no match day record)
+    // falls back to its date. Never join on date alone when an id exists.
+    function matchBelongsTo(m, md) {
+      if (!m || !md) return false;
+      if (m.matchday_id != null) return String(m.matchday_id) === String(md.id);
+      return m.date === md.date;
+    }
+    function matchesForMd(md, list = matches) { return md ? list.filter(m => matchBelongsTo(m, md)) : []; }
+    function matchesForDate(date, list = matches) {
+      const md = matchdays.find(x => x.date === date);
+      return md ? matchesForMd(md, list) : list.filter(m => m.date === date && m.matchday_id == null);
+    }
     
     // Generate a numeric ID for Supabase (bigint NOT NULL)
     function generateNumericId() {
@@ -6475,7 +6488,7 @@
       const closedDates = getClosedMatchdayDates();
       if (closedDates.length === 0) return { attended: 0, total: 0, pct: 0 };
       const attended = closedDates.filter(date => {
-        return matches.some(m => m.date === date && (m.team1_id === teamId || m.team2_id === teamId));
+        return matchesForDate(date).some(m => m.team1_id === teamId || m.team2_id === teamId);
       }).length;
       return { attended, total: closedDates.length, pct: Math.round((attended / closedDates.length) * 100) };
     }
@@ -6515,12 +6528,8 @@
     
     // Calculate stats from match history
     function getTeamStats(teamId, filterDate = null) {
-      const teamMatches = matches.filter(m => {
-        const isTeamMatch = m.team1_id === teamId || m.team2_id === teamId;
-        if (!isTeamMatch) return false;
-        if (filterDate) return m.date === filterDate;
-        return true;
-      });
+      const pool = filterDate ? matchesForDate(filterDate) : matches;
+      const teamMatches = pool.filter(m => m.team1_id === teamId || m.team2_id === teamId);
       const wins = teamMatches.filter(m => m.winner_id === teamId).length;
       const losses = teamMatches.length - wins;
       return { wins, losses, matches: teamMatches.length };
@@ -6609,7 +6618,7 @@
     }
     
     // Get matches for active matchday
-    const todayMatches = () => activeMatchday ? matches.filter(m => m.date === activeMatchday.date) : [];
+    const todayMatches = () => activeMatchday ? matchesForMd(activeMatchday) : [];
     
     // Get villains (top ranked team for the matchday)
     function getDayVillains() {
@@ -6772,7 +6781,7 @@
           const isUpcoming = isUpcomingToday || isFutureDate || isStartingSoon;
           
           // Check if any matches have been played
-          const matchdayMatches = matches.filter(m => m.date === activeMatchday.date);
+          const matchdayMatches = matchesForMd(activeMatchday);
           const hasMatches = matchdayMatches.length > 0;
           
           if (isUpcoming && !hasMatches) {
@@ -6993,7 +7002,7 @@
       }
       
       // Get matches for displayed matchday
-      const tm = displayMatchday ? matches.filter(m => m.date === displayMatchday.date) : [];
+      const tm = displayMatchday ? matchesForMd(displayMatchday) : [];
       const dayRankings = displayMatchday ? rankTeamsByMatches(displayMatchday.date) : [];
       const villain = dayRankings.length > 0 ? dayRankings[0] : null;
       
@@ -7212,7 +7221,7 @@
       content.innerHTML = html;
       injectPadelIcons();
     }
-    const matches_for = date => matches.filter(m => m.date === date);
+    const matches_for = date => matchesForDate(date);
 
     // ===== MATCHDAY HISTORY LOG =====
     function renderMatchdayHistoryLog() {
@@ -7227,7 +7236,7 @@
       container.innerHTML = closedMatchdays.slice(0, 5).map(md => {
         const dayRankings = rankTeamsByMatches(md.date);
         const winner = dayRankings.length > 0 ? dayRankings[0] : null;
-        const dayMatches = matches.filter(m => m.date === md.date);
+        const dayMatches = matchesForMd(md);
         const dateStr = new Date(md.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
         
         return `<div class="matchday-log-item" onclick="viewMatchdayHistory('${md.date}')">
@@ -7528,7 +7537,7 @@
       }
       
       const dateStr = new Date(activeMatchday.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-      const dayMatches = matches.filter(m => m.date === activeMatchday.date);
+      const dayMatches = matchesForMd(activeMatchday);
       const dayRankings = rankTeamsByMatches(activeMatchday.date);
       
       let message = `🎾 *PADEL VILLAINS RESULTS*\n`;
@@ -7588,7 +7597,7 @@
       currentRecapDate = date;
       
       const md = matchdays.find(m => m.date === date) || activeMatchday;
-      const dayMatches = matches.filter(m => m.date === date).sort((a, b) => {
+      const dayMatches = matchesForDate(date).sort((a, b) => {
         const tA = a.started_at || a.created_at || '';
         const tB = b.started_at || b.created_at || '';
         return new Date(tA) - new Date(tB);
@@ -7709,7 +7718,7 @@
       if (!date) return;
       
       const md = matchdays.find(m => m.date === date) || activeMatchday;
-      const dayMatches = matches.filter(m => m.date === date).sort((a, b) => {
+      const dayMatches = matchesForDate(date).sort((a, b) => {
         const tA = a.started_at || a.created_at || '';
         const tB = b.started_at || b.created_at || '';
         return new Date(tA) - new Date(tB);
@@ -7755,7 +7764,7 @@
       const date = currentRecapDate || activeMatchday?.date;
       if (!date) return '';
       const md = matchdays.find(m => m.date === date) || activeMatchday;
-      const dayMatches = matches.filter(m => m.date === date).sort((a, b) => new Date(a.started_at||a.created_at||'') - new Date(b.started_at||b.created_at||''));
+      const dayMatches = matchesForDate(date).sort((a, b) => new Date(a.started_at||a.created_at||'') - new Date(b.started_at||b.created_at||''));
       const dayRankings = rankTeamsByMatches(date);
       const dateStr = new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
       
@@ -7787,7 +7796,7 @@
       const date = currentRecapDate || activeMatchday?.date;
       if (!date) return;
       
-      const dayMatches = matches.filter(m => m.date === date);
+      const dayMatches = matchesForDate(date);
       if (dayMatches.length === 0) { toast('No matches to share', 'error'); return; }
       
       // Get all players who played today
@@ -7849,7 +7858,7 @@
       if (!date) return null;
       
       const md = matchdays.find(m => m.date === date) || activeMatchday;
-      const dayMatches = matches.filter(m => m.date === date).sort((a, b) => 
+      const dayMatches = matchesForDate(date).sort((a, b) => 
         new Date(a.started_at||a.created_at||'') - new Date(b.started_at||b.created_at||'')
       );
       const dayRankings = rankTeamsByMatches(date);
@@ -8807,7 +8816,7 @@
     
     function shareQueuedMatchesWhatsApp() {
       const today = activeMatchday?.date || new Date().toISOString().split('T')[0];
-      const dayMatches = matches.filter(m => m.date === today);
+      const dayMatches = activeMatchday ? matchesForMd(activeMatchday) : matchesForDate(today);
       const sorted = ongoingMatches.slice().sort((a, b) => new Date(a.started_at) - new Date(b.started_at));
       
       if (sorted.length === 0 && dayMatches.length === 0) {
@@ -8969,7 +8978,7 @@
             await supabaseClient.from('ongoing_matches').delete().eq('date', activeMatchday.date);
           } catch (e) { console.error(e); }
         }
-        ongoingMatches = ongoingMatches.filter(m => m.date !== activeMatchday.date);
+        ongoingMatches = ongoingMatches.filter(m => !matchBelongsTo(m, activeMatchday));
         
         // End the live session — clear queue engine state
         mdStep = 'setup';
@@ -9094,7 +9103,7 @@
       }
       
       // Check if any matches have been played
-      const matchdayMatches = matches.filter(m => m.date === activeMatchday.date);
+      const matchdayMatches = matchesForMd(activeMatchday);
       if (matchdayMatches.length > 0) {
         toast('Cannot cancel - matches have already been played. Use "Close Match Day" instead.', 'error');
         return;
@@ -9567,7 +9576,7 @@
       // Filter matches
       let filteredMatches = matches;
       if (filterDate) {
-        filteredMatches = matches.filter(m => m.date === filterDate);
+        filteredMatches = matchesForDate(filterDate);
       } else if (filterMonth) {
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
@@ -9900,15 +9909,18 @@
         const today = activeMatchday?.date || getLocalDateStr();
         const [o, m, md] = await Promise.all([
           supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false }),
-          supabaseClient.from('matches').select('*').eq('date', today).is('deleted_at', null),
+          (activeMatchday?.id
+            ? supabaseClient.from('matches').select('*').eq('matchday_id', activeMatchday.id).is('deleted_at', null)
+            : supabaseClient.from('matches').select('*').eq('date', today).is('deleted_at', null)),
           supabaseClient.from('matchdays').select('*').order('date', { ascending: true })
         ]);
         if (!o.error && o.data) ongoingMatches = o.data;
         if (!m.error && m.data) {
           // Today's rows from the server replace today's rows locally; other
           // days are untouched. Local-only rows survive only while queued.
-          const others = matches.filter(x => x.date !== today);
-          matches = [...others, ...mergeMatches(m.data, matches.filter(x => x.date === today))];
+          const inDay = x => activeMatchday ? matchBelongsTo(x, activeMatchday) : x.date === today;
+          const others = matches.filter(x => !inDay(x));
+          matches = [...others, ...mergeMatches(m.data, matches.filter(inDay))];
         }
         if (!md.error && md.data) { matchdays = md.data; determineActiveMatchday(); }
         localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
@@ -10724,9 +10736,9 @@
       const isActiveView = md && activeMatchday && md.id === activeMatchday.id;
       const today = getLocalDateStr();
       const matchdayDate = md?.date || today;
-      const dayMatches = matches.filter(m => m.date === matchdayDate);
+      const dayMatches = matchesForDate(matchdayDate);
       // Only show ongoing queue when viewing the active matchday
-      const dayOngoing = isActiveView ? ongoingMatches.filter(m => m.date === matchdayDate || !m.date) : [];
+      const dayOngoing = isActiveView ? ongoingMatches.filter(m => matchBelongsTo(m, matchdays.find(x => x.date === matchdayDate)) || (!m.matchday_id && (m.date === matchdayDate || !m.date))) : [];
       const dayRankings = rankTeamsByMatches(matchdayDate);
       
       // --- STATUS BANNER ---
@@ -10979,7 +10991,7 @@
       const viewed = getViewedMatchday();
       if (!viewed) { el.style.display = 'none'; return; }
       
-      const dayMatches = matches.filter(m => m.date === viewed.date);
+      const dayMatches = matchesForMd(viewed);
       if (dayMatches.length === 0) { el.style.display = 'none'; return; }
       
       // Check pending sync queue for matches on this date
@@ -11013,7 +11025,7 @@
       
       const isActiveView = activeMatchday && viewed.id === activeMatchday.id;
       const isAdmin = !!currentUser?.is_admin;
-      const dayMatches = matches.filter(m => m.date === viewed.date);
+      const dayMatches = matchesForMd(viewed);
       
       const btns = [];
       if (isActiveView && viewed.status !== 'closed') {
@@ -11042,7 +11054,7 @@
       const viewed = getViewedMatchday();
       if (!viewed) { card.style.display = 'none'; return; }
       
-      const dayMatches = matches.filter(m => m.date === viewed.date);
+      const dayMatches = matchesForMd(viewed);
       if (dayMatches.length === 0) { card.style.display = 'none'; return; }
       
       // Populate dropdown with teams that played this matchday
@@ -12116,14 +12128,14 @@
       }
       // Team filter: show only match days where the team played
       if (teamFilterId) {
-        const teamDates = new Set(matches.filter(m => m.team1_id == teamFilterId || m.team2_id == teamFilterId).map(m => m.date));
-        filteredMatchdays = filteredMatchdays.filter(md => teamDates.has(md.date));
+        const teamMatches = matches.filter(m => m.team1_id == teamFilterId || m.team2_id == teamFilterId);
+        filteredMatchdays = filteredMatchdays.filter(md => teamMatches.some(m => matchBelongsTo(m, md)));
       }
       
       const allMatchdays = filteredMatchdays.sort((a, b) => new Date(b.date) - new Date(a.date));
       
       listEl.innerHTML = allMatchdays.length ? allMatchdays.map(md => {
-        const dayMatches = matches.filter(m => m.date === md.date);
+        const dayMatches = matchesForMd(md);
         const dayRankings = rankTeamsByMatches(md.date);
         const winner = dayRankings.length > 0 ? dayRankings[0] : null;
         const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -12653,7 +12665,7 @@
         .sort((a, b) => new Date(b.date) - new Date(a.date));
       
       document.getElementById('matchdaySelectList').innerHTML = selectableMatchdays.length ? selectableMatchdays.map(md => {
-        const dayMatches = matches.filter(m => m.date === md.date);
+        const dayMatches = matchesForMd(md);
         const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
         const isClosed = md.status === 'closed';
         return `<div class="matchday-select-item" onclick="viewMatchday(${md.id})">
@@ -14658,7 +14670,7 @@
       if (!md) { toast('No match day selected', 'error'); return; }
       
       const dateStr = new Date(md.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-      const dayMatches = matches.filter(m => m.date === md.date);
+      const dayMatches = matchesForMd(md);
       const teamsPlayed = new Set();
       dayMatches.forEach(m => { teamsPlayed.add(m.team1_id); teamsPlayed.add(m.team2_id); });
       
@@ -17649,7 +17661,7 @@
     function generateCommentary() {
       if (!activeMatchday) return;
       
-      const dayMatches = matches.filter(m => m.date === activeMatchday.date);
+      const dayMatches = matchesForMd(activeMatchday);
       if (dayMatches.length === 0) {
         document.getElementById('commentaryFeed').innerHTML = '<div class="commentary-empty"><i class="fas fa-microphone-slash" style="font-size:28px;display:block;margin-bottom:8px;opacity:0.4"></i>No matches yet — commentary will appear as matches are played</div>';
         document.getElementById('commentaryStatus').textContent = 'Waiting for matches...';
