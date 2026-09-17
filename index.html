@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="court-lines">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Padel Villains - Social League Tracker</title>
   <meta name="description" content="Track your padel matches, rankings, and achievements">
-  <meta name="theme-color" content="#E07850">
+  <meta name="theme-color" content="#141312">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Padel Villains">
@@ -4136,7 +4136,16 @@
         <div class="settings-section-title"><i class="fas fa-palette"></i> App Theme</div>
         <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Choose your preferred color scheme</p>
         <div class="theme-grid" id="themeGrid">
-          <div class="theme-card active" data-theme="default" onclick="setTheme('default')">
+          <div class="theme-card active" data-theme="court-lines" onclick="setTheme('court-lines')">
+            <div class="theme-preview">
+              <div class="theme-color" style="background:#141312"></div>
+              <div class="theme-color" style="background:#C84E28"></div>
+              <div class="theme-color" style="background:#F5F0E6"></div>
+              <div class="theme-color" style="background:#7FA85C"></div>
+            </div>
+            <div class="theme-name">Court Lines</div>
+          </div>
+          <div class="theme-card" data-theme="default" onclick="setTheme('default')">
             <div class="theme-preview">
               <div class="theme-color" style="background:#E07850"></div>
               <div class="theme-color" style="background:#FDF6ED"></div>
@@ -4225,15 +4234,6 @@
               <div class="theme-color" style="background:#E6D8C4"></div>
             </div>
             <div class="theme-name">Summer Breeze</div>
-          </div>
-          <div class="theme-card" data-theme="court-lines" onclick="setTheme('court-lines')">
-            <div class="theme-preview">
-              <div class="theme-color" style="background:#141312"></div>
-              <div class="theme-color" style="background:#C84E28"></div>
-              <div class="theme-color" style="background:#F5F0E6"></div>
-              <div class="theme-color" style="background:#7FA85C"></div>
-            </div>
-            <div class="theme-name">Court Lines</div>
           </div>
         </div>
       </div>
@@ -13880,13 +13880,19 @@
     }
     
     // ===== THEME MANAGEMENT =====
-    function setTheme(themeName) {
-      // Remove theme attribute for default, otherwise set it
+    const DEFAULT_THEME = 'court-lines';
+    function applyThemeAttr(themeName) {
+      // 'default' = Classic Clay (no attribute); everything else is scoped by data-theme
       if (themeName === 'default') {
         document.documentElement.removeAttribute('data-theme');
       } else {
         document.documentElement.setAttribute('data-theme', themeName);
       }
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', themeName === 'court-lines' ? '#141312' : '#E07850');
+    }
+    function setTheme(themeName) {
+      applyThemeAttr(themeName);
       
       // Update active state on theme cards
       document.querySelectorAll('.theme-card').forEach(card => {
@@ -13922,11 +13928,20 @@
     }
     
     function loadTheme() {
+      let savedTheme = DEFAULT_THEME;
       try {
-        const savedTheme = localStorage.getItem('pv_theme') || 'default';
-        if (savedTheme !== 'default') {
-          document.documentElement.setAttribute('data-theme', savedTheme);
+        savedTheme = localStorage.getItem('pv_theme') || DEFAULT_THEME;
+        // One-time migration (Sep 2026): Court Lines became the default. Anyone still on
+        // Classic Clay (explicitly or by never choosing) is moved once; other picks are kept.
+        // After this, whatever the user selects in Settings sticks, including Classic Clay.
+        if (!localStorage.getItem('pv_theme_cl_migrated')) {
+          if (savedTheme === 'default') savedTheme = DEFAULT_THEME;
+          localStorage.setItem('pv_theme', savedTheme);
+          localStorage.setItem('pv_theme_cl_migrated', '1');
         }
+      } catch (e) {}
+      try {
+        applyThemeAttr(savedTheme);
         // Update active state on theme cards (after DOM loads)
         setTimeout(() => {
           document.querySelectorAll('.theme-card').forEach(card => {
