@@ -452,6 +452,8 @@
     .villain-card::before { content: ''; position: absolute; top: -120px; left: 50%; transform: translateX(-50%); width: 350px; height: 350px; background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%); }
     .villain-card::after { content: ''; position: absolute; inset: 0; background: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; }
     .villain-crown { font-size: 72px; position: relative; z-index: 1; }
+    .villain-poster-side, .villain-band { display: none; }
+    .villain-poster-top { display: contents; }
     .villain-label { font-family: 'Sublime', sans-serif; font-size: 18px; letter-spacing: 8px; color: var(--clay); position: relative; z-index: 1; margin-top: 8px; }
     .villain-team { font-family: 'Sublime', sans-serif; font-size: 48px; letter-spacing: 4px; color: white; margin: 16px 0 28px; position: relative; z-index: 1; }
     .villain-players { display: flex; align-items: center; justify-content: center; gap: 24px; position: relative; z-index: 1; margin-bottom: 12px; }
@@ -2647,6 +2649,63 @@
     [data-theme="court-lines"] .score-btn.team2 { background: #2C2A27 !important; color: var(--text) !important; border: 1px solid var(--text) !important; }
     [data-theme="court-lines"] .toast { background: #2C2A27 !important; color: var(--text) !important; border: 1px solid var(--border) !important; }
 
+    /* ================= COURT LINES — dashboard hero as a POSTER (Option 03) =================
+       Charcoal field with court lines; team name at poster size with the last word
+       outlined; today's record top-right; a terracotta ticker band carries partners,
+       venue, date, win rate, streak and the chasing team. Only this theme opts in. */
+    [data-theme="court-lines"] .villain-card {
+      background: repeating-linear-gradient(90deg, transparent 0 119px, rgba(245,240,230,.07) 119px 120px), repeating-linear-gradient(0deg, transparent 0 119px, rgba(245,240,230,.07) 119px 120px), #1F1D1B !important;
+      border: 1px solid var(--border) !important;
+      padding: 0 !important; text-align: left !important;
+      display: flex; flex-direction: column;
+    }
+    [data-theme="court-lines"] .villain-poster-top { display: block; position: relative; padding: 30px 32px 22px; }
+    [data-theme="court-lines"] .villain-crown { display: inline-block; font-size: 16px; vertical-align: -2px; margin-right: 8px; }
+    [data-theme="court-lines"] .villain-label {
+      display: inline-block; margin: 0; font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 600; font-size: 10px !important;
+      letter-spacing: .22em; text-transform: uppercase; color: var(--clay) !important;
+    }
+    [data-theme="court-lines"] .villain-team {
+      margin: 10px 0 0 !important; font-family: 'Archivo', sans-serif; font-variation-settings: "wdth" 118, "wght" 800;
+      font-size: clamp(56px, 9.5vw, 132px) !important; line-height: .84; letter-spacing: -.005em; text-transform: uppercase; color: var(--text);
+      max-width: 62%;
+    }
+    [data-theme="court-lines"] .villain-team.long { font-size: clamp(40px, 6.5vw, 92px) !important; }
+    [data-theme="court-lines"] .villain-team .vt-a { display: block; }
+    [data-theme="court-lines"] .villain-team .vt-b { display: block; -webkit-text-stroke: 1.5px var(--text); color: transparent; }
+    [data-theme="court-lines"] .villain-poster-side { display: block; position: absolute; right: 32px; top: 30px; text-align: right; }
+    [data-theme="court-lines"] .villain-poster-side .vps-v {
+      font-family: 'Archivo', sans-serif; font-variation-settings: "wdth" 110, "wght" 800; font-size: clamp(34px, 5vw, 64px); line-height: .9;
+      font-variant-numeric: tabular-nums; color: var(--text);
+    }
+    [data-theme="court-lines"] .villain-poster-side .vps-v em { font-style: normal; color: var(--clay); }
+    [data-theme="court-lines"] .villain-poster-side .vps-k { font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted); margin-top: 6px; }
+    [data-theme="court-lines"] .villain-players,
+    [data-theme="court-lines"] .villain-names,
+    [data-theme="court-lines"] .villain-arch { display: none !important; }
+    [data-theme="court-lines"] .villain-band {
+      display: block; margin-top: auto; background: var(--clay); color: #141312; overflow: hidden; padding-block: 11px; border-top: 1px solid var(--clay);
+    }
+    [data-theme="court-lines"] .villain-track {
+      display: flex; gap: 44px; white-space: nowrap; font-family: 'Archivo', sans-serif; font-variation-settings: "wdth" 115, "wght" 800;
+      font-size: 15px; text-transform: uppercase; letter-spacing: .02em; width: max-content;
+    }
+    [data-theme="court-lines"] .villain-track span { padding-right: 44px; }
+    @media (prefers-reduced-motion: no-preference) {
+      [data-theme="court-lines"] .villain-track { animation: pvTicker 26s linear infinite; }
+      [data-theme="court-lines"] .villain-band:hover .villain-track { animation-play-state: paused; }
+    }
+    @keyframes pvTicker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    [data-theme="court-lines"] .no-villain { padding: 40px 32px; }
+    [data-theme="court-lines"] .no-villain h3 { color: var(--text); }
+    @media (max-width: 760px) {
+      [data-theme="court-lines"] .villain-poster-top { padding: 22px 18px 18px; }
+      [data-theme="court-lines"] .villain-team { max-width: 100%; font-size: clamp(44px, 14vw, 84px) !important; }
+      [data-theme="court-lines"] .villain-team.long { font-size: clamp(32px, 10vw, 60px) !important; }
+      [data-theme="court-lines"] .villain-poster-side { position: static; text-align: left; margin-top: 16px; }
+      [data-theme="court-lines"] .villain-track { font-size: 13px; }
+    }
+
     /* -- heroes: charcoal field with court lines; the champion card alone gets terracotta -- */
     [data-theme="court-lines"] .players-hero,
     [data-theme="court-lines"] .teams-hero,
@@ -2662,7 +2721,6 @@
       box-shadow: inset 0 -2px 0 var(--clay) !important;
       color: var(--text) !important;
     }
-    [data-theme="court-lines"] .villain-card,
     [data-theme="court-lines"] .matchday-countdown {
       background: linear-gradient(160deg, #B5532E 0%, #8F3C1F 100%) !important;
       border: 1px solid #B5532E !important;
@@ -6595,16 +6653,45 @@
       if (villain && villain.matches > 0) {
         vc.style.display = '';
         const { p1, p2 } = getTeamPlayers(villain);
+        // Poster data (used by the Court Lines theme; harmless elsewhere)
+        const vWords = String(villain.name || '').trim().split(/\s+/);
+        const vHead = vWords.length > 1 ? esc(vWords.slice(0, -1).join(' ')) : esc(vWords[0] || '');
+        const vTail = vWords.length > 1 ? esc(vWords[vWords.length - 1]) : '';
+        const vLong = String(villain.name || '').length > 11 ? ' long' : '';
+        const vRate = villain.matches ? Math.round((villain.wins / villain.matches) * 100) : 0;
+        let vStreak = 0, vStreakType = '';
+        tm.filter(m => m.team1_id === villain.id || m.team2_id === villain.id).forEach(m => {
+          const won = m.winner_id === villain.id;
+          if (!vStreakType || (won ? 'W' : 'L') === vStreakType) { vStreakType = won ? 'W' : 'L'; vStreak++; }
+          else { vStreakType = won ? 'W' : 'L'; vStreak = 1; }
+        });
+        const vChaser = dayRankings[1] ? `${esc(dayRankings[1].name)} chasing ${dayRankings[1].wins}W–${dayRankings[1].losses}L` : 'Unchallenged';
+        const vDate = displayMatchday?.date ? new Date(displayMatchday.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+        const vTicker = [
+          `${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}`,
+          esc(displayMatchday?.venue || ''),
+          vDate,
+          `${vRate}% win rate`,
+          vStreak ? `Streak ${vStreakType}${vStreak}` : '',
+          vChaser
+        ].filter(Boolean).join(' ✦ ') + ' ✦ ';
         vc.innerHTML = `
-          <div class="villain-crown">👑</div>
-          <div class="villain-label">${isViewingPast ? 'DAY WINNER' : 'THE VILLAINS'}</div>
-          <div class="villain-team">${esc(villain.name)}</div>
+          <div class="villain-poster-top">
+            <div class="villain-crown">👑</div>
+            <div class="villain-label">${isViewingPast ? 'DAY WINNER' : 'THE VILLAINS'}</div>
+            <div class="villain-team${vLong}"><span class="vt-a">${vHead}</span>${vTail ? ` <span class="vt-b">${vTail}</span>` : ''}</div>
+            <div class="villain-poster-side">
+              <div class="vps-v">${villain.wins}W<em>–${villain.losses}L</em></div>
+              <div class="vps-k">${isViewingPast ? 'Final record' : "Today's record"}</div>
+            </div>
+          </div>
           <div class="villain-players">${av(p1,'lg')}<span class="villain-amp">&</span>${av(p2,'lg')}</div>
           <div class="villain-names">${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}</div>
           <div class="villain-arch">
             <span class="villain-arch-label">${isViewingPast ? 'FINAL RECORD' : "TODAY'S RECORD"}</span>
             <span class="villain-arch-count">${villain.wins}W - ${villain.losses}L</span>
           </div>
+          <div class="villain-band" aria-hidden="true"><div class="villain-track"><span>${vTicker}</span><span>${vTicker}</span></div></div>
         `;
       } else {
         vc.style.display = '';
