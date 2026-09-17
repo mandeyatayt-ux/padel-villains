@@ -2943,7 +2943,16 @@
     [data-theme="court-lines"] .nav-item.active .nav-icon { color: var(--clay); }
     [data-theme="court-lines"] .md-mode-btn-title .nav-icon { color: currentColor; }
 
-  </style>
+  
+    /* Scorer lock strip + read-only cockpit */
+    .md-scorer-strip{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.2px}
+    .md-scorer-strip.is-scorer{background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success)}
+    .md-scorer-strip.is-viewer{background:color-mix(in srgb,var(--gold,#D4A017) 16%,transparent);color:var(--gold,#D4A017)}
+    .md-scorer-strip .md-scorer-dot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in srgb,currentColor 25%,transparent)}
+    .md-scorer-strip .btn{margin-left:auto}
+    .md-readonly .md-cc-input{pointer-events:none;opacity:.45}
+    .md-readonly #mdCockpitCourts button,.md-readonly #mdRailQueueWrap button{pointer-events:none;opacity:.45}
+</style>
 </head>
 <body>
   <!-- ===== LOGIN SCREEN ===== -->
@@ -3882,6 +3891,8 @@
 
       <!-- Live Match Day Section — Court Assignment View -->
       <div id="mdLiveSection" style="display:none">
+        <!-- Scorer lock strip: who holds write access to this match day -->
+        <div id="mdScorerStrip" class="md-scorer-strip" style="display:none"></div>
         <!-- Sticky Header -->
         <div class="md-sticky" id="mdStickyHeader">
           <div class="md-sticky-row">
@@ -5417,11 +5428,34 @@
     })();
     
     // Generate a unique match ID — globally unique, collision-proof
+    // Random uid — ONLY for ad-hoc matches with no match day context.
     function generateMatchUID() {
       const ts = Date.now().toString(36);
       const rand = Math.random().toString(36).substring(2, 10);
       return `m_${ts}_${rand}_${PV_DEVICE_ID.substring(3, 9)}`;
     }
+    // Deterministic uid: same match day + round + sides => same uid on every
+    // device, every retry. Upserting on match_uid is therefore idempotent and
+    // two scorers saving the same game can never create two rows.
+    function mdMatchUid({ round, t1, t2, p1, p2, mdId }) {
+      const md = mdId ?? activeMatchday?.id;
+      if (!md) return generateMatchUID();
+      const side = (t1 || t2)
+        ? [String(t1 ?? ''), String(t2 ?? '')].sort().join('~')
+        : [(p1 || []).slice().sort().join('.'), (p2 || []).slice().sort().join('.')].sort().join('~');
+      let r = round;
+      if (r == null) {
+        // No round (manual queue add): sequence by how many times these
+        // sides have already met today, so a rematch gets its own uid.
+        const seen = [...matches, ...ongoingMatches].filter(m =>
+          String(m.matchday_id) === String(md) && String(m.match_uid || '').startsWith(`md${md}|x`) &&
+          String(m.match_uid).endsWith(`|${side}`)).length;
+        r = 'x' + (seen + 1);
+      }
+      return `md${md}|${typeof r === 'string' ? r : 'r' + r}|${side}`;
+    }
+    function mdActiveId() { return activeMatchday?.id ?? null; }
+    function mdIdForDate(date) { return (matchdays.find(md => md.date === date) || {}).id ?? null; }
     
     // Generate a numeric ID for Supabase (bigint NOT NULL)
     function generateNumericId() {
@@ -5454,6 +5488,99 @@
       }
     }
     
+    // ===== SCORER LOCK =====
+    // One device scores a match day. Everyone else is read-only on the
+    // cockpit. The lock lives on matchdays.scorer_device_id; pv_claim_scorer
+    // is atomic on the server. Offline, we optimistically assume we hold it
+    // (the claim is queued and applied on reconnect).
+    function mdIsScorer(md = activeMatchday) {
+      if (!md) return true;
+      return !md.scorer_device_id || md.scorer_device_id === PV_DEVICE_ID;
+    }
+    function mdScorerLabel(md = activeMatchday) {
+      const d = md?.scorer_device_id || '';
+      return d ? d.slice(-6).toUpperCase() : '';
+    }
+    async function mdClaimScorer(force = false) {
+      if (!activeMatchday) return true;
+      if (!supabaseClient || isOffline) {
+        activeMatchday.scorer_device_id = PV_DEVICE_ID;
+        addToPendingSync({ type: 'rpc', fn: 'pv_claim_scorer', args: { p_matchday_id: activeMatchday.id, p_device_id: PV_DEVICE_ID, p_force: !!force }, key: 'claim_' + activeMatchday.id });
+        saveLocal();
+        return true;
+      }
+      try {
+        const { data, error } = await supabaseClient.rpc('pv_claim_scorer', { p_matchday_id: activeMatchday.id, p_device_id: PV_DEVICE_ID, p_force: !!force });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row) {
+          const i = matchdays.findIndex(x => String(x.id) === String(row.id));
+          if (i > -1) matchdays[i] = row;
+          activeMatchday = row;
+          saveLocal();
+        }
+        return mdIsScorer();
+      } catch (e) {
+        console.warn('claim scorer failed:', e.message);
+        // Can't reach server: behave as offline
+        activeMatchday.scorer_device_id = PV_DEVICE_ID;
+        addToPendingSync({ type: 'rpc', fn: 'pv_claim_scorer', args: { p_matchday_id: activeMatchday.id, p_device_id: PV_DEVICE_ID, p_force: !!force }, key: 'claim_' + activeMatchday.id });
+        return true;
+      }
+    }
+    async function mdReleaseScorer() {
+      if (!activeMatchday || !supabaseClient) return;
+      try { await supabaseClient.rpc('pv_release_scorer', { p_matchday_id: activeMatchday.id, p_device_id: PV_DEVICE_ID }); } catch (e) {}
+    }
+    // Gate for every cockpit write. Returns true if this device may score.
+    function mdAssertScorer(action = 'score') {
+      if (mdIsScorer()) return true;
+      toast(`This match day is being scored on another device (${mdScorerLabel()}). Tap "Take over" to ${action} from here.`, 'error');
+      return false;
+    }
+    async function mdTakeOverScoring() {
+      if (!currentUser?.is_admin) { toast('Only admins can take over scoring', 'error'); return; }
+      if (!confirm('Take over scoring on this device? The other device becomes read-only.')) return;
+      const ok = await mdClaimScorer(true);
+      if (ok) { toast('You are now the scorer', 'success'); renderMatchDay(); }
+    }
+
+    // ===== CONNECTIVITY HEARTBEAT =====
+    // navigator.onLine lies on club wifi with no uplink. Ping Supabase every
+    // 30s (and on demand) and drive isOffline from the real answer.
+    let _hbTimer = null;
+    async function pvHeartbeat() {
+      if (!SUPABASE_URL || SUPABASE_URL === 'YOUR_SUPABASE_URL') return;
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 6000);
+      let ok = false;
+      try {
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/venues?select=id&limit=1`, {
+          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+          signal: ctrl.signal, cache: 'no-store'
+        });
+        ok = r.ok;
+      } catch (e) { ok = false; }
+      clearTimeout(t);
+      const was = isOffline;
+      isOffline = !ok;
+      const banner = document.getElementById('offlineBanner');
+      if (banner) banner.classList.toggle('show', isOffline);
+      if (was && !isOffline) {
+        toast('Back online', 'success');
+        processPendingSync().then(() => { if (supabaseClient) fetchFreshDataInBackground(); });
+      } else if (!was && isOffline) {
+        toast('No connection — scoring continues locally', 'info');
+      }
+      updateSyncBadge();
+      return ok;
+    }
+    function pvStartHeartbeat() {
+      if (_hbTimer) return;
+      pvHeartbeat();
+      _hbTimer = setInterval(() => { if (!document.hidden) pvHeartbeat(); }, 30000);
+    }
+
     // === CENTRALIZED: Save completed match to Supabase ===
     async function saveMatchToSupabase(matchData) {
       // Ensure required fields
@@ -5474,7 +5601,8 @@
         scores: matchData.scores,
         winner_id: matchData.winner_id || null,
         created_at: matchData.created_at,
-        device_id: matchData.device_id
+        device_id: matchData.device_id,
+        matchday_id: matchData.matchday_id ?? mdActiveId()
       };
       // Optional columns — include if present
       if (matchData.started_at) sbData.started_at = matchData.started_at;
@@ -5483,20 +5611,36 @@
       
       if (supabaseClient && !isOffline) {
         try {
-          const { data, error } = await supabaseClient.from('matches').insert([sbData]).select().single();
+          // Idempotent: same match_uid => same row. ignoreDuplicates keeps the
+          // first save; a genuine re-score goes through the edit path.
+          const { data, error } = await supabaseClient.from('matches')
+            .upsert([sbData], { onConflict: 'match_uid', ignoreDuplicates: true }).select().maybeSingle();
           if (error) {
-            // If unique constraint violation on match_uid, it's a duplicate — not an error
-            if (error.code === '23505' || error.message?.includes('match_uid')) {
-              console.log('Duplicate match_uid detected, skipping:', matchData.match_uid);
-              return { success: true, duplicate: true, data: matchData };
+            if (String(error.message || '').includes('MATCHDAY_CLOSED')) {
+              toast('That match day is closed — game not saved', 'error');
+              return { success: false, closed: true, data: matchData, error: error.message };
             }
             throw error;
+          }
+          if (!data) {
+            // Row already existed. If it was soft-deleted, revive it with these scores.
+            const { data: existing } = await supabaseClient.from('matches').select('*').eq('match_uid', sbData.match_uid).maybeSingle();
+            if (existing && existing.deleted_at) {
+              const { data: revived } = await supabaseClient.from('matches')
+                .update({ deleted_at: null, deleted_by: null, scores: sbData.scores, winner_id: sbData.winner_id, finalized_at: sbData.finalized_at || new Date().toISOString() })
+                .eq('id', existing.id).select().maybeSingle();
+              logAudit('match_revived', revived || existing, 'Re-saved a deleted match');
+              return { success: true, data: revived || existing };
+            }
+            console.log('Duplicate match_uid, already on server:', matchData.match_uid);
+            return { success: true, duplicate: true, data: existing || matchData };
           }
           // Log to audit trail
           logAudit('match_saved', data || sbData, 'Match saved to Supabase');
           return { success: true, data: data || matchData };
         } catch (e) {
           console.warn('Supabase match save failed, queuing offline:', e.message);
+          if (/fetch|network|timeout|Failed to/i.test(String(e.message))) { isOffline = true; document.getElementById('offlineBanner')?.classList.add('show'); }
           addToPendingSync({ type: 'insert', table: 'matches', data: sbData, match_uid: matchData.match_uid });
           logAudit('match_saved_offline', sbData, 'Saved offline: ' + e.message);
           return { success: false, offline: true, data: matchData, error: e.message };
@@ -5515,11 +5659,16 @@
       if (!matchData.match_uid) matchData.match_uid = generateMatchUID();
       if (!matchData.started_at) matchData.started_at = new Date().toISOString();
       if (!matchData.device_id) matchData.device_id = PV_DEVICE_ID;
+      if (matchData.matchday_id === undefined) matchData.matchday_id = mdActiveId();
       
       if (supabaseClient && !isOffline) {
         try {
-          const { data, error } = await supabaseClient.from('ongoing_matches').insert([matchData]).select().single();
-          if (error) throw error;
+          const { data, error } = await supabaseClient.from('ongoing_matches')
+            .upsert([matchData], { onConflict: 'match_uid', ignoreDuplicates: true }).select().maybeSingle();
+          if (error) {
+            if (String(error.message || '').includes('MATCHDAY_CLOSED')) { toast('Match day is closed', 'error'); return { success: false, closed: true, data: matchData }; }
+            throw error;
+          }
           logAudit('match_queued', data || matchData, 'Match queued');
           return { success: true, data: data || matchData };
         } catch (e) {
@@ -5592,6 +5741,8 @@
     let pendingSync = JSON.parse(localStorage.getItem('pv_pending_sync') || '[]');
     
     function addToPendingSync(operation) {
+      // Deduplicate keyed ops (e.g. scorer claims) — keep the latest
+      if (operation.key) pendingSync = pendingSync.filter(p => p.key !== operation.key);
       // Deduplicate: don't queue if same match_uid already pending
       if (operation.match_uid) {
         const exists = pendingSync.some(p => p.match_uid === operation.match_uid && p.type === operation.type);
@@ -5602,10 +5753,12 @@
       updateSyncBadge();
     }
     
-    // ===== RECOVERY: restore any locally-held games the server is missing =====
-    // Sources: pv_pending_sync ops, pv_sync_dead archive, local matches[],
-    // and the live-session completed list. Upserts on match_uid conflict, so
-    // it is safe to run repeatedly.
+    // ===== RECOVERY: re-push writes THIS DEVICE made that never reached the server =====
+    // Sources are ONLY the write queue (pv_pending_sync) and its dead-letter
+    // archive (pv_sync_dead). Read caches (matches[], pv_matches, the live
+    // session's completed list) are NEVER replayed: the server is the source
+    // of truth and a cache must not be able to resurrect data the server no
+    // longer has. Upserts on match_uid, so it is safe to run repeatedly.
     async function mdRecoverLocalData() {
       if (!supabaseClient) return { restored: 0 };
       const candidates = new Map(); // match_uid -> row
@@ -5619,18 +5772,6 @@
       };
       try { JSON.parse(localStorage.getItem('pv_sync_dead') || '[]').forEach(d => { if (d.op?.table === 'matches') addCand(d.op.data); }); } catch (e) {}
       (pendingSync || []).forEach(op => { if (op.table === 'matches' && op.type !== 'delete') addCand(op.data); });
-      (matches || []).forEach(addCand);
-      (mdCompletedGames || []).forEach(g => {
-        if (g.match_uid && g.t1 && g.t2) addCand({
-          id: g.id || generateNumericId(), match_uid: g.match_uid,
-          date: activeMatchday?.date || getLocalDateStr(),
-          location: activeMatchday?.venue || '', court: g.court || '',
-          team1_id: g.t1, team2_id: g.t2,
-          scores: [[g.score1 ?? g.s1 ?? 0, g.score2 ?? g.s2 ?? 0]],
-          winner_id: (g.score1 ?? g.s1 ?? 0) > (g.score2 ?? g.s2 ?? 0) ? g.t1 : g.t2,
-          created_at: new Date().toISOString(), device_id: PV_DEVICE_ID
-        });
-      });
       // Phase 1: entities first — matches may reference a team/player that
       // only exists locally (e.g. a team created during a network outage).
       const TEAM_COLS = ['id','name','player1_id','player2_id','wins','losses','active','created_at','updated_at','is_draft'];
@@ -5639,8 +5780,7 @@
       const entityRows = { teams: new Map(), players: new Map() };
       const addEntity = (table, r) => { if (r && r.id && r.name && entityRows[table] && !entityRows[table].has(r.id)) entityRows[table].set(r.id, r); };
       try { JSON.parse(localStorage.getItem('pv_sync_dead') || '[]').forEach(d => addEntity(d.op?.table, d.op?.data)); } catch (e) {}
-      (pendingSync || []).forEach(op => { if (op.type !== 'delete') addEntity(op.table, op.data); });
-      (teams || []).forEach(t => addEntity('teams', t));
+      (pendingSync || []).forEach(op => { if (op.type !== 'delete' && op.type !== 'rpc') addEntity(op.table, op.data); });
       let entitiesPushed = 0;
       for (const [table, cols] of [['teams', TEAM_COLS], ['players', PLAYER_COLS]]) {
         for (const row of entityRows[table].values()) {
@@ -5660,14 +5800,19 @@
           team1_id: row.team1_id ?? null, team2_id: row.team2_id ?? null,
           scores: row.scores, winner_id: row.winner_id ?? null,
           created_at: row.created_at || new Date().toISOString(),
-          device_id: row.device_id || PV_DEVICE_ID
+          device_id: row.device_id || PV_DEVICE_ID,
+          matchday_id: row.matchday_id ?? null
         };
         if (row.started_at) clean.started_at = row.started_at;
         if (row.finalized_at) clean.finalized_at = row.finalized_at;
         if (row.md_round != null) clean.md_round = row.md_round;
         try {
           const { error } = await supabaseClient.from('matches').upsert([clean], { onConflict: 'match_uid', ignoreDuplicates: true });
-          if (error) { if (error.code === '23505') already++; else errors.push(`${row.match_uid}: ${error.message}`); }
+          if (error) {
+            if (error.code === '23505') already++;
+            else if (String(error.message || '').includes('MATCHDAY_CLOSED')) already++; // day closed: drop silently
+            else errors.push(`${row.match_uid}: ${error.message}`);
+          }
           else restored++;
         } catch (e) { errors.push(`${row.match_uid}: ${e.message}`); }
       }
@@ -5677,37 +5822,55 @@
       return { restored, errors };
     }
 
+    const PV_OP_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
     async function processPendingSync() {
       if (!supabaseClient || pendingSync.length === 0) return;
       syncStatus.syncing = true;
       updateSyncBadge();
       
       const queue = [...pendingSync];
-      let synced = 0, failed = 0;
+      let synced = 0, failed = 0, dropped = 0;
       const resolved = new Set();
+
+      // Ops scoped to a CLOSED match day are dead: the server refuses inserts
+      // for closed days anyway, and replaying them is exactly how stale
+      // devices used to resurrect old games. Same for ops older than a week.
+      let closedIds = new Set();
+      try {
+        const { data } = await supabaseClient.from('matchdays').select('id').eq('status', 'closed');
+        closedIds = new Set((data || []).map(r => String(r.id)));
+      } catch (e) {}
+      for (const op of queue) {
+        const mdId = op.data?.matchday_id ?? op.args?.p_matchday_id;
+        const stale = (op.timestamp && Date.now() - op.timestamp > PV_OP_MAX_AGE_MS);
+        const closed = mdId != null && closedIds.has(String(mdId)) && op.type !== 'delete' && !(op.table === 'matchdays');
+        if (stale || closed) { resolved.add(op); dropped++; }
+      }
       
       for (const op of queue) {
+        if (resolved.has(op)) continue;
         try {
-          if (op.type === 'insert') {
+          if (op.type === 'rpc') {
+            const { error } = await supabaseClient.rpc(op.fn, op.args || {});
+            if (error) { op._lastError = error.message; throw error; }
+            synced++; resolved.add(op);
+          } else if (op.type === 'insert') {
             let insertData = { ...op.data };
-            // Skip inserts for deliberately deleted matches
-            try {
-              const tombs = JSON.parse(localStorage.getItem('pv_deleted_uids') || '[]');
-              if (insertData.match_uid && tombs.includes(insertData.match_uid)) { synced++; resolved.add(op); continue; }
-            } catch (e) {}
-            // Ensure ID exists
             if (!insertData.id) insertData.id = generateNumericId();
-            // Ensure device_id
             if (!insertData.device_id) insertData.device_id = PV_DEVICE_ID;
             
-            const { error } = await supabaseClient.from(op.table).insert([insertData]);
+            // matches / ongoing_matches carry a deterministic match_uid, so an
+            // idempotent upsert is correct: replaying never duplicates.
+            const hasUid = !!insertData.match_uid && (op.table === 'matches' || op.table === 'ongoing_matches');
+            const { error } = hasUid
+              ? await supabaseClient.from(op.table).upsert([insertData], { onConflict: 'match_uid', ignoreDuplicates: true })
+              : await supabaseClient.from(op.table).insert([insertData]);
             if (!error) resolved.add(op);
             if (error) {
-              // ANY unique violation (pkey OR match_uid) means the row already
-              // exists server-side — the data is safe, so this is success.
-              // The old check only forgave match_uid messages; retried rows hit
-              // the PRIMARY KEY first and looped forever.
+              // Unique violation => row already on server => success.
               if (error.code === '23505') { synced++; resolved.add(op); continue; }
+              // Server says the day is closed => permanently drop.
+              if (String(error.message || '').includes('MATCHDAY_CLOSED')) { dropped++; resolved.add(op); continue; }
               op._lastError = error.message || error.code;
               throw error;
             }
@@ -5716,8 +5879,14 @@
             await supabaseClient.from(op.table).delete().eq('id', op.id);
             synced++; resolved.add(op);
           } else if (op.type === 'upsert') {
-            const { error: ue } = await supabaseClient.from(op.table).upsert([op.data]);
-            if (ue && ue.code !== '23505') { op._lastError = ue.message; throw ue; }
+            if (op.data && op.data.deleted_at && op.table === 'matches') {
+              const { error: de } = await supabaseClient.from('matches')
+                .update({ deleted_at: op.data.deleted_at, deleted_by: op.data.deleted_by || null }).eq('id', op.data.id);
+              if (de) { op._lastError = de.message; throw de; }
+            } else {
+              const { error: ue } = await supabaseClient.from(op.table).upsert([op.data]);
+              if (ue && ue.code !== '23505') { op._lastError = ue.message; throw ue; }
+            }
             synced++; resolved.add(op);
           }
         } catch (e) {
@@ -5741,6 +5910,7 @@
       pendingSync = queue.filter(op => !resolved.has(op) && (op._attempts || 0) < 8);
       localStorage.setItem('pv_pending_sync', JSON.stringify(pendingSync));
       if (synced > 0) toast(`Synced ${synced} offline change${synced > 1 ? 's' : ''}`, 'success');
+      if (dropped > 0) console.log(`Sync: dropped ${dropped} stale/closed-day op(s)`);
       if (failed > 0) toast(`${failed} change${failed > 1 ? 's' : ''} failed to sync`, 'error');
       
       syncStatus.syncing = false;
@@ -5984,7 +6154,7 @@
         const results = await Promise.all([
           supabaseClient.from('players').select('*').order('created_at'),
           supabaseClient.from('teams').select('*').order('created_at'),
-          supabaseClient.from('matches').select('*').order('date', { ascending: false }).limit(500),
+          supabaseClient.from('matches').select('*').is('deleted_at', null).order('date', { ascending: false }).limit(500),
           supabaseClient.from('venues').select('*').order('name')
         ]);
         
@@ -6046,10 +6216,24 @@
       const sIds = new Set((serverRows || []).map(x => String(x.id)));
       return [...(serverRows || []), ...(localRows || []).filter(x => !sIds.has(String(x.id)))];
     }
+    function pvQueuedMatchUids() {
+      const s = new Set();
+      (pendingSync || []).forEach(op => { if ((op.table === 'matches') && op.data?.match_uid && op.type !== 'delete' && !op.data.deleted_at) s.add(op.data.match_uid); });
+      return s;
+    }
+    function mergeMatches(serverRows, localRows) {
+      // Server rows win. Local rows survive ONLY if they are still queued for
+      // sync (this device wrote them and the server hasn't got them yet).
+      const sIds = new Set((serverRows || []).map(x => String(x.id)));
+      const sUids = new Set((serverRows || []).map(x => x.match_uid).filter(Boolean));
+      const queued = pvQueuedMatchUids();
+      return [...(serverRows || []), ...(localRows || []).filter(x =>
+        !sIds.has(String(x.id)) && !(x.match_uid && sUids.has(x.match_uid)) && x.match_uid && queued.has(x.match_uid))];
+    }
     function applyData(data) {
       players = mergeAdditive(data.players, players);
       teams = mergeAdditive(data.teams, teams);
-      matches = mergeAdditive(data.matches, matches);
+      matches = mergeMatches(data.matches, matches);
       venues = data.venues?.length ? data.venues : defaultVenues;
       ongoingMatches = data.ongoing_matches || [];
       matchdays = data.matchdays || [];
@@ -6127,7 +6311,7 @@
         const results = await Promise.all([
           supabaseClient.from('players').select('*').order('created_at'),
           supabaseClient.from('teams').select('*').order('created_at'),
-          supabaseClient.from('matches').select('*').order('date', { ascending: false }).limit(500),
+          supabaseClient.from('matches').select('*').is('deleted_at', null).order('date', { ascending: false }).limit(500),
           supabaseClient.from('venues').select('*').order('name'),
           supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false })
         ]);
@@ -8761,6 +8945,7 @@
       document.getElementById('confirmBtn').textContent = 'Close Match Day';
       
       confirmAction = async () => {
+        await mdReleaseScorer();
         const idx = matchdays.findIndex(md => md.id === activeMatchday.id);
         if (idx !== -1) {
           matchdays[idx].status = 'closed';
@@ -9706,7 +9891,7 @@
       return [...document.querySelectorAll('.md-cc-input')].some(i => i.value !== '');
     }
     setInterval(async () => {
-      if (_mdPollBusy || testMode || document.hidden || !supabaseClient) return;
+      if (_mdPollBusy || testMode || document.hidden || !supabaseClient || isOffline) return;
       const liveContext = mdStep === 'live' || ongoingMatches.some(m => m.md_round) || (activeMatchday && activeMatchday.status !== 'closed');
       if (!liveContext) return;
       if (mdScoreEntryInProgress()) return;
@@ -9715,17 +9900,15 @@
         const today = activeMatchday?.date || getLocalDateStr();
         const [o, m, md] = await Promise.all([
           supabaseClient.from('ongoing_matches').select('*').order('started_at', { ascending: false }),
-          supabaseClient.from('matches').select('*').eq('date', today),
+          supabaseClient.from('matches').select('*').eq('date', today).is('deleted_at', null),
           supabaseClient.from('matchdays').select('*').order('date', { ascending: true })
         ]);
         if (!o.error && o.data) ongoingMatches = o.data;
         if (!m.error && m.data) {
-          // ADDITIVE merge: server rows win on id collision, but local rows
-          // the server lacks (unsynced games) are PRESERVED — never dropped.
-          const serverIds = new Set(m.data.map(x => String(x.id)));
-          const serverUids = new Set(m.data.map(x => x.match_uid).filter(Boolean));
-          matches = [...m.data, ...matches.filter(x =>
-            !serverIds.has(String(x.id)) && !(x.match_uid && serverUids.has(x.match_uid)))];
+          // Today's rows from the server replace today's rows locally; other
+          // days are untouched. Local-only rows survive only while queued.
+          const others = matches.filter(x => x.date !== today);
+          matches = [...others, ...mergeMatches(m.data, matches.filter(x => x.date === today))];
         }
         if (!md.error && md.data) { matchdays = md.data; determineActiveMatchday(); }
         localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
@@ -10375,6 +10558,11 @@
 
     async function mdConfirmSchedule() {
       if (!mdGeneratedSchedule || mdGeneratedSchedule.length === 0) return;
+      const claimed = await mdClaimScorer(false);
+      if (!claimed) {
+        toast(`Another device (${mdScorerLabel()}) is already scoring this match day. Admins can take over from the cockpit.`, 'error');
+        return;
+      }
       mdStep = 'live';
       mdSessionStart = Date.now();
       mdCurrentRound = 1;
@@ -10398,7 +10586,8 @@
         
         const matchData = mdMode === 'roundrobin' || mdMode === 'draft' ? {
           id: generateNumericId(),
-          match_uid: generateMatchUID(),
+          match_uid: mdMatchUid({ round: m.round, t1: m.t1, t2: m.t2 }),
+          matchday_id: mdActiveId(),
           date: activeMatchday?.date || getLocalDateStr(),
           location: activeMatchday?.venue || '',
           court: 'Court ' + m.court,
@@ -10410,7 +10599,8 @@
           device_id: PV_DEVICE_ID
         } : {
           id: generateNumericId(),
-          match_uid: generateMatchUID(),
+          match_uid: mdMatchUid({ round: m.round, p1: m.team1, p2: m.team2 }),
+          matchday_id: mdActiveId(),
           date: activeMatchday?.date || getLocalDateStr(),
           location: activeMatchday?.venue || '',
           court: 'Court ' + m.court,
@@ -10494,7 +10684,8 @@
         for (const m of newMatches) {
           const matchData = {
             id: generateNumericId(),
-            match_uid: generateMatchUID(),
+            match_uid: mdMatchUid({ round: m.round, t1: m.t1, t2: m.t2 }),
+            matchday_id: mdActiveId(),
             date: activeMatchday?.date || getLocalDateStr(),
             location: activeMatchday?.venue || '',
             court: 'Court ' + m.court,
@@ -11129,7 +11320,26 @@
       }
     }
 
+    function renderMdScorerStrip() {
+      const el = document.getElementById('mdScorerStrip');
+      if (!el) return;
+      const live = mdStep === 'live' || ongoingMatches.some(m => m.md_round);
+      if (!activeMatchday || !live) { el.style.display = 'none'; return; }
+      el.style.display = '';
+      const section = document.getElementById('mdLiveSection');
+      if (mdIsScorer()) {
+        section?.classList.remove('md-readonly');
+        el.className = 'md-scorer-strip is-scorer';
+        el.innerHTML = `<span class="md-scorer-dot"></span><span>Scoring on this device${isOffline ? ' · offline, saving locally' : ''}</span>`;
+      } else {
+        section?.classList.add('md-readonly');
+        el.className = 'md-scorer-strip is-viewer';
+        el.innerHTML = `<span class="md-scorer-dot"></span><span>Read-only · scored on device ${esc(mdScorerLabel())}</span>` +
+          (currentUser?.is_admin ? `<button class="btn btn-sm" onclick="mdTakeOverScoring()">Take over</button>` : '');
+      }
+    }
     function renderMDLive() {
+      renderMdScorerStrip();
       // Spectator devices have no local session (mdGeneratedSchedule is
       // per-device) but must still see live courts from server-synced
       // ongoing matches.
@@ -11367,6 +11577,7 @@
     // isn't completed, isn't already on a court, and none of its teams
     // (or players, in randomiser mode) are currently playing.
     async function mdAutoFill() {
+      if (!mdIsScorer()) return; // spectators never write to the queue
       if (mdStep !== 'live' || !mdGeneratedSchedule || mdCourts < 1) return;
       const completedSids = new Set(mdCompletedGames.map(m => m.sid));
 
@@ -11403,7 +11614,10 @@
 
         const base = {
           id: generateNumericId(),
-          match_uid: generateMatchUID(),
+          match_uid: (mdMode === 'randomiser')
+            ? mdMatchUid({ round: next.round, p1: next.team1, p2: next.team2 })
+            : mdMatchUid({ round: next.round, t1: next.t1, t2: next.t2 }),
+          matchday_id: mdActiveId(),
           date: activeMatchday?.date || getLocalDateStr(),
           location: activeMatchday?.venue || '',
           court: label,
@@ -11445,6 +11659,7 @@
 
     // Cancel a match on court
     async function mdCancelCourtMatch(matchId) {
+      if (!mdAssertScorer('cancel matches')) return;
       if (!confirm('Cancel this match? It will be removed entirely.')) return;
       const match = ongoingMatches.find(m => m.id === matchId);
       ongoingMatches = ongoingMatches.filter(m => m.id !== matchId);
@@ -11468,6 +11683,7 @@
     }
 
     async function mdReturnToQueue(matchId) {
+      if (!mdAssertScorer('reorder the queue')) return;
       const match = ongoingMatches.find(m => m.id === matchId);
       if (!match) return;
       if (!confirm('Return this match to the back of the queue?')) return;
@@ -11569,7 +11785,8 @@
       if (!freeCourt) freeCourt = heldFallback;
       if (!freeCourt) { toast('All courts are busy', 'error'); return; }
       const matchData = {
-        id: generateNumericId(), match_uid: generateMatchUID(),
+        id: generateNumericId(), match_uid: mdMatchUid({ round: match.round, t1: match.t1, t2: match.t2 }),
+        matchday_id: mdActiveId(),
         date: activeMatchday?.date || getLocalDateStr(),
         location: activeMatchday?.venue || '',
         court: 'Court ' + freeCourt,
@@ -11739,6 +11956,7 @@
     let _mdSaving = false;
     async function mdInlineFinalize(matchId) {
       if (_mdSaving) return;
+      if (!mdAssertScorer('save scores')) return;
       _mdSaving = true;
       try {
       const s1El = document.getElementById(`inlineScore1_${matchId}`);
@@ -11761,6 +11979,7 @@
         scores: [[scoreA, scoreB]], score1: scoreA, score2: scoreB,
         winner_id: wid, started_at: m.started_at || null,
         finalized_at: new Date().toISOString(), md_round: m.md_round || null,
+        matchday_id: m.matchday_id ?? mdActiveId(),
         device_id: PV_DEVICE_ID, created_at: new Date().toISOString(),
         ...(isAmericano
           ? { team1_players: m.team1_players, team2_players: m.team2_players, is_americano: true }
@@ -12062,7 +12281,8 @@
       const winnerId = side === 'kings' ? kingsId : challengerId;
       const matchRecord = {
         id: generateNumericId(),
-        match_uid: generateMatchUID(),
+        match_uid: mdMatchUid({ t1: kingsId, t2: challengerId }),
+        matchday_id: mdActiveId(),
         date: activeMatchday?.date || getLocalDateStr(),
         location: activeMatchday?.venue || '',
         court: 'KOTC',
@@ -12307,7 +12527,8 @@
       // Save as match record (game_mode: randomiser, no winner_id to skip team rankings)
       const matchRecord = {
         id: generateNumericId(),
-        match_uid: generateMatchUID(),
+        match_uid: mdMatchUid({ round: m.round, p1: m.team1, p2: m.team2 }),
+        matchday_id: mdActiveId(),
         date: activeMatchday?.date || getLocalDateStr(),
         location: activeMatchday?.venue || '',
         court: 'Random Court ' + m.court,
@@ -13108,7 +13329,8 @@
       
       const matchData = {
         id: generateNumericId(),
-        match_uid: generateMatchUID(),
+        match_uid: mdMatchUid({ t1, t2, mdId: mdIdForDate(date) }),
+        matchday_id: mdIdForDate(date),
         date,
         location: activeMatchday?.venue || '',
         court,
@@ -13152,7 +13374,8 @@
       
       const matchData = {
         id: generateNumericId(),
-        match_uid: generateMatchUID(),
+        match_uid: mdMatchUid({ t1, t2, mdId: mdIdForDate(date) }),
+        matchday_id: mdIdForDate(date),
         date,
         location: activeMatchday?.venue || '',
         court,
@@ -13223,6 +13446,7 @@
       
       const m = ongoingMatches.find(match => String(match.id) === String(idRaw));
       if (!m) { toast('Match not found in queue', 'error'); return; }
+      if (m.md_round && !mdAssertScorer('finalize')) return;
       
       // Duplicate check using match_uid
       if (m.match_uid && isDuplicateMatch(m.team1_id, m.team2_id, m.date, m.match_uid)) {
@@ -13253,6 +13477,7 @@
         finalized_at: new Date().toISOString(),
         md_round: m.md_round || null,
         game_mode: m.game_mode || null,
+        matchday_id: m.matchday_id ?? mdActiveId(),
         device_id: PV_DEVICE_ID,
         created_at: new Date().toISOString()
       };
@@ -13444,8 +13669,21 @@
             updatePayload.team1_id = newTeam1Id;
             updatePayload.team2_id = newTeam2Id;
           }
-          await supabaseClient.from('matches').update(updatePayload).eq('id', id);
-        } catch (e) { toast('Error saving', 'error'); return; }
+          // Optimistic concurrency: only apply if nobody changed the row since
+          // we loaded it. Zero rows back => someone else edited first.
+          let q = supabaseClient.from('matches').update(updatePayload).eq('id', id);
+          if (m.updated_at) q = q.eq('updated_at', m.updated_at);
+          const { data: upd, error } = await q.select();
+          if (error) throw error;
+          if (!upd || upd.length === 0) {
+            const { data: fresh } = await supabaseClient.from('matches').select('*').eq('id', id).maybeSingle();
+            if (fresh) matches[idx] = fresh; else matches[idx] = m;
+            closeModal('editMatch'); renderAll();
+            toast('This match was changed on another device — showing the latest version', 'error');
+            return;
+          }
+          matches[idx] = upd[0];
+        } catch (e) { matches[idx] = m; toast('Error saving', 'error'); return; }
       } else {
         saveLocal();
       }
@@ -13485,10 +13723,20 @@
     async function deleteMatch(id) {
       const m = matches.find(match => String(match.id) === String(id));
       
-      if (supabaseClient) {
+      // SOFT delete: the tombstone lives on the server (deleted_at), so every
+      // device — including ones that were offline — learns about it on the
+      // next fetch. Nothing depends on a localStorage list any more.
+      const tomb = { deleted_at: new Date().toISOString(), deleted_by: currentUser?.username || PV_DEVICE_ID };
+      if (supabaseClient && !isOffline) {
         try {
-          await supabaseClient.from('matches').delete().eq('id', id);
-        } catch (e) { toast('Error deleting', 'error'); return; }
+          const { error } = await supabaseClient.from('matches').update(tomb).eq('id', id);
+          if (error) throw error;
+        } catch (e) {
+          addToPendingSync({ type: 'upsert', table: 'matches', data: { id: Number(id) || id, match_uid: m?.match_uid, ...tomb }, key: 'del_' + id });
+          toast('Delete queued — will sync when online', 'info');
+        }
+      } else if (supabaseClient) {
+        addToPendingSync({ type: 'upsert', table: 'matches', data: { id: Number(id) || id, match_uid: m?.match_uid, ...tomb }, key: 'del_' + id });
       }
       
       logAudit('match_deleted', m, { 
@@ -14485,16 +14733,7 @@
     
     // ===== OFFLINE MODE =====
     function setupOfflineDetection() {
-      window.addEventListener('online', () => {
-        isOffline = false;
-        document.getElementById('offlineBanner').classList.remove('show');
-        toast('Back online!', 'success');
-        updateSyncBadge();
-        // Sync pending offline writes first, then refresh data
-        processPendingSync().then(() => {
-          if (supabaseClient) fetchData();
-        });
-      });
+      window.addEventListener('online', () => { pvHeartbeat(); });
       
       window.addEventListener('offline', () => {
         isOffline = true;
@@ -14511,6 +14750,8 @@
         isOffline = true;
         document.getElementById('offlineBanner').classList.add('show');
       }
+      // Real connectivity comes from the heartbeat, not navigator.onLine
+      pvStartHeartbeat();
     }
     
     // Enhanced cache for offline mode
