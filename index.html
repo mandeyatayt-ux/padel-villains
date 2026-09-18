@@ -11673,6 +11673,7 @@
       }
       
       // --- UP NEXT QUEUE (new engine: pending schedule matches, NOT on-court) ---
+      if (isActiveView && mdStep === 'live' && mdIsScorer()) { try { mdTopUpQueue(); } catch (e) {} }
       const pendingQueue = (isActiveView && mdStep === 'live') ? mdGetPendingQueue() : [];
       const railQueueWrap = document.getElementById('mdRailQueueWrap');
       // Cockpit shows when THIS device has a queue OR the server has live
@@ -12471,6 +12472,7 @@
       mdReallocateCourts();
       toast(`Court ${mdCourts} added — matches redistributed`, 'success');
       renderMDLive();
+      if (mdStep === 'live') mdAutoFill().then(() => { renderMDLive(); try { renderMdInfoHub(); } catch (e) {} });
     }
 
     // NEW ENGINE: courts are assigned at fill time, so there is nothing to
@@ -12484,9 +12486,39 @@
     // eligible match from the schedule queue. A match is eligible when it
     // isn't completed, isn't already on a court, and none of its teams
     // (or players, in randomiser mode) are currently playing.
+    // Keep at least one playable fixture per court in the queue while teams are free,
+    // so the Up Next rail never shows "queue empty" with people sitting out.
+    function mdTopUpQueue() {
+      if (mdStep !== 'live' || !mdGeneratedSchedule) return;
+      const busyTeams = new Set(), busyPlayers = new Set();
+      ongoingMatches.filter(m => m.md_round).forEach(m => {
+        if (m.team1_id) busyTeams.add(m.team1_id);
+        if (m.team2_id) busyTeams.add(m.team2_id);
+        (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(p));
+      });
+      const queuedTeams = new Set(), queuedPlayers = new Set();
+      let guard = 0;
+      while (guard++ < 12) {
+        const pending = mdGetPendingQueue();
+        pending.forEach(m => { if (m.t1) queuedTeams.add(m.t1); if (m.t2) queuedTeams.add(m.t2); (m.team1 || []).concat(m.team2 || []).forEach(p => queuedPlayers.add(p)); });
+        const playable = pending.filter(m => mdMode === 'randomiser'
+          ? !(m.team1 || []).concat(m.team2 || []).some(p => busyPlayers.has(p))
+          : !((m.t1 && busyTeams.has(m.t1)) || (m.t2 && busyTeams.has(m.t2)))).length;
+        if (playable >= Math.max(1, mdCourts)) break;
+        // only mint from teams/players not busy AND not already waiting in the queue
+        const exclTeams = new Set([...busyTeams, ...queuedTeams]);
+        const exclPlayers = new Set([...busyPlayers, ...queuedPlayers]);
+        const f = mdMintBonusFixture(exclTeams, exclPlayers, true);
+        if (!f) break;
+        if (f.t1) { queuedTeams.add(f.t1); queuedTeams.add(f.t2); }
+        (f.team1 || []).concat(f.team2 || []).forEach(p => queuedPlayers.add(p));
+      }
+    }
+
     async function mdAutoFill() {
       if (!mdIsScorer()) return; // spectators never write to the queue
       if (mdStep !== 'live' || !mdGeneratedSchedule || mdCourts < 1) return;
+      mdTopUpQueue();
       const completedSids = new Set(mdCompletedGames.map(m => m.sid));
 
       // Who is on court right now?
@@ -12554,7 +12586,7 @@
     // No playable fixture in the queue but teams are free? Mint one so courts never idle.
     // Picks the two free sides that have met the least today (a rematch is fine), then the
     // ones who have played the fewest games. Appended to the schedule so the queue stays truthful.
-    function mdMintBonusFixture(busyTeams, busyPlayers) {
+    function mdMintBonusFixture(busyTeams, busyPlayers, quiet) {
       if (!mdGeneratedSchedule) return null;
       const played = (aKey, bKey) => mdCompletedGames.filter(m => {
         const k = m.t1 ? mdSideKey(m.t1, m.t2) : mdSideKey((m.team1||[]).slice().sort().join('.'), (m.team2||[]).slice().sort().join('.'));
@@ -12581,7 +12613,7 @@
         fixture = { t1: best[0], t2: best[1], round: nextRound, court: 1, sid, bonus: true };
       }
       mdGeneratedSchedule.push(fixture);
-      try { toast('Court free — added a bonus match so nobody sits', 'info'); } catch (e) {}
+      if (!quiet) { try { toast('Court free — added a bonus match so nobody sits', 'info'); } catch (e) {} }
       return fixture;
     }
 
