@@ -3742,6 +3742,52 @@
     [data-theme="court-green"] .filter-btn { border-radius: 0 !important; font-family: 'Manrope', sans-serif; font-weight: 800; }
     [data-theme="court-green"] .filter-btn.active { background: var(--cg-lime) !important; color: var(--cg-green) !important; }
 
+    /* ===== COURT GREEN: compact match day + drag-to-court ===== */
+    #mdLiveStandings { display: none !important; }
+    [data-theme="court-green"] #matchday .card { padding: 14px !important; margin-bottom: 12px !important; }
+    [data-theme="court-green"] #matchday .card h3, [data-theme="court-green"] #matchday .card h4 { font-size: 13px !important; margin-bottom: 8px !important; }
+    [data-theme="court-green"] #mdInfoResults > div { gap: 12px !important; }
+    [data-theme="court-green"] #mdInfoResultsList { max-height: 220px !important; }
+    [data-theme="court-green"] #mdInfoResultsList > div, [data-theme="court-green"] #mdInfoStandings > div { padding: 5px 0 !important; font-size: 13px; }
+    [data-theme="court-green"] #mdInfoMyDay .myd-title { padding: 8px 12px; }
+    [data-theme="court-green"] #mdInfoMyDay .myd-title b { font-size: 20px !important; }
+    [data-theme="court-green"] #mdInfoMyDay .myd-big { padding: 10px 12px 8px; }
+    [data-theme="court-green"] #mdInfoMyDay .myd-n { font-size: 40px !important; }
+    [data-theme="court-green"] #mdInfoMyDay .myd-side { padding: 8px 12px; gap: 2px; font-size: 11px; }
+    [data-theme="court-green"] #mdInfoMyDay .myd-row { min-height: 36px; }
+    [data-theme="court-green"] #mdInfoMyDay .myd-sec { padding: 6px 12px 4px; }
+    [data-theme="court-green"] #mdTeamPerformance select { padding: 8px 12px !important; font-family: 'Manrope', sans-serif !important; border: 1.5px solid var(--border) !important; background: var(--cg-green) !important; color: var(--cg-cream) !important; }
+    [data-theme="court-green"] #mdTeamPerfStats > div { border: 0 !important; padding: 10px 0 0 !important; }
+    [data-theme="court-green"] #mdTeamPerfStats [style*="grid-template-columns"] { gap: 8px !important; }
+    [data-theme="court-green"] #mdTeamPerfStats [style*="grid-template-columns"] > div { padding: 8px 10px !important; }
+    [data-theme="court-green"] #mdTeamPerfStats [style*="grid-template-columns"] > div > div:first-child { font-size: 26px !important; font-family: 'Anton', Impact, sans-serif; }
+    [data-theme="court-green"] #mdTeamPerfMatches > div { padding: 6px 0 !important; font-size: 13px; }
+    [data-theme="court-green"] .md-hero, [data-theme="court-green"] #mdInfoHero { padding: 14px 16px !important; }
+    [data-theme="court-green"] .md-mode-btn { padding: 10px 12px !important; }
+    [data-theme="court-green"] .md-mode-btn-desc { font-size: 11px !important; }
+    [data-theme="court-green"] .md-config-card { padding: 10px 12px !important; }
+    [data-theme="court-green"] .md-config-btn { padding: 8px 10px !important; font-size: 14px !important; }
+    [data-theme="court-green"] .md-config-label { font-size: 10px !important; margin-bottom: 6px !important; }
+    [data-theme="court-green"] .md-team-btn, [data-theme="court-green"] .md-americano-btn { padding: 6px 10px !important; font-size: 12px !important; }
+    [data-theme="court-green"] #mdInfoOngoing { margin-bottom: 12px !important; }
+    [data-theme="court-green"] #mdCockpitRail { padding: 14px 14px 12px; }
+    [data-theme="court-green"] #mdRailQueueWrap h3 { font-size: 24px !important; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row { padding: 9px 0 !important; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row::before { font-size: 26px; min-width: 36px; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row > span[style*="flex:1"] { font-size: 14px !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-hd { padding: 9px 14px !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-num { font-size: 19px !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-body { padding: 12px 14px 0 !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-cc-input, [data-theme="court-green"] #mdCockpitCourts .md-score-save, [data-theme="court-green"] #mdCockpitCourts .md-cc-score-row .btn { height: 54px !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-cc-input { font-size: 34px !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-idle-msg { padding: 14px 14px 16px !important; font-size: 13px !important; }
+    /* drag affordances */
+    .md-q-row[draggable="true"] { cursor: grab; }
+    .md-q-row.md-q-dragging { opacity: .4; }
+    .md-court-can-drop { outline: 2px dashed var(--cg-lime, #E6F286) !important; outline-offset: -2px; }
+    .md-court-over { background: rgba(230,242,134,.14) !important; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row[draggable="true"]::after { content: "⋮⋮"; order: 9; font-size: 14px; opacity: .35; letter-spacing: -2px; margin-left: 6px; }
+
     /* Scorer lock strip + read-only cockpit */
     .md-scorer-strip{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.2px}
     .md-scorer-strip.is-scorer{background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success)}
@@ -10701,7 +10747,7 @@
     let mdHeldCourts = new Set(JSON.parse(localStorage.getItem('pv_mdHeldCourts') || '[]'));
     function mdSaveHeldCourts() { localStorage.setItem('pv_mdHeldCourts', JSON.stringify([...mdHeldCourts])); }
     // Up Next queue: collapsed by default, shows a preview + the UP NEXT match
-    let mdQueueExpanded = false;
+    let mdQueueExpanded = true; // full queue visible by default (Tayt, 18 Sep 2026)
     function mdToggleQueueExpand() { mdQueueExpanded = !mdQueueExpanded; renderMdInfoHub(); }
     // Refresh elapsed-time displays once a minute during a live session
     setInterval(() => { if (mdStep === 'live') { try { renderMDLive(); } catch (e) {} } }, 60000);
@@ -11674,7 +11720,7 @@
           const playBtn = (!isBusy && freeUnheldCourt && currentUser?.is_admin)
             ? `<button onclick="mdSendToCourt(${idx});event.stopPropagation()" title="Send to court" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--emerald);color:white;font-size:11px;cursor:pointer;padding:0;flex-shrink:0"><i class="fas fa-play"></i></button>`
             : '';
-          return `<div class="md-q-row${isNext ? ' md-q-next' : ''}${predCourts ? ' md-q-pred' : ''}" data-pos="${String(idx + 1).padStart(2, '0')}" style="background:var(--bg-card);border:1px solid ${isNext ? 'var(--emerald)' : predCourts ? 'var(--gold)' : 'var(--border)'};border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:6px${isBusy && !predCourts ? ';opacity:0.55' : ''}">
+          return `<div class="md-q-row${isNext ? ' md-q-next' : ''}${predCourts ? ' md-q-pred' : ''}" data-pos="${String(idx + 1).padStart(2, '0')}" data-qidx="${idx}"${(!isBusy && currentUser?.is_admin) ? ' draggable="true" ondragstart="mdQueueDragStart(event)" ondragend="mdQueueDragEnd(event)"' : ''} style="background:var(--bg-card);border:1px solid ${isNext ? 'var(--emerald)' : predCourts ? 'var(--gold)' : 'var(--border)'};border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:6px${isBusy && !predCourts ? ';opacity:0.55' : ''}">
             ${posBadge}${roundBadge}
             <span style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t1Name)} <span style="color:var(--clay);font-weight:400;font-size:11px">v</span> ${esc(t2Name)}</span>
             ${busyTag}${playBtn}
@@ -12244,7 +12290,7 @@
           const roundBadge = courtMatch.md_round ? `R${courtMatch.md_round}` : '';
           const elapsedMins = courtMatch.started_at ? Math.max(0, Math.floor((Date.now() - new Date(courtMatch.started_at).getTime()) / 60000)) : null;
           const heldOcc = mdHeldCourts.has(c);
-          courtHtml += `<div class="card md-court md-court-playing" style="border-radius:14px;overflow:hidden;padding:0">
+          courtHtml += `<div class="card md-court md-court-playing" data-court="${c}" style="border-radius:14px;overflow:hidden;padding:0">
             <div class="md-court-hd" style="background:var(--brown-dark);padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
               <span class="md-court-num" style="color:var(--cream);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
               <div style="display:flex;align-items:center;gap:8px">
@@ -12293,7 +12339,7 @@
               if (!anyEligible) idleMsg = 'No playable match — queued teams are on other courts. Fills when a game finishes.';
             }
           }
-          courtHtml += `<div class="card md-court md-court-idle${held ? ' md-court-held' : ''}" style="border-radius:16px;overflow:hidden;padding:0${held ? ';opacity:0.85' : ''}">
+          courtHtml += `<div class="card md-court md-court-idle md-court-drop${held ? ' md-court-held' : ''}" data-court="${c}" ondragover="mdCourtDragOver(event)" ondragleave="mdCourtDragLeave(event)" ondrop="mdCourtDrop(event, ${c})" style="border-radius:16px;overflow:hidden;padding:0${held ? ';opacity:0.85' : ''}">
             <div class="md-court-hd" style="background:var(--brown-dark);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
               <span class="md-court-num" style="color:var(--cream);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
               <div style="display:flex;align-items:center;gap:8px">
@@ -12623,7 +12669,7 @@
     }
 
     // Send a queued match to the next free court
-    async function mdSendToCourt(queueIdx) {
+    async function mdSendToCourt(queueIdx, targetCourt) {
       const queueMatches = mdGetPendingQueue();
       const match = queueMatches[queueIdx];
       if (!match) return;
@@ -12639,7 +12685,13 @@
       }
       // Find a free court — prefer un-held; manual send may use a held court as last resort
       let freeCourt = null, heldFallback = null;
-      for (let c = 1; c <= mdCourts; c++) {
+      if (targetCourt) {
+        const tl = `Court ${targetCourt}`;
+        const tBusy = ongoingMatches.some(m => m.md_round && (m.court === tl || m.court === targetCourt || m.court === `C${targetCourt}`));
+        if (tBusy) { toast(`Court ${targetCourt} is busy`, 'error'); return; }
+        freeCourt = targetCourt; // an explicit drop may use a held court
+      }
+      for (let c = 1; c <= mdCourts && !freeCourt; c++) {
         const label = `Court ${c}`;
         const busy = ongoingMatches.some(m => m.md_round && (m.court === label || m.court === c || m.court === `C${c}`));
         if (busy) continue;
@@ -12666,7 +12718,29 @@
       toast(`${getTeam(match.t1)?.name} vs ${getTeam(match.t2)?.name} → Court ${freeCourt}`, 'success');
     }
 
-    // (drag-to-reorder removed with the hidden legacy queue; rail reorder is a planned feature)
+    // Drag a queued match from the Up Next rail onto an idle court
+    let _mdDragQIdx = null;
+    function mdQueueDragStart(e) {
+      _mdDragQIdx = parseInt(e.currentTarget.dataset.qidx, 10);
+      e.currentTarget.classList.add('md-q-dragging');
+      try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(_mdDragQIdx)); } catch (err) {}
+      document.querySelectorAll('.md-court-drop').forEach(el => el.classList.add('md-court-can-drop'));
+    }
+    function mdQueueDragEnd(e) {
+      e.currentTarget.classList.remove('md-q-dragging');
+      document.querySelectorAll('.md-court-drop').forEach(el => el.classList.remove('md-court-can-drop', 'md-court-over'));
+    }
+    function mdCourtDragOver(e) { if (_mdDragQIdx === null) return; e.preventDefault(); e.currentTarget.classList.add('md-court-over'); try { e.dataTransfer.dropEffect = 'move'; } catch (err) {} }
+    function mdCourtDragLeave(e) { e.currentTarget.classList.remove('md-court-over'); }
+    async function mdCourtDrop(e, court) {
+      e.preventDefault();
+      const idx = _mdDragQIdx !== null ? _mdDragQIdx : parseInt(e.dataTransfer.getData('text/plain'), 10);
+      _mdDragQIdx = null;
+      document.querySelectorAll('.md-court-drop').forEach(el => el.classList.remove('md-court-can-drop', 'md-court-over'));
+      if (Number.isNaN(idx)) return;
+      if (!mdIsScorer()) { toast('Only the scorer device can send matches to court', 'error'); return; }
+      await mdSendToCourt(idx, court);
+    }
     function mdSetupQueueDrag() {}
 
     // Hook into match completion to advance rounds
