@@ -3788,6 +3788,16 @@
     .md-court-over { background: rgba(230,242,134,.14) !important; }
     [data-theme="court-green"] #mdInfoOngoingList .md-q-row[draggable="true"]::after { content: "⋮⋮"; order: 9; font-size: 14px; opacity: .35; letter-spacing: -2px; margin-left: 6px; }
 
+    /* Court Green: match day width + confirm bar + sitting-out rows */
+    [data-theme="court-green"] #matchday > * { max-width: 1100px; margin-left: auto !important; margin-right: auto !important; }
+    [data-theme="court-green"] .md-confirm-bar { max-width: 640px; margin: 20px auto 0 !important; gap: 10px; }
+    [data-theme="court-green"] .md-confirm-bar .btn { flex: 1 !important; padding: 14px 18px !important; font-size: 14px !important; }
+    [data-theme="court-green"] .md-confirm-bar .btn-confirm { flex: 2 !important; background: var(--cg-lime) !important; background-image: none !important; color: var(--cg-green) !important; border: 0 !important; border-radius: 999px !important; }
+    [data-theme="court-green"] .md-confirm-bar .btn-secondary { background: transparent !important; color: var(--cg-cream) !important; border: 1.5px solid var(--cg-cream) !important; }
+    [data-theme="court-green"] .md-sitting { background: transparent !important; border: 0 !important; border-left: 3px solid var(--cg-orange) !important; border-radius: 0 !important; color: var(--cg-cream) !important; opacity: .8; padding: 6px 12px !important; margin: 4px 0 10px !important; font-size: 12px; }
+    [data-theme="court-green"] .md-schedule-match { padding: 10px 12px !important; }
+    [data-theme="court-green"] .md-schedule-court { border-radius: 0 !important; background: var(--cg-green-2) !important; color: var(--cg-cream) !important; font-weight: 800; }
+
     /* Scorer lock strip + read-only cockpit */
     .md-scorer-strip{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.2px}
     .md-scorer-strip.is-scorer{background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success)}
