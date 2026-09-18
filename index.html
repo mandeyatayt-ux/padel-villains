@@ -11722,7 +11722,7 @@
         const freeUnheldCourt = (() => {
           for (let c = 1; c <= mdCourts; c++) {
             if (mdHeldCourts.has(c)) continue;
-            if (!ongoingMatches.some(om => om.md_round && (om.court === 'Court ' + c || om.court === c || om.court === 'C' + c))) return true;
+            if (!mdCourtMatch(c)) return true;
           }
           return false;
         })();
@@ -11738,7 +11738,7 @@
         const predictedByIdx = {}; // idx -> [court numbers]
         if (upNextIdx === -1) {
           for (let c = 1; c <= mdCourts; c++) {
-            const cm = ongoingMatches.find(m => m.md_round && (m.court === 'Court ' + c || m.court === c || m.court === 'C' + c));
+            const cm = mdCourtMatch(c);
             if (!cm) continue;
             const freedTeams = new Set(qBusyTeams);
             const freedPlayers = new Set(qBusyPlayers);
@@ -12309,27 +12309,8 @@
         .map(m => parseInt(String(m.court).replace(/\D/g, '')) || 1)
         .reduce((mx, n) => Math.max(mx, n), mdCourts);
       let courtHtml = '';
-      const busyTeamIds = new Set(); // teams already assigned to a court this render
-      const courtAssignments = []; // [{court, match}]
-      
-      // First pass: assign matches to courts respecting team exclusivity
-      for (let c = 1; c <= mdCourts; c++) {
-        const courtMatches = ongoingMatches.filter(m => m.md_round && (m.court === `Court ${c}` || m.court === c || m.court === `C${c}`));
-        let assigned = null;
-        for (const m of courtMatches) {
-          const t1 = m.team1_id || null;
-          const t2 = m.team2_id || null;
-          // Skip if either team is already on another court
-          if ((t1 && busyTeamIds.has(t1)) || (t2 && busyTeamIds.has(t2))) continue;
-          assigned = m;
-          break;
-        }
-        if (assigned) {
-          if (assigned.team1_id) busyTeamIds.add(assigned.team1_id);
-          if (assigned.team2_id) busyTeamIds.add(assigned.team2_id);
-        }
-        courtAssignments.push({ court: c, match: assigned });
-      }
+      // First pass: one match per court (shared with the queue engine so "busy" always matches what's drawn)
+      const courtAssignments = mdCourtAssignments();
       
       // Second pass: render court cards
       for (const { court: c, match: courtMatch } of courtAssignments) {
@@ -12575,7 +12556,7 @@
       for (let c = 1; c <= mdCourts; c++) {
         if (mdHeldCourts.has(c)) continue; // court on hold — skip auto-fill
         const label = `Court ${c}`;
-        const occupied = ongoingMatches.some(m => m.md_round && (m.court === label || m.court === c || m.court === `C${c}`));
+        const occupied = !!mdCourtMatch(c);
         if (occupied) continue;
 
         let next = mdGeneratedSchedule.find(isEligible);
@@ -12759,9 +12740,30 @@
       const n = parseInt(String(c).replace(/[^0-9]/g, ''), 10);
       return Number.isNaN(n) ? null : n;
     }
-    function mdOnCourtMatches() {
-      return ongoingMatches.filter(m => m.md_round && (() => { const n = mdCourtNum(m); return n !== null && n >= 1 && n <= mdCourts; })());
+    // One match per court — the same row the cockpit draws — for THIS match day only.
+    // Duplicates on the same court (stale test sessions, a double-tap) and rows from
+    // another match day are not "busy" teams; they surface as stranded instead.
+    function mdCourtCandidates(c) {
+      const mdId = mdActiveId();
+      return ongoingMatches.filter(m => m.md_round && mdCourtNum(m) === c && (!m.matchday_id || mdId == null || String(m.matchday_id) === String(mdId)));
     }
+    // Same assignment the cockpit draws: per court, first candidate whose teams aren't already placed.
+    function mdCourtAssignments() {
+      const placed = new Set(); const out = [];
+      for (let c = 1; c <= mdCourts; c++) {
+        let assigned = null;
+        for (const m of mdCourtCandidates(c)) {
+          const t1 = m.team1_id || null, t2 = m.team2_id || null;
+          if ((t1 && placed.has(t1)) || (t2 && placed.has(t2))) continue;
+          assigned = m; break;
+        }
+        if (assigned) { if (assigned.team1_id) placed.add(assigned.team1_id); if (assigned.team2_id) placed.add(assigned.team2_id); }
+        out.push({ court: c, match: assigned });
+      }
+      return out;
+    }
+    function mdCourtMatch(c) { return (mdCourtAssignments().find(a => a.court === c) || {}).match || null; }
+    function mdOnCourtMatches() { return mdCourtAssignments().map(a => a.match).filter(Boolean); }
     function mdGetPendingQueue() {
       if (!mdGeneratedSchedule) return [];
       const completedSids = new Set(mdCompletedGames.map(m => m.sid));
@@ -12791,13 +12793,13 @@
       let freeCourt = null, heldFallback = null;
       if (targetCourt) {
         const tl = `Court ${targetCourt}`;
-        const tBusy = ongoingMatches.some(m => m.md_round && (m.court === tl || m.court === targetCourt || m.court === `C${targetCourt}`));
+        const tBusy = !!mdCourtMatch(targetCourt);
         if (tBusy) { toast(`Court ${targetCourt} is busy`, 'error'); return; }
         freeCourt = targetCourt; // an explicit drop may use a held court
       }
       for (let c = 1; c <= mdCourts && !freeCourt; c++) {
         const label = `Court ${c}`;
-        const busy = ongoingMatches.some(m => m.md_round && (m.court === label || m.court === c || m.court === `C${c}`));
+        const busy = !!mdCourtMatch(c);
         if (busy) continue;
         if (mdHeldCourts.has(c)) { if (!heldFallback) heldFallback = c; continue; }
         freeCourt = c; break;
@@ -13056,7 +13058,7 @@
       // Find teams currently on court
       const playingIds = new Set();
       for (let c = 1; c <= mdCourts; c++) {
-        const cm = ongoingMatches.find(m => m.md_round && (m.court === `Court ${c}` || m.court === c || m.court === `C${c}`));
+        const cm = mdCourtMatch(c);
         if (cm) { playingIds.add(cm.team1_id); playingIds.add(cm.team2_id); }
       }
       const sitting = mdActiveTeamIds.filter(id => !playingIds.has(id));
