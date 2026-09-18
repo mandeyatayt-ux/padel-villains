@@ -3810,6 +3810,22 @@
     [data-theme="court-green"] .user-dropdown-divider { background: var(--border) !important; }
     [data-theme="court-green"] #myprofile .signout-card { background: var(--cg-green-2) !important; border: 0 !important; }
 
+    /* Court Green: the live strip is one clean line — Live · 11 / 30 played · 52m — with a single progress hairline */
+    [data-theme="court-green"] .md-sticky { background: var(--cg-green) !important; background-image: none !important; border: 0 !important; border-bottom: 1px solid var(--border) !important; box-shadow: none !important; padding: 8px var(--cg-pad) 0 !important; margin: 0 0 12px !important; border-radius: 0 !important; color: var(--cg-cream) !important; }
+    [data-theme="court-green"] .md-sticky-row { padding-bottom: 8px; }
+    [data-theme="court-green"] .md-sticky-title { display: inline-flex; align-items: center; gap: 8px; font-family: 'Anton', Impact, sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; opacity: 1; color: var(--cg-orange); }
+    [data-theme="court-green"] .md-sticky-dot { width: 8px; height: 8px; border-radius: 50% !important; background: var(--cg-orange); animation: cgPulse 1.4s ease-in-out infinite; }
+    @keyframes cgPulse { 50% { opacity: .35; } }
+    @media (prefers-reduced-motion: reduce) { [data-theme="court-green"] .md-sticky-dot { animation: none; } }
+    [data-theme="court-green"] .md-sticky-info { font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700; gap: 6px; }
+    [data-theme="court-green"] #mdStickyProgress { font-family: 'Anton', Impact, sans-serif; font-size: 18px; letter-spacing: .04em; color: var(--cg-lime); }
+    [data-theme="court-green"] .md-sticky-label { opacity: .75; }
+    [data-theme="court-green"] .md-sticky-timer { opacity: .75; font-size: 13px; }
+    [data-theme="court-green"] .md-sticky-timer:not(:empty)::before { content: "·"; margin-right: 6px; }
+    [data-theme="court-green"] .md-sticky-progress { height: 2px; background: var(--border); margin: 0 calc(-1 * var(--cg-pad)); border-radius: 0 !important; }
+    [data-theme="court-green"] .md-sticky-progress-fill { background: var(--cg-lime); border-radius: 0 !important; }
+    [data-theme="court-green"] .md-scorer-strip { margin: 0 0 8px !important; border-radius: 0 !important; padding: 6px 12px !important; font-size: 12px; }
+
     /* Scorer lock strip + read-only cockpit */
     .md-scorer-strip{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.2px}
     .md-scorer-strip.is-scorer{background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success)}
@@ -4777,10 +4793,11 @@
         <!-- Sticky Header -->
         <div class="md-sticky" id="mdStickyHeader">
           <div class="md-sticky-row">
-            <div class="md-sticky-title">⚔️ MATCH DAY LIVE</div>
+            <div class="md-sticky-title"><span class="md-sticky-dot" aria-hidden="true"></span>Live</div>
             <div class="md-sticky-info">
-              <span id="mdStickyProgress">0 / 0</span>
-              <span class="md-sticky-timer" id="mdStickyTimer"></span>
+              <span id="mdStickyProgress" title="Matches played of total scheduled">0 / 0</span>
+              <span class="md-sticky-label">played</span>
+              <span class="md-sticky-timer" id="mdStickyTimer" title="Time since the match day started"></span>
             </div>
           </div>
           <div class="md-sticky-progress"><div class="md-sticky-progress-fill" id="mdStickyBar" style="width:0%"></div></div>
