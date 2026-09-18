@@ -6381,6 +6381,7 @@
     // (the claim is queued and applied on reconnect).
     function mdIsScorer(md = activeMatchday) {
       if (!md) return true;
+      if (typeof testMode !== 'undefined' && testMode) return true; // test mode never locks you out
       return !md.scorer_device_id || md.scorer_device_id === PV_DEVICE_ID;
     }
     function mdScorerLabel(md = activeMatchday) {
@@ -11443,7 +11444,12 @@
 
     async function mdConfirmSchedule() {
       if (!mdGeneratedSchedule || mdGeneratedSchedule.length === 0) return;
-      const claimed = await mdClaimScorer(false);
+      let claimed = await mdClaimScorer(false);
+      if (!claimed && (currentUser?.is_admin || (typeof testMode !== 'undefined' && testMode))) {
+        // Same person on a new browser/profile, or a stale claim from an earlier session: take over here.
+        const stale = mdScorerLabel();
+        if (confirm(`Another device (${stale}) holds the scorer lock for this match day. Take over on this device?`)) claimed = await mdClaimScorer(true);
+      }
       if (!claimed) {
         toast(`Another device (${mdScorerLabel()}) is already scoring this match day. Admins can take over from the cockpit.`, 'error');
         return;
