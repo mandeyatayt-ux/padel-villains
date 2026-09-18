@@ -3610,7 +3610,7 @@
     [data-theme="court-green"] #mdCockpitCourts .md-court-teams span { color: var(--cg-ink) !important; font-family: 'Manrope', sans-serif !important; font-weight: 800 !important; font-size: 15px !important; white-space: normal !important; line-height: 1.25; }
     [data-theme="court-green"] #mdCockpitCourts .md-court-teams span:nth-child(2) { font-family: 'Anton', Impact, sans-serif !important; font-size: 26px !important; opacity: .35; color: var(--cg-ink) !important; text-transform: uppercase; }
     [data-theme="court-green"] #mdCockpitCourts .md-court-body > div:nth-child(2) span { color: var(--cg-ink) !important; opacity: .7; font-weight: 600; }
-    [data-theme="court-green"] #mdCockpitCourts .md-cc-score-row { max-width: none !important; margin: 14px -16px 0 !important; display: grid !important; grid-template-columns: 1fr 1fr auto auto auto !important; gap: 0 !important; border-top: 1px solid rgba(11,31,26,.14); }
+    [data-theme="court-green"] #mdCockpitCourts .md-cc-score-row { max-width: none !important; margin: 14px -16px 0 !important; display: grid !important; grid-template-columns: 1fr 1fr auto auto !important; gap: 0 !important; border-top: 1px solid rgba(11,31,26,.14); }
     [data-theme="court-green"] #mdCockpitCourts .md-cc-input { flex: none !important; width: 100% !important; min-width: 0 !important; height: 64px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; color: var(--cg-ink) !important; font-family: 'Anton', Impact, sans-serif !important; font-size: 40px !important; text-align: center; }
     [data-theme="court-green"] #mdCockpitCourts .md-cc-input:first-child { border-right: 1px solid rgba(11,31,26,.14) !important; }
     [data-theme="court-green"] #mdCockpitCourts .md-cc-input::placeholder { color: var(--cg-ink); opacity: .25; }
@@ -3881,6 +3881,23 @@
       [data-theme="court-green"] .header { padding: 10px 16px !important; min-height: 0 !important; }
       [data-theme="court-green"] .logo-img { width: 36px !important; height: 36px !important; }
     }
+
+    /* court actions popover */
+    .md-court-popover { position: absolute; right: 8px; bottom: 52px; z-index: 30; width: min(320px, calc(100% - 16px)); background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.25); padding: 6px; }
+    .md-pop-h { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; opacity: .7; padding: 8px 10px 4px; }
+    .md-pop-sub { font-size: 11px; font-weight: 700; opacity: .65; padding: 8px 10px 2px; }
+    .md-pop-item { display: block; width: 100%; text-align: left; padding: 9px 10px; border-radius: 8px; background: transparent; border: 0; color: inherit; font-family: inherit; cursor: pointer; }
+    .md-pop-item:hover { background: rgba(0,0,0,.06); }
+    .md-pop-item b { display: block; font-size: 14px; font-weight: 800; }
+    .md-pop-item small { display: block; font-size: 11px; opacity: .7; margin-top: 2px; }
+    .md-pop-item.md-pop-pick { font-weight: 700; font-size: 13px; padding: 7px 10px 7px 18px; }
+    .md-pop-item.danger { color: var(--danger); }
+    [data-theme="court-green"] .md-court-popover { background: var(--cg-green) !important; color: var(--cg-cream) !important; border: 0 !important; border-radius: 0 !important; box-shadow: 0 0 0 2px var(--cg-lime) !important; }
+    [data-theme="court-green"] .md-pop-item { border-radius: 0; font-family: 'Manrope', sans-serif; }
+    [data-theme="court-green"] .md-pop-item:hover { background: var(--cg-green-2); }
+    [data-theme="court-green"] .md-pop-item.danger { color: var(--cg-orange); }
+    [data-theme="court-green"] .md-pop-item.md-pop-pick { color: var(--cg-lime); }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-more { color: var(--cg-ink) !important; }
 
     /* Scorer lock strip + read-only cockpit */
     .md-scorer-strip{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.2px}
@@ -12457,8 +12474,7 @@
                 <input class="md-cc-input" type="number" min="0" max="99" id="inlineScore1_${courtMatch.id}" placeholder="0" inputmode="numeric">
                 <input class="md-cc-input" type="number" min="0" max="99" id="inlineScore2_${courtMatch.id}" placeholder="0" inputmode="numeric">
                 <button class="md-score-save" onclick="mdInlineFinalize(${courtMatch.id})" style="height:44px">SAVE</button>
-                <button class="btn btn-secondary" style="width:36px;height:44px;border-radius:10px;color:var(--gold);font-size:13px;flex-shrink:0;padding:0" onclick="mdReturnToQueue(${courtMatch.id})" title="Return to Queue"><i class="fas fa-rotate-left"></i></button>
-                <button class="btn btn-secondary" style="width:36px;height:44px;border-radius:10px;color:var(--danger);font-size:13px;flex-shrink:0;padding:0" onclick="mdCancelCourtMatch(${courtMatch.id})" title="Cancel Match"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-secondary md-court-more" style="width:44px;height:44px;border-radius:10px;font-size:18px;flex-shrink:0;padding:0" onclick="mdCourtMenu(event, ${courtMatch.id}, ${c})" title="More actions" aria-label="More actions">···</button>
               </div>
             </div>
           </div>`;
@@ -12771,7 +12787,7 @@
       toast('Match cancelled', 'info');
     }
 
-    async function mdReturnToQueue(matchId, silent) {
+    async function mdReturnToQueue(matchId, silent, noFill) {
       if (!mdAssertScorer('reorder the queue')) return;
       const match = ongoingMatches.find(m => String(m.id) === String(matchId));
       if (!match) return;
@@ -12792,10 +12808,59 @@
         mdGeneratedSchedule.push(item);
       }
       localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
-      await mdAutoFill();
+      if (!noFill) await mdAutoFill();
       renderMatchDay();
       renderOngoingMatches();
-      toast('Match sent to the back of the queue', 'info');
+      if (!silent) toast('Match sent to the back of the queue', 'info');
+    }
+
+    // ---- Court actions menu: next match / pick from queue / return / cancel ----
+    function mdCloseCourtMenu() { document.querySelectorAll('.md-court-popover').forEach(el => el.remove()); document.removeEventListener('click', mdCloseCourtMenu); }
+    function mdCourtMenu(ev, matchId, court) {
+      ev.stopPropagation(); mdCloseCourtMenu();
+      const m = ongoingMatches.find(x => String(x.id) === String(matchId)); if (!m) return;
+      const pending = mdGetPendingQueue();
+      const busyT = new Set(), busyP = new Set();
+      mdOnCourtMatches().filter(x => String(x.id) !== String(matchId)).forEach(x => { if (x.team1_id) busyT.add(x.team1_id); if (x.team2_id) busyT.add(x.team2_id); (x.team1_players || []).concat(x.team2_players || []).forEach(p => busyP.add(p)); });
+      const playable = pending.map((q, idx) => ({ q, idx })).filter(({ q }) => mdMode === 'randomiser'
+        ? !(q.team1 || []).concat(q.team2 || []).some(p => busyP.has(p))
+        : !((q.t1 && busyT.has(q.t1)) || (q.t2 && busyT.has(q.t2))));
+      const label = q => mdMode === 'randomiser'
+        ? `${(q.team1 || []).map(p => getPlayer(p)?.name || '?').join(' & ')} v ${(q.team2 || []).map(p => getPlayer(p)?.name || '?').join(' & ')}`
+        : `${getTeam(q.t1)?.name || '?'} v ${getTeam(q.t2)?.name || '?'}`;
+      const pop = document.createElement('div');
+      pop.className = 'md-court-popover';
+      pop.innerHTML = `
+        <div class="md-pop-h">Court ${court}</div>
+        <button class="md-pop-item" onclick="mdSkipToNext(${matchId}, ${court})"><b>Next match</b><small>Send this pair back to the queue, start the next playable game here</small></button>
+        ${playable.length ? `<div class="md-pop-sub">Or put a specific match on this court</div>${playable.slice(0, 6).map(({ q, idx }) => `<button class="md-pop-item md-pop-pick" onclick="mdSwapCourtMatch(${matchId}, ${court}, ${idx})">${esc(label(q))}</button>`).join('')}` : ''}
+        <button class="md-pop-item" onclick="mdCloseCourtMenu(); mdReturnToQueue(${matchId}, false, true)"><b>Return to queue</b><small>Court stays free until you drag a match on or save a score</small></button>
+        <button class="md-pop-item danger" onclick="mdCloseCourtMenu(); mdCancelCourtMatch(${matchId})"><b>Cancel match</b><small>Remove it from today entirely</small></button>`;
+      const card = ev.currentTarget.closest('.md-court') || ev.currentTarget.parentElement;
+      card.style.position = 'relative'; card.appendChild(pop);
+      setTimeout(() => document.addEventListener('click', mdCloseCourtMenu), 0);
+    }
+    async function mdSkipToNext(matchId, court) {
+      mdCloseCourtMenu();
+      if (!mdAssertScorer('change the court')) return;
+      const m = ongoingMatches.find(x => String(x.id) === String(matchId)); if (!m) return;
+      const t1 = getTeam(m.team1_id)?.name || 'this pair', t2 = getTeam(m.team2_id)?.name || '';
+      if (!confirm(`Send ${t1}${t2 ? ' v ' + t2 : ''} back to the queue and start the next match on Court ${court}?`)) return;
+      await mdReturnToQueue(matchId, true, true);
+      await mdAutoFill();
+      renderMDLive(); try { renderMdInfoHub(); } catch (e) {}
+      const now = mdCourtMatch(court);
+      toast(now ? `Court ${court}: ${getTeam(now.team1_id)?.name || ''} v ${getTeam(now.team2_id)?.name || ''}` : `Court ${court} is free — nothing playable yet`, now ? 'success' : 'info');
+    }
+    async function mdSwapCourtMatch(matchId, court, qidx) {
+      mdCloseCourtMenu();
+      if (!mdAssertScorer('change the court')) return;
+      await mdReturnToQueue(matchId, true, true);
+      // the queue re-indexes after the return; find the same fixture again by identity
+      const target = mdGetPendingQueue()[qidx];
+      const idx = mdGetPendingQueue().indexOf(target);
+      await mdSendToCourt(idx >= 0 ? idx : qidx, court);
+      renderMDLive(); try { renderMdInfoHub(); } catch (e) {}
     }
 
     // Cancel a queued match
