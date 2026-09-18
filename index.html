@@ -3586,6 +3586,66 @@
     [data-theme="court-green"] #loginScreen .login-error { margin: 0 20px 0 !important; }
     @media (max-width: 480px) { [data-theme="court-green"] #loginScreen .login-card { padding: 0 !important; } }
 
+    /* ===== COURT GREEN MATCH DAY COCKPIT (from padel-villains-matchday.html) ===== */
+    [data-theme="court-green"] #mdCockpitCourts .md-court { border: 0 !important; border-radius: 0 !important; background: var(--cg-cream) !important; color: var(--cg-ink) !important; opacity: 1 !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-idle { background: transparent !important; color: var(--cg-cream) !important; box-shadow: inset 0 0 0 1px var(--border) !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-hd { background: transparent !important; padding: 12px 16px !important; border-bottom: 1px solid rgba(11,31,26,.14); }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-idle .md-court-hd { border-bottom-color: var(--border); }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-num { font-family: 'Anton', Impact, sans-serif !important; font-size: 22px !important; letter-spacing: .005em !important; color: inherit !important; font-weight: 400 !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-timer { font-family: 'Anton', Impact, sans-serif !important; font-size: 20px !important; letter-spacing: .04em !important; color: var(--cg-orange) !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-hd button { border-radius: 0 !important; background: transparent !important; color: inherit !important; box-shadow: inset 0 0 0 1.5px currentColor; width: 28px !important; height: 28px !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-held .md-court-hd button,
+    [data-theme="court-green"] #mdCockpitCourts .md-court-hd button[style*="--gold"] { background: var(--cg-orange) !important; color: var(--cg-cream) !important; box-shadow: none; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-body { padding: 18px 16px 0 !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-teams span { color: var(--cg-ink) !important; font-family: 'Manrope', sans-serif !important; font-weight: 800 !important; font-size: 15px !important; white-space: normal !important; line-height: 1.25; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-teams span:nth-child(2) { font-family: 'Anton', Impact, sans-serif !important; font-size: 26px !important; opacity: .35; color: var(--cg-ink) !important; text-transform: uppercase; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-body > div:nth-child(2) span { color: var(--cg-ink) !important; opacity: .7; font-weight: 600; }
+    [data-theme="court-green"] #mdCockpitCourts .md-cc-score-row { max-width: none !important; margin: 14px -16px 0 !important; display: grid !important; grid-template-columns: 1fr 1fr auto auto auto !important; gap: 0 !important; border-top: 1px solid rgba(11,31,26,.14); }
+    [data-theme="court-green"] #mdCockpitCourts .md-cc-input { flex: none !important; width: 100% !important; min-width: 0 !important; height: 64px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; color: var(--cg-ink) !important; font-family: 'Anton', Impact, sans-serif !important; font-size: 40px !important; text-align: center; }
+    [data-theme="court-green"] #mdCockpitCourts .md-cc-input:first-child { border-right: 1px solid rgba(11,31,26,.14) !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-cc-input::placeholder { color: var(--cg-ink); opacity: .25; }
+    [data-theme="court-green"] #mdCockpitCourts .md-cc-input:focus { box-shadow: inset 0 -3px 0 var(--cg-lime) !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-score-save { max-width: none !important; height: 64px !important; padding: 0 20px !important; background: var(--cg-green) !important; color: var(--cg-lime) !important; border: 0 !important; border-radius: 0 !important; font-family: 'Manrope', sans-serif !important; font-weight: 800 !important; font-size: 14px !important; letter-spacing: 0 !important; text-transform: none !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-cc-score-row .btn { height: 64px !important; width: 48px !important; border: 0 !important; border-left: 1px solid rgba(11,31,26,.14) !important; border-radius: 0 !important; background: transparent !important; color: var(--cg-ink) !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-idle-msg { text-align: left !important; padding: 20px 16px 22px !important; color: var(--cg-cream) !important; opacity: .8; font-weight: 600; font-size: 14px !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-hd span[style*="border-radius:99px"] { border-radius: 0 !important; background: var(--cg-green-2) !important; color: var(--cg-cream) !important; font-family: 'Manrope', sans-serif; font-weight: 800 !important; font-size: 11px !important; padding: 6px 9px !important; }
+    [data-theme="court-green"] #mdCockpitCourts .md-court-held .md-court-hd span[style*="border-radius:99px"] { background: var(--cg-orange) !important; }
+
+    /* Up next rail: cream band with big position numerals */
+    [data-theme="court-green"] #mdCockpitRail { background: var(--cg-cream); color: var(--cg-ink); padding: 20px 16px; }
+    [data-theme="court-green"] #mdRailQueueWrap h3 { font-family: 'Anton', Impact, sans-serif !important; font-size: 30px !important; letter-spacing: .005em !important; text-transform: uppercase; color: var(--cg-green) !important; font-weight: 400 !important; }
+    [data-theme="court-green"] #mdRailQueueWrap h3 i { display: none; }
+    [data-theme="court-green"] #mdInfoQueueCount { color: var(--cg-ink) !important; font-weight: 700; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row { background: transparent !important; border: 0 !important; border-bottom: 1px solid rgba(11,31,26,.14) !important; border-radius: 0 !important; padding: 12px 0 !important; margin: 0 !important; color: var(--cg-ink); gap: 12px !important; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row::before { content: attr(data-pos); font-family: 'Anton', Impact, sans-serif; font-size: 34px; line-height: .85; color: var(--cg-green); min-width: 44px; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-next::before { color: var(--cg-orange); }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row > span { color: var(--cg-ink) !important; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row > span[style*="flex:1"] { font-weight: 800 !important; font-size: 15px !important; white-space: normal !important; order: 1; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row > span[style*="border-radius:6px"] { border-radius: 0 !important; font-family: 'Manrope', sans-serif; font-weight: 800 !important; padding: 6px 9px !important; background: var(--cg-green) !important; color: var(--cg-cream) !important; order: 2; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-next > span[style*="border-radius:6px"]:first-of-type { background: var(--cg-orange) !important; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row > span[style*="var(--clay)"][style*="border-radius:6px"] { display: none !important; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row > span[style*="flex:1"] span { color: var(--cg-orange) !important; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row > span[style*="var(--cream-dark)"] { display: none !important; }
+    [data-theme="court-green"] #mdInfoOngoingList .md-q-row > button { order: 4; border-radius: 0 !important; background: var(--cg-lime) !important; color: var(--cg-green) !important; }
+    [data-theme="court-green"] #mdInfoOngoingList > button { border: 0 !important; border-bottom: 2px solid var(--cg-green) !important; border-radius: 0 !important; color: var(--cg-green) !important; font-weight: 800 !important; padding: 12px 0 4px !important; text-align: left; }
+    [data-theme="court-green"] #mdRailSitting > div:first-child { color: var(--cg-ink) !important; font-family: 'Manrope', sans-serif; font-weight: 800 !important; letter-spacing: 0 !important; text-transform: none !important; font-size: 13px !important; margin-top: 8px; }
+    [data-theme="court-green"] #mdCockpitRail .btn { border-radius: 0 !important; background: transparent !important; color: var(--cg-green) !important; box-shadow: inset 0 0 0 1.5px var(--cg-green) !important; border: 0 !important; font-weight: 800; }
+
+    /* My match day scorecard: ledger in band colours */
+    [data-theme="court-green"] #dashboard #myMatchDayCard { background: var(--cg-green-2) !important; }
+    [data-theme="court-green"] .myd-title b { font-size: 26px !important; letter-spacing: .005em !important; font-weight: 400; }
+    [data-theme="court-green"] .myd-n { font-size: 56px !important; }
+    [data-theme="court-green"] .myd-n b { color: var(--cg-lime) !important; }
+    [data-theme="court-green"] .myd-n i { color: var(--cg-orange) !important; }
+    [data-theme="court-green"] .myd-l, [data-theme="court-green"] .myd-sec { text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; font-weight: 700 !important; }
+    [data-theme="court-green"] .myd-sq.w { background: var(--cg-lime) !important; border-color: var(--cg-lime) !important; color: var(--cg-green) !important; }
+    [data-theme="court-green"] .myd-sq.l { background: var(--cg-orange) !important; border-color: var(--cg-orange) !important; color: var(--cg-cream) !important; }
+    [data-theme="court-green"] .myd-wl { font-family: 'Anton', Impact, sans-serif; font-size: 16px !important; }
+    [data-theme="court-green"] .myd-wl.w { color: var(--cg-lime) !important; box-shadow: inset 3px 0 0 var(--cg-lime) !important; }
+    [data-theme="court-green"] .myd-wl.l { color: var(--cg-orange) !important; box-shadow: inset 3px 0 0 var(--cg-orange) !important; }
+    [data-theme="court-green"] .myd-wl.q { color: var(--cg-cream) !important; box-shadow: inset 3px 0 0 var(--cg-cream) !important; }
+    [data-theme="court-green"] .myd-sc { font-size: 22px; }
+
     /* Scorer lock strip + read-only cockpit */
     .md-scorer-strip{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.2px}
     .md-scorer-strip.is-scorer{background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success)}
@@ -11513,7 +11573,7 @@
           const playBtn = (!isBusy && freeUnheldCourt && currentUser?.is_admin)
             ? `<button onclick="mdSendToCourt(${idx});event.stopPropagation()" title="Send to court" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--emerald);color:white;font-size:11px;cursor:pointer;padding:0;flex-shrink:0"><i class="fas fa-play"></i></button>`
             : '';
-          return `<div style="background:var(--bg-card);border:1px solid ${isNext ? 'var(--emerald)' : predCourts ? 'var(--gold)' : 'var(--border)'};border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:6px${isBusy && !predCourts ? ';opacity:0.55' : ''}">
+          return `<div class="md-q-row${isNext ? ' md-q-next' : ''}${predCourts ? ' md-q-pred' : ''}" data-pos="${String(idx + 1).padStart(2, '0')}" style="background:var(--bg-card);border:1px solid ${isNext ? 'var(--emerald)' : predCourts ? 'var(--gold)' : 'var(--border)'};border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:6px${isBusy && !predCourts ? ';opacity:0.55' : ''}">
             ${posBadge}${roundBadge}
             <span style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t1Name)} <span style="color:var(--clay);font-weight:400;font-size:11px">v</span> ${esc(t2Name)}</span>
             ${busyTag}${playBtn}
@@ -12083,16 +12143,16 @@
           const roundBadge = courtMatch.md_round ? `R${courtMatch.md_round}` : '';
           const elapsedMins = courtMatch.started_at ? Math.max(0, Math.floor((Date.now() - new Date(courtMatch.started_at).getTime()) / 60000)) : null;
           const heldOcc = mdHeldCourts.has(c);
-          courtHtml += `<div class="card" style="border-radius:14px;overflow:hidden;padding:0">
-            <div style="background:var(--brown-dark);padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
-              <span style="color:var(--cream);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
+          courtHtml += `<div class="card md-court md-court-playing" style="border-radius:14px;overflow:hidden;padding:0">
+            <div class="md-court-hd" style="background:var(--brown-dark);padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
+              <span class="md-court-num" style="color:var(--cream);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
               <div style="display:flex;align-items:center;gap:8px">
-                <span style="color:var(--clay-light);font-size:11px;font-weight:600">${roundBadge}${elapsedMins !== null ? ` · ${elapsedMins}m` : ''}</span>
+                <span class="md-court-timer" style="color:var(--clay-light);font-size:11px;font-weight:600">${roundBadge}${elapsedMins !== null ? ` · ${elapsedMins}m` : ''}</span>
                 <button onclick="mdToggleHold(${c})" title="${heldOcc ? 'Held: will not auto-fill after this game' : 'Hold court after this game'}" style="background:${heldOcc ? 'var(--gold)' : 'rgba(255,255,255,0.15)'};border:none;color:${heldOcc ? 'var(--brown-dark)' : 'var(--cream)'};width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;padding:0"><i class="fas fa-thumbtack"></i></button>
               </div>
             </div>
-            <div style="padding:12px">
-              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px">
+            <div class="md-court-body" style="padding:12px">
+              <div class="md-court-teams" style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px">
                 <span style="font-size:15px;font-weight:700;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t1Name)}</span>
                 <span style="font-family:'SaltyAges',serif;font-size:13px;color:var(--clay);flex-shrink:0">vs</span>
                 <span style="font-size:15px;font-weight:700;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right">${esc(t2Name)}</span>
@@ -12132,15 +12192,15 @@
               if (!anyEligible) idleMsg = 'No playable match — queued teams are on other courts. Fills when a game finishes.';
             }
           }
-          courtHtml += `<div class="card" style="border-radius:16px;overflow:hidden;padding:0${held ? ';opacity:0.85' : ''}">
-            <div style="background:var(--brown-dark);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
-              <span style="color:var(--cream);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
+          courtHtml += `<div class="card md-court md-court-idle${held ? ' md-court-held' : ''}" style="border-radius:16px;overflow:hidden;padding:0${held ? ';opacity:0.85' : ''}">
+            <div class="md-court-hd" style="background:var(--brown-dark);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+              <span class="md-court-num" style="color:var(--cream);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:10px;padding:2px 10px;border-radius:99px;font-weight:600;${held ? 'color:var(--brown-dark);background:var(--gold)' : 'color:var(--text-muted);background:rgba(255,255,255,0.1)'}">${held ? 'ON HOLD' : 'Idle'}</span>
                 <button onclick="mdToggleHold(${c})" title="${held ? 'Release court to auto-fill' : 'Hold court (no auto-fill)'}" style="background:${held ? 'var(--gold)' : 'rgba(255,255,255,0.15)'};border:none;color:${held ? 'var(--brown-dark)' : 'var(--cream)'};width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:11px;padding:0"><i class="fas fa-thumbtack"></i></button>
               </div>
             </div>
-            <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">${idleMsg}</div>
+            <div class="md-court-idle-msg" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">${idleMsg}</div>
           </div>`;
         }
       }
