@@ -3134,7 +3134,7 @@
     /* -- shell: sidebar, header, nav -- */
     [data-theme="court-green"] .header { background: rgba(20,19,18,.92) !important; border-bottom: 1px solid var(--border) !important; }
     [data-theme="court-green"] .nav { background: transparent !important; }
-    [data-theme="court-green"] .nav button { font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text-muted); }
+    [data-theme="court-green"] .nav button { font-family: 'Manrope', sans-serif; color: var(--text-muted); }
     [data-theme="court-green"] .nav button:hover { color: var(--text); background: var(--clay-wash) !important; }
     [data-theme="court-green"] .nav button.active { background: #2E4B3C !important; color: var(--text) !important; box-shadow: inset 2px 0 0 var(--clay) !important; }
     [data-theme="court-green"] .sidebar-user,
@@ -3462,6 +3462,107 @@
     [data-theme="court-green"] .toast.success { background: var(--cg-lime); color: var(--cg-green); }
 
   
+    /* ===================================================================
+       COURT GREEN — DASHBOARD BANDS (from padel-villains-concept.html)
+       The dashboard becomes a stack of full-bleed colour bands:
+       green hero (match-day header) → cream (Villains) → green (stats)
+       → orange (today's matches) → green (rankings) → cream (history).
+       =================================================================== */
+    /* --cg-gutter = how far a band bleeds (mirrors .app side padding); --cg-pad = inner text inset */
+    [data-theme="court-green"] { --cg-gutter: 40px; --cg-pad: 24px; }
+    @media (max-width: 1024px) { [data-theme="court-green"] { --cg-gutter: 24px; --cg-pad: 20px; } }
+    @media (max-width: 768px)  { [data-theme="court-green"] { --cg-gutter: 0px; --cg-pad: 20px; }
+      [data-theme="court-green"] #dashboard .matchday-header,
+      [data-theme="court-green"] #dashboard #upcomingMatchdays, [data-theme="court-green"] #dashboard #quickActionsCard,
+      [data-theme="court-green"] #dashboard #matchdayCountdown, [data-theme="court-green"] #dashboard #pastMatchdayBanner,
+      [data-theme="court-green"] #dashboard .grid-2 > * { margin-right: -12px !important; } }
+
+    /* hero: match-day header as a full-bleed green block with hairline rows */
+    [data-theme="court-green"] #dashboard .matchday-header {
+      margin: 0 calc(-1 * var(--cg-gutter)) 0 !important; border: 0 !important; border-bottom: 1px solid var(--border) !important;
+      background: var(--cg-green) !important; min-height: 64px;
+    }
+    [data-theme="court-green"] #dashboard .matchday-header::before { background: var(--cg-orange); color: var(--cg-cream); min-height: 64px; font-size: 16px; padding: 0 var(--cg-pad); }
+    [data-theme="court-green"] #dashboard .matchday-header[data-state="live"]::before { background: var(--cg-orange); color: var(--cg-cream); }
+    [data-theme="court-green"] #dashboard .matchday-header[data-state="soon"]::before,
+    [data-theme="court-green"] #dashboard .matchday-header[data-state="upcoming"]::before { background: var(--cg-lime); color: var(--cg-green); }
+    [data-theme="court-green"] #dashboard .matchday-header[data-state="history"]::before,
+    [data-theme="court-green"] #dashboard .matchday-header[data-state="none"]::before { background: var(--cg-green-2); color: var(--cg-cream); }
+    [data-theme="court-green"] #dashboard .matchday-header .matchday-details span { padding-left: var(--cg-pad) !important; }
+    [data-theme="court-green"] #dashboard .matchday-header .matchday-details span:first-child { font-family: 'Anton', Impact, sans-serif; font-size: 22px; text-transform: uppercase; color: var(--cg-cream); letter-spacing: .01em; }
+    [data-theme="court-green"] #dashboard #goToMatchDayBtn { background: var(--cg-lime) !important; color: var(--cg-green) !important; border-radius: 0 !important; font-family: 'Manrope', sans-serif; font-weight: 800; }
+
+    /* upcoming list + countdown + quick actions sit in the green hero */
+    [data-theme="court-green"] #dashboard #upcomingMatchdays,
+    [data-theme="court-green"] #dashboard #quickActionsCard,
+    [data-theme="court-green"] #dashboard #matchdayCountdown,
+    [data-theme="court-green"] #dashboard #pastMatchdayBanner {
+      margin: 0 calc(-1 * var(--cg-gutter)) !important; padding: 18px var(--cg-pad) !important;
+      background: var(--cg-green) !important; border: 0 !important; border-bottom: 1px solid var(--border) !important; color: var(--cg-cream) !important;
+    }
+    [data-theme="court-green"] #dashboard #upcomingMatchdays h4 { font-family: 'Anton', Impact, sans-serif; font-size: 22px; text-transform: uppercase; color: var(--cg-cream) !important; font-weight: 400; letter-spacing: .01em; }
+    [data-theme="court-green"] #dashboard #upcomingMatchdays h4 i { display: none; }
+    [data-theme="court-green"] #dashboard #matchdayCountdown { text-align: left !important; }
+    [data-theme="court-green"] #dashboard #countdownTimer { font-family: 'Anton', Impact, sans-serif !important; color: var(--cg-lime); font-size: 64px !important; letter-spacing: .02em !important; line-height: .9; }
+    [data-theme="court-green"] #dashboard #countdownLabel { font-family: 'Manrope', sans-serif; font-weight: 700; text-transform: none; opacity: .85 !important; }
+
+    /* the dashboard grid becomes a single column of bands */
+    [data-theme="court-green"] #dashboard .grid-2 { display: block; }
+    [data-theme="court-green"] #dashboard .grid-2 > * { margin: 0 calc(-1 * var(--cg-gutter)) !important; padding: 26px var(--cg-pad) 30px !important; border: 0 !important; border-radius: 0 !important; width: auto !important; max-width: none !important; }
+
+    /* cream: The Villains */
+    [data-theme="court-green"] #dashboard .villain-card { background: var(--cg-cream) !important; color: var(--cg-ink) !important; min-height: 0 !important; }
+    [data-theme="court-green"] #dashboard .villain-poster-top { padding: 0 !important; }
+    [data-theme="court-green"] #dashboard .villain-crown { display: none !important; }
+    [data-theme="court-green"] #dashboard .villain-label { font-family: 'Anton', Impact, sans-serif !important; font-size: 30px !important; letter-spacing: .005em !important; color: var(--cg-green) !important; font-weight: 400; }
+    [data-theme="court-green"] #dashboard .villain-team { color: var(--cg-green) !important; font-size: clamp(48px, 13vw, 96px) !important; max-width: none; margin-top: 14px !important; }
+    [data-theme="court-green"] #dashboard .villain-team .vt-b { color: var(--cg-orange); }
+    [data-theme="court-green"] #dashboard .villain-card .villain-stat,
+    [data-theme="court-green"] #dashboard .villain-card .villain-since,
+    [data-theme="court-green"] #dashboard .villain-card p { color: var(--cg-ink) !important; }
+    [data-theme="court-green"] #dashboard .no-villain { text-align: left !important; padding: 0 !important; }
+    [data-theme="court-green"] #dashboard .no-villain-icon { display: none !important; }
+    [data-theme="court-green"] #dashboard .no-villain h3 { font-family: 'Anton', Impact, sans-serif !important; font-size: clamp(44px, 12vw, 72px) !important; text-transform: uppercase; color: var(--cg-green) !important; line-height: .88; font-weight: 400; }
+    [data-theme="court-green"] #dashboard .no-villain p { margin-top: 12px; font-size: 15px; font-weight: 600; opacity: .85; }
+
+    /* green: stats as a hairline trio with lime numerals */
+    [data-theme="court-green"] #dashboard .stats-grid { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 0 !important; background: var(--cg-green) !important; }
+    @media (max-width: 480px) { [data-theme="court-green"] #dashboard .stats-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+    [data-theme="court-green"] #dashboard .stat-card { background: transparent !important; border: 0 !important; border-right: 1px solid var(--border) !important; border-bottom: 1px solid var(--border) !important; padding: 14px 14px 12px !important; }
+    [data-theme="court-green"] #dashboard .stat-card:first-child { padding-left: 0 !important; }
+    [data-theme="court-green"] #dashboard .stat-card .stat-icon, [data-theme="court-green"] #dashboard .stat-card .stat-trend { display: none !important; }
+    [data-theme="court-green"] #dashboard .stat-card > div:first-child { margin-bottom: 0 !important; }
+    [data-theme="court-green"] #dashboard .stat-value { font-family: 'Anton', Impact, sans-serif !important; font-size: 52px !important; line-height: .85 !important; color: var(--cg-lime) !important; font-weight: 400 !important; }
+    [data-theme="court-green"] #dashboard .stat-label { font-family: 'Manrope', sans-serif !important; font-size: 12px !important; font-weight: 700 !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--cg-cream) !important; opacity: .85; margin-top: 8px; }
+    [data-theme="court-green"] #dashboard .stat-sub { display: none !important; }
+
+    /* orange: today's matches; green: rankings; cream: history */
+    [data-theme="court-green"] #dashboard .grid-2 > .card { background: var(--cg-green) !important; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card:has(#todayMatches) { background: var(--cg-orange) !important; color: var(--cg-cream) !important; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card:has(#todayMatches) .btn { background: var(--cg-cream) !important; color: var(--cg-orange) !important; border: 0 !important; border-radius: 999px !important; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card:has(#todayMatches) .match-card { background: transparent !important; border: 0 !important; border-bottom: 1px solid rgba(247,237,218,.35) !important; color: var(--cg-cream) !important; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card:has(#todayMatches) .match-card * { color: var(--cg-cream); }
+    [data-theme="court-green"] #dashboard .grid-2 > .card:has(#matchdayHistoryLog) { background: var(--cg-cream) !important; color: var(--cg-ink) !important; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card:has(#matchdayHistoryLog) h3,
+    [data-theme="court-green"] #dashboard .grid-2 > .card:has(#matchdayHistoryLog) .btn { color: var(--cg-green) !important; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card:has(#matchdayHistoryLog) .btn { border: 0 !important; border-bottom: 2px solid var(--cg-green) !important; background: transparent !important; border-radius: 0 !important; padding: 0 0 2px !important; font-weight: 700; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card h3 { font-family: 'Anton', Impact, sans-serif !important; font-size: 30px !important; text-transform: uppercase; font-weight: 400 !important; letter-spacing: .005em; line-height: .9; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card .section-header { margin-bottom: 18px !important; align-items: baseline; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card .empty { text-align: left; padding: 0; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card .empty p { font-size: 15px; font-weight: 600; opacity: .85; }
+    [data-theme="court-green"] #dashboard .court-booking-widget { background: var(--cg-green-2) !important; }
+
+    /* rows inside bands: hairline dividers, no card chrome */
+    [data-theme="court-green"] #dashboard .match-card,
+    [data-theme="court-green"] #dashboard .ranking-row,
+    [data-theme="court-green"] #dashboard .rank-item,
+    [data-theme="court-green"] #dashboard .matchday-log-item,
+    [data-theme="court-green"] #dashboard .upcoming-item { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; padding: 13px 0 !important; margin: 0 !important; }
+    [data-theme="court-green"] #dashboard .grid-2 > .card:has(#matchdayHistoryLog) .matchday-log-item { border-bottom-color: rgba(11,31,26,.14) !important; }
+    [data-theme="court-green"] #dashboard .day-rank-row { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; padding: 12px 0 !important; margin: 0 !important; }
+    [data-theme="court-green"] #dashboard .day-rank-row > div:first-child { font-family: 'Anton', Impact, sans-serif !important; font-size: 30px !important; color: var(--cg-lime) !important; min-width: 44px; }
+    [data-theme="court-green"] #dashboard .day-rank-row span { border-radius: 0 !important; }
+
     /* Scorer lock strip + read-only cockpit */
     .md-scorer-strip{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.2px}
     .md-scorer-strip.is-scorer{background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success)}
@@ -7617,7 +7718,7 @@
       // Day rankings
       document.getElementById('dayRankings').innerHTML = dayRankings.length ? dayRankings.slice(0, 5).map((t, i) => {
         const { p1, p2 } = getTeamPlayers(t);
-        return `<div style="display:flex;align-items:center;gap:16px;padding:12px;background:${i===0?'rgba(224,120,80,0.1)':'var(--cream)'};border-radius:10px;margin-bottom:8px;${i===0?'border:2px solid var(--clay)':''}">
+        return `<div class="day-rank-row" style="display:flex;align-items:center;gap:16px;padding:12px;background:${i===0?'rgba(224,120,80,0.1)':'var(--cream)'};border-radius:10px;margin-bottom:8px;${i===0?'border:2px solid var(--clay)':''}">
           <div style="font-family:'Sublime',sans-serif;font-size:24px;color:${i===0?'var(--clay)':'var(--text-muted)'}">#${i+1}</div>
           <div style="display:flex;gap:4px">${av(p1,'xs')}${av(p2,'xs')}</div>
           <div style="flex:1"><div style="font-weight:600">${esc(t.name)}</div></div>
