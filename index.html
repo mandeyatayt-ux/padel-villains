@@ -3826,6 +3826,44 @@
     [data-theme="court-green"] .md-sticky-progress-fill { background: var(--cg-lime); border-radius: 0 !important; }
     [data-theme="court-green"] .md-scorer-strip { margin: 0 0 8px !important; border-radius: 0 !important; padding: 6px 12px !important; font-size: 12px; }
 
+    /* Court Green ladder: podium tiles + "the rest" */
+    .cg-podium { display: none; }
+    [data-theme="court-green"] .cg-podium { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 8px; align-items: end; margin: 0 calc(-1 * var(--cg-gutter)) 0; padding: 0 var(--cg-pad) 0; background: var(--cg-orange); }
+    [data-theme="court-green"] .cg-pod { background: var(--cg-cream); color: var(--cg-green); padding: 14px 12px 12px; position: relative; }
+    [data-theme="court-green"] .cg-pod.one { background: var(--cg-lime); padding-top: 22px; }
+    [data-theme="court-green"] .cg-pod-p { font-family: 'Anton', Impact, sans-serif; font-size: 40px; line-height: .85; }
+    [data-theme="court-green"] .cg-pod.one .cg-pod-p { font-size: 56px; }
+    [data-theme="court-green"] .cg-pod-n { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 14px; margin-top: 10px; line-height: 1.2; }
+    [data-theme="court-green"] .cg-pod-n small { display: block; font-weight: 600; font-size: 11px; opacity: .75; margin-top: 2px; }
+    [data-theme="court-green"] .cg-pod-v { font-family: 'Anton', Impact, sans-serif; font-size: 22px; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(11,31,26,.14); }
+    [data-theme="court-green"] .cg-pod-v small { font-family: 'Manrope', sans-serif; font-size: 10px; font-weight: 700; margin-left: 4px; text-transform: none; }
+    [data-theme="court-green"] .cg-mv { position: absolute; right: 10px; top: 10px; font-size: 11px; font-weight: 800; background: var(--cg-green); color: var(--cg-lime); padding: 4px 7px; }
+    [data-theme="court-green"] .cg-mv.dn { background: var(--cg-orange); color: var(--cg-cream); }
+    [data-theme="court-green"] #rankings .rankings-table { padding-top: 0; }
+    [data-theme="court-green"] #rankings .rankings-table::before { content: "The rest"; display: block; font-family: 'Anton', Impact, sans-serif; font-size: 30px; text-transform: uppercase; color: var(--cg-cream); padding: 22px 0 10px; }
+    [data-theme="court-green"] #rankings .rankings-row.top-3 { display: none !important; }
+    [data-theme="court-green"] #rankings .rankings-head { order: 0; }
+    /* the section that holds the table: podium first, then head, then rows */
+    [data-theme="court-green"] #rankings .rankings-table { display: flex; flex-direction: column; }
+    [data-theme="court-green"] #rankings .rankings-table .cg-podium { order: -2; margin-top: -8px; }
+    [data-theme="court-green"] #rankings .rankings-table::before { order: -1; }
+    [data-theme="court-green"] #rankings #rankingsBody, [data-theme="court-green"] #rankings #individualRankingsBody { display: contents; }
+    /* individual table: six columns, no wrapping */
+    [data-theme="court-green"] #individualRankingsSection .rankings-head, [data-theme="court-green"] #individualRankingsSection .rankings-row { grid-template-columns: 44px minmax(0,1fr) 56px 76px 84px 56px !important; }
+    [data-theme="court-green"] #individualRankingsSection .rankings-head span, [data-theme="court-green"] #individualRankingsSection .rankings-row > span { text-align: right; }
+    [data-theme="court-green"] #individualRankingsSection .rankings-head span:nth-child(-n+2), [data-theme="court-green"] #individualRankingsSection .rankings-row > span:nth-child(-n+2) { text-align: left; }
+    [data-theme="court-green"] #individualRankingsSection .rank-record { justify-content: flex-end; }
+    [data-theme="court-green"] #individualRankingsSection .rank-rate { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    [data-theme="court-green"] #individualRankingsSection .rank-rate-bar { width: 100%; }
+    [data-theme="court-green"] #individualRankingsSection .streak-badge { border-radius: 0 !important; background: var(--cg-green-2) !important; color: var(--cg-cream) !important; font-weight: 800; }
+    [data-theme="court-green"] #individualRankingsSection .streak-badge.hot { background: var(--cg-lime) !important; color: var(--cg-green) !important; }
+    [data-theme="court-green"] #individualRankingsSection .streak-badge.cold { background: var(--cg-orange) !important; color: var(--cg-cream) !important; }
+    @media (max-width: 768px) {
+      [data-theme="court-green"] #individualRankingsSection .rankings-head, [data-theme="court-green"] #individualRankingsSection .rankings-row { grid-template-columns: 40px minmax(0,1fr) 44px 64px !important; }
+      [data-theme="court-green"] #individualRankingsSection .rankings-head span:nth-child(n+5), [data-theme="court-green"] #individualRankingsSection .rankings-row > span:nth-child(n+5) { display: none; }
+      [data-theme="court-green"] .cg-podium { margin-right: -12px !important; }
+    }
+
     /* Scorer lock strip + read-only cockpit */
     .md-scorer-strip{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.2px}
     .md-scorer-strip.is-scorer{background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success)}
@@ -10363,12 +10401,26 @@
     // ===== RANKINGS =====
     let rankingFilter = 'all';
     
+
+    // Court Green podium: top three as tiles (2 · 1 · 3), first in lime. Hidden in other themes.
+    function cgPodium(items) {
+      // items: [{name, sub, val, unit, mv}] in rank order (up to 3)
+      if (!items || items.length < 1) return '';
+      const tile = (it, pos) => it ? `<div class="cg-pod ${pos === 1 ? 'one' : ''}">
+          ${it.mv ? `<span class="cg-mv ${it.mv < 0 ? 'dn' : ''}">${it.mv > 0 ? '▲' : '▼'}${Math.abs(it.mv)}</span>` : ''}
+          <div class="d cg-pod-p">${pos}</div>
+          <div class="cg-pod-n">${it.name}<small>${it.sub || ''}</small></div>
+          <div class="d cg-pod-v">${it.val}<small>${it.unit || ''}</small></div>
+        </div>` : '<div></div>';
+      return `<div class="cg-only cg-podium">${tile(items[1], 2)}${tile(items[0], 1)}${tile(items[2], 3)}</div>`;
+    }
     function renderRankings() {
       const filterDate = rankingFilter === 'day' ? document.getElementById('rankingDate').value : null;
       const r = rankTeamsByMatches(filterDate);
       const dayVillain = filterDate ? (r.length > 0 ? r[0] : null) : getDayVillains();
       
-      document.getElementById('rankingsBody').innerHTML = r.length ? r.map((t, i) => {
+      const teamPodium = cgPodium(r.slice(0, 3).map(t => { const { p1, p2 } = getTeamPlayers(t); return { name: esc(t.name), sub: `${esc(p1?.name || '?')} & ${esc(p2?.name || '?')} · ${t.wins}W ${t.losses}L`, val: t.rating, unit: 'rtg' }; }));
+      document.getElementById('rankingsBody').innerHTML = r.length ? teamPodium + r.map((t, i) => {
         const { p1, p2 } = getTeamPlayers(t);
         const isVillain = dayVillain && t.id === dayVillain.id;
         const rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
@@ -10426,7 +10478,8 @@
       }
       
       // Render rankings table
-      document.getElementById('individualRankingsBody').innerHTML = playerStats.length ? playerStats.map((p, i) => {
+      const indivPodium = cgPodium(playerStats.slice(0, 3).map(p => ({ name: esc(p.name), sub: `${p.played} played · ${p.wins} won`, val: p.rating, unit: 'rtg' })));
+      document.getElementById('individualRankingsBody').innerHTML = playerStats.length ? indivPodium + playerStats.map((p, i) => {
         const player = getPlayer(p.id);
         const rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
         const streakClass = p.streakType === 'win' ? 'hot' : p.streakType === 'loss' ? 'cold' : '';
