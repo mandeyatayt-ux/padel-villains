@@ -7484,7 +7484,7 @@
     
     // Compute composite rating for a player (all-time)
     function computePlayerRating(wins, games, playerId, maxGamesInLeague) {
-      if (games === 0) return { rating: 0, wrScore: 0, gpScore: 0, attScore: 0 };
+      if (games === 0) return { rating: 0, wrScore: 0, gpScore: 0, attScore: 0, qualified: false };
       const wrScore = Math.round((wins + BAYESIAN_K * 0.5) / (games + BAYESIAN_K) * 100);
       const gpScore = maxGamesInLeague > 0 ? Math.round((games / maxGamesInLeague) * 100) : 0;
       const att = getPlayerAttendance(playerId);
@@ -7495,7 +7495,7 @@
     
     // Compute composite rating for a team (all-time)
     function computeTeamRating(wins, totalMatches, teamId, maxGamesInLeague) {
-      if (totalMatches === 0) return { rating: 0, wrScore: 0, gpScore: 0, attScore: 0 };
+      if (totalMatches === 0) return { rating: 0, wrScore: 0, gpScore: 0, attScore: 0, qualified: false };
       const wrScore = Math.round((wins + BAYESIAN_K * 0.5) / (totalMatches + BAYESIAN_K) * 100);
       const gpScore = maxGamesInLeague > 0 ? Math.round((totalMatches / maxGamesInLeague) * 100) : 0;
       const att = getTeamAttendance(teamId);
@@ -7564,9 +7564,10 @@
           if (b.rating !== a.rating) return b.rating - a.rating;
           return a.losses - b.losses;
         }
-        // Overall rankings: qualified first, then by rating
-        if (a.qualified !== false && b.qualified === false) return -1;
-        if (a.qualified === false && b.qualified !== false) return 1;
+        // Overall rankings: qualified (5+ games) first by rating, then teams still
+        // qualifying by rating, then teams that haven't played yet at the bottom.
+        const tier = t => (t.qualified !== false ? 0 : (t.matches > 0 ? 1 : 2));
+        if (tier(a) !== tier(b)) return tier(a) - tier(b);
         if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
@@ -7597,9 +7598,8 @@
           if (b.rating !== a.rating) return b.rating - a.rating;
           return a.losses - b.losses;
         }
-        // Overall rankings: qualified first, then by rating
-        if (a.qualified !== false && b.qualified === false) return -1;
-        if (a.qualified === false && b.qualified !== false) return 1;
+        const tier = p => (p.qualified !== false ? 0 : (p.games > 0 ? 1 : 2));
+        if (tier(a) !== tier(b)) return tier(a) - tier(b);
         if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
         return a.losses - b.losses;
@@ -10472,7 +10472,7 @@
             <div class="rank-avatars">${av(p1, 'sm')}${av(p2, 'sm')}</div>
             <div class="rank-info">
               <h4>${esc(t.name)}${isVillain ? '<span class="rank-villain-tag">👑 VILLAINS</span>' : ''}</h4>
-              <p>${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}${t.totalDays ? ` · ${t.daysAttended || 0}/${t.totalDays} days` : ''}</p>
+              <p>${esc(p1?.name || '?')} & ${esc(p2?.name || '?')}${t.totalDays ? ` · ${t.daysAttended || 0}/${t.totalDays} days` : ''}${(!filterDate && t.qualified === false && t.matches > 0) ? ` · qualifying ${t.matches}/${MIN_RANKED_GAMES}` : ''}</p>
             </div>
           </span>
           <span class="rank-record">
