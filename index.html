@@ -6401,9 +6401,18 @@
     // Deterministic uid: same match day + round + sides => same uid on every
     // device, every retry. Upserting on match_uid is therefore idempotent and
     // two scorers saving the same game can never create two rows.
-    function mdMatchUid({ round, t1, t2, p1, p2, mdId }) {
+    function mdMatchUid({ round, t1, t2, p1, p2, mdId, id }) {
       const md = mdId ?? activeMatchday?.id;
       if (!md) return generateMatchUID();
+      // Manual (round-less) games: key on the record's own id. It is minted once on the
+      // client and reused on every retry (idempotent), and it is unique per game, so a
+      // rematch entered from a device that never saw the first game cannot collide.
+      if (round == null && id != null) {
+        const side = (t1 || t2)
+          ? [String(t1 ?? ''), String(t2 ?? '')].sort().join('~')
+          : [(p1 || []).slice().sort().join('.'), (p2 || []).slice().sort().join('.')].sort().join('~');
+        return `md${md}|x${id}|${side}`;
+      }
       const side = (t1 || t2)
         ? [String(t1 ?? ''), String(t2 ?? '')].sort().join('~')
         : [(p1 || []).slice().sort().join('.'), (p2 || []).slice().sort().join('.')].sort().join('~');
@@ -13423,9 +13432,10 @@
       
       // Also save as a real match for history
       const winnerId = side === 'kings' ? kingsId : challengerId;
+      const _kid = generateNumericId();
       const matchRecord = {
-        id: generateNumericId(),
-        match_uid: mdMatchUid({ t1: kingsId, t2: challengerId }),
+        id: _kid,
+        match_uid: mdMatchUid({ t1: kingsId, t2: challengerId, id: _kid }),
         matchday_id: mdActiveId(),
         date: activeMatchday?.date || getLocalDateStr(),
         location: activeMatchday?.venue || '',
@@ -14481,9 +14491,10 @@
       if (t1 === t2) { toast('Select different teams', 'error'); if (btn) btn.disabled = false; return; }
       if (scoreA === scoreB) { toast('Game cannot be a tie', 'error'); if (btn) btn.disabled = false; return; }
       
+      const _mid = generateNumericId();
       const matchData = {
-        id: generateNumericId(),
-        match_uid: mdMatchUid({ t1, t2, mdId: mdIdForDate(date) }),
+        id: _mid,
+        match_uid: mdMatchUid({ t1, t2, mdId: mdIdForDate(date), id: _mid }),
         matchday_id: mdIdForDate(date),
         date,
         location: activeMatchday?.venue || '',
@@ -14526,9 +14537,10 @@
       if (t1 === t2) { toast('Select different teams', 'error'); if (btn) btn.disabled = false; return; }
       if (isDuplicateInQueue(t1, t2)) { toast('This match is already in the queue', 'error'); if (btn) btn.disabled = false; return; }
       
+      const _mid = generateNumericId();
       const matchData = {
-        id: generateNumericId(),
-        match_uid: mdMatchUid({ t1, t2, mdId: mdIdForDate(date) }),
+        id: _mid,
+        match_uid: mdMatchUid({ t1, t2, mdId: mdIdForDate(date), id: _mid }),
         matchday_id: mdIdForDate(date),
         date,
         location: activeMatchday?.venue || '',
