@@ -3798,6 +3798,18 @@
     [data-theme="court-green"] .md-schedule-match { padding: 10px 12px !important; }
     [data-theme="court-green"] .md-schedule-court { border-radius: 0 !important; background: var(--cg-green-2) !important; color: var(--cg-cream) !important; font-weight: 800; }
 
+    /* sign out */
+    .sidebar-signout { width: 32px; height: 32px; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: 8px; flex: none; }
+    .sidebar-signout:hover { background: rgba(0,0,0,.08); color: var(--danger); }
+    [data-theme="court-green"] .sidebar-signout { color: var(--cg-cream); opacity: .7; border-radius: 0 !important; }
+    [data-theme="court-green"] .sidebar-signout:hover { opacity: 1; background: var(--cg-orange); color: var(--cg-cream); }
+    [data-theme="court-green"] .user-dropdown { background: var(--cg-green-2) !important; border: 1px solid var(--border) !important; box-shadow: none !important; }
+    [data-theme="court-green"] .user-dropdown-item { color: var(--cg-cream) !important; border-radius: 0 !important; font-family: 'Manrope', sans-serif; font-weight: 700; }
+    [data-theme="court-green"] .user-dropdown-item:hover { background: rgba(247,237,218,.08) !important; }
+    [data-theme="court-green"] .user-dropdown-item.danger { color: var(--cg-orange) !important; }
+    [data-theme="court-green"] .user-dropdown-divider { background: var(--border) !important; }
+    [data-theme="court-green"] #myprofile .signout-card { background: var(--cg-green-2) !important; border: 0 !important; }
+
     /* Scorer lock strip + read-only cockpit */
     .md-scorer-strip{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.2px}
     .md-scorer-strip.is-scorer{background:color-mix(in srgb,var(--success) 14%,transparent);color:var(--success)}
@@ -3928,7 +3940,8 @@
       </div>
       <div class="sidebar-user">
         <div class="avatar sm" id="sidebarAvatar" style="background:linear-gradient(135deg,var(--clay),var(--clay-dark));color:white;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;font-size:13px;font-weight:700">T</div>
-        <div><div class="sidebar-user-name" id="sidebarName">Tayt M.</div><div class="sidebar-user-role" id="sidebarRole">Admin</div></div>
+        <div style="flex:1;min-width:0"><div class="sidebar-user-name" id="sidebarName">Tayt M.</div><div class="sidebar-user-role" id="sidebarRole">Admin</div></div>
+        <button class="sidebar-signout" onclick="event.stopPropagation(); handleLogout()" title="Sign out" aria-label="Sign out"><i class="fas fa-sign-out-alt"></i></button>
       </div>
     </nav>
     <!-- ===== DASHBOARD TAB ===== -->
@@ -4294,6 +4307,10 @@
           <input type="password" class="form-input" id="myConfirmPassword" placeholder="Confirm new password">
         </div>
         <button class="btn btn-primary" onclick="changeMyPassword()"><i class="fas fa-save"></i> Update Password</button>
+      </div>
+      <div class="card signout-card" style="margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div><div style="font-weight:800;font-size:15px">Signed in as <span id="signoutName">you</span></div><div style="font-size:12px;opacity:.75;margin-top:2px">Sign out on this device. Your data stays on the circuit.</div></div>
+        <button class="btn btn-secondary" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Sign out</button>
       </div>
     </section>
     <section class="tab" id="players">
@@ -16925,7 +16942,10 @@
       setTimeout(() => errorEl.classList.remove('show'), 3000);
     }
     
-    function handleLogout() {
+    async function handleLogout() {
+      if (!confirm('Sign out on this device?')) return;
+      try { if (activeMatchday && mdIsScorer() && activeMatchday.scorer_device_id === PV_DEVICE_ID) await mdReleaseScorer(); } catch (e) {}
+      try { document.getElementById('userMenu')?.classList.remove('open'); } catch (e) {}
       currentUser = null;
       localStorage.removeItem('pv_currentUser');
       document.body.classList.remove('is-admin');
@@ -16941,6 +16961,7 @@
       
       // Update header user menu
       document.getElementById('userMenuName').textContent = player.name;
+      const so = document.getElementById('signoutName'); if (so) so.textContent = player.name;
       document.getElementById('userMenuRole').textContent = currentUser.is_admin ? 'ADMIN' : 'PLAYER';
       const avatarEl = document.getElementById('userMenuAvatar');
       const userPhoto = player.photo || photoCache[player.id];
