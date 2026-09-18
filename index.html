@@ -4512,6 +4512,7 @@
                 </div>
                 <div id="mdInfoOngoingList"></div>
               </div>
+              <div id="mdStaleNotice" style="display:none;margin-top:10px;font-size:12px;font-weight:700"></div>
               <div id="mdRailSitting" style="display:none;margin-top:12px">
                 <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px">🪑 Sitting out</div>
                 <div class="md-sitting-chips" id="mdRailSittingChips"></div>
@@ -11697,12 +11698,23 @@
       // matches for the day (spectator mode: courts visible, rail hidden)
       ongoingEl.style.display = (pendingQueue.length > 0 || dayOngoing.length > 0) ? '' : 'none';
       if (railQueueWrap) railQueueWrap.style.display = pendingQueue.length > 0 ? '' : 'none';
+      // Ongoing rows stranded on a court that no longer exists: offer to put them back in the queue
+      try {
+        const staleEl = document.getElementById('mdStaleNotice');
+        const stale = ongoingMatches.filter(m => m.md_round && !mdOnCourtMatches().includes(m));
+        if (staleEl) {
+          if (stale.length && isActiveView && mdStep === 'live' && currentUser?.is_admin) {
+            staleEl.style.display = '';
+            staleEl.innerHTML = `${stale.length} match${stale.length > 1 ? 'es' : ''} stuck on a court that no longer exists. <button class="btn btn-sm btn-secondary" onclick="mdReturnStaleToQueue()">Return to queue</button>`;
+          } else { staleEl.style.display = 'none'; staleEl.innerHTML = ''; }
+        }
+      } catch (e) {}
       if (pendingQueue.length > 0) {
         document.getElementById('mdInfoQueueCount').textContent = `${pendingQueue.length} match${pendingQueue.length !== 1 ? 'es' : ''}`;
         // Which teams/players are busy on court right now?
         const qBusyTeams = new Set();
         const qBusyPlayers = new Set();
-        ongoingMatches.filter(m => m.md_round).forEach(m => {
+        mdOnCourtMatches().forEach(m => {
           if (m.team1_id) qBusyTeams.add(m.team1_id);
           if (m.team2_id) qBusyTeams.add(m.team2_id);
           (m.team1_players || []).concat(m.team2_players || []).forEach(p => qBusyPlayers.add(p));
@@ -12378,7 +12390,7 @@
             } else {
               const idleBusyTeams = new Set();
               const idleBusyPlayers = new Set();
-              ongoingMatches.filter(m => m.md_round).forEach(m => {
+              mdOnCourtMatches().forEach(m => {
                 if (m.team1_id) idleBusyTeams.add(m.team1_id);
                 if (m.team2_id) idleBusyTeams.add(m.team2_id);
                 (m.team1_players || []).concat(m.team2_players || []).forEach(p => idleBusyPlayers.add(p));
@@ -12508,7 +12520,7 @@
     function mdTopUpQueue() {
       if (mdStep !== 'live' || !mdGeneratedSchedule) return;
       const busyTeams = new Set(), busyPlayers = new Set();
-      ongoingMatches.filter(m => m.md_round).forEach(m => {
+      mdOnCourtMatches().forEach(m => {
         if (m.team1_id) busyTeams.add(m.team1_id);
         if (m.team2_id) busyTeams.add(m.team2_id);
         (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(p));
@@ -12542,7 +12554,7 @@
       const busyTeams = new Set();
       const busyPlayers = new Set();
       const onCourtKeys = new Set();
-      ongoingMatches.filter(m => m.md_round).forEach(m => {
+      mdOnCourtMatches().forEach(m => {
         if (m.team1_id) busyTeams.add(m.team1_id);
         if (m.team2_id) busyTeams.add(m.team2_id);
         (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(p));
@@ -12654,7 +12666,7 @@
       if (!mdAssertScorer('cancel matches')) return;
       if (!confirm('Cancel this match? It will be removed entirely.')) return;
       const match = ongoingMatches.find(m => m.id === matchId);
-      ongoingMatches = ongoingMatches.filter(m => m.id !== matchId);
+      ongoingMatches = ongoingMatches.filter(m => String(m.id) !== String(matchId));
       if (supabaseClient) {
         supabaseClient.from('ongoing_matches').delete().eq('id', matchId).then(({ error }) => {
           if (error) console.error('Delete ongoing error:', error);
@@ -12674,11 +12686,11 @@
       toast('Match cancelled', 'info');
     }
 
-    async function mdReturnToQueue(matchId) {
+    async function mdReturnToQueue(matchId, silent) {
       if (!mdAssertScorer('reorder the queue')) return;
-      const match = ongoingMatches.find(m => m.id === matchId);
+      const match = ongoingMatches.find(m => String(m.id) === String(matchId));
       if (!match) return;
-      if (!confirm('Return this match to the back of the queue?')) return;
+      if (!silent && !confirm('Return this match to the back of the queue?')) return;
       ongoingMatches = ongoingMatches.filter(m => m.id !== matchId);
       if (supabaseClient) {
         supabaseClient.from('ongoing_matches').delete().eq('id', matchId).then(({ error }) => {
@@ -12740,6 +12752,16 @@
       const p = (arr) => (arr || []).slice().sort().join('.');
       return `${m.md_round}|${[p(m.team1_players), p(m.team2_players)].sort().join('~')}`;
     }
+    // Matches physically on a current court (Court 1..mdCourts). Rows left "ongoing" on a
+    // court that no longer exists (removed court, stale session) must not block the queue.
+    function mdCourtNum(m) {
+      const c = m?.court; if (c == null) return null;
+      const n = parseInt(String(c).replace(/[^0-9]/g, ''), 10);
+      return Number.isNaN(n) ? null : n;
+    }
+    function mdOnCourtMatches() {
+      return ongoingMatches.filter(m => m.md_round && (() => { const n = mdCourtNum(m); return n !== null && n >= 1 && n <= mdCourts; })());
+    }
     function mdGetPendingQueue() {
       if (!mdGeneratedSchedule) return [];
       const completedSids = new Set(mdCompletedGames.map(m => m.sid));
@@ -12757,7 +12779,7 @@
       if (!match) return;
       // Check if either team is already on court
       const teamsOnCourt = new Set();
-      ongoingMatches.filter(m => m.md_round).forEach(m => {
+      mdOnCourtMatches().forEach(m => {
         if (m.team1_id) teamsOnCourt.add(m.team1_id);
         if (m.team2_id) teamsOnCourt.add(m.team2_id);
       });
@@ -12824,6 +12846,11 @@
       await mdSendToCourt(idx, court);
     }
     function mdSetupQueueDrag() {}
+    async function mdReturnStaleToQueue() {
+      const stale = ongoingMatches.filter(m => m.md_round && !mdOnCourtMatches().includes(m));
+      for (const m of stale) { try { await mdReturnToQueue(m.id, true); } catch (e) { console.warn('return stale failed', e); } }
+      renderMDLive(); try { renderMdInfoHub(); } catch (e) {}
+    }
 
     // Hook into match completion to advance rounds
     function mdOnMatchComplete(completedMatch) {
