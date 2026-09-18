@@ -3073,7 +3073,7 @@
 
     /* -- login: Option 02 "minimal court" — no card, a hairline court, form on the field -- */
     [data-theme="court-green"] .login-screen {
-      background: linear-gradient(rgba(20,19,18,.35), rgba(20,19,18,.35)), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201200%20520%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%221200%22%20height%3D%22520%22%20fill%3D%22%23141312%22%2F%3E%3Cg%20stroke%3D%22%233C3935%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%3E%3Crect%20x%3D%22120%22%20y%3D%2260%22%20width%3D%22960%22%20height%3D%22400%22%2F%3E%3Cline%20x1%3D%22600%22%20y1%3D%2260%22%20x2%3D%22600%22%20y2%3D%22460%22%20stroke%3D%22%23C84E28%22%20stroke-opacity%3D%22.55%22%2F%3E%3Cline%20x1%3D%22120%22%20y1%3D%22260%22%20x2%3D%221080%22%20y2%3D%22260%22%2F%3E%3Cline%20x1%3D%22264%22%20y1%3D%2260%22%20x2%3D%22264%22%20y2%3D%22460%22%2F%3E%3Cline%20x1%3D%22936%22%20y1%3D%2260%22%20x2%3D%22936%22%20y2%3D%22460%22%2F%3E%3Crect%20x%3D%22264%22%20y%3D%2260%22%20width%3D%22672%22%20height%3D%22400%22%20stroke-dasharray%3D%225%207%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") 22% 50% / cover no-repeat #09332C !important;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 900' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23F7EDDA' stroke-opacity='.14' stroke-width='1.2'%3E%3Crect x='70' y='120' width='380' height='640'/%3E%3Cline x1='70' y1='440' x2='450' y2='440' stroke-opacity='.3' stroke-width='2'/%3E%3Cline x1='70' y1='270' x2='450' y2='270'/%3E%3Cline x1='70' y1='610' x2='450' y2='610'/%3E%3Cline x1='260' y1='270' x2='260' y2='610'/%3E%3C/g%3E%3C/svg%3E") center top / 100% auto no-repeat #09332C !important;
       align-items: center; justify-content: center;
     }
     [data-theme="court-green"] #loginScreen .login-card {
@@ -3111,8 +3111,7 @@
     [data-theme="court-green"] #loginScreen .login-error { background: var(--danger-bg) !important; border: 1px solid var(--danger); color: #E07A6C; margin-bottom: 14px; }
     [data-theme="court-green"] #loginScreen .login-suggestions { background: #2E4B3C !important; border: 1px solid var(--border) !important; box-shadow: none !important; }
     @media (max-width: 480px) {
-      [data-theme="court-green"] .login-screen { background: linear-gradient(rgba(9,51,44,.55), rgba(9,51,44,.55)), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201200%20520%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%221200%22%20height%3D%22520%22%20fill%3D%22%2309332C%22%2F%3E%3Cg%20stroke%3D%22%232E4B3C%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%3E%3Crect%20x%3D%22120%22%20y%3D%2260%22%20width%3D%22960%22%20height%3D%22400%22%2F%3E%3Cline%20x1%3D%22600%22%20y1%3D%2260%22%20x2%3D%22600%22%20y2%3D%22460%22%20stroke%3D%22%23E6F286%22%20stroke-opacity%3D%22.55%22%2F%3E%3Cline%20x1%3D%22120%22%20y1%3D%22260%22%20x2%3D%221080%22%20y2%3D%22260%22%2F%3E%3Cline%20x1%3D%22264%22%20y1%3D%2260%22%20x2%3D%22264%22%20y2%3D%22460%22%2F%3E%3Cline%20x1%3D%22936%22%20y1%3D%2260%22%20x2%3D%22936%22%20y2%3D%22460%22%2F%3E%3Crect%20x%3D%22264%22%20y%3D%2260%22%20width%3D%22672%22%20height%3D%22400%22%20stroke-dasharray%3D%225%207%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E") 0% 0% / 260% auto no-repeat #09332C !important; }
-      [data-theme="court-green"] #loginScreen .login-card { padding: 20px 18px !important; }
+            [data-theme="court-green"] #loginScreen .login-card { padding: 20px 18px !important; }
     }
     [data-theme="court-green"] .login-suggestion { border-bottom-color: var(--border); }
     [data-theme="court-green"] .login-suggestion:hover { background: #2E4B3C; }
@@ -3569,12 +3568,15 @@
 
     /* ===== COURT GREEN LOGIN (from padel-villains-pages.html #login) ===== */
     .login-cg { display: none; }
-    [data-theme="court-green"] .login-screen { align-items: stretch !important; justify-content: flex-start !important; background-position: center 18% !important; background-size: 150% auto !important; }
+    [data-theme="court-green"] .login-screen { align-items: stretch !important; justify-content: flex-start !important; background-image: none !important; }
+    [data-theme="court-green"] #loginScreen .login-card { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 900' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23F7EDDA' stroke-opacity='.14' stroke-width='1.2'%3E%3Crect x='70' y='120' width='380' height='640'/%3E%3Cline x1='70' y1='440' x2='450' y2='440' stroke-opacity='.3' stroke-width='2'/%3E%3Cline x1='70' y1='270' x2='450' y2='270'/%3E%3Cline x1='70' y1='610' x2='450' y2='610'/%3E%3Cline x1='260' y1='270' x2='260' y2='610'/%3E%3C/g%3E%3C/svg%3E") center top / 100% auto no-repeat transparent !important; }
     [data-theme="court-green"] #loginScreen .login-card { max-width: 520px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; justify-content: space-between; padding: 0 !important; }
     [data-theme="court-green"] #loginScreen .login-logo,
     [data-theme="court-green"] #loginScreen .login-poster-title { display: none !important; }
     [data-theme="court-green"] #loginScreen .login-cg { display: block; }
-    [data-theme="court-green"] #loginScreen .login-cg-meta { display: flex; justify-content: space-between; padding: 22px 20px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; color: var(--cg-cream); opacity: .85; }
+    [data-theme="court-green"] #loginScreen .login-cg-brand { display: inline-flex; align-items: center; gap: 10px; font-family: 'Anton', Impact, sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; }
+    [data-theme="court-green"] #loginScreen .login-cg-logo { width: 34px; height: 34px; border-radius: 50% !important; background: var(--cg-orange) center / cover no-repeat; display: inline-block; }
+    [data-theme="court-green"] #loginScreen .login-cg-meta { display: flex; align-items: center; justify-content: space-between; padding: 22px 20px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; color: var(--cg-cream); opacity: .85; }
     [data-theme="court-green"] #loginScreen .login-cg-title { padding: 40px 20px 0; font-family: 'Anton', Impact, sans-serif; font-size: clamp(64px, 19vw, 90px); line-height: .85; text-transform: uppercase; color: var(--cg-cream); }
     [data-theme="court-green"] #loginScreen .login-cg-title i { font-style: normal; color: var(--cg-orange); }
     [data-theme="court-green"] #loginScreen .login-cg-sub { margin: 16px 20px 0; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600; color: var(--cg-cream); opacity: .85; max-width: 300px; }
@@ -3737,7 +3739,7 @@
       </div>
       <div class="login-poster-title" aria-hidden="true">Sign<br><span>in.</span></div>
       <div class="login-cg" aria-hidden="true">
-        <div class="login-cg-meta"><span>Padel Villains</span><span>The circuit · Harare</span></div>
+        <div class="login-cg-meta"><span class="login-cg-brand"><span class="login-cg-logo"></span>Padel Villains</span><span>The circuit · Harare</span></div>
         <div class="login-cg-title">Get on<br>court<i>.</i></div>
         <p class="login-cg-sub">Sign in to see who's playing Friday, your ladder spot, and who's talking trash.</p>
       </div>
@@ -15100,6 +15102,10 @@
       return names[themeName] || themeName;
     }
     
+    // Court Green login: reuse the badge logo already on the page
+    document.addEventListener('DOMContentLoaded', () => {
+      try { const src = document.querySelector('.login-logo img')?.src; const el = document.querySelector('.login-cg-logo'); if (src && el) el.style.backgroundImage = `url("${src}")`; } catch (e) {}
+    });
     function loadTheme() {
       let savedTheme = DEFAULT_THEME;
       try {
