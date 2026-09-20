@@ -1886,8 +1886,16 @@
       /* Sidebar layouts (tablet landscape / desktop) */
       @media (min-width: 1024px) { .nav { padding-top: env(safe-area-inset-top, 0px) !important; } }
     }
-    /* Nothing may push the page wider than the screen */
+    /* Nothing may push the page wider than the screen. iOS WebKit ignores
+       overflow-x:hidden on the body for touch panning, so gestures are limited
+       to vertical except inside intentional horizontal scrollers. */
     html, body { width: 100%; max-width: 100vw; }
+    body { touch-action: pan-y pinch-zoom; }
+    .nav, .md-pills, .court-booking-tabs, .scoring-visual, .rankings-scroll, [data-hscroll] { touch-action: pan-x pan-y; }
+    @media (max-width: 768px) {
+      .my-profile-stats { flex-wrap: wrap; gap: 16px 24px; justify-content: center; }
+      .my-profile-stat { min-width: 64px; }
+    }
     img, video, canvas, svg, table { max-width: 100%; }
     
     /* --- Touch optimizations --- */

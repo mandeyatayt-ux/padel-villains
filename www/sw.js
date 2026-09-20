@@ -1,5 +1,5 @@
 // Padel Villains Service Worker
-const CACHE_VERSION = 'pv-v56';
+const CACHE_VERSION = 'pv-v57';
 const CACHE_NAME = `padel-villains-${CACHE_VERSION}`;
 
 // Core assets to cache for offline use
