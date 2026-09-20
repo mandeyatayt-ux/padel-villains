@@ -1,0 +1,18 @@
+{
+  "appId": "com.padelvillains.app",
+  "appName": "Padel Villains",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#141312"
+  },
+  "android": {
+    "backgroundColor": "#141312"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0,
+      "backgroundColor": "#141312"
+    }
+  }
+}

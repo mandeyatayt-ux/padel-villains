@@ -1,0 +1,17 @@
+{
+  "name": "padel-villains",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Padel Villains — Harare social padel circuit",
+  "scripts": {
+    "sync": "cap sync",
+    "ios": "cap sync ios && cap open ios",
+    "android": "cap sync android && cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2"
+  }
+}
