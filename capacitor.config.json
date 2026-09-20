@@ -3,7 +3,6 @@
   "appName": "Padel Villains",
   "webDir": "www",
   "ios": {
-    "contentInset": "automatic",
     "backgroundColor": "#141312"
   },
   "android": {

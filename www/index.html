@@ -2,7 +2,7 @@
 <html lang="en" data-theme="court-green">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Padel Villains - Social League Tracker</title>
   <meta name="description" content="Track your padel matches, rankings, and achievements">
   <meta name="theme-color" content="#09332C">
@@ -1870,10 +1870,25 @@
     
     /* --- Safe area for notched phones --- */
     @supports (padding: max(0px)) {
-      .header { padding-top: max(0px, env(safe-area-inset-top)); }
+      /* Header grows by the status-bar height (box-sizing is border-box, so
+         padding alone would squash the contents). */
+      .header { padding-top: env(safe-area-inset-top, 0px); height: calc(64px + env(safe-area-inset-top, 0px)); }
+      @media (max-width: 768px) { .header { height: calc(56px + env(safe-area-inset-top, 0px)); } }
       .app { padding-bottom: max(70px, calc(60px + env(safe-area-inset-bottom))); }
       .modal-overlay { padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+      /* Fixed panels that touch the screen edges */
+      .offline-banner, .test-mode-banner { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+      .notifications-panel, .h2h-overlay { padding-top: env(safe-area-inset-top, 0px); }
+      .team-picker-modal { padding-bottom: env(safe-area-inset-bottom, 0px); }
+      .toast { bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
+      .login-screen { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+      .loading-splash { padding-top: env(safe-area-inset-top, 0px); }
+      /* Sidebar layouts (tablet landscape / desktop) */
+      @media (min-width: 1024px) { .nav { padding-top: env(safe-area-inset-top, 0px) !important; } }
     }
+    /* Nothing may push the page wider than the screen */
+    html, body { width: 100%; max-width: 100vw; }
+    img, video, canvas, svg, table { max-width: 100%; }
     
     /* --- Touch optimizations --- */
     @media (hover: none) and (pointer: coarse) {
