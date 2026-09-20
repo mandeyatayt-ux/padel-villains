@@ -7046,6 +7046,7 @@
             enableTestModeProxy();
             console.log('Supabase connected!');
             await fetchData();
+            mdRealtimeStart();
           } catch (e) {
             console.error('Supabase init error:', e);
             loadLocal();
@@ -10930,7 +10931,7 @@
       if (a && a.classList && a.classList.contains('md-cc-input')) return true;
       return [...document.querySelectorAll('.md-cc-input')].some(i => i.value !== '');
     }
-    setInterval(async () => {
+    async function mdLivePull() {
       if (_mdPollBusy || testMode || document.hidden || !supabaseClient || isOffline) return;
       const liveContext = mdStep === 'live' || ongoingMatches.some(m => m.md_round) || (activeMatchday && activeMatchday.status !== 'closed');
       if (!liveContext) return;
@@ -10958,7 +10959,44 @@
         if (!mdScoreEntryInProgress()) renderMatchDay();
       } catch (e) { console.log('live poll skipped:', e); }
       finally { _mdPollBusy = false; }
-    }, 20000);
+    }
+    // Safety-net poll (90s). Realtime below is the primary trigger.
+    setInterval(mdLivePull, 90000);
+
+    // Supabase Realtime: any change to the match-day tables triggers a pull.
+    // Bursts (e.g. four rows updated at once) collapse into one pull.
+    let _rtChannel = null, _rtDebounce = null, _rtRetry = 0;
+    function mdRealtimeSchedule() {
+      clearTimeout(_rtDebounce);
+      _rtDebounce = setTimeout(() => { mdLivePull(); }, 400);
+    }
+    function mdRealtimeStart() {
+      if (!supabaseClient || !supabaseClient.channel || _rtChannel) return;
+      _rtChannel = supabaseClient.channel('pv-matchday')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ongoing_matches' }, mdRealtimeSchedule)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, mdRealtimeSchedule)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'matchdays' }, mdRealtimeSchedule)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'draft_sessions' }, mdRealtimeSchedule)
+        .subscribe((status) => {
+          console.log('realtime:', status);
+          if (status === 'SUBSCRIBED') { _rtRetry = 0; mdLivePull(); }
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            mdRealtimeStop();
+            const wait = Math.min(30000, 2000 * Math.pow(2, _rtRetry++));
+            setTimeout(mdRealtimeStart, wait);
+          }
+        });
+    }
+    function mdRealtimeStop() {
+      if (_rtChannel && supabaseClient) { try { supabaseClient.removeChannel(_rtChannel); } catch (e) {} }
+      _rtChannel = null;
+    }
+    // Coming back to the app (phone unlocked, app foregrounded): pull now and
+    // make sure the socket is alive.
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) { mdLivePull(); mdRealtimeStart(); }
+    });
+    window.addEventListener('online', () => { mdLivePull(); mdRealtimeStart(); });
     async function mdToggleHold(c) {
       if (mdHeldCourts.has(c)) {
         mdHeldCourts.delete(c);
