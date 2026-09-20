@@ -10931,10 +10931,10 @@
       if (a && a.classList && a.classList.contains('md-cc-input')) return true;
       return [...document.querySelectorAll('.md-cc-input')].some(i => i.value !== '');
     }
-    async function mdLivePull() {
+    async function mdLivePull(force) {
       if (_mdPollBusy || testMode || document.hidden || !supabaseClient || isOffline) return;
       const liveContext = mdStep === 'live' || ongoingMatches.some(m => m.md_round) || (activeMatchday && activeMatchday.status !== 'closed');
-      if (!liveContext) return;
+      if (!liveContext && !force) return;
       if (mdScoreEntryInProgress()) return;
       _mdPollBusy = true;
       try {
@@ -10956,7 +10956,11 @@
         }
         if (!md.error && md.data) { matchdays = md.data; determineActiveMatchday(); }
         localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
-        if (!mdScoreEntryInProgress()) renderMatchDay();
+        if (!mdScoreEntryInProgress()) {
+          renderMatchDay();
+          const at = document.querySelector('.tab.active');
+          if (at && at.id === 'dashboard') { try { renderDashboard(); } catch (e) {} }
+        }
       } catch (e) { console.log('live poll skipped:', e); }
       finally { _mdPollBusy = false; }
     }
@@ -10968,7 +10972,7 @@
     let _rtChannel = null, _rtDebounce = null, _rtRetry = 0;
     function mdRealtimeSchedule() {
       clearTimeout(_rtDebounce);
-      _rtDebounce = setTimeout(() => { mdLivePull(); }, 400);
+      _rtDebounce = setTimeout(() => { mdLivePull(true); }, 400);
     }
     function mdRealtimeStart() {
       if (!supabaseClient || !supabaseClient.channel || _rtChannel) return;
@@ -10979,7 +10983,7 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'draft_sessions' }, mdRealtimeSchedule)
         .subscribe((status) => {
           console.log('realtime:', status);
-          if (status === 'SUBSCRIBED') { _rtRetry = 0; mdLivePull(); }
+          if (status === 'SUBSCRIBED') { _rtRetry = 0; mdLivePull(true); }
           if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
             mdRealtimeStop();
             const wait = Math.min(30000, 2000 * Math.pow(2, _rtRetry++));
@@ -10994,9 +10998,9 @@
     // Coming back to the app (phone unlocked, app foregrounded): pull now and
     // make sure the socket is alive.
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) { mdLivePull(); mdRealtimeStart(); }
+      if (!document.hidden) { mdLivePull(true); mdRealtimeStart(); }
     });
-    window.addEventListener('online', () => { mdLivePull(); mdRealtimeStart(); });
+    window.addEventListener('online', () => { mdLivePull(true); mdRealtimeStart(); });
     async function mdToggleHold(c) {
       if (mdHeldCourts.has(c)) {
         mdHeldCourts.delete(c);
