@@ -7047,6 +7047,7 @@
             console.log('Supabase connected!');
             await fetchData();
             mdRealtimeStart();
+            pvDataRealtimeStart();
           } catch (e) {
             console.error('Supabase init error:', e);
             loadLocal();
@@ -10991,6 +10992,36 @@
           }
         });
     }
+    // Second channel: the slower-moving tables (teams, players, venues, events,
+    // availability). Any change triggers the existing full background refresh,
+    // debounced so a burst of edits becomes one fetch. Waits if someone is
+    // mid-way through typing a score.
+    let _rtDataChannel = null, _rtDataDebounce = null;
+    function pvDataRealtimeSchedule() {
+      clearTimeout(_rtDataDebounce);
+      _rtDataDebounce = setTimeout(async () => {
+        if (testMode || document.hidden || !supabaseClient || isOffline) return;
+        if (mdScoreEntryInProgress()) { pvDataRealtimeSchedule(); return; }
+        try { await fetchFreshDataInBackground(); } catch (e) {}
+      }, 600);
+    }
+    function pvDataRealtimeStart() {
+      if (!supabaseClient || !supabaseClient.channel || _rtDataChannel) return;
+      _rtDataChannel = supabaseClient.channel('pv-data')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, pvDataRealtimeSchedule)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, pvDataRealtimeSchedule)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'venues' }, pvDataRealtimeSchedule)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, pvDataRealtimeSchedule)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'matchday_availability' }, pvDataRealtimeSchedule)
+        .subscribe((status) => {
+          console.log('realtime-data:', status);
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            if (_rtDataChannel) { try { supabaseClient.removeChannel(_rtDataChannel); } catch (e) {} }
+            _rtDataChannel = null;
+            setTimeout(pvDataRealtimeStart, 5000);
+          }
+        });
+    }
     function mdRealtimeStop() {
       if (_rtChannel && supabaseClient) { try { supabaseClient.removeChannel(_rtChannel); } catch (e) {} }
       _rtChannel = null;
@@ -10998,9 +11029,9 @@
     // Coming back to the app (phone unlocked, app foregrounded): pull now and
     // make sure the socket is alive.
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) { mdLivePull(true); mdRealtimeStart(); }
+      if (!document.hidden) { mdLivePull(true); mdRealtimeStart(); pvDataRealtimeStart(); }
     });
-    window.addEventListener('online', () => { mdLivePull(true); mdRealtimeStart(); });
+    window.addEventListener('online', () => { mdLivePull(true); mdRealtimeStart(); pvDataRealtimeStart(); });
     async function mdToggleHold(c) {
       if (mdHeldCourts.has(c)) {
         mdHeldCourts.delete(c);
