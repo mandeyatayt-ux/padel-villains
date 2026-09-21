@@ -1,1 +1,4 @@
-{ "outputDirectory": "www" }
+{
+  "outputDirectory": "www",
+  "rewrites": [{ "source": "/join/:code", "destination": "/index.html" }]
+}

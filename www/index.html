@@ -3958,6 +3958,15 @@
     [data-theme="court-green"] #loginScreen .pv-auth-msg.ok { color: var(--cg-lime); }
     [data-theme="court-green"] #loginScreen .pv-auth-msg.err { color: var(--cg-orange); }
     [data-theme="court-green"] #loginScreen .login-form { padding-top: 12px; }
+    .pv-invite-banner { background: var(--success-bg, rgba(46,125,50,.12)); border: 1px solid var(--success, #2e7d32); padding: 12px 14px; font-size: 13px; line-height: 1.45; margin-bottom: 4px; }
+    .pv-invite-banner a { color: inherit; text-decoration: underline; }
+    [data-theme="court-green"] .pv-invite-banner { background: var(--cg-lime); color: var(--cg-green); border: 0; font-family: 'Manrope', sans-serif; font-weight: 600; }
+    .pv-mig-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .pv-mig-row:last-child { border-bottom: 0; }
+    .pv-mig-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); flex: none; }
+    .pv-mig-dot.ok { background: var(--success, #2e7d32); } .pv-mig-dot.warn { background: var(--gold, #d9a441); }
+    .pv-mig-name { flex: 1; min-width: 0; } .pv-mig-name b { display: block; font-size: 14px; } .pv-mig-name small { color: var(--text-muted); font-size: 11px; }
+    [data-theme="court-green"] .pv-mig-dot.ok { background: var(--cg-lime); } [data-theme="court-green"] .pv-mig-dot.warn { background: var(--cg-orange); }
 </style>
 </head>
 <body>
@@ -3976,6 +3985,7 @@
         <p class="login-cg-sub">Sign in to see who's playing Friday, your ladder spot, and who's talking trash.</p>
       </div>
       <div class="pv-auth" id="pvAuth">
+        <div class="pv-invite-banner" id="pvInviteBanner" style="display:none"></div>
         <button type="button" class="pv-auth-btn pv-auth-apple" onclick="pvOAuth('apple')"><i class="fab fa-apple"></i> Continue with Apple</button>
         <button type="button" class="pv-auth-btn pv-auth-google" onclick="pvOAuth('google')"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.4 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9C43.9 38 46.5 31.8 46.5 24.5z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-3.9-13.5-9.4l-7.9 6C6.6 42.6 14.6 48 24 48z"/></svg> Continue with Google</button>
         <div class="pv-auth-divider"><span>or with email</span></div>
@@ -5439,6 +5449,15 @@
         <div><h2 class="section-title">👑 ADMIN PANEL</h2><p class="section-subtitle">Manage users, accounts and permissions</p></div>
       </div>
       
+      <!-- v2 migration -->
+      <div class="card" style="margin-bottom:24px">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:6px"><i class="fas fa-shield-halved" style="color:var(--clay);margin-right:8px"></i>Account migration</h3>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Each member gets a one-tap link that sets up their login and keeps their stats. Send it on WhatsApp.</p>
+        <div id="pvMigrationList"></div>
+        <h4 style="font-size:14px;font-weight:700;margin:18px 0 8px">New sign-ups without a player</h4>
+        <div id="pvOrphanList"></div>
+        <button class="btn btn-sm btn-secondary" style="margin-top:12px" onclick="renderMigrationPanel()"><i class="fas fa-rotate"></i> Refresh</button>
+      </div>
       <!-- Password Info -->
       <div class="card" style="margin-bottom:24px">
         <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-key" style="color:var(--clay);margin-right:8px"></i>User Passwords</h3>
@@ -7118,6 +7137,7 @@
         s.onload = async () => {
           try {
             const { createClient } = window.supabase;
+            pvCaptureInvite();
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
             pvWireAuth();
             enableTestModeProxy();
@@ -17246,6 +17266,85 @@
       }
     }
     
+    // ===================== Invites / claim (v2) =====================
+    function pvCaptureInvite() {
+      try {
+        let code = null;
+        const m = location.pathname.match(/^\/join\/([A-Za-z0-9-]+)/); if (m) code = m[1];
+        const q = new URLSearchParams(location.search).get('invite'); if (q) code = q;
+        if (code) { localStorage.setItem('pv_invite_code', code.toUpperCase()); history.replaceState({}, '', '/'); }
+      } catch (e) {}
+    }
+    async function pvRenderInviteBanner() {
+      const code = localStorage.getItem('pv_invite_code'); const el = document.getElementById('pvInviteBanner');
+      if (!el) return;
+      if (!code || !supabaseClient) { el.style.display = 'none'; return; }
+      const { data, error } = await supabaseClient.rpc('invite_preview', { p_code: code });
+      const r = data && data[0];
+      if (error || !r || !r.valid) { el.style.display = ''; el.innerHTML = `<b>Invite ${code}</b> — ${r?.reason || 'could not be checked'}. <a href="#" onclick="localStorage.removeItem('pv_invite_code');pvRenderInviteBanner();return false">Dismiss</a>`; return; }
+      el.style.display = '';
+      el.innerHTML = `<b>You're joining ${r.circuit_name}${r.player_name ? ' as ' + r.player_name : ''}.</b><br><span>Sign in with Apple, Google or email below and your seat${r.player_name ? ' and stats' : ''} will be attached automatically.</span>`;
+    }
+    async function pvApplyPendingInvite() {
+      const code = localStorage.getItem('pv_invite_code'); if (!code || !supabaseClient) return null;
+      const { data, error } = await supabaseClient.rpc('accept_invite', { p_code: code });
+      if (error) { console.error('accept_invite', error); toast('Could not apply invite: ' + error.message, 'error'); return null; }
+      if (!data?.ok) { toast('Invite problem: ' + (data?.error || 'unknown'), 'error'); localStorage.removeItem('pv_invite_code'); return null; }
+      localStorage.removeItem('pv_invite_code');
+      setTimeout(() => toast(data.player_name ? `Welcome back, ${data.player_name} — your seat is yours.` : 'Welcome to the circuit!', 'success'), 500);
+      return data;
+    }
+    // Admin: migration status + personal links
+    let _pvInvites = [];
+    async function pvLoadInvites() {
+      if (!supabaseClient) return;
+      const { data } = await supabaseClient.from('circuit_invites').select('*').order('created_at', { ascending: false });
+      _pvInvites = data || [];
+    }
+    function pvInviteUrl(code) { return 'https://padelvillains.app/join/' + code; }
+    async function renderMigrationPanel() {
+      const el = document.getElementById('pvMigrationList'); if (!el || !currentUser?.is_admin) return;
+      await loadUserAccounts(); await pvLoadInvites();
+      const rows = userAccounts.map(a => {
+        const pl = players.find(p => Number(p.id) === Number(a.player_id));
+        const inv = _pvInvites.find(i => i.player_id && Number(i.player_id) === Number(a.player_id) && i.uses < (i.max_uses || 1));
+        const name = pl?.name || a.username || '—';
+        const linked = !!a.profile_id;
+        const msg = encodeURIComponent(`Hey ${name} — Padel Villains has a proper app now. Tap this once to set up your login and keep your stats: ${inv ? pvInviteUrl(inv.code) : 'https://padelvillains.app'}`);
+        return `<div class="pv-mig-row">
+          <span class="pv-mig-dot ${linked ? 'ok' : ''}"></span>
+          <div class="pv-mig-name"><b>${name}</b><small>${linked ? 'Migrated' : (inv ? inv.code : 'no invite')}${a.is_admin ? ' · admin' : ''}</small></div>
+          ${linked ? '' : inv ? `<button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText('${pvInviteUrl(inv.code)}');toast('Link copied','success')"><i class="fas fa-link"></i></button>
+          <a class="btn btn-sm" style="background:#25D366;color:#fff" href="https://wa.me/?text=${msg}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i></a>` : ''}
+        </div>`;
+      });
+      const done = userAccounts.filter(a => a.profile_id).length;
+      el.innerHTML = `<p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">${done} of ${userAccounts.length} migrated</p>` + rows.join('');
+      // unattached new sign-ups
+      const orphans = userAccounts.filter(a => a.profile_id && !a.player_id);
+      const oel = document.getElementById('pvOrphanList'); if (!oel) return;
+      if (!orphans.length) { oel.innerHTML = '<p style="font-size:13px;color:var(--text-muted)">No unattached sign-ups.</p>'; return; }
+      const opts = players.filter(p => !p.profile_id).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      oel.innerHTML = orphans.map(a => `<div class="pv-mig-row"><span class="pv-mig-dot warn"></span><div class="pv-mig-name"><b>${a.username}</b><small>signed up, no player yet</small></div>
+        <select class="form-select" style="width:auto;padding:8px 10px" id="pvAttach-${a.id}"><option value="">Attach player…</option><option value="__new">+ New player "${a.username}"</option>${opts}</select>
+        <button class="btn btn-sm btn-primary" onclick="pvAttachPlayer(${a.id})">Attach</button></div>`).join('');
+    }
+    async function pvAttachPlayer(accountId) {
+      const acc = userAccounts.find(a => a.id === accountId); const sel = document.getElementById('pvAttach-' + accountId); const v = sel?.value;
+      if (!acc || !v) return;
+      let pid = v;
+      if (v === '__new') {
+        const np = { id: Date.now(), name: acc.username, wins: 0, losses: 0, active: true, circuit_id: acc.circuit_id || 1, profile_id: acc.profile_id, claimed_at: new Date().toISOString() };
+        players.push(np); pid = np.id;
+        try { await supabaseClient.from('players').insert(np); } catch (e) { console.error(e); }
+      } else {
+        await supabaseClient.from('players').update({ profile_id: acc.profile_id, claimed_at: new Date().toISOString() }).eq('id', Number(pid));
+        const p = players.find(x => Number(x.id) === Number(pid)); if (p) p.profile_id = acc.profile_id;
+      }
+      acc.player_id = Number(pid); await saveUserAccountToDb(acc); await saveUserAccounts();
+      toast('Player attached', 'success'); renderMigrationPanel();
+    }
+
     // ===================== Supabase Auth (v2 identity layer) =====================
     const PV_NATIVE_REDIRECT = 'com.padelvillains.app://auth';
     let _pvAuthMode = 'signin';     // 'signin' | 'signup'
@@ -17322,6 +17421,7 @@
       _pvResolving = true;
       try {
         const uid = session.user.id;
+        await pvApplyPendingInvite();
         await loadUserAccounts();
         let acc = userAccounts.find(a => a.profile_id === uid);
         if (!acc) {
@@ -17387,6 +17487,7 @@
       localStorage.removeItem('pv_currentUser');
       currentUser = null;
       showLoginScreen();
+      pvRenderInviteBanner();
       if (supabaseClient?.auth) supabaseClient.auth.getSession().then(({ data }) => { if (data?.session) pvResolveSession(data.session); });
       return false;
     }
@@ -17697,7 +17798,7 @@
     }
     
     function renderAdminPanel() {
-      // Admin panel now uses per-user passwords — no shared password to display
+      renderMigrationPanel();
     }
     
     async function promptSetPassword(accountId) {
