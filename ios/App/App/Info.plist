@@ -31,6 +31,14 @@
 			</array>
 		</dict>
 	</array>
+		<key>NSCameraUsageDescription</key>
+	<string>Take a photo for your player profile or the gallery.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a photo for your player profile or the gallery.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save shared match cards to your photos.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
