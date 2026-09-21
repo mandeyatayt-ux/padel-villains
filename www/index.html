@@ -17269,25 +17269,35 @@
     
     // ===================== Push notifications + server inbox (v2) =====================
     let _pvPushWired = false, _pvInboxChannel = null;
-    async function pvPushRegister() {
+    let _pvPushState = 'unknown';
+    async function pvPushRegister(manual) {
       const PN = window.Capacitor?.Plugins?.PushNotifications;
-      if (!PN || !pvIsNativeApp() || !currentUser?.profile_id || !supabaseClient) return;
+      if (!pvIsNativeApp()) { if (manual) toast('Push notifications work in the iPhone/Android app, not the browser.', 'info'); return; }
+      if (!PN) { _pvPushState = 'no-plugin'; if (manual) toast('Push plugin not available in this build — rebuild the app.', 'error'); return; }
+      if (!currentUser?.profile_id) { if (manual) toast('Link Apple, Google or email first, then enable notifications.', 'info'); return; }
+      if (!supabaseClient) return;
       try {
         let perm = await PN.checkPermissions();
         if (perm.receive === 'prompt' || perm.receive === 'prompt-with-rationale') perm = await PN.requestPermissions();
-        if (perm.receive !== 'granted') return;
+        _pvPushState = perm.receive;
+        if (perm.receive !== 'granted') { if (manual) toast('Notifications are off for Padel Villains — enable them in iPhone Settings → Padel Villains → Notifications.', 'info'); renderSigninCard(); return; }
         if (!_pvPushWired) {
           _pvPushWired = true;
           PN.addListener('registration', async ({ value }) => {
             const platform = window.Capacitor.getPlatform();
-            try { await supabaseClient.from('push_tokens').upsert({ profile_id: currentUser.profile_id, platform, token: value, last_seen: new Date().toISOString() }, { onConflict: 'token' }); } catch (e) { console.error('token save', e); }
+            try {
+              const { error } = await supabaseClient.from('push_tokens').upsert({ profile_id: currentUser.profile_id, platform, token: value, last_seen: new Date().toISOString() }, { onConflict: 'token' });
+              _pvPushState = error ? 'save-failed' : 'registered';
+              if (error) toast('Could not save push token: ' + error.message, 'error'); else toast('Notifications on for this phone', 'success');
+            } catch (e) { _pvPushState = 'save-failed'; console.error('token save', e); }
+            renderSigninCard();
           });
-          PN.addListener('registrationError', e => console.error('push reg error', e));
+          PN.addListener('registrationError', e => { _pvPushState = 'reg-error'; console.error('push reg error', e); toast('Push registration failed: ' + (e?.error || JSON.stringify(e)), 'error'); renderSigninCard(); });
           PN.addListener('pushNotificationReceived', n => { toast(n.title ? `${n.title} — ${n.body || ''}` : (n.body || 'New notification'), 'info'); pvLoadInbox(); });
           PN.addListener('pushNotificationActionPerformed', ({ notification }) => { pvLoadInbox(); const d = notification?.data || {}; if (d.tab) { try { switchTab(d.tab); } catch (e) {} } });
         }
         await PN.register();
-      } catch (e) { console.error('push', e); }
+      } catch (e) { _pvPushState = 'error'; console.error('push', e); if (manual) toast('Push error: ' + (e?.message || e), 'error'); }
     }
     async function pvLoadInbox() {
       if (!currentUser?.profile_id || !supabaseClient) return;
@@ -18210,7 +18220,11 @@
       if (!card || !body || !currentUser) return;
       card.style.display = '';
       if (currentUser.profile_id) {
-        body.innerHTML = `<p style="color:var(--text-muted);font-size:13px;margin:0 0 4px">You sign in with your linked account. You'll stay signed in on this device.</p>`;
+        const native = pvIsNativeApp();
+        const st = _pvPushState;
+        const label = st === 'registered' ? '<span style="color:var(--success,#2e7d32)">Notifications are on for this phone.</span>' : st === 'denied' ? 'Notifications are off — enable in iPhone Settings → Padel Villains.' : st === 'reg-error' || st === 'error' || st === 'save-failed' ? '<span style="color:var(--danger,#c62828)">Notifications failed to set up (' + st + ').</span>' : 'Get told when a match day is created, teams are out, and you\'re up next.';
+        body.innerHTML = `<p style="color:var(--text-muted);font-size:13px;margin:0 0 10px">You sign in with your linked account. You'll stay signed in on this device.</p>
+          ${native ? `<p style="font-size:13px;margin:0 0 10px">${label}</p><button type="button" class="btn btn-sm btn-primary" onclick="pvPushRegister(true)"><i class="fas fa-bell"></i> ${st === 'registered' ? 'Re-check notifications' : 'Enable notifications'}</button>` : ''}`;
         return;
       }
       body.innerHTML = `
