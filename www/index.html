@@ -3930,6 +3930,33 @@
     .md-scorer-strip .btn{margin-left:auto}
     .md-readonly .md-cc-input{pointer-events:none;opacity:.45}
     .md-readonly #mdCockpitCourts button,.md-readonly #mdRailQueueWrap button{pointer-events:none;opacity:.45}
+    /* ===== Supabase Auth UI ===== */
+    .pv-auth { display:flex; flex-direction:column; gap:10px; margin-bottom:6px; }
+    .pv-auth-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:13px 16px; border-radius:999px; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; border:1.5px solid var(--border); background:var(--bg-card); color:var(--text); transition:transform .12s, opacity .12s; }
+    .pv-auth-btn:active { transform:scale(.985); }
+    .pv-auth-apple { background:#000; color:#fff; border-color:#000; }
+    .pv-auth-apple i { font-size:18px; }
+    .pv-auth-google { background:#fff; color:#1f1f1f; border-color:#dadce0; }
+    .pv-auth-divider { display:flex; align-items:center; gap:12px; color:var(--text-muted); font-size:12px; margin:6px 0; }
+    .pv-auth-divider::before, .pv-auth-divider::after { content:""; flex:1; height:1px; background:var(--border); }
+    .pv-auth-divider a { color:var(--text-muted); text-decoration:underline; }
+    .pv-auth-email { display:flex; flex-direction:column; gap:10px; }
+    .pv-auth-links { display:flex; justify-content:space-between; font-size:12px; }
+    .pv-auth-links a { color:var(--text-muted); }
+    .pv-auth-msg { font-size:13px; text-align:center; min-height:0; color:var(--text-muted); }
+    .pv-auth-msg.ok { color:var(--success, #2e7d32); }
+    .pv-auth-msg.err { color:var(--danger, #c62828); }
+    .pv-legacy-hidden { display:none !important; }
+    [data-theme="court-green"] .pv-auth-btn { border-color:rgba(255,255,255,.18); }
+    [data-theme="court-green"] .pv-auth-google { background:#fff; color:#1f1f1f; }
+    [data-theme="court-green"] #loginScreen .pv-auth { padding: 36px 20px 0; }
+    [data-theme="court-green"] #loginScreen .pv-auth .form-input { border-bottom: 2px solid var(--cg-cream) !important; padding: 8px 0 12px !important; min-height: 48px; font-weight: 600 !important; }
+    [data-theme="court-green"] #loginScreen #pvAuthSubmit { margin-top: 12px; background: var(--cg-lime) !important; color: var(--cg-green) !important; border-radius: 999px !important; font-family: 'Manrope', sans-serif !important; font-weight: 800 !important; font-size: 15px !important; letter-spacing: 0 !important; text-transform: none !important; min-height: 52px; }
+    [data-theme="court-green"] #loginScreen .pv-auth-links a, [data-theme="court-green"] #loginScreen .pv-auth-divider, [data-theme="court-green"] #loginScreen .pv-auth-divider a { color: var(--cg-cream); opacity: .8; font-family: 'Manrope', sans-serif; font-weight: 600; }
+    [data-theme="court-green"] #loginScreen .pv-auth-divider::before, [data-theme="court-green"] #loginScreen .pv-auth-divider::after { background: var(--border); }
+    [data-theme="court-green"] #loginScreen .pv-auth-msg.ok { color: var(--cg-lime); }
+    [data-theme="court-green"] #loginScreen .pv-auth-msg.err { color: var(--cg-orange); }
+    [data-theme="court-green"] #loginScreen .login-form { padding-top: 12px; }
 </style>
 </head>
 <body>
@@ -3947,8 +3974,25 @@
         <div class="login-cg-title">Get on<br>court<i>.</i></div>
         <p class="login-cg-sub">Sign in to see who's playing Friday, your ladder spot, and who's talking trash.</p>
       </div>
+      <div class="pv-auth" id="pvAuth">
+        <button type="button" class="pv-auth-btn pv-auth-apple" onclick="pvOAuth('apple')"><i class="fab fa-apple"></i> Continue with Apple</button>
+        <button type="button" class="pv-auth-btn pv-auth-google" onclick="pvOAuth('google')"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.4 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9C43.9 38 46.5 31.8 46.5 24.5z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-3.9-13.5-9.4l-7.9 6C6.6 42.6 14.6 48 24 48z"/></svg> Continue with Google</button>
+        <div class="pv-auth-divider"><span>or with email</span></div>
+        <div class="pv-auth-email" id="pvAuthEmail">
+          <input type="text" class="form-input" id="pvAuthName" placeholder="Your name" autocomplete="name" style="font-size:16px;display:none">
+          <input type="email" class="form-input" id="pvAuthEmailInput" placeholder="Email" autocomplete="email" inputmode="email" style="font-size:16px">
+          <input type="password" class="form-input" id="pvAuthPassword" placeholder="Password" autocomplete="current-password" style="font-size:16px">
+          <button type="button" class="btn btn-primary" id="pvAuthSubmit" onclick="pvEmailSubmit()" style="width:100%;justify-content:center;padding:14px">Sign in</button>
+          <div class="pv-auth-links">
+            <a href="#" onclick="pvAuthToggleMode(event)" id="pvAuthModeLink">New here? Create an account</a>
+            <a href="#" onclick="pvForgotPassword(event)" id="pvAuthForgot">Forgot password?</a>
+          </div>
+        </div>
+        <div class="pv-auth-msg" id="pvAuthMsg"></div>
+        <div class="pv-auth-divider"><span><a href="#" onclick="pvToggleLegacy(event)">Existing villain? Sign in with your player name</a></span></div>
+      </div>
       <div class="login-error" id="loginError">Invalid username or password</div>
-      <form class="login-form" onsubmit="handleLogin(event)">
+      <form class="login-form pv-legacy-hidden" id="pvLegacyForm" onsubmit="handleLogin(event)">
         <div class="form-group" style="position:relative">
           <label class="form-label">Username</label>
           <input type="text" class="form-input" id="loginUsername" placeholder="Enter your name" style="font-size:16px" autocomplete="off">
@@ -3962,8 +4006,8 @@
           <span class="login-btn-std"><i class="fas fa-sign-in-alt"></i> Sign In</span><span class="login-btn-alt">Enter the circuit</span>
         </button>
       </form>
-      <p style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)">
-        Don't have an account? Contact an admin to get set up.
+      <p class="pv-legacy-hidden" id="pvLegacyNote" style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)">
+        Player-name sign-in is being retired. Once you're in, link Apple, Google or email from My Profile.
       </p>
     </div>
   </div>
@@ -4361,6 +4405,14 @@
         <div class="profile-stat-card"><div class="profile-stat-card-icon stat-icon teal"><i class="fas fa-calendar-check"></i></div><div class="profile-stat-card-value" id="myStatMatchdays">0</div><div class="profile-stat-card-label">Days Played</div></div>
       </div>
       
+      <!-- Sign-in method (v2 auth) -->
+      <div class="gallery-section" id="pvSigninCard" style="display:none">
+        <div class="gallery-header">
+          <div class="gallery-title"><i class="fas fa-shield-halved"></i> Sign-in</div>
+        </div>
+        <div id="pvSigninBody" style="padding:4px 0 8px"></div>
+      </div>
+
       <!-- My Teams -->
       <div class="gallery-section">
         <div class="gallery-header">
@@ -7065,7 +7117,8 @@
         s.onload = async () => {
           try {
             const { createClient } = window.supabase;
-            supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+            pvWireAuth();
             enableTestModeProxy();
             console.log('Supabase connected!');
             await fetchData();
@@ -17192,11 +17245,143 @@
       }
     }
     
+    // ===================== Supabase Auth (v2 identity layer) =====================
+    const PV_NATIVE_REDIRECT = 'com.padelvillains.app://auth';
+    let _pvAuthMode = 'signin';     // 'signin' | 'signup'
+    let _pvResolving = false;
+    function pvIsNativeApp() { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+    function pvRedirectTo() { return pvIsNativeApp() ? PV_NATIVE_REDIRECT : (location.origin + location.pathname); }
+    function pvAuthMsg(text, kind) { const el = document.getElementById('pvAuthMsg'); if (!el) return; el.textContent = text || ''; el.className = 'pv-auth-msg' + (kind ? ' ' + kind : ''); }
+    function pvToggleLegacy(e) { if (e) e.preventDefault(); document.getElementById('pvLegacyForm')?.classList.toggle('pv-legacy-hidden'); document.getElementById('pvLegacyNote')?.classList.toggle('pv-legacy-hidden'); }
+    function pvAuthToggleMode(e) {
+      if (e) e.preventDefault();
+      _pvAuthMode = _pvAuthMode === 'signin' ? 'signup' : 'signin';
+      const signup = _pvAuthMode === 'signup';
+      document.getElementById('pvAuthName').style.display = signup ? '' : 'none';
+      document.getElementById('pvAuthSubmit').textContent = signup ? 'Create account' : 'Sign in';
+      document.getElementById('pvAuthModeLink').textContent = signup ? 'Already have an account? Sign in' : 'New here? Create an account';
+      document.getElementById('pvAuthForgot').style.display = signup ? 'none' : '';
+      document.getElementById('pvAuthPassword').autocomplete = signup ? 'new-password' : 'current-password';
+      pvAuthMsg('');
+    }
+    async function pvOAuth(provider) {
+      if (!supabaseClient) { pvAuthMsg('Not connected yet, try again in a second.', 'err'); return; }
+      pvAuthMsg('Opening ' + (provider === 'apple' ? 'Apple' : 'Google') + '…');
+      try {
+        const native = pvIsNativeApp();
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+          provider,
+          options: { redirectTo: pvRedirectTo(), skipBrowserRedirect: native, queryParams: provider === 'google' ? { access_type: 'offline', prompt: 'select_account' } : undefined }
+        });
+        if (error) throw error;
+        if (native && data?.url) {
+          const B = window.Capacitor?.Plugins?.Browser;
+          if (B) await B.open({ url: data.url, presentationStyle: 'popover' }); else window.open(data.url, '_blank');
+        }
+      } catch (err) { console.error('oauth', err); pvAuthMsg(err.message || 'Sign-in failed', 'err'); }
+    }
+    async function pvEmailSubmit() {
+      if (!supabaseClient) return;
+      const email = document.getElementById('pvAuthEmailInput').value.trim();
+      const password = document.getElementById('pvAuthPassword').value;
+      const name = document.getElementById('pvAuthName').value.trim();
+      if (!email || !password) { pvAuthMsg('Email and password, please.', 'err'); return; }
+      const btn = document.getElementById('pvAuthSubmit'); btn.disabled = true;
+      try {
+        if (_pvAuthMode === 'signup') {
+          if (!name) { pvAuthMsg('Tell us your name.', 'err'); return; }
+          if (password.length < 10) { pvAuthMsg('Password needs at least 10 characters.', 'err'); return; }
+          const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { data: { display_name: name }, emailRedirectTo: location.origin + location.pathname } });
+          if (error) throw error;
+          if (data.session) { /* confirm-email off: signed in immediately */ }
+          else pvAuthMsg('Check your email for a confirmation link, then sign in.', 'ok');
+        } else {
+          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          pvAuthMsg('');
+        }
+      } catch (err) { pvAuthMsg(err.message || 'Something went wrong', 'err'); }
+      finally { btn.disabled = false; }
+    }
+    async function pvForgotPassword(e) {
+      if (e) e.preventDefault();
+      const email = document.getElementById('pvAuthEmailInput').value.trim();
+      if (!email) { pvAuthMsg('Type your email first, then tap Forgot password.', 'err'); return; }
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+      pvAuthMsg(error ? error.message : 'Reset link sent — check your email.', error ? 'err' : 'ok');
+    }
+    // Turn a Supabase session into an app user (user_accounts row).
+    async function pvResolveSession(session) {
+      if (!session?.user || _pvResolving) return;
+      _pvResolving = true;
+      try {
+        const uid = session.user.id;
+        await loadUserAccounts();
+        let acc = userAccounts.find(a => a.profile_id === uid);
+        if (!acc) {
+          // Linking: a legacy account asked to attach this login
+          const linkId = localStorage.getItem('pv_link_account_id');
+          const legacy = linkId ? userAccounts.find(a => String(a.id) === String(linkId)) : null;
+          if (legacy && !legacy.profile_id) {
+            legacy.profile_id = uid;
+            await saveUserAccountToDb(legacy);
+            await saveUserAccounts();
+            acc = legacy;
+            localStorage.removeItem('pv_link_account_id');
+            setTimeout(() => toast('Sign-in linked to your account', 'success'), 600);
+          }
+        }
+        if (!acc) {
+          const m = session.user.user_metadata || {};
+          const name = m.display_name || m.full_name || m.name || (session.user.email || 'villain').split('@')[0];
+          acc = { id: Date.now(), player_id: null, username: name, is_admin: false, theme: 'default', settings: {}, profile_id: uid, created_at: new Date().toISOString() };
+          userAccounts.push(acc);
+          await saveUserAccountToDb(acc);
+          await saveUserAccounts();
+        }
+        currentUser = acc;
+        localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+        showMainApp();
+        updateUserUI();
+        if (!acc.player_id) setTimeout(() => toast('Welcome! An admin will attach your player profile shortly.', 'info'), 400);
+      } catch (err) { console.error('resolve session', err); pvAuthMsg('Signed in, but could not load your account. Pull to refresh.', 'err'); }
+      finally { _pvResolving = false; }
+    }
+    function pvLinkAccount(provider) {
+      if (!currentUser) return;
+      localStorage.setItem('pv_link_account_id', String(currentUser.id));
+      if (provider === 'email') { showLoginScreen(); pvAuthMode('signup'); toast('Create your email login — it will link to this account', 'info'); return; }
+      pvOAuth(provider);
+    }
+    function pvAuthMode(mode) { if (_pvAuthMode !== mode) pvAuthToggleMode(); }
+    function pvWireAuth() {
+      if (!supabaseClient?.auth) return;
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        console.log('auth:', event);
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && !(currentUser && currentUser.profile_id === session.user.id)) pvResolveSession(session);
+        if (event === 'PASSWORD_RECOVERY') { const np = prompt('Choose a new password (10+ characters)'); if (np && np.length >= 10) supabaseClient.auth.updateUser({ password: np }).then(({ error }) => toast(error ? error.message : 'Password updated', error ? 'error' : 'success')); }
+      });
+      // Native: the OAuth browser returns to com.padelvillains.app://auth?code=…
+      const App = window.Capacitor?.Plugins?.App;
+      if (App && pvIsNativeApp()) {
+        App.addListener('appUrlOpen', async ({ url }) => {
+          try {
+            const u = new URL(url); const code = u.searchParams.get('code');
+            const B = window.Capacitor?.Plugins?.Browser; if (B) { try { await B.close(); } catch (e) {} }
+            if (code) { const { error } = await supabaseClient.auth.exchangeCodeForSession(code); if (error) pvAuthMsg(error.message, 'err'); }
+            else if (u.hash.includes('access_token')) { /* implicit fallback */ }
+          } catch (e) { console.error('appUrlOpen', e); }
+        });
+      }
+    }
+
     function checkAuth() {
-      // Always require login - no auto-login from saved session
+      // Legacy name+password sessions never persist. Supabase Auth sessions do —
+      // onAuthStateChange(INITIAL_SESSION) resolves them right after this.
       localStorage.removeItem('pv_currentUser');
       currentUser = null;
       showLoginScreen();
+      if (supabaseClient?.auth) supabaseClient.auth.getSession().then(({ data }) => { if (data?.session) pvResolveSession(data.session); });
       return false;
     }
     
@@ -17305,7 +17490,9 @@
       try { document.getElementById('userMenu')?.classList.remove('open'); } catch (e) {}
       currentUser = null;
       localStorage.removeItem('pv_currentUser');
+      localStorage.removeItem('pv_link_account_id');
       document.body.classList.remove('is-admin');
+      try { if (supabaseClient?.auth) await supabaseClient.auth.signOut(); } catch (e) {}
       showLoginScreen();
       toast('Signed out successfully', 'info');
     }
@@ -17408,7 +17595,8 @@
         
         const payload = {
           id: accountId,
-          player_id: Number(account.player_id),
+          player_id: account.player_id == null ? null : Number(account.player_id),
+          profile_id: account.profile_id || null,
           username: String(account.username || ''),
           is_admin: Boolean(account.is_admin),
           theme: String(account.theme || 'default'),
@@ -17860,7 +18048,24 @@
       renderMyProfile();
     }
     
+    function renderSigninCard() {
+      const card = document.getElementById('pvSigninCard'); const body = document.getElementById('pvSigninBody');
+      if (!card || !body || !currentUser) return;
+      card.style.display = '';
+      if (currentUser.profile_id) {
+        body.innerHTML = `<p style="color:var(--text-muted);font-size:13px;margin:0 0 4px">You sign in with your linked account. You'll stay signed in on this device.</p>`;
+        return;
+      }
+      body.innerHTML = `
+        <p style="font-size:13px;margin:0 0 12px">Link a login so you stay signed in and keep your stats when player-name sign-in is retired.</p>
+        <div class="pv-auth" style="max-width:380px">
+          <button type="button" class="pv-auth-btn pv-auth-apple" onclick="pvLinkAccount('apple')"><i class="fab fa-apple"></i> Link Apple</button>
+          <button type="button" class="pv-auth-btn pv-auth-google" onclick="pvLinkAccount('google')"><i class="fab fa-google"></i> Link Google</button>
+          <button type="button" class="pv-auth-btn" onclick="pvLinkAccount('email')"><i class="fas fa-envelope"></i> Link email &amp; password</button>
+        </div>`;
+    }
     function renderMyProfile() {
+      renderSigninCard();
       if (!currentUser) {
         console.log('renderMyProfile: No current user');
         return;
