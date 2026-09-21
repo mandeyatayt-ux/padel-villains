@@ -17267,11 +17267,19 @@
       }
     }
     
+    // Capacitor plugin lookup that works without a JS bundler (Capacitor 8)
+    function pvPlugin(name) {
+      const C = window.Capacitor; if (!C) return null;
+      try { if (C.Plugins && C.Plugins[name]) return C.Plugins[name]; } catch (e) {}
+      try { if (typeof C.registerPlugin === 'function' && C.isPluginAvailable && C.isPluginAvailable(name)) return C.registerPlugin(name); } catch (e) {}
+      try { if (typeof C.registerPlugin === 'function') return C.registerPlugin(name); } catch (e) {}
+      return null;
+    }
     // ===================== Push notifications + server inbox (v2) =====================
     let _pvPushWired = false, _pvInboxChannel = null;
     let _pvPushState = 'unknown';
     async function pvPushRegister(manual) {
-      const PN = window.Capacitor?.Plugins?.PushNotifications;
+      const PN = pvPlugin('PushNotifications');
       if (!pvIsNativeApp()) { if (manual) toast('Push notifications work in the iPhone/Android app, not the browser.', 'info'); return; }
       if (!PN) { _pvPushState = 'no-plugin'; if (manual) toast('Push plugin not available in this build — rebuild the app.', 'error'); return; }
       if (!currentUser?.profile_id) { if (manual) toast('Link Apple, Google or email first, then enable notifications.', 'info'); return; }
@@ -17438,7 +17446,7 @@
         });
         if (error) throw error;
         if (native && data?.url) {
-          const B = window.Capacitor?.Plugins?.Browser;
+          const B = pvPlugin('Browser');
           if (B) await B.open({ url: data.url, presentationStyle: 'popover' }); else window.open(data.url, '_blank');
         }
       } catch (err) { console.error('oauth', err); pvAuthMsg(err.message || 'Sign-in failed', 'err'); }
@@ -17528,12 +17536,12 @@
         if (event === 'PASSWORD_RECOVERY') { const np = prompt('Choose a new password (10+ characters)'); if (np && np.length >= 10) supabaseClient.auth.updateUser({ password: np }).then(({ error }) => toast(error ? error.message : 'Password updated', error ? 'error' : 'success')); }
       });
       // Native: the OAuth browser returns to com.padelvillains.app://auth?code=…
-      const App = window.Capacitor?.Plugins?.App;
+      const App = pvPlugin('App');
       if (App && pvIsNativeApp()) {
         App.addListener('appUrlOpen', async ({ url }) => {
           try {
             const u = new URL(url); const code = u.searchParams.get('code');
-            const B = window.Capacitor?.Plugins?.Browser; if (B) { try { await B.close(); } catch (e) {} }
+            const B = pvPlugin('Browser'); if (B) { try { await B.close(); } catch (e) {} }
             if (code) { const { error } = await supabaseClient.auth.exchangeCodeForSession(code); if (error) pvAuthMsg(error.message, 'err'); }
             else if (u.hash.includes('access_token')) { /* implicit fallback */ }
           } catch (e) { console.error('appUrlOpen', e); }
