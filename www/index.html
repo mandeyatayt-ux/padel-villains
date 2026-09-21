@@ -3967,6 +3967,9 @@
     .pv-mig-dot.ok { background: var(--success, #2e7d32); } .pv-mig-dot.warn { background: var(--gold, #d9a441); }
     .pv-mig-name { flex: 1; min-width: 0; } .pv-mig-name b { display: block; font-size: 14px; } .pv-mig-name small { color: var(--text-muted); font-size: 11px; }
     [data-theme="court-green"] .pv-mig-dot.ok { background: var(--cg-lime); } [data-theme="court-green"] .pv-mig-dot.warn { background: var(--cg-orange); }
+    .pv-notif-close { margin-right: 10px; min-width: 40px; }
+    .notifications-header { display: flex; align-items: center; gap: 10px; }
+    .notifications-header h3 { flex: 1; }
 </style>
 </head>
 <body>
@@ -5551,6 +5554,7 @@
   <div class="notifications-overlay" id="notificationsOverlay" onclick="toggleNotifications()"></div>
   <div class="notifications-panel" id="notificationsPanel">
     <div class="notifications-header">
+      <button class="btn btn-xs btn-secondary pv-notif-close" onclick="toggleNotifications()" aria-label="Close"><i class="fas fa-arrow-left"></i></button>
       <h3>🔔 Notifications</h3>
       <button class="btn btn-xs btn-secondary" onclick="clearNotifications()">Clear All</button>
     </div>
@@ -15586,7 +15590,8 @@
       list.innerHTML = notifications.slice(0, 20).map(n => {
         const time = new Date(n.time);
         const timeStr = time.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-        return `<div class="notification-item ${n.read ? '' : 'unread'}">
+        const target = (n.data && n.data.tab) ? n.data.tab : '';
+        return `<div class="notification-item ${n.read ? '' : 'unread'}" ${target ? `onclick="pvOpenNotification('${target}')" style="cursor:pointer"` : ''}>
           <div class="notification-icon"><i class="fas ${n.icon}"></i></div>
           <div class="notification-content">
             <div class="notification-title">${n.message}</div>
@@ -15596,6 +15601,11 @@
       }).join('');
     }
     
+    function pvOpenNotification(tab) {
+      try { switchTab(tab); } catch (e) {}
+      const panel = document.getElementById('notificationsPanel');
+      if (panel?.classList.contains('open')) toggleNotifications();
+    }
     function updateNotificationBadge() {
       const unread = notifications.filter(n => !n.read).length;
       const badge = document.getElementById('notificationBadge');
