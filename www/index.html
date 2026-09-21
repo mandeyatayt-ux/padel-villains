@@ -17282,7 +17282,8 @@
     async function pvPushRegister(manual) {
       const PN = pvPlugin('PushNotifications');
       if (!pvIsNativeApp()) { if (manual) toast('Push notifications work in the iPhone/Android app, not the browser.', 'info'); return; }
-      if (!PN) { _pvPushState = 'no-plugin'; if (manual) toast('Push plugin not available in this build — rebuild the app.', 'error'); return; }
+      const natives = (window.Capacitor?.PluginHeaders || []).map(h => h.name).join(', ') || 'none';
+      if (!PN || !(window.Capacitor?.isPluginAvailable?.('PushNotifications'))) { _pvPushState = 'no-plugin'; if (manual) toast('Push plugin not loaded. Native plugins in this build: ' + natives, 'error'); return; }
       if (!currentUser?.profile_id) { if (manual) toast('Link Apple, Google or email first, then enable notifications.', 'info'); return; }
       if (!supabaseClient) return;
       try {
@@ -17306,7 +17307,7 @@
           PN.addListener('pushNotificationActionPerformed', ({ notification }) => { pvLoadInbox(); const d = notification?.data || {}; if (d.tab) { try { switchTab(d.tab); } catch (e) {} } });
         }
         await PN.register();
-      } catch (e) { _pvPushState = 'error'; console.error('push', e); if (manual) toast('Push error: ' + (e?.message || e), 'error'); }
+      } catch (e) { _pvPushState = 'error'; console.error('push', e); if (manual) toast('Push error: ' + (e?.message || e) + ' · native plugins: ' + ((window.Capacitor?.PluginHeaders || []).map(h => h.name).join(', ') || 'none'), 'error'); }
     }
     async function pvLoadInbox() {
       if (!currentUser?.profile_id || !supabaseClient) return;
