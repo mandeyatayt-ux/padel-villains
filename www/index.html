@@ -3947,6 +3947,7 @@
     .pv-auth-msg.ok { color:var(--success, #2e7d32); }
     .pv-auth-msg.err { color:var(--danger, #c62828); }
     .pv-legacy-hidden { display:none !important; }
+    .login-screen { overflow-y: auto; -webkit-overflow-scrolling: touch; }
     [data-theme="court-green"] .pv-auth-btn { border-color:rgba(255,255,255,.18); }
     [data-theme="court-green"] .pv-auth-google { background:#fff; color:#1f1f1f; }
     [data-theme="court-green"] #loginScreen .pv-auth { padding: 36px 20px 0; }
@@ -17252,7 +17253,12 @@
     function pvIsNativeApp() { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
     function pvRedirectTo() { return pvIsNativeApp() ? PV_NATIVE_REDIRECT : (location.origin + location.pathname); }
     function pvAuthMsg(text, kind) { const el = document.getElementById('pvAuthMsg'); if (!el) return; el.textContent = text || ''; el.className = 'pv-auth-msg' + (kind ? ' ' + kind : ''); }
-    function pvToggleLegacy(e) { if (e) e.preventDefault(); document.getElementById('pvLegacyForm')?.classList.toggle('pv-legacy-hidden'); document.getElementById('pvLegacyNote')?.classList.toggle('pv-legacy-hidden'); }
+    function pvToggleLegacy(e) {
+      if (e) e.preventDefault();
+      const f = document.getElementById('pvLegacyForm'); if (!f) return;
+      f.classList.toggle('pv-legacy-hidden'); document.getElementById('pvLegacyNote')?.classList.toggle('pv-legacy-hidden');
+      if (!f.classList.contains('pv-legacy-hidden')) setTimeout(() => { f.scrollIntoView({ behavior: 'smooth', block: 'start' }); document.getElementById('loginUsername')?.focus(); }, 50);
+    }
     function pvAuthToggleMode(e) {
       if (e) e.preventDefault();
       _pvAuthMode = _pvAuthMode === 'signin' ? 'signup' : 'signin';
