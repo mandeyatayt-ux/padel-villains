@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "154497836485",
+    "project_id": "padel-villains-d0956",
+    "storage_bucket": "padel-villains-d0956.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:154497836485:android:f72a7aaaadf64dd61e17ac",
+        "android_client_info": {
+          "package_name": "com.padelvillains.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCmwNo0YgyviCkNrb-MsaRIK1bIKmNG6I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

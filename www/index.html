@@ -15555,6 +15555,7 @@
         notifications.forEach(n => n.read = true);
         saveNotifications();
         updateNotificationBadge();
+        pvMarkInboxRead();
       }
     }
     
@@ -17266,6 +17267,53 @@
       }
     }
     
+    // ===================== Push notifications + server inbox (v2) =====================
+    let _pvPushWired = false, _pvInboxChannel = null;
+    async function pvPushRegister() {
+      const PN = window.Capacitor?.Plugins?.PushNotifications;
+      if (!PN || !pvIsNativeApp() || !currentUser?.profile_id || !supabaseClient) return;
+      try {
+        let perm = await PN.checkPermissions();
+        if (perm.receive === 'prompt' || perm.receive === 'prompt-with-rationale') perm = await PN.requestPermissions();
+        if (perm.receive !== 'granted') return;
+        if (!_pvPushWired) {
+          _pvPushWired = true;
+          PN.addListener('registration', async ({ value }) => {
+            const platform = window.Capacitor.getPlatform();
+            try { await supabaseClient.from('push_tokens').upsert({ profile_id: currentUser.profile_id, platform, token: value, last_seen: new Date().toISOString() }, { onConflict: 'token' }); } catch (e) { console.error('token save', e); }
+          });
+          PN.addListener('registrationError', e => console.error('push reg error', e));
+          PN.addListener('pushNotificationReceived', n => { toast(n.title ? `${n.title} — ${n.body || ''}` : (n.body || 'New notification'), 'info'); pvLoadInbox(); });
+          PN.addListener('pushNotificationActionPerformed', ({ notification }) => { pvLoadInbox(); const d = notification?.data || {}; if (d.tab) { try { switchTab(d.tab); } catch (e) {} } });
+        }
+        await PN.register();
+      } catch (e) { console.error('push', e); }
+    }
+    async function pvLoadInbox() {
+      if (!currentUser?.profile_id || !supabaseClient) return;
+      const { data } = await supabaseClient.from('notifications').select('id,kind,title,body,data,read_at,created_at').eq('profile_id', currentUser.profile_id).order('created_at', { ascending: false }).limit(50);
+      if (!data) return;
+      const icons = { matchday_created: 'fa-calendar-plus', draft_published: 'fa-people-group', up_next: 'fa-bolt', result_recorded: 'fa-trophy', achievement: 'fa-medal', invite: 'fa-envelope' };
+      let changed = false;
+      for (const n of data) {
+        if (notifications.some(x => x.serverId === n.id)) continue;
+        notifications.push({ id: 'srv-' + n.id, serverId: n.id, type: n.kind, message: n.body ? `${n.title} — ${n.body}` : n.title, icon: icons[n.kind] || 'fa-bell', time: n.created_at, read: !!n.read_at, data: n.data });
+        changed = true;
+      }
+      if (changed) { notifications.sort((a, b) => new Date(b.time) - new Date(a.time)); notifications = notifications.slice(0, 50); saveNotifications(); updateNotificationBadge(); renderNotifications(); }
+    }
+    function pvInboxRealtime() {
+      if (!supabaseClient?.channel || !currentUser?.profile_id || _pvInboxChannel) return;
+      _pvInboxChannel = supabaseClient.channel('pv-inbox')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'profile_id=eq.' + currentUser.profile_id }, () => pvLoadInbox())
+        .subscribe();
+    }
+    async function pvMarkInboxRead() {
+      if (!currentUser?.profile_id || !supabaseClient) return;
+      const ids = notifications.filter(n => n.serverId && n.read).map(n => n.serverId);
+      if (ids.length) { try { await supabaseClient.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids).is('read_at', null); } catch (e) {} }
+    }
+
     // ===================== Invites / claim (v2) =====================
     function pvCaptureInvite() {
       try {
@@ -17449,6 +17497,8 @@
         localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
         showMainApp();
         updateUserUI();
+        pvLoadInbox(); pvInboxRealtime();
+        setTimeout(pvPushRegister, 1500);
         if (!acc.player_id) setTimeout(() => toast('Welcome! An admin will attach your player profile shortly.', 'info'), 400);
       } catch (err) { console.error('resolve session', err); pvAuthMsg('Signed in, but could not load your account. Pull to refresh.', 'err'); }
       finally { _pvResolving = false; }
