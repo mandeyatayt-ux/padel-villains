@@ -5177,7 +5177,7 @@
     <!-- ===== ACHIEVEMENTS TAB ===== -->
     <section class="tab" id="achievements">
       <div class="section-header">
-        <div><h2 class="section-title">ACHIEVEMENTS</h2><p class="section-subtitle">Unlock badges by playing matches and reaching milestones</p></div>
+        <div><h2 class="section-title">ACHIEVEMENTS</h2><p class="section-subtitle">Your badges — unlocked by what you do on court</p></div>
       </div>
       <div class="card" style="margin-bottom:24px">
         <h3 style="font-size:16px;font-weight:700;margin-bottom:16px">🔥 Records & Streaks</h3>
@@ -15503,38 +15503,29 @@
       }).join('');
     }
     
+    // Longest winning run a team has ever had (from the ordered match log)
+    function calculateLongestWinStreak(teamId) {
+      const tm = matches.filter(m => m.team1_id === teamId || m.team2_id === teamId)
+        .sort((a, b) => (a.date + (a.created_at || '')).localeCompare(b.date + (b.created_at || '')));
+      let best = 0, cur = 0;
+      tm.forEach(m => { if (String(m.winner_id) === String(teamId)) { cur++; best = Math.max(best, cur); } else cur = 0; });
+      return best;
+    }
     function calculateRecords() {
       let longestStreak = { value: 0, holder: '-' };
       let mostWins = { value: 0, holder: '-' };
       let bestWinRate = { value: 0, holder: '-' };
       let currentBestStreak = { value: 0, holder: '-', type: '' };
-      
-      teams.filter(t => t.active !== false).forEach(t => {
+      teams.filter(t => t.active !== false && !t.is_draft).forEach(t => {
         const stats = getTeamStats(t.id);
         const streak = calculateCurrentStreak(t.id);
-        
-        if (stats.wins > mostWins.value) {
-          mostWins = { value: stats.wins, holder: t.name };
-        }
-        
+        const longest = calculateLongestWinStreak(t.id);
+        if (stats.wins > mostWins.value) mostWins = { value: stats.wins, holder: t.name };
         const total = stats.wins + stats.losses;
-        if (total >= 5) {
-          const rate = Math.round((stats.wins / total) * 100);
-          if (rate > bestWinRate.value) {
-            bestWinRate = { value: rate, holder: t.name };
-          }
-        }
-        
-        if (streak.count > currentBestStreak.value) {
-          currentBestStreak = { value: streak.count, holder: t.name, type: streak.type === 'win' ? 'W' : 'L' };
-        }
-        
-        // Track longest streak ever (simplified - just current)
-        if (streak.type === 'win' && streak.count > longestStreak.value) {
-          longestStreak = { value: streak.count, holder: t.name };
-        }
+        if (total >= VR_MIN_GAMES) { const rate = Math.round((stats.wins / total) * 100); if (rate > bestWinRate.value) bestWinRate = { value: rate, holder: t.name }; }
+        if (streak.type === 'win' && streak.count > currentBestStreak.value) currentBestStreak = { value: streak.count, holder: t.name, type: 'W' };
+        if (longest > longestStreak.value) longestStreak = { value: longest, holder: t.name };
       });
-      
       return { longestStreak, mostWins, bestWinRate, currentBestStreak };
     }
     
@@ -15561,31 +15552,47 @@
       return { count, type };
     }
     
-    function calculateUnlockedAchievements() {
+    function calculateUnlockedAchievements(playerId) {
+      const pid = playerId != null ? playerId : currentUser?.player_id;
       const unlocked = {};
-      
-      teams.forEach(t => {
-        const stats = getTeamStats(t.id);
-        const streak = calculateCurrentStreak(t.id);
-        
-        if (stats.wins >= 1) unlocked.first_blood = true;
-        if (streak.type === 'win' && streak.count >= 3) unlocked.hot_streak_3 = true;
-        if (streak.type === 'win' && streak.count >= 5) unlocked.hot_streak_5 = true;
-        if (streak.type === 'win' && streak.count >= 10) unlocked.hot_streak_10 = true;
-        if (stats.wins + stats.losses >= 50) unlocked.veteran = true;
-        if (stats.wins + stats.losses >= 100) unlocked.centurion = true;
+      if (pid == null) return unlocked;
+      const myTeams = teams.filter(t => t.player1_id === pid || t.player2_id === pid);
+      const myTeamIds = new Set(myTeams.map(t => String(t.id)));
+      const mine = matches.filter(m => myTeamIds.has(String(m.team1_id)) || myTeamIds.has(String(m.team2_id)))
+        .sort((a, b) => (a.date + (a.created_at || '')).localeCompare(b.date + (b.created_at || '')));
+      let wins = 0, run = 0, bestRun = 0; const partners = new Set(), beaten = new Map(), days = new Set(); let villainDays = 0, giant = false, flawless = false, comeback = false;
+      const closed = matchdays.filter(md => md.status === 'closed');
+      mine.forEach(m => {
+        const meT = myTeamIds.has(String(m.team1_id)) ? getTeam(m.team1_id) : getTeam(m.team2_id);
+        const themT = myTeamIds.has(String(m.team1_id)) ? getTeam(m.team2_id) : getTeam(m.team1_id);
+        if (!meT || !themT) return;
+        const won = String(m.winner_id) === String(meT.id);
+        days.add(m.date);
+        partners.add(meT.player1_id === pid ? meT.player2_id : meT.player1_id);
+        if (won) { wins++; run++; bestRun = Math.max(bestRun, run); beaten.set(String(themT.id), (beaten.get(String(themT.id)) || 0) + 1); } else run = 0;
+        const s1 = parseInt(m.score1), s2 = parseInt(m.score2);
+        if (won && !isNaN(s1) && !isNaN(s2) && Math.max(s1, s2) >= 6 && Math.min(s1, s2) === 0) flawless = true;
+        if (won && themT && vrFor('team', themT.id).rating > vrFor('team', meT.id).rating + 60) giant = true;
       });
-      
-      // Check for villain achievements
-      const closedMatchdays = matchdays.filter(md => md.status === 'closed');
-      if (closedMatchdays.length >= 1) unlocked.villain = true;
-      if (closedMatchdays.length >= 3) unlocked.dynasty = true;
-      
-      // Check for regular attendance
-      const uniqueDates = [...new Set(matches.map(m => m.date))];
-      if (uniqueDates.length >= 10) unlocked.regular = true;
-      if (uniqueDates.length >= 25) unlocked.devoted = true;
-      
+      closed.forEach(md => { const top = rankTeamsByMatches(md.date)[0]; if (top && myTeamIds.has(String(top.id)) && top.wins > 0) villainDays++; });
+      if (wins >= 1) unlocked.first_blood = true;
+      if (bestRun >= 3) unlocked.hot_streak_3 = true;
+      if (bestRun >= 5) unlocked.hot_streak_5 = true;
+      if (bestRun >= 10) unlocked.hot_streak_10 = true;
+      if (mine.length >= 50) unlocked.veteran = true;
+      if (mine.length >= 100) unlocked.centurion = true;
+      if (villainDays >= 1) unlocked.villain = true;
+      if (villainDays >= 3) unlocked.dynasty = true;
+      if (days.size >= 10) unlocked.regular = true;
+      if (days.size >= 25) unlocked.devoted = true;
+      if (partners.size >= 10) unlocked.social = true;
+      if ([...beaten.values()].some(n => n >= 5)) unlocked.rival = true;
+      if (giant) unlocked.giant_slayer = true;
+      if (myTeams.length >= 3) unlocked.versatile = true;
+      if (flawless) unlocked.perfect_game = true;
+      if (comeback) unlocked.comeback = true;
+      const ladder = rankPlayersByMatches().filter(x => x.qualified);
+      if (ladder[0] && ladder[0].id === pid) unlocked.squad_leader = true;
       return unlocked;
     }
     
