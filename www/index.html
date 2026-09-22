@@ -4100,6 +4100,11 @@
     .md-hist-matches { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; cursor: default; }
     .matchday-history-card.open { box-shadow: inset 3px 0 0 var(--clay); }
     @media (max-width: 768px) { .matchday-history-card, .matchday-history-header, .matchday-history-stats { text-align: left !important; } .matchday-history-stat { align-items: flex-start !important; text-align: left !important; } .tab > #pvAllMatchesToggle { margin-left: 20px; } }
+    .pv-seg { display: flex; gap: 6px; padding: 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; margin: 0 0 18px; }
+    .pv-seg button { flex: 1; border: 0; background: transparent; color: var(--text-muted); font-family: inherit; font-weight: 700; font-size: 13px; padding: 10px 8px; border-radius: 999px; cursor: pointer; }
+    .pv-seg button.active { background: var(--clay); color: #fff; }
+    [data-theme="court-green"] .pv-seg button.active { background: var(--cg-lime); color: var(--cg-green); }
+    @media (max-width: 768px) { .tab > .pv-seg { margin-left: 20px; margin-right: 20px; } }
 </style>
 </head>
 <body>
@@ -4226,7 +4231,6 @@
       <button data-tab="achievements"><span class="nav-icon" data-icon="medal"></span><span>Achievements</span></button>
       <button data-tab="rules"><span class="nav-icon" data-icon="rules"></span><span>Rules</span></button>
       <button data-tab="history"><span class="nav-icon" data-icon="history"></span><span>History</span></button>
-      <button data-tab="settings" class="admin-only"><span class="nav-icon" data-icon="sliders"></span><span>Settings</span></button>
       <button data-tab="admin" class="admin-only"><span class="nav-icon" data-icon="shield"></span><span>Admin</span></button>
       <!-- Sync Status -->
       <div class="sidebar-sync" style="display:none;padding:8px 20px;margin:4px 14px;border-radius:12px;background:rgba(93,78,55,0.04);cursor:pointer" onclick="manualSync()">
@@ -5580,6 +5584,13 @@
         <div><h2 class="section-title">👑 ADMIN PANEL</h2><p class="section-subtitle">Manage users, accounts and permissions</p></div>
       </div>
       
+      <div class="pv-seg" id="pvAdminSeg">
+        <button class="active" onclick="pvAdminGroup('people', this)"><i class="fas fa-users"></i> People</button>
+        <button onclick="pvAdminGroup('circuit', this)"><i class="fas fa-sliders"></i> Circuit</button>
+        <button onclick="pvAdminGroup('system', this)"><i class="fas fa-microchip"></i> System</button>
+      </div>
+      <div class="pv-admin-group" data-group="circuit" style="display:none" id="pvAdminCircuit"></div>
+<div class="pv-admin-group" data-group="people">
       <!-- v2 migration -->
       <div class="card" style="margin-bottom:24px">
         <h3 style="font-size:16px;font-weight:700;margin-bottom:6px"><i class="fas fa-shield-halved" style="color:var(--clay);margin-right:8px"></i>Account migration</h3>
@@ -5589,8 +5600,8 @@
         <div id="pvOrphanList"></div>
         <button class="btn btn-sm btn-secondary" style="margin-top:12px" onclick="renderMigrationPanel()"><i class="fas fa-rotate"></i> Refresh</button>
       </div>
-      <!-- Password Info -->
-      <div class="card" style="margin-bottom:24px">
+      <!-- Password Info (legacy, hidden) -->
+      <div class="card" style="margin-bottom:24px;display:none">
         <h3 style="font-size:16px;font-weight:700;margin-bottom:16px"><i class="fas fa-key" style="color:var(--clay);margin-right:8px"></i>User Passwords</h3>
         <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Each user has their own password. Use the <i class="fas fa-key"></i> button next to each account to set or reset a user's password.</p>
         <div style="padding:12px 16px;background:var(--cream);border-radius:12px;font-size:13px">
@@ -5607,6 +5618,8 @@
         <div id="userAccountsList"></div>
       </div>
       
+</div>
+<div class="pv-admin-group" data-group="system">
       <!-- Test Mode -->
       <div class="card" style="margin-bottom:24px;border:2px solid #FF6B35">
         <h3 style="font-size:16px;font-weight:700;margin-bottom:12px"><i class="fas fa-flask" style="color:#FF6B35;margin-right:8px"></i>Test Mode</h3>
@@ -5675,6 +5688,7 @@
           <button class="btn btn-danger" onclick="confirmClearAllData()"><i class="fas fa-trash"></i> Clear All Local Data</button>
         </div>
       </div>
+</div>
     </section>
   </div>
 
@@ -18142,7 +18156,23 @@
     
     function renderAdminPanel() {
       renderMigrationPanel();
+      const active = document.querySelector('#pvAdminSeg button.active');
+      if (!active) pvAdminGroup('people', document.querySelector('#pvAdminSeg button'));
     }
+    function pvAdminGroup(g, btn) {
+      document.querySelectorAll('#admin .pv-admin-group').forEach(el => el.style.display = el.dataset.group === g ? '' : 'none');
+      document.querySelectorAll('#pvAdminSeg button').forEach(b => b.classList.toggle('active', b === btn));
+      if (g === 'circuit') pvMountCircuitSettings();
+    }
+    function pvMountCircuitSettings() {
+      const host = document.getElementById('pvAdminCircuit'); const src = document.getElementById('settings');
+      if (!host || !src || host.dataset.mounted) return;
+      const hdr = src.querySelector('.section-header'); if (hdr) hdr.remove();
+      while (src.firstChild) host.appendChild(src.firstChild);
+      host.dataset.mounted = '1';
+      try { renderSettings(); } catch (e) {}
+    }
+
     
     async function promptSetPassword(accountId) {
       const acc = userAccounts.find(a => a.id === accountId);
