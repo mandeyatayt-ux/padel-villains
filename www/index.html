@@ -4085,6 +4085,15 @@
     /* stat tiles: one alignment rule everywhere */
     .stat-card, .stat-tile, .profile-stat, .hero-stat, .md-stat, .players-hero-stat, .teams-hero-stat { text-align: center !important; align-items: center !important; }
     .stat-card > *, .stat-tile > * { margin-left: auto; margin-right: auto; }
+    #userMenuAvatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .pv-toggle { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0 14px; cursor: pointer; }
+    .pv-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .pv-toggle > span:first-of-type { flex: none; width: 44px; height: 26px; border-radius: 999px; background: var(--border); position: relative; transition: background .2s; margin-top: 2px; }
+    .pv-toggle > span:first-of-type::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s; }
+    .pv-toggle input:checked + span { background: var(--clay); }
+    .pv-toggle input:checked + span::after { transform: translateX(18px); }
+    .pv-toggle-text b { display: block; font-size: 14px; } .pv-toggle-text small { color: var(--text-muted); font-size: 12px; line-height: 1.35; display: block; }
+    [data-theme="court-green"] .pv-toggle input:checked + span { background: var(--cg-lime); } [data-theme="court-green"] .pv-toggle input:checked + span::after { background: var(--cg-green); }
 </style>
 </head>
 <body>
@@ -4644,7 +4653,7 @@
 
     <!-- ===== RANKINGS TAB ===== -->
     <section class="tab" id="rankings">
-      <div class="rankings-hero"><h2>🏆 LEADERBOARDS</h2><p>Rankings adjusted for attendance — show up and win to climb</p></div>
+      <div class="rankings-hero"><h2>🏆 LEADERBOARDS</h2><p>Villain Rating: beat stronger teams, show up, climb. Updates when a match day is closed.</p></div>
       
       <!-- Toggle between Team and Individual -->
       <div class="card" style="margin-bottom:24px">
@@ -5822,6 +5831,7 @@
         <span class="photo-upload-text">Click to upload photo</span>
       </div>
       <div class="form-group"><label class="form-label">Player Name</label><input type="text" class="form-input" id="playerName" placeholder="Enter player name"></div>
+      <label class="pv-toggle"><input type="checkbox" id="playerIsGuest"><span></span><span class="pv-toggle-text"><b>Guest player</b><small>Not a regular. Their games count for everyone they play, but they're listed separately in rankings.</small></span></label>
       <div class="form-group"><label class="form-label">Phone (WhatsApp)</label><input type="tel" class="form-input" id="playerPhone" placeholder="e.g. +263771234567"></div>
       <div class="form-group"><label class="form-label">Nickname (optional)</label><input type="text" class="form-input" id="playerNickname" placeholder='e.g., "The Wall"'></div>
       <div class="form-group">
@@ -5933,6 +5943,7 @@
     <div class="modal">
       <div class="modal-header"><h3 class="modal-title">CREATE TEAM</h3><button class="modal-close" onclick="closeModal('addTeam')"><i class="fas fa-times"></i></button></div>
       <div class="form-group"><label class="form-label">Team Name</label><input type="text" class="form-input" id="teamName" placeholder="Enter team name"></div>
+      <label class="pv-toggle"><input type="checkbox" id="teamIsTemp"><span></span><span class="pv-toggle-text"><b>One-off pairing</b><small>Counts for the two players, not for team rankings. Use when a regular partner can't make it.</small></span></label>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Player 1</label><select class="form-select" id="teamPlayer1"></select></div>
         <div class="form-group"><label class="form-label">Player 2</label><select class="form-select" id="teamPlayer2"></select></div>
@@ -7782,9 +7793,62 @@
       return { wins, losses, games };
     }
     
+    // ===================== VILLAIN RATING (single source of truth for rankings) =====================
+    // Elo-style rating over matches from CLOSED match days only, in chronological order.
+    // - Beating a stronger opponent earns more; losing to a weaker one costs more.
+    // - Fast placement for the first 10 games (K=40), then K=24.
+    // - +8 per closed match day attended (showing up compounds).
+    // - One-off pairings (is_temp) count for the players, never for team rankings.
+    // - Guests (is_guest) count for opponents but are listed separately.
+    const VR_START = 1000, VR_K_NEW = 40, VR_K = 24, VR_PLACEMENT_GAMES = 10, VR_ATTEND = 8, VR_MIN_GAMES = 5, VR_FORM_DAYS = 3;
+    let _vrCache = null, _vrKey = '';
+    function vrExpected(a, b) { return 1 / (1 + Math.pow(10, (b - a) / 400)); }
+    function computeVillainRatings() {
+      const closed = matchdays.filter(m => m.status === 'closed');
+      const closedDates = new Set(closed.map(m => m.date));
+      const key = `${matches.length}|${closed.length}|${teams.length}|${players.length}|${matches.reduce((a, m) => a + (m.id || 0), 0)}`;
+      if (_vrCache && _vrKey === key) return _vrCache;
+      const P = new Map(), T = new Map();
+      const gp = id => { if (!P.has(id)) P.set(id, { vr: VR_START, games: 0, wins: 0, losses: 0, days: new Set(), history: [] }); return P.get(id); };
+      const gt = id => { if (!T.has(id)) T.set(id, { vr: VR_START, games: 0, wins: 0, losses: 0, days: new Set(), history: [] }); return T.get(id); };
+      const pool = matches.filter(m => closedDates.has(m.date) && m.winner_id != null && getTeam(m.team1_id) && getTeam(m.team2_id))
+        .sort((a, b) => (a.date + (a.created_at || '')).localeCompare(b.date + (b.created_at || '')));
+      for (const m of pool) {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
+        const p1 = [t1.player1_id, t1.player2_id].filter(Boolean), p2 = [t2.player1_id, t2.player2_id].filter(Boolean);
+        const s1 = p1.length ? p1.reduce((a, id) => a + gp(id).vr, 0) / p1.length : VR_START;
+        const s2 = p2.length ? p2.reduce((a, id) => a + gp(id).vr, 0) / p2.length : VR_START;
+        const e1 = vrExpected(s1, s2), e2 = 1 - e1;
+        const w1 = String(m.winner_id) === String(t1.id);
+        // players
+        for (const [ids, e, won] of [[p1, e1, w1], [p2, e2, !w1]]) {
+          for (const id of ids) {
+            const r = gp(id); const k = r.games < VR_PLACEMENT_GAMES ? VR_K_NEW : VR_K;
+            const d = k * ((won ? 1 : 0) - e);
+            r.vr += d; r.games++; won ? r.wins++ : r.losses++; r.days.add(m.date); r.history.push({ date: m.date, d });
+          }
+        }
+        // regular teams (both must be non-temp for the team ladder to move)
+        for (const [t, e, won] of [[t1, e1, w1], [t2, e2, !w1]]) {
+          if (t.is_temp || t.is_draft) continue;
+          const r = gt(t.id); const k = r.games < VR_PLACEMENT_GAMES ? VR_K_NEW : VR_K;
+          const d = k * ((won ? 1 : 0) - e);
+          r.vr += d; r.games++; won ? r.wins++ : r.losses++; r.days.add(m.date); r.history.push({ date: m.date, d });
+        }
+      }
+      // attendance bonus + form (last N closed days)
+      const recent = new Set(closed.map(m => m.date).sort().slice(-VR_FORM_DAYS));
+      const finish = map => { for (const r of map.values()) { r.vr += r.days.size * VR_ATTEND; r.attended = r.days.size; r.totalDays = closed.length; r.form = r.history.filter(h => recent.has(h.date)).reduce((a, h) => a + h.d, 0) + [...r.days].filter(d => recent.has(d)).length * VR_ATTEND; r.provisional = r.games < VR_MIN_GAMES; r.rating = Math.round(r.vr); r.rate = r.games ? Math.round(r.wins / r.games * 100) : 0; } };
+      finish(P); finish(T);
+      _vrCache = { players: P, teams: T, closedDays: closed.length, asOf: closed.map(m => m.date).sort().pop() || null };
+      _vrKey = key;
+      return _vrCache;
+    }
+    function vrFor(kind, id) { const c = computeVillainRatings(); const r = (kind === 'team' ? c.teams : c.players).get(id); return r || { vr: VR_START, rating: VR_START, games: 0, wins: 0, losses: 0, attended: 0, totalDays: c.closedDays, form: 0, provisional: true, rate: 0 }; }
+
     // Rank teams by match history
     function rankTeamsByMatches(filterDate = null) {
-      const allTeamStats = activeTeams().map(t => {
+      const allTeamStats = activeTeams().filter(t => filterDate || !t.is_temp).map(t => {
         const stats = getTeamStats(t.id, filterDate);
         return { ...t, ...stats, rate: winRate(stats.wins, stats.losses) };
       }).filter(t => t.matches > 0 || !filterDate);
@@ -7797,8 +7861,8 @@
           // Single-day: just win rate
           return { ...t, rating: simpleDayRating(t.wins, t.matches) };
         }
-        const comp = computeTeamRating(t.wins, t.matches, t.id, maxGames);
-        return { ...t, ...comp };
+        const v = vrFor('team', t.id);
+        return { ...t, rating: v.rating, vr: v.vr, form: v.form, qualified: !v.provisional && !t.is_temp, provisional: v.provisional, daysAttended: v.attended, totalDays: v.totalDays, rankedWins: v.wins, rankedLosses: v.losses, rankedGames: v.games };
       }).sort((a, b) => {
         if (filterDate) {
           // Day rankings: most wins first, then win rate as tiebreaker
@@ -7808,7 +7872,7 @@
         }
         // Overall rankings: qualified (5+ games) first by rating, then teams still
         // qualifying by rating, then teams that haven't played yet at the bottom.
-        const tier = t => (t.qualified !== false ? 0 : (t.matches > 0 ? 1 : 2));
+        const tier = t => (t.qualified !== false ? 0 : (t.rankedGames > 0 || t.matches > 0 ? 1 : 2));
         if (tier(a) !== tier(b)) return tier(a) - tier(b);
         if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.wins !== a.wins) return b.wins - a.wins;
@@ -7829,8 +7893,8 @@
         if (filterDate) {
           return { ...p, rating: simpleDayRating(p.wins, p.games) };
         }
-        const comp = computePlayerRating(p.wins, p.games, p.id, maxGames);
-        return { ...p, ...comp };
+        const v = vrFor('player', p.id);
+        return { ...p, rating: v.rating, vr: v.vr, form: v.form, qualified: !v.provisional && !p.is_guest, provisional: v.provisional, daysAttended: v.attended, totalDays: v.totalDays, rankedWins: v.wins, rankedLosses: v.losses, rankedGames: v.games };
       }).sort((a, b) => {
         if (a.active !== false && b.active === false) return -1;
         if (a.active === false && b.active !== false) return 1;
@@ -11005,23 +11069,19 @@
       const body = document.getElementById('powerRankingsBody');
       if (!body) return;
       
-      const ratings = calculateELO();
+      const vr = computeVillainRatings();
       const ranked = teams
-        .filter(t => ratings[t.id] && ratings[t.id].history.length > 1)
+        .filter(t => !t.is_temp && !t.is_draft && vr.teams.has(t.id) && vr.teams.get(t.id).games > 0)
         .map(t => {
-          const r = ratings[t.id];
-          const hist = r.history;
-          const prev = hist.length >= 2 ? hist[hist.length - 2] : 1500;
-          const delta = r.rating - prev;
-          const stats = getTeamStats(t.id);
-          // Trend: last 5 rating changes
-          const trend = hist.slice(-6).map((val, i, arr) => i === 0 ? null : val - arr[i-1]).filter(v => v !== null);
-          return { ...t, rating: r.rating, delta, stats, trend, history: hist };
+          const r = vr.teams.get(t.id);
+          const stats = { wins: r.wins, losses: r.losses, matches: r.games };
+          const trend = r.history.slice(-6).map(h => Math.round(h.d));
+          return { ...t, rating: r.rating, delta: Math.round(r.form), stats, trend, history: r.history.map(h => h.d), provisional: r.provisional };
         })
-        .sort((a, b) => b.rating - a.rating);
+        .sort((a, b) => (b.delta - a.delta) || (b.rating - a.rating));
       
       if (ranked.length === 0) {
-        body.innerHTML = '<div class="empty" style="padding:40px"><p>Play some matches to generate power rankings</p></div>';
+        body.innerHTML = '<div class="empty" style="padding:40px"><p>Close a match day to generate power rankings</p></div>';
         return;
       }
       
@@ -14490,6 +14550,7 @@
         position,
         photo, 
         active: true,
+        is_guest: !!document.getElementById('playerIsGuest')?.checked,
         created_at: new Date().toISOString() 
       };
       
@@ -14740,7 +14801,7 @@
         toast(warnings.join('. '), 'info');
       }
       
-      const nt = { id: Date.now(), name, player1_id: p1, player2_id: p2, wins: 0, losses: 0, active: true, created_at: new Date().toISOString() };
+      const nt = { id: Date.now(), name, player1_id: p1, player2_id: p2, wins: 0, losses: 0, active: true, is_temp: !!document.getElementById('teamIsTemp')?.checked, created_at: new Date().toISOString() };
       
       if (supabaseClient) {
         try {
@@ -17862,7 +17923,18 @@
       if (!currentUser) return;
       
       const player = players.find(p => p.id === currentUser.player_id);
-      if (!player) return;
+      if (!player) {
+        // Players not loaded yet: paint the cached avatar/name so the header never shows a bare initial
+        try {
+          const cached = JSON.parse(localStorage.getItem('pv_me_avatar') || 'null');
+          if (cached && String(cached.accountId) === String(currentUser.id)) {
+            const a = document.getElementById('userMenuAvatar'); if (a && cached.photo) a.innerHTML = `<img src="${cached.photo}" class="loaded">`;
+            const nm = document.getElementById('userMenuName'); if (nm && cached.name) nm.textContent = cached.name;
+          }
+        } catch (e) {}
+        return;
+      }
+      try { localStorage.setItem('pv_me_avatar', JSON.stringify({ accountId: currentUser.id, name: player.name, photo: player.photo || photoCache[player.id] || null })); } catch (e) {}
       
       // Update header user menu
       document.getElementById('userMenuName').textContent = player.name;
@@ -17870,7 +17942,7 @@
       document.getElementById('userMenuRole').textContent = currentUser.is_admin ? 'ADMIN' : 'PLAYER';
       const avatarEl = document.getElementById('userMenuAvatar');
       const userPhoto = player.photo || photoCache[player.id];
-      avatarEl.innerHTML = userPhoto ? `<img src="${userPhoto}" class="loaded">` : player.name.charAt(0);
+      avatarEl.innerHTML = userPhoto ? `<img src="${userPhoto}" class="loaded" decoding="async">` : player.name.charAt(0);
       
       // Update sidebar user info
       const sn = document.getElementById('sidebarName');
