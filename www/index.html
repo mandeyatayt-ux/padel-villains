@@ -4140,6 +4140,9 @@
     .md-check-row.ok i { color: var(--success, #2e7d32); } .md-check-row.warn i { color: #f5b83d; } .md-check-row.bad i { color: var(--clay); }
     [data-theme="court-green"] .md-check-row.ok i { color: var(--cg-lime); }
     .md-check-row small { display: block; color: var(--text-muted); margin-top: 2px; }
+    .rankings-row { will-change: transform; }
+    .pv-row-enter { animation: pvRowIn .4s ease-out both; }
+    @keyframes pvRowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
@@ -10860,11 +10863,12 @@
       const dayVillain = filterDate ? (r.length > 0 ? r[0] : null) : getDayVillains();
       
       const teamPodium = cgPodium(r.slice(0, 3).map(t => { const { p1, p2 } = getTeamPlayers(t); return { name: esc(t.name), sub: `${esc(p1?.name || '?')} & ${esc(p2?.name || '?')} · ${t.wins}W ${t.losses}L`, val: t.rating, unit: 'rtg' }; }));
+      const _flipT = pvFlipSnapshot(document.getElementById('rankingsBody'));
       document.getElementById('rankingsBody').innerHTML = r.length ? teamPodium + r.map((t, i) => {
         const { p1, p2 } = getTeamPlayers(t);
         const isVillain = dayVillain && t.id === dayVillain.id;
         const rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
-        return `<div class="rankings-row ${i < 3 ? 'top-3' : ''}">
+        return `<div class="rankings-row ${i < 3 ? 'top-3' : ''}" data-key="t${t.id}">
           <span><span class="rank-num ${rc}">${i + 1}</span></span>
           <span class="rank-team">
             <div class="rank-avatars">${av(p1, 'sm')}${av(p2, 'sm')}</div>
@@ -10884,6 +10888,7 @@
           </span>
         </div>`;
       }).join('') : '<div class="empty" style="padding:40px"><p>No matches found for this period</p></div>';
+      pvFlipPlay(document.getElementById('rankingsBody'), _flipT);
     }
     
     // Individual rankings filter state
@@ -10919,13 +10924,14 @@
       
       // Render rankings table
       const indivPodium = cgPodium(playerStats.slice(0, 3).map(p => ({ name: esc(p.name), sub: `${p.played} played · ${p.wins} won`, val: p.rating, unit: 'rtg' })));
+      const _flipP = pvFlipSnapshot(document.getElementById('individualRankingsBody'));
       document.getElementById('individualRankingsBody').innerHTML = playerStats.length ? indivPodium + playerStats.map((p, i) => {
         const player = getPlayer(p.id);
         const rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
         const streakClass = p.streakType === 'win' ? 'hot' : p.streakType === 'loss' ? 'cold' : '';
         const streakIcon = p.streakType === 'win' ? 'fire' : p.streakType === 'loss' ? 'snowflake' : 'minus';
         
-        return `<div class="rankings-row ${i < 3 ? 'top-3' : ''}">
+        return `<div class="rankings-row ${i < 3 ? 'top-3' : ''}" data-key="p${p.id}">
           <span><span class="rank-num ${rc}">${i + 1}</span></span>
           <span class="rank-team">
             ${av(player, 'sm')}
@@ -10966,6 +10972,7 @@
           <strong style="color:var(--brown-dark)">Rating Formula:</strong> Bayesian Win Rate (50%) + Games Played (30%) + Attendance (20%)
         </div>
       `;
+      pvFlipPlay(document.getElementById('individualRankingsBody'), _flipP);
     }
     
     // Get individual player stats from match history
@@ -11154,6 +11161,7 @@
     function renderPowerRankings() {
       const body = document.getElementById('powerRankingsBody');
       if (!body) return;
+      const _flipW = pvFlipSnapshot(body);
       
       const vr = computeVillainRatings();
       const ranked = teams
@@ -11189,7 +11197,7 @@
           `<span style="display:inline-block;width:4px;height:${Math.min(14, Math.max(3, Math.abs(d) / 2))}px;background:${d >= 0 ? '#059669' : '#dc2626'};border-radius:1px;vertical-align:middle"></span>`
         ).join('') : '';
         
-        return `<div class="rankings-row" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--divider);flex-wrap:wrap">
+        return `<div class="rankings-row" data-key="pw${t.id}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--divider);flex-wrap:wrap">
           <span style="min-width:28px;font-size:${rank <= 3 ? '20px' : '14px'};text-align:center;font-weight:700;color:var(--text-muted)">${medal}</span>
           <div style="flex:1;min-width:120px">
             <div style="display:flex;align-items:center;gap:8px">
@@ -11209,6 +11217,7 @@
           <div style="display:flex;align-items:end;gap:1px;min-width:30px;height:16px">${sparkline}</div>
         </div>`;
       }).join('');
+      pvFlipPlay(body, _flipW);
     }
     
     // Setup ranking filters
@@ -17670,6 +17679,21 @@
       el.innerHTML = `<div class="md-check-head"><span>Before you generate</span><b class="${blockers ? 'bad' : 'good'}">${blockers ? blockers + ' to fix' : 'Ready'}</b></div>` +
         items.map(i => `<div class="md-check-row ${i.ok ? 'ok' : i.warn ? 'warn' : 'bad'}"><i class="fas ${i.ok ? 'fa-circle-check' : i.warn ? 'fa-triangle-exclamation' : 'fa-circle-xmark'}"></i><div><div>${i.text}</div>${i.fix && !i.ok ? `<small>${i.fix}</small>` : ''}</div></div>`).join('');
       const btn = document.getElementById('mdGenerateBtn'); if (btn) btn.disabled = blockers > 0;
+    }
+    // FLIP: rows glide to their new position when a list re-renders
+    function pvFlipSnapshot(container) {
+      const m = new Map(); if (!container) return m;
+      container.querySelectorAll('[data-key]').forEach(el => m.set(el.dataset.key, el.getBoundingClientRect().top));
+      return m;
+    }
+    function pvFlipPlay(container, before) {
+      if (!container || !before.size || pvReducedMotion()) return;
+      container.querySelectorAll('[data-key]').forEach(el => {
+        const prev = before.get(el.dataset.key); if (prev == null) { el.classList.add('pv-row-enter'); return; }
+        const d = prev - el.getBoundingClientRect().top; if (Math.abs(d) < 2) return;
+        el.style.transition = 'none'; el.style.transform = `translateY(${d}px)`;
+        requestAnimationFrame(() => { el.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1)'; el.style.transform = ''; el.addEventListener('transitionend', () => { el.style.transition = ''; }, { once: true }); });
+      });
     }
     // ===================== RESULT MOMENT (Phase D) =====================
     let _pvMomentTimer = null, _pvMomentRaf = null;
