@@ -4150,6 +4150,10 @@
     .pv-skel .l { height: 12px; } .pv-skel .w60 { width: 60%; } .pv-skel .w50 { width: 50%; } .pv-skel .w30 { width: 30%; } .pv-skel .w70 { width: 70%; } .pv-skel .w20 { width: 20%; margin-left: auto; }
     @keyframes pvShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
     @media (prefers-reduced-motion: reduce) { .pv-skel span { animation: none; } }
+    .pv-presence { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .pv-pres-avs { display: flex; } .pv-pres-avs .avatar, .pv-pres-avs img { width: 22px !important; height: 22px !important; font-size: 10px !important; margin-right: -6px; border: 2px solid var(--bg-card); }
+    .pv-pres-dot { width: 8px; height: 8px; border-radius: 50%; background: #3ddc84; margin-left: 8px; box-shadow: 0 0 0 0 rgba(61,220,132,.6); animation: pvPulse 2s infinite; }
+    @keyframes pvPulse { 0% { box-shadow: 0 0 0 0 rgba(61,220,132,.6); } 70% { box-shadow: 0 0 0 8px rgba(61,220,132,0); } 100% { box-shadow: 0 0 0 0 rgba(61,220,132,0); } }
 </style>
 </head>
 <body>
@@ -4905,6 +4909,7 @@
       <div class="md-hero">
         <div class="md-hero-title"><span class="nav-icon" data-icon="rackets" style="display:inline-flex;width:22px;height:22px;vertical-align:-4px;margin-right:6px"></span>MATCH DAY</div>
         <div class="md-hero-sub" id="mdHeroSub"></div>
+        <div class="pv-presence" id="pvPresence" style="display:none"></div>
         <div class="md-mode-toggle">
           <button class="md-mode-btn active" id="mdModeRR" onclick="setMatchDayMode('roundrobin')">
             <div class="md-mode-btn-title"><span class="nav-icon" data-icon="trophy" style="display:inline-flex;width:16px;height:16px;vertical-align:-3px;margin-right:6px"></span>Round Robin</div>
@@ -7364,7 +7369,7 @@
             console.log('Supabase connected!');
             await fetchData();
             mdRealtimeStart();
-            pvDataRealtimeStart();
+            pvDataRealtimeStart(); setTimeout(pvPresenceStart, 1500);
           } catch (e) {
             console.error('Supabase init error:', e);
             loadLocal();
@@ -11406,15 +11411,16 @@
         });
     }
     function mdRealtimeStop() {
+      pvPresenceStop();
       if (_rtChannel && supabaseClient) { try { supabaseClient.removeChannel(_rtChannel); } catch (e) {} }
       _rtChannel = null;
     }
     // Coming back to the app (phone unlocked, app foregrounded): pull now and
     // make sure the socket is alive.
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) { mdLivePull(true); mdRealtimeStart(); pvDataRealtimeStart(); }
+      if (!document.hidden) { mdLivePull(true); mdRealtimeStart(); pvDataRealtimeStart(); pvPresenceStart(); }
     });
-    window.addEventListener('online', () => { mdLivePull(true); mdRealtimeStart(); pvDataRealtimeStart(); });
+    window.addEventListener('online', () => { mdLivePull(true); mdRealtimeStart(); pvDataRealtimeStart(); pvPresenceStart(); });
     async function mdToggleHold(c) {
       if (mdHeldCourts.has(c)) {
         mdHeldCourts.delete(c);
@@ -17711,6 +17717,25 @@
       const card = kind === 'row' ? '<div class="pv-skel pv-skel-row"><span class="c"></span><span class="l w60"></span><span class="l w20"></span></div>'
         : '<div class="pv-skel pv-skel-card"><span class="c big"></span><span class="l w50"></span><span class="l w30"></span><span class="l w70"></span></div>';
       return Array.from({ length: n }, () => card).join('');
+    }
+    // ===================== Presence: who's in the app right now =====================
+    let _presChannel = null, _presState = {};
+    function pvPresenceStart() {
+      if (!supabaseClient || !supabaseClient.channel || _presChannel || !currentUser?.player_id) return;
+      const me = getPlayer(currentUser.player_id);
+      _presChannel = supabaseClient.channel('pv-presence', { config: { presence: { key: String(currentUser.player_id) } } })
+        .on('presence', { event: 'sync' }, () => { _presState = _presChannel.presenceState(); renderPresence(); })
+        .subscribe(async status => { if (status === 'SUBSCRIBED') { try { await _presChannel.track({ player_id: currentUser.player_id, name: me?.name || 'Villain', at: Date.now() }); } catch (e) {} } });
+    }
+    function pvPresenceStop() { if (_presChannel && supabaseClient) { try { supabaseClient.removeChannel(_presChannel); } catch (e) {} } _presChannel = null; _presState = {}; renderPresence(); }
+    function renderPresence() {
+      const el = document.getElementById('pvPresence'); if (!el) return;
+      const ids = Object.keys(_presState || {}); const n = ids.length;
+      if (n === 0) { el.innerHTML = ''; el.style.display = 'none'; return; }
+      const ppl = ids.map(id => getPlayer(Number(id)) || getPlayer(id)).filter(Boolean);
+      const others = n - 1;
+      el.style.display = '';
+      el.innerHTML = `<div class="pv-pres-avs">${ppl.slice(0, 5).map(p => av(p, 'sm')).join('')}</div><span class="pv-pres-dot"></span><span>${others <= 0 ? 'Just you here for now' : `${others} other villain${others === 1 ? '' : 's'} in the app`}</span>`;
     }
     // ===================== RESULT MOMENT (Phase D) =====================
     let _pvMomentTimer = null, _pvMomentRaf = null;
