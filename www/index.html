@@ -4056,6 +4056,22 @@
     /* config buttons: wrap when there are six */
     .md-config-btns { flex-wrap: wrap; }
     .md-config-btn { min-width: 52px; }
+    /* courts & time steppers */
+    .md-court-slots { display: flex; flex-direction: column; gap: 8px; }
+    .md-court-row { display: flex; align-items: center; gap: 10px; }
+    .md-court-name { flex: 1; font-weight: 700; font-size: 14px; }
+    .md-stepper { display: inline-flex; align-items: center; border: 1.5px solid var(--border); border-radius: 999px; overflow: hidden; }
+    .md-step { width: 40px; height: 40px; border: 0; background: transparent; color: var(--text); font-size: 20px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .md-step:disabled { opacity: .3; cursor: default; }
+    .md-step:active:not(:disabled) { background: var(--clay); color: #fff; }
+    .md-step-val { min-width: 64px; text-align: center; font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; }
+    .md-court-remove { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; }
+    .md-court-remove-spacer { width: 32px; }
+    .md-court-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px; }
+    .md-court-total { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    @media (max-width: 768px) { .md-config { grid-template-columns: 1fr !important; } .md-config-card:last-child { grid-column: auto; } }
+    [data-theme="court-green"] .md-stepper { border-color: rgba(247,237,218,.25); }
+    [data-theme="court-green"] .md-step:active:not(:disabled) { background: var(--cg-lime); color: var(--cg-green); }
 </style>
 </head>
 <body>
@@ -4832,24 +4848,12 @@
 
       <!-- Configuration -->
       <div class="md-config">
-        <div class="md-config-card">
-          <div class="md-config-label">Courts</div>
-          <div class="md-config-btns">
-            <button class="md-config-btn active" data-val="1" onclick="setMDCourts(1)">1</button>
-            <button class="md-config-btn" data-val="2" onclick="setMDCourts(2)">2</button>
-            <button class="md-config-btn" data-val="3" onclick="setMDCourts(3)">3</button>
-            <button class="md-config-btn" data-val="4" onclick="setMDCourts(4)">4</button>
-          </div>
-        </div>
-        <div class="md-config-card">
-          <div class="md-config-label">Duration</div>
-          <div class="md-config-btns">
-            <button class="md-config-btn" data-val="0.5" onclick="setMDDuration(0.5)">30m</button>
-            <button class="md-config-btn" data-val="1" onclick="setMDDuration(1)">1h</button>
-            <button class="md-config-btn" data-val="1.5" onclick="setMDDuration(1.5)">1.5h</button>
-            <button class="md-config-btn" data-val="2" onclick="setMDDuration(2)">2h</button>
-            <button class="md-config-btn active" data-val="3" onclick="setMDDuration(3)">3h</button>
-            <button class="md-config-btn" data-val="4" onclick="setMDDuration(4)">4h</button>
+        <div class="md-config-card md-courts-card">
+          <div class="md-config-label">Courts &amp; time</div>
+          <div id="mdCourtSlots" class="md-court-slots"></div>
+          <div class="md-court-footer">
+            <button type="button" class="btn btn-xs btn-secondary" onclick="mdBookingAdd()"><i class="fas fa-plus"></i> Add court</button>
+            <span class="md-court-total" id="mdCourtTotal"></span>
           </div>
         </div>
         <div class="md-config-card">
@@ -6479,6 +6483,7 @@
         mdMode = 'roundrobin';
         mdCourts = 1;
         mdDuration = 3;
+        mdCourtSlots = [{ mins: 180 }]; renderMDCourtSlots();
         mdActiveTeamIds = [];
         mdDraftPlayerIds = [];
         mdDraftState = { drawnTeams: null, starPlayerId: null, createdTeamIds: [] };
@@ -11255,7 +11260,7 @@
       try {
         if (mdStep === 'live' || mdStep === 'preview') {
           localStorage.setItem('pv_mdSession', JSON.stringify({
-            step: mdStep, mode: mdMode, courts: mdCourts,
+            step: mdStep, mode: mdMode, courts: mdCourts, courtSlots: mdCourtSlots,
             schedule: mdGeneratedSchedule, completed: mdCompletedGames,
             activeTeamIds: mdActiveTeamIds, sessionStart: mdSessionStart,
             currentRound: mdCurrentRound
@@ -11275,6 +11280,8 @@
         mdStep = s.step;
         mdMode = s.mode || 'roundrobin';
         mdCourts = s.courts || 1;
+        mdCourtSlots = Array.isArray(s.courtSlots) && s.courtSlots.length ? s.courtSlots : Array.from({ length: mdCourts }, () => ({ mins: 180 }));
+        mdSyncCourtDerived(); renderMDCourtSlots();
         mdGeneratedSchedule = s.schedule;
         mdCompletedGames = s.completed || [];
         mdActiveTeamIds = s.activeTeamIds || [];
@@ -11329,18 +11336,39 @@
       if (mode === 'draft') draftRenderPlayers();
     }
 
-    function setMDCourts(n) {
-      mdCourts = n;
-      mdGeneratedSchedule = null;
-      document.querySelectorAll('.md-config-card:first-child .md-config-btn').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.val || b.textContent) === n));
-      mdUpdateEstimate();
+    // Per-court bookings: each court has its own minutes (30-min steps)
+    let mdCourtSlots = [{ mins: 180 }];
+    function mdSyncCourtDerived() {
+      mdCourts = Math.max(1, mdCourtSlots.length);
+      mdDuration = Math.max(...mdCourtSlots.map(c => c.mins)) / 60;
     }
-
-    function setMDDuration(h) {
-      mdDuration = h;
-      document.querySelectorAll('.md-config-card:nth-child(2) .md-config-btn').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.val || b.textContent) === h));
-      mdUpdateEstimate();
+    function mdCourtsAvailableAt(round) { // how many courts are still booked during 15-min round N (1-based)
+      const n = mdCourtSlots.filter(c => round * 15 <= c.mins).length;
+      return n > 0 ? n : mdCourtSlots.length; // past all bookings: assume overtime on every court
     }
+    function mdFmtMins(m) { const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h}h ${r}m` : `${h}h`) : `${r}m`; }
+    function renderMDCourtSlots() {
+      const el = document.getElementById('mdCourtSlots'); if (!el) return;
+      el.innerHTML = mdCourtSlots.map((c, i) => `
+        <div class="md-court-row">
+          <span class="md-court-name">Court ${i + 1}</span>
+          <div class="md-stepper">
+            <button type="button" class="md-step" onclick="mdBookingStep(${i}, -30)" ${c.mins <= 30 ? 'disabled' : ''} aria-label="30 minutes less">−</button>
+            <span class="md-step-val">${mdFmtMins(c.mins)}</span>
+            <button type="button" class="md-step" onclick="mdBookingStep(${i}, 30)" ${c.mins >= 360 ? 'disabled' : ''} aria-label="30 minutes more">+</button>
+          </div>
+          ${mdCourtSlots.length > 1 ? `<button type="button" class="md-court-remove" onclick="mdBookingRemove(${i})" aria-label="Remove court"><i class="fas fa-xmark"></i></button>` : '<span class="md-court-remove-spacer"></span>'}
+        </div>`).join('');
+      const tot = mdCourtSlots.reduce((a, c) => a + c.mins, 0);
+      const t = document.getElementById('mdCourtTotal'); if (t) t.textContent = `${mdFmtMins(tot)} court time`;
+    }
+    function mdBookingStep(i, delta) { const c = mdCourtSlots[i]; if (!c) return; c.mins = Math.min(360, Math.max(30, c.mins + delta)); mdCourtsChanged(); }
+    function mdBookingAdd() { if (mdCourtSlots.length >= 6) return; mdCourtSlots.push({ mins: mdCourtSlots[mdCourtSlots.length - 1]?.mins || 120 }); mdCourtsChanged(); }
+    function mdBookingRemove(i) { if (mdCourtSlots.length <= 1) return; mdCourtSlots.splice(i, 1); mdCourtsChanged(); }
+    function mdCourtsChanged() { mdSyncCourtDerived(); mdGeneratedSchedule = null; renderMDCourtSlots(); mdUpdateEstimate(); }
+    // Back-compat shims (older callers)
+    function setMDCourts(n) { const cur = mdCourtSlots[0]?.mins || 180; mdCourtSlots = Array.from({ length: Math.max(1, n) }, () => ({ mins: cur })); mdCourtsChanged(); }
+    function setMDDuration(h) { mdCourtSlots.forEach(c => c.mins = Math.round(h * 60)); mdCourtsChanged(); }
 
     function setMDAmericanoRounds(r) {
       mdAmericanoRounds = r;
@@ -11715,9 +11743,11 @@
       if (totalMatches === 0 || isNaN(totalMatches)) { el.innerHTML = '—'; return; }
       const hrs = Math.floor(estMins / 60);
       const mins = estMins % 60;
-      const isOver = estMins > mdDuration * 60;
+      const capacity = mdCourtSlots.reduce((a, c) => a + c.mins, 0);
+      const needed = totalMatches * 15;
+      const isOver = needed > capacity;
       el.className = 'md-est ' + (isOver ? 'over' : 'ok');
-      el.innerHTML = `${hrs}h ${mins}m<span class="md-est-detail">(${totalMatches} games, ${totalRounds} rds)</span>`;
+      el.innerHTML = `${hrs}h ${mins}m<span class="md-est-detail">(${totalMatches} games · needs ${mdFmtMins(needed)} of ${mdFmtMins(capacity)} court time${isOver ? ' — over' : ''})</span>`;
     }
 
     // --- ROUND ROBIN SCHEDULING ---
@@ -11772,13 +11802,15 @@
       
       for (const logicalRound of logicalRounds) {
         if (courts >= 2) {
-          // Multi-court: group matches from same logical round onto courts simultaneously
-          for (let i = 0; i < logicalRound.length; i += courts) {
+          // Multi-court: group matches from same logical round onto the courts still booked in that round
+          for (let i = 0; i < logicalRound.length; ) {
             matchRound++;
-            for (let c = 0; c < courts && (i + c) < logicalRound.length; c++) {
+            const avail = Math.max(1, Math.min(courts, mdCourtsAvailableAt(matchRound)));
+            const start = i; i += avail;
+            for (let c = 0; c < avail && (start + c) < logicalRound.length; c++) {
               scheduled.push({
-                t1: logicalRound[i + c][0],
-                t2: logicalRound[i + c][1],
+                t1: logicalRound[start + c][0],
+                t2: logicalRound[start + c][1],
                 round: matchRound,
                 court: c + 1
               });
@@ -12469,6 +12501,7 @@
     }
     
     function renderMatchDay() {
+      renderMDCourtSlots();
       // Render the info hub (status, queue, results, standings, my day)
       renderMdInfoHub();
       renderMdPicker();
