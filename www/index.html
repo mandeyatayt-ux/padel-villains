@@ -4046,6 +4046,16 @@
       .match-header { padding-bottom: 10px !important; margin-bottom: 12px !important; }
       .match-card, .match-item { padding: 14px !important; }
     }
+    /* player-card team rows: theme aware */
+    .pc-team-row { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--cream); color: var(--brown-dark); border-radius: 10px; margin-bottom: 8px; }
+    [data-theme="court-green"] .pc-team-row { background: var(--cg-green-2); color: var(--text); border: 1px solid var(--border); }
+    [data-theme="court-green"] .pc-team-row [style*="text-muted"] { color: var(--text-muted) !important; }
+    /* dashboard match-day history strip sits on cream: ink text */
+    [data-theme="court-green"] #matchdayHistoryLog .matchday-log-item, [data-theme="court-green"] #matchdayHistoryLog .matchday-log-stats, [data-theme="court-green"] #matchdayHistoryLog .matchday-log-venue { color: var(--cg-green) !important; opacity: 1; }
+    [data-theme="court-green"] #matchdayHistoryLog .matchday-log-stats, [data-theme="court-green"] #matchdayHistoryLog .matchday-log-venue { opacity: .75; }
+    /* config buttons: wrap when there are six */
+    .md-config-btns { flex-wrap: wrap; }
+    .md-config-btn { min-width: 52px; }
 </style>
 </head>
 <body>
@@ -4825,16 +4835,21 @@
         <div class="md-config-card">
           <div class="md-config-label">Courts</div>
           <div class="md-config-btns">
-            <button class="md-config-btn active" onclick="setMDCourts(1)">1</button>
-            <button class="md-config-btn" onclick="setMDCourts(2)">2</button>
+            <button class="md-config-btn active" data-val="1" onclick="setMDCourts(1)">1</button>
+            <button class="md-config-btn" data-val="2" onclick="setMDCourts(2)">2</button>
+            <button class="md-config-btn" data-val="3" onclick="setMDCourts(3)">3</button>
+            <button class="md-config-btn" data-val="4" onclick="setMDCourts(4)">4</button>
           </div>
         </div>
         <div class="md-config-card">
           <div class="md-config-label">Duration</div>
           <div class="md-config-btns">
-            <button class="md-config-btn" onclick="setMDDuration(2)">2h</button>
-            <button class="md-config-btn active" onclick="setMDDuration(3)">3h</button>
-            <button class="md-config-btn" onclick="setMDDuration(4)">4h</button>
+            <button class="md-config-btn" data-val="0.5" onclick="setMDDuration(0.5)">30m</button>
+            <button class="md-config-btn" data-val="1" onclick="setMDDuration(1)">1h</button>
+            <button class="md-config-btn" data-val="1.5" onclick="setMDDuration(1.5)">1.5h</button>
+            <button class="md-config-btn" data-val="2" onclick="setMDDuration(2)">2h</button>
+            <button class="md-config-btn active" data-val="3" onclick="setMDDuration(3)">3h</button>
+            <button class="md-config-btn" data-val="4" onclick="setMDDuration(4)">4h</button>
           </div>
         </div>
         <div class="md-config-card">
@@ -11317,13 +11332,13 @@
     function setMDCourts(n) {
       mdCourts = n;
       mdGeneratedSchedule = null;
-      document.querySelectorAll('.md-config-card:first-child .md-config-btn').forEach(b => b.classList.toggle('active', parseInt(b.textContent) === n));
+      document.querySelectorAll('.md-config-card:first-child .md-config-btn').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.val || b.textContent) === n));
       mdUpdateEstimate();
     }
 
     function setMDDuration(h) {
       mdDuration = h;
-      document.querySelectorAll('.md-config-card:nth-child(2) .md-config-btn').forEach(b => b.classList.toggle('active', b.textContent === h + 'h'));
+      document.querySelectorAll('.md-config-card:nth-child(2) .md-config-btn').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.val || b.textContent) === h));
       mdUpdateEstimate();
     }
 
@@ -15950,7 +15965,7 @@
           const winRate = (stats.wins + stats.losses) > 0 ? Math.round((stats.wins / (stats.wins + stats.losses)) * 100) : 0;
           const isActive = t.active !== false;
           return `
-            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:white;border-radius:10px;margin-bottom:8px;opacity:${isActive ? '1' : '0.5'}">
+            <div class="pc-team-row" style="opacity:${isActive ? '1' : '0.5'}">
               <div class="avatar sm" style="flex-shrink:0">${partner?.photo ? `<img src="${partner.photo}" class="loaded">` : (partner?.name?.charAt(0) || '?')}</div>
               <div style="flex:1;min-width:0">
                 <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.name)}</div>
