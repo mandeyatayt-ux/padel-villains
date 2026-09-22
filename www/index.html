@@ -4105,6 +4105,11 @@
     .pv-seg button.active { background: var(--clay); color: #fff; }
     [data-theme="court-green"] .pv-seg button.active { background: var(--cg-lime); color: var(--cg-green); }
     @media (max-width: 768px) { .tab > .pv-seg { margin-left: 20px; margin-right: 20px; } }
+    .pcard-rank { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-top: 4px; letter-spacing: .02em; }
+    .pcard-rank .up { color: var(--success, #2e7d32); } .pcard-rank .down { color: var(--danger, #c62828); } .pcard-rank .flat { color: var(--text-muted); }
+    .pcard-stub { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; }
+    .pcard-stub > div b { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    [data-theme="court-green"] .pcard-rank .up { color: var(--cg-lime); } [data-theme="court-green"] .pcard-rank .down { color: var(--cg-orange); }
 </style>
 </head>
 <body>
@@ -19334,42 +19339,35 @@
       if (!p) return;
       
       const stats = getPlayerStats(p.id);
-      const att = getPlayerAttendance(p.id);
-      const allStats = players.map(pl => getPlayerStats(pl.id));
-      const maxGames = Math.max(1, ...allStats.map(s => s.games));
-      const comp = computePlayerRating(stats.wins, stats.games, p.id, maxGames);
-      
-      // Calculate additional stats
-      const playerTeams = teams.filter(t => t.player1_id === p.id || t.player2_id === p.id);
-      const uniquePartners = new Set();
-      playerTeams.forEach(t => {
-        const partnerId = t.player1_id === p.id ? t.player2_id : t.player1_id;
-        uniquePartners.add(partnerId);
+      const v = vrFor('player', p.id);
+      const ladder = rankPlayersByMatches().filter(x => x.qualified);
+      const rankIdx = ladder.findIndex(x => x.id === p.id);
+      const rankLabel = rankIdx >= 0 ? `#${rankIdx + 1} of ${ladder.length}` : (p.is_guest ? 'Guest' : 'Provisional');
+
+      // Partners & opponents from match history (single source: matches)
+      const partnerW = new Map(), partnerG = new Map(), oppW = new Map(), oppG = new Map();
+      matches.forEach(m => {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id); if (!t1 || !t2) return;
+        const on1 = t1.player1_id === p.id || t1.player2_id === p.id, on2 = t2.player1_id === p.id || t2.player2_id === p.id;
+        if (!on1 && !on2) return;
+        const mine = on1 ? t1 : t2, theirs = on1 ? t2 : t1; const won = String(m.winner_id) === String(mine.id);
+        const partner = mine.player1_id === p.id ? mine.player2_id : mine.player1_id;
+        if (partner) { partnerG.set(partner, (partnerG.get(partner) || 0) + 1); if (won) partnerW.set(partner, (partnerW.get(partner) || 0) + 1); }
+        [theirs.player1_id, theirs.player2_id].filter(Boolean).forEach(o => { oppG.set(o, (oppG.get(o) || 0) + 1); if (!won) oppW.set(o, (oppW.get(o) || 0) + 1); });
       });
-      
-      // Best streak
-      // "Best streak" means best WINNING streak — an unscoped max would show a
-      // losing run as the player's best.
+      const best = [...partnerG.entries()].map(([id, g]) => ({ id, g, w: partnerW.get(id) || 0 })).sort((a, b) => (b.w - a.w) || (b.g - a.g))[0];
+      const nemesis = [...oppG.entries()].map(([id, g]) => ({ id, g, l: oppW.get(id) || 0 })).filter(x => x.l > 0).sort((a, b) => (b.l - a.l) || (b.g - a.g))[0];
+
+      // Best winning streak across their teams
       let bestStreak = { count: 0, type: 'none' };
-      playerTeams.forEach(t => {
-        const s = calculateCurrentStreak(t.id);
-        if (s.type === 'win' && s.count > bestStreak.count) bestStreak = s;
-      });
-      
+      teams.filter(t => t.player1_id === p.id || t.player2_id === p.id).forEach(t => { const st = calculateCurrentStreak(t.id); if (st.type === 'win' && st.count > bestStreak.count) bestStreak = st; });
+
       const photo = p.photo || photoCache[p.id];
-      const photoHtml = photo 
-        ? `<img src="${photo}" alt="${esc(p.name)}">` 
-        : `<div class="pcard-photo-ph">${p.name.charAt(0)}</div>`;
-      
-      // Stat bars
-      const winPct = stats.games > 0 ? Math.round((stats.wins / stats.games) * 100) : 0;
-      const winVolume = Math.round((stats.games / maxGames) * 100);
-      const attPct = att.pct;
-      const clutch = Math.min(100, bestStreak.count * 20);
-      
-      // Squad number: stable per player, derived from creation order
+      const photoHtml = photo ? `<img src="${photo}" alt="${esc(p.name)}">` : `<div class="pcard-photo-ph">${p.name.charAt(0)}</div>`;
       const squadNo = String((players.findIndex(x => x.id === p.id) + 1) || 0).padStart(2, '0');
-      const streakLabel = bestStreak.count ? `W${bestStreak.count}` : '\u2014';
+      const formStr = v.form > 0 ? `<span class="up">&#9650; ${Math.round(v.form)}</span>` : v.form < 0 ? `<span class="down">&#9660; ${Math.abs(Math.round(v.form))}</span>` : '<span class="flat">&mdash;</span>';
+      const winPct = stats.games ? Math.round(stats.wins / stats.games * 100) : 0;
+      const attPct = v.totalDays ? Math.round(v.attended / v.totalDays * 100) : 0;
       document.getElementById('fifaCardContent').innerHTML = `
         <div class="pcard-band"><b>Padel Villains</b><span>NO. ${squadNo}</span></div>
         <div class="pcard-body">
@@ -19377,21 +19375,21 @@
           <div class="pcard-who">
             <div class="pcard-name">${esc(p.name.toUpperCase())}</div>
             <div class="pcard-sub">${(p.position || 'HYB').substring(0, 3).toUpperCase()}${p.nickname ? ' &middot; ' + esc(p.nickname) : ''}</div>
-            <div class="pcard-rating"><b>${comp.rating}</b><span>Rating</span></div>
+            <div class="pcard-rating"><b>${v.rating}</b><span>Villain Rating</span></div>
+            <div class="pcard-rank">${rankLabel} &middot; form ${formStr}</div>
           </div>
         </div>
         <div class="pcard-bars">
           <div class="pcard-bar"><span class="l">Win %</span><span class="t"><i style="width:${winPct}%"></i></span><span class="v">${winPct}</span></div>
-          <div class="pcard-bar"><span class="l">Volume</span><span class="t"><i style="width:${winVolume}%"></i></span><span class="v">${winVolume}</span></div>
-          <div class="pcard-bar"><span class="l">Attend</span><span class="t"><i style="width:${attPct}%"></i></span><span class="v">${attPct}</span></div>
+          <div class="pcard-bar"><span class="l">Days</span><span class="t"><i style="width:${attPct}%"></i></span><span class="v">${v.attended}/${v.totalDays}</span></div>
         </div>
         <div class="pcard-stub">
           <div><b>${stats.wins}&ndash;${stats.games - stats.wins}</b><span>Record</span></div>
-          <div><b>${uniquePartners.size}</b><span>Partners</span></div>
-          <div><b>${streakLabel}</b><span>Best streak</span></div>
+          <div><b>${best ? esc(getPlayer(best.id)?.name || '?') : '&mdash;'}</b><span>${best ? `Best partner (${best.w}W)` : 'Best partner'}</span></div>
+          <div><b>${nemesis ? esc(getPlayer(nemesis.id)?.name || '?') : '&mdash;'}</b><span>${nemesis ? `Nemesis (${nemesis.l}L)` : 'Nemesis'}</span></div>
+          <div><b>${bestStreak.count ? 'W' + bestStreak.count : '&mdash;'}</b><span>Best streak</span></div>
         </div>
       `;
-      
       document.getElementById('fifaCardOverlay').classList.add('active');
     }
     
