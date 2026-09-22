@@ -4110,6 +4110,26 @@
     .pcard-stub { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; }
     .pcard-stub > div b { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
     [data-theme="court-green"] .pcard-rank .up { color: var(--cg-lime); } [data-theme="court-green"] .pcard-rank .down { color: var(--cg-orange); }
+    /* ===== Result moment ===== */
+    .pv-moment { position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center; background: rgba(9,51,44,.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 24px; }
+    .pv-moment.show { display: flex; animation: pvFade .25s ease-out; }
+    .pv-moment canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .pv-moment-card { position: relative; background: var(--bg-card); color: var(--text); border: 1px solid var(--border); border-radius: 24px; padding: 28px 24px 18px; width: min(360px, 100%); text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,.45); animation: pvPop .5s cubic-bezier(.2,1.4,.4,1); }
+    [data-theme="court-green"] .pv-moment-card { background: var(--cg-green-2); box-shadow: 0 0 0 4px var(--cg-lime), 0 30px 80px rgba(0,0,0,.5); }
+    .pv-moment-kicker { font-family: 'Bebas Neue', 'Anton', Impact, sans-serif; font-size: 44px; letter-spacing: .06em; line-height: 1; color: var(--clay); }
+    [data-theme="court-green"] .pv-moment-kicker { color: var(--cg-lime); }
+    .pv-moment-avatars { display: flex; justify-content: center; gap: 6px; margin: 14px 0 8px; }
+    .pv-moment-avatars .avatar, .pv-moment-avatars img { width: 64px !important; height: 64px !important; font-size: 24px !important; border: 3px solid var(--bg-card) !important; }
+    .pv-moment-team { font-family: 'Bebas Neue', 'Anton', Impact, sans-serif; font-size: 30px; letter-spacing: .03em; margin-top: 4px; }
+    .pv-moment-players { color: var(--text-muted); font-size: 14px; }
+    .pv-moment-score { display: flex; justify-content: center; align-items: baseline; gap: 10px; margin: 14px 0 4px; font-family: 'Bebas Neue', 'Anton', Impact, sans-serif; font-size: 52px; line-height: 1; }
+    .pv-moment-score b { color: var(--text); } .pv-moment-score b.l { opacity: .55; } .pv-moment-score span { opacity: .5; font-size: 32px; }
+    .pv-moment-vs { color: var(--text-muted); font-size: 13px; }
+    .pv-moment-streak { display: inline-block; margin-top: 12px; padding: 6px 14px; border-radius: 999px; background: linear-gradient(90deg, #f5b83d, #f26b1d); color: #1a1a1a; font-weight: 800; font-size: 13px; }
+    .pv-moment-tap { margin-top: 16px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
+    @keyframes pvPop { from { transform: scale(.7) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes pvFade { from { opacity: 0; } to { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .pv-moment.show, .pv-moment-card { animation: none; } }
 </style>
 </head>
 <body>
@@ -5716,6 +5736,11 @@
     </section>
   </div>
 
+  <!-- ===== RESULT MOMENT ===== -->
+  <div class="pv-moment" id="pvMoment" onclick="pvMomentClose()" aria-hidden="true">
+    <canvas id="pvMomentCanvas"></canvas>
+    <div class="pv-moment-card" id="pvMomentCard"></div>
+  </div>
   <!-- ===== NOTIFICATIONS PANEL ===== -->
   <div class="notifications-overlay" id="notificationsOverlay" onclick="toggleNotifications()"></div>
   <div class="notifications-panel" id="notificationsPanel">
@@ -15187,6 +15212,7 @@
         mdOnMatchComplete({team1_id: m.team1_id, team2_id: m.team2_id, md_round: m.md_round, score1: scoreA, score2: scoreB, court: m.court, id: savedMatch.id, match_uid: savedMatch.match_uid || matchData.match_uid});
       }
       renderAll();
+      try { const wT = getTeam(savedMatch.winner_id), lT = getTeam(String(savedMatch.winner_id) === String(m.team1_id) ? m.team2_id : m.team1_id); const wS = String(savedMatch.winner_id) === String(m.team1_id) ? scoreA : scoreB, lS = String(savedMatch.winner_id) === String(m.team1_id) ? scoreB : scoreA; pvShowResultMoment(wT, lT, wS, lS); } catch (e) {}
       if (!result.offline) toast('Match finalized!', 'success');
     }
     
@@ -17594,6 +17620,64 @@
       const B = pvPlugin('Browser');
       try { if (pvIsNativeApp() && B) { await B.open({ url }); return; } } catch (e) {}
       window.open(url, '_blank');
+    }
+    // ===================== RESULT MOMENT (Phase D) =====================
+    let _pvMomentTimer = null, _pvMomentRaf = null;
+    function pvHaptic(kind) {
+      try { if (pvIsNativeApp()) { const H = pvPlugin('Haptics'); if (H) { (kind === 'success' ? H.notification({ type: 'SUCCESS' }) : H.impact({ style: 'MEDIUM' })).catch(() => {}); return; } } } catch (e) {}
+      try { if (navigator.vibrate) navigator.vibrate(kind === 'success' ? [30, 40, 60] : 20); } catch (e) {}
+    }
+    function pvReducedMotion() { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    function pvShowResultMoment(winnerTeam, loserTeam, scoreW, scoreL) {
+      const el = document.getElementById('pvMoment'); const card = document.getElementById('pvMomentCard'); if (!el || !card || !winnerTeam) return;
+      const { p1, p2 } = getTeamPlayers(winnerTeam);
+      const st = calculateCurrentStreak(winnerTeam.id);
+      const streak = st.type === 'win' && st.count >= 2 ? `<div class="pv-moment-streak">🔥 ${st.count} in a row</div>` : '';
+      const me = currentUser?.player_id; const mine = me && (winnerTeam.player1_id === me || winnerTeam.player2_id === me);
+      card.innerHTML = `
+        <div class="pv-moment-kicker">${mine ? 'YOU WON' : 'WINNER'}</div>
+        <div class="pv-moment-avatars">${av(p1)}${av(p2)}</div>
+        <div class="pv-moment-team">${esc(winnerTeam.name)}</div>
+        <div class="pv-moment-players">${esc(p1?.name || '')} &amp; ${esc(p2?.name || '')}</div>
+        <div class="pv-moment-score"><b>${scoreW ?? ''}</b><span>&ndash;</span><b class="l">${scoreL ?? ''}</b></div>
+        <div class="pv-moment-vs">beat ${esc(loserTeam?.name || 'them')}</div>
+        ${streak}
+        <div class="pv-moment-tap">tap to continue</div>`;
+      el.classList.add('show'); el.setAttribute('aria-hidden', 'false');
+      pvHaptic('success');
+      if (!pvReducedMotion()) pvConfetti();
+      clearTimeout(_pvMomentTimer); _pvMomentTimer = setTimeout(pvMomentClose, 4200);
+    }
+    function pvMomentClose() {
+      const el = document.getElementById('pvMoment'); if (!el) return;
+      el.classList.remove('show'); el.setAttribute('aria-hidden', 'true');
+      clearTimeout(_pvMomentTimer); if (_pvMomentRaf) cancelAnimationFrame(_pvMomentRaf); _pvMomentRaf = null;
+      const c = document.getElementById('pvMomentCanvas'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height);
+    }
+    function pvConfetti() {
+      const c = document.getElementById('pvMomentCanvas'); if (!c) return;
+      const dpr = Math.min(2, window.devicePixelRatio || 1); c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+      const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
+      const cs = getComputedStyle(document.documentElement);
+      const cols = [cs.getPropertyValue('--clay').trim() || '#FE4F2D', cs.getPropertyValue('--cg-lime').trim() || '#E6F286', cs.getPropertyValue('--cg-cream').trim() || '#F7EDDA', '#ffffff'];
+      const N = 140, parts = [];
+      for (let i = 0; i < N; i++) parts.push({ x: innerWidth / 2 + (Math.random() - .5) * 80, y: innerHeight * .45, vx: (Math.random() - .5) * 14, vy: -Math.random() * 16 - 6, g: .35 + Math.random() * .2, w: 6 + Math.random() * 6, h: 8 + Math.random() * 8, r: Math.random() * Math.PI, vr: (Math.random() - .5) * .3, c: cols[i % cols.length], life: 1 });
+      const t0 = performance.now();
+      const step = now => {
+        const t = (now - t0) / 1000; ctx.clearRect(0, 0, innerWidth, innerHeight);
+        let alive = 0;
+        for (const p of parts) { p.vy += p.g; p.x += p.vx; p.y += p.vy; p.vx *= .99; p.r += p.vr; p.life = Math.max(0, 1 - Math.max(0, t - 2.2) / 1.2); if (p.y < innerHeight + 20 && p.life > 0) alive++;
+          ctx.save(); ctx.globalAlpha = p.life; ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore(); }
+        if (alive > 0 && t < 3.6) _pvMomentRaf = requestAnimationFrame(step); else ctx.clearRect(0, 0, innerWidth, innerHeight);
+      };
+      _pvMomentRaf = requestAnimationFrame(step);
+    }
+    // Count-up for stat numbers (used by renderers that opt in via data-countup)
+    function pvCountUp(el, to, ms = 500) {
+      if (!el || pvReducedMotion()) { if (el) el.textContent = to; return; }
+      const from = parseFloat(el.dataset.prev || 0) || 0; const isPct = /%$/.test(String(to)); const target = parseFloat(to) || 0; const t0 = performance.now();
+      const tick = now => { const k = Math.min(1, (now - t0) / ms); const e = 1 - Math.pow(1 - k, 3); const v = Math.round(from + (target - from) * e); el.textContent = isPct ? v + '%' : v; if (k < 1) requestAnimationFrame(tick); else el.dataset.prev = target; };
+      requestAnimationFrame(tick);
     }
     // ===================== Push notifications + server inbox (v2) =====================
     let _pvPushWired = false, _pvInboxChannel = null;
