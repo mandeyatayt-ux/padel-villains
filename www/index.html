@@ -4130,6 +4130,16 @@
     @keyframes pvPop { from { transform: scale(.7) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
     @keyframes pvFade { from { opacity: 0; } to { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .pv-moment.show, .pv-moment-card { animation: none; } }
+    .md-checklist { margin: 14px 0 4px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .md-check-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 800; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .md-check-head b.good { color: var(--success, #2e7d32); } .md-check-head b.bad { color: var(--clay); }
+    [data-theme="court-green"] .md-check-head b.good { color: var(--cg-lime); }
+    .md-check-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    .md-check-row:last-child { border-bottom: 0; }
+    .md-check-row i { margin-top: 2px; font-size: 14px; }
+    .md-check-row.ok i { color: var(--success, #2e7d32); } .md-check-row.warn i { color: #f5b83d; } .md-check-row.bad i { color: var(--clay); }
+    [data-theme="court-green"] .md-check-row.ok i { color: var(--cg-lime); }
+    .md-check-row small { display: block; color: var(--text-muted); margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -4933,6 +4943,7 @@
           </div>
           <div class="md-selected-teams" id="mdSelectedChips"></div>
           <button class="md-add-teams-btn" onclick="openMDTeamPicker('roundrobin')"><i class="fas fa-plus"></i> Add Teams</button>
+          <div class="md-checklist" id="mdChecklist"></div>
           <button class="md-generate-btn" id="mdGenerateBtn" onclick="mdGenerate()" disabled>🎲 Generate Schedule</button>
         </div>
       </div>
@@ -11521,7 +11532,7 @@
     function mdBookingStep(i, delta) { const c = mdCourtSlots[i]; if (!c) return; c.mins = Math.min(360, Math.max(30, c.mins + delta)); mdCourtsChanged(); }
     function mdBookingAdd() { if (mdCourtSlots.length >= 6) return; mdCourtSlots.push({ mins: mdCourtSlots[mdCourtSlots.length - 1]?.mins || 120 }); mdCourtsChanged(); }
     function mdBookingRemove(i) { if (mdCourtSlots.length <= 1) return; mdCourtSlots.splice(i, 1); mdCourtsChanged(); }
-    function mdCourtsChanged() { mdSyncCourtDerived(); mdGeneratedSchedule = null; renderMDCourtSlots(); mdUpdateEstimate(); }
+    function mdCourtsChanged() { mdSyncCourtDerived(); mdGeneratedSchedule = null; renderMDCourtSlots(); mdUpdateEstimate(); renderMDChecklist(); }
     // Back-compat shims (older callers)
     function setMDCourts(n) { const cur = mdCourtSlots[0]?.mins || 180; mdCourtSlots = Array.from({ length: Math.max(1, n) }, () => ({ mins: cur })); mdCourtsChanged(); }
     function setMDDuration(h) { mdCourtSlots.forEach(c => c.mins = Math.round(h * 60)); mdCourtsChanged(); }
@@ -11590,6 +11601,7 @@
         const summaryEl = document.getElementById('mdTeamSummary');
         if (summaryEl) summaryEl.textContent = n > 0 ? `${n} teams • ${matches} matches needed` : 'Select teams for today\'s matches';
         document.getElementById('mdGenerateBtn').disabled = n < 2;
+        renderMDChecklist();
       }
     }
 
@@ -12660,6 +12672,7 @@
     
     function renderMatchDay() {
       renderMDCourtSlots();
+      try { renderMDChecklist(); } catch (e) {}
       // Render the info hub (status, queue, results, standings, my day)
       renderMdInfoHub();
       renderMdPicker();
@@ -17620,6 +17633,43 @@
       const B = pvPlugin('Browser');
       try { if (pvIsNativeApp() && B) { await B.open({ url }); return; } } catch (e) {}
       window.open(url, '_blank');
+    }
+    // ===================== Pre-match-day scorer checklist =====================
+    function mdChecklistItems() {
+      const items = [];
+      const md = mdViewingId ? matchdays.find(m => m.id === mdViewingId) : activeMatchday;
+      const n = mdActiveTeamIds.length;
+      const teamsSel = mdActiveTeamIds.map(getTeam).filter(Boolean);
+      // 1. match day exists with a time
+      items.push(md ? { ok: !!(md.start_time && md.end_time), text: md.start_time && md.end_time ? `Match day ${md.start_time}–${md.end_time} at ${md.venue || 'venue TBC'}` : 'Match day has no start/end time', fix: md.start_time ? null : 'Edit the match day to add times' }
+                    : { ok: false, text: 'No match day selected', fix: 'Create or pick a match day first' });
+      // 2. courts booked
+      const capacity = mdCourtSlots.reduce((a, c) => a + c.mins, 0);
+      items.push({ ok: capacity > 0, text: `${mdCourtSlots.length} court${mdCourtSlots.length === 1 ? '' : 's'} · ${mdFmtMins(capacity)} court time` });
+      // 3. teams
+      items.push({ ok: n >= 2, text: n >= 2 ? `${n} teams in` : `${n} team${n === 1 ? '' : 's'} selected — need at least 2`, fix: n < 2 ? 'Tap Add Teams' : null });
+      // 4. no player on two teams
+      const seen = new Map(); const dup = [];
+      teamsSel.forEach(t => [t.player1_id, t.player2_id].forEach(p => { if (!p) return; if (seen.has(p)) dup.push(getPlayer(p)?.name || 'A player'); seen.set(p, t.id); }));
+      if (n >= 2) items.push({ ok: dup.length === 0, text: dup.length ? `${[...new Set(dup)].join(', ')} on two teams` : 'No player doubled up', fix: dup.length ? 'Remove one of their teams' : null });
+      // 5. availability (who said they're in)
+      const avail = Array.isArray(availablePlayers) ? availablePlayers.map(String) : [];
+      if (avail.length) {
+        const missing = teamsSel.flatMap(t => [t.player1_id, t.player2_id]).filter(p => p && !avail.includes(String(p))).map(p => getPlayer(p)?.name || '?');
+        items.push({ ok: missing.length === 0, text: missing.length ? `${missing.length} selected player${missing.length === 1 ? '' : 's'} not marked available: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '…' : ''}` : `All ${seen.size} players marked available`, warn: true });
+      } else if (n >= 2) items.push({ ok: false, warn: true, text: 'Nobody has marked availability yet', fix: 'Optional — availability lives on the Dashboard' });
+      // 6. fits the time
+      if (n >= 2) { const games = mdMode === 'roundrobin' ? (n * (n - 1)) / 2 : n; const need = games * 15; items.push({ ok: need <= capacity, warn: true, text: need <= capacity ? `${games} games fit in ${mdFmtMins(capacity)}` : `${games} games need ${mdFmtMins(need)}, you have ${mdFmtMins(capacity)}`, fix: need > capacity ? 'Add court time or drop a team' : null }); }
+      return items;
+    }
+    function renderMDChecklist() {
+      const el = document.getElementById('mdChecklist'); if (!el) return;
+      if (mdMode !== 'roundrobin') { el.innerHTML = ''; return; }
+      const items = mdChecklistItems();
+      const blockers = items.filter(i => !i.ok && !i.warn).length;
+      el.innerHTML = `<div class="md-check-head"><span>Before you generate</span><b class="${blockers ? 'bad' : 'good'}">${blockers ? blockers + ' to fix' : 'Ready'}</b></div>` +
+        items.map(i => `<div class="md-check-row ${i.ok ? 'ok' : i.warn ? 'warn' : 'bad'}"><i class="fas ${i.ok ? 'fa-circle-check' : i.warn ? 'fa-triangle-exclamation' : 'fa-circle-xmark'}"></i><div><div>${i.text}</div>${i.fix && !i.ok ? `<small>${i.fix}</small>` : ''}</div></div>`).join('');
+      const btn = document.getElementById('mdGenerateBtn'); if (btn) btn.disabled = blockers > 0;
     }
     // ===================== RESULT MOMENT (Phase D) =====================
     let _pvMomentTimer = null, _pvMomentRaf = null;
