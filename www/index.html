@@ -4094,6 +4094,12 @@
     .pv-toggle input:checked + span::after { transform: translateX(18px); }
     .pv-toggle-text b { display: block; font-size: 14px; } .pv-toggle-text small { color: var(--text-muted); font-size: 12px; line-height: 1.35; display: block; }
     [data-theme="court-green"] .pv-toggle input:checked + span { background: var(--cg-lime); } [data-theme="court-green"] .pv-toggle input:checked + span::after { background: var(--cg-green); }
+    .md-hist-foot { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--text-muted); }
+    .md-hist-foot i { margin-left: auto; }
+    .md-hist-foot .btn { margin-left: 8px; }
+    .md-hist-matches { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; cursor: default; }
+    .matchday-history-card.open { box-shadow: inset 3px 0 0 var(--clay); }
+    @media (max-width: 768px) { .matchday-history-card, .matchday-history-header, .matchday-history-stats { text-align: left !important; } .matchday-history-stat { align-items: flex-start !important; text-align: left !important; } .tab > #pvAllMatchesToggle { margin-left: 20px; } }
 </style>
 </head>
 <body>
@@ -5151,9 +5157,12 @@
       <div id="matchdayHistoryList"><div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Yet</h3><p>Complete a match day to see it here</p></div></div>
       
       <!-- All Matches (flat list with filters applied) -->
-      <h3 style="font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-top:32px;margin-bottom:12px">All Matches</h3>
+      <button type="button" class="btn btn-sm btn-secondary" id="pvAllMatchesToggle" style="margin-top:28px" onclick="const l=document.getElementById('pvAllMatchesWrap');const o=l.style.display==='none';l.style.display=o?'':'none';this.innerHTML=(o?'<i class=\'fas fa-chevron-up\'></i> Hide all matches':'<i class=\'fas fa-list\'></i> Show all matches')"><i class="fas fa-list"></i> Show all matches</button>
+      <div id="pvAllMatchesWrap" style="display:none">
+      <h3 style="font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-top:20px;margin-bottom:12px">All Matches</h3>
       <div id="matchTeamStats" style="display:none"></div>
       <div id="matchesList"><div class="empty"><div class="empty-icon">📋</div><h3>No Matches Yet</h3><p>Log your first match</p></div></div>
+      </div>
     </section>
 
     <!-- ===== ACHIEVEMENTS TAB ===== -->
@@ -10613,6 +10622,40 @@
     }
     
     // ===== MATCHES (renders into History tab's All Matches section) =====
+    function pvMatchCardHtml(m) {
+        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id), w1 = m.winner_id === t1?.id;
+        const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1), { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
+        return `<div class="match-card" onclick="openEditMatch(${m.id})" style="cursor:pointer">
+          <div class="match-header">
+            <div>
+              <div class="match-date">${new Date(m.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
+              ${m.started_at || m.finalized_at ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${m.started_at ? '⏱ ' + new Date(m.started_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : ''}${m.started_at && m.finalized_at ? ' → ' : ''}${m.finalized_at ? '✓ ' + new Date(m.finalized_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : ''}</div>` : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              ${m.game_mode ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:${m.game_mode === 'kotc' ? 'rgba(212,168,83,0.15);color:#B8942F' : 'rgba(124,58,237,0.1);color:#7C3AED'}">${m.game_mode === 'kotc' ? '👑 KOTC' : '🎲 RANDOM'}</span>` : ''}
+              <div class="match-location"><i class="fas fa-map-marker-alt"></i> ${esc(m.court)}</div>
+              <i class="fas fa-edit" style="color:var(--text-muted);font-size:12px"></i>
+            </div>
+          </div>
+          <div class="match-body">
+            <div class="match-team-card ${w1 ? 'winner' : ''}">
+              <div class="match-team-avatars">${av(t1p1, 'sm')}${av(t1p2, 'sm')}</div>
+              <div class="match-team-name">${esc(t1?.name || '?')}</div>
+              <div class="match-team-players">${esc(t1p1?.name || '?')} & ${esc(t1p2?.name || '?')}</div>
+              ${w1 ? '<span class="match-winner-badge">WINNER</span>' : ''}
+            </div>
+            <div class="match-scores">
+              ${(m.scores || []).map(s => '<div class="match-set"><span class="match-score ' + (s[0] > s[1] ? 'win' : 'lose') + '">' + s[0] + '</span><span class="match-score-dash">-</span><span class="match-score ' + (s[1] > s[0] ? 'win' : 'lose') + '">' + s[1] + '</span></div>').join('')}
+            </div>
+            <div class="match-team-card ${!w1 ? 'winner' : ''}">
+              <div class="match-team-avatars">${av(t2p1, 'sm')}${av(t2p2, 'sm')}</div>
+              <div class="match-team-name">${esc(t2?.name || '?')}</div>
+              <div class="match-team-players">${esc(t2p1?.name || '?')} & ${esc(t2p2?.name || '?')}</div>
+              ${!w1 ? '<span class="match-winner-badge">WINNER</span>' : ''}
+            </div>
+          </div>
+        </div>`;
+    }
     function renderMatches(filter) {
       const listEl = document.getElementById('matchesList');
       if (!listEl) return; // History tab not yet rendered or element missing
@@ -10717,38 +10760,7 @@
       }
       
       document.getElementById('matchesList').innerHTML = filtered.length ? filtered.map(m => {
-        const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id), w1 = m.winner_id === t1?.id;
-        const { p1: t1p1, p2: t1p2 } = getTeamPlayers(t1), { p1: t2p1, p2: t2p2 } = getTeamPlayers(t2);
-        return `<div class="match-card" onclick="openEditMatch(${m.id})" style="cursor:pointer">
-          <div class="match-header">
-            <div>
-              <div class="match-date">${new Date(m.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
-              ${m.started_at || m.finalized_at ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${m.started_at ? '⏱ ' + new Date(m.started_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : ''}${m.started_at && m.finalized_at ? ' → ' : ''}${m.finalized_at ? '✓ ' + new Date(m.finalized_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : ''}</div>` : ''}
-            </div>
-            <div style="display:flex;align-items:center;gap:12px">
-              ${m.game_mode ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:${m.game_mode === 'kotc' ? 'rgba(212,168,83,0.15);color:#B8942F' : 'rgba(124,58,237,0.1);color:#7C3AED'}">${m.game_mode === 'kotc' ? '👑 KOTC' : '🎲 RANDOM'}</span>` : ''}
-              <div class="match-location"><i class="fas fa-map-marker-alt"></i> ${esc(m.court)}</div>
-              <i class="fas fa-edit" style="color:var(--text-muted);font-size:12px"></i>
-            </div>
-          </div>
-          <div class="match-body">
-            <div class="match-team-card ${w1 ? 'winner' : ''}">
-              <div class="match-team-avatars">${av(t1p1, 'sm')}${av(t1p2, 'sm')}</div>
-              <div class="match-team-name">${esc(t1?.name || '?')}</div>
-              <div class="match-team-players">${esc(t1p1?.name || '?')} & ${esc(t1p2?.name || '?')}</div>
-              ${w1 ? '<span class="match-winner-badge">WINNER</span>' : ''}
-            </div>
-            <div class="match-scores">
-              ${(m.scores || []).map(s => '<div class="match-set"><span class="match-score ' + (s[0] > s[1] ? 'win' : 'lose') + '">' + s[0] + '</span><span class="match-score-dash">-</span><span class="match-score ' + (s[1] > s[0] ? 'win' : 'lose') + '">' + s[1] + '</span></div>').join('')}
-            </div>
-            <div class="match-team-card ${!w1 ? 'winner' : ''}">
-              <div class="match-team-avatars">${av(t2p1, 'sm')}${av(t2p2, 'sm')}</div>
-              <div class="match-team-name">${esc(t2?.name || '?')}</div>
-              <div class="match-team-players">${esc(t2p1?.name || '?')} & ${esc(t2p2?.name || '?')}</div>
-              ${!w1 ? '<span class="match-winner-badge">WINNER</span>' : ''}
-            </div>
-          </div>
-        </div>`;
+        return pvMatchCardHtml(m);
       }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Matches Found</h3></div>';
     }
     
@@ -13697,6 +13709,8 @@
 
     // ===== SETTINGS =====
     // ===== HISTORY =====
+    const pvHistOpen = new Set();
+    function pvToggleHistDay(id) { pvHistOpen.has(id) ? pvHistOpen.delete(id) : pvHistOpen.add(id); renderHistory(); }
     function renderHistory() {
       const listEl = document.getElementById('matchdayHistoryList');
       if (!listEl) return;
@@ -13731,7 +13745,8 @@
           ? '<span class="pv-badge pv-badge-done">COMPLETED</span>'
           : '<span style="background:var(--clay);color:white;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600">OPEN</span>';
         
-        return `<div class="matchday-history-card" onclick="viewMatchday(${md.id})">
+        const expanded = pvHistOpen.has(md.id);
+        return `<div class="matchday-history-card ${expanded ? 'open' : ''}" onclick="pvToggleHistDay(${md.id})">
           <div class="matchday-history-header">
             <div>
               <div class="matchday-history-date">${dateStr}</div>
@@ -13757,6 +13772,8 @@
             <span class="matchday-history-winner-label">👑 ${isClosed ? 'DAY WINNER' : 'CURRENT LEADER'}:</span>
             <span class="matchday-history-winner-name">${esc(winner.name)} (${winner.wins}W - ${winner.losses}L)</span>
           </div>` : ''}
+          <div class="md-hist-foot"><span>${expanded ? 'Hide matches' : (dayMatches.length ? `Show ${dayMatches.length} match${dayMatches.length === 1 ? '' : 'es'}` : 'No matches yet')}</span><i class="fas fa-chevron-${expanded ? 'up' : 'down'}"></i>${!isClosed ? `<button class="btn btn-xs btn-secondary" onclick="event.stopPropagation();viewMatchday(${md.id})">Open in Match Day</button>` : ''}</div>
+          ${expanded ? `<div class="md-hist-matches" onclick="event.stopPropagation()">${dayMatches.length ? dayMatches.slice().sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).map(pvMatchCardHtml).join('') : ''}</div>` : ''}
         </div>`;
       }).join('') : '<div class="empty"><div class="empty-icon">📋</div><h3>No Match Days Match Filters</h3><p>Try clearing filters or creating a match day.</p></div>';
     }
