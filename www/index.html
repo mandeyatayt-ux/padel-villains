@@ -4013,6 +4013,39 @@
     [data-theme="court-green"] { --evt-vibes: #E6F286; --evt-training: #F7EDDA; }
     .event-legend-dot.vibes { background: var(--evt-vibes) !important; }
     .event-legend-dot.training { background: var(--evt-training) !important; }
+    /* ===== UI audit pass 2: modals ===== */
+    @media (max-width: 768px) {
+      .modal-overlay { padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px)) !important; align-items: flex-end !important; }
+      .modal { width: 100% !important; max-width: 100% !important; max-height: 88dvh !important; border-radius: 20px !important; padding: 20px !important; }
+      .modal-header { position: sticky; top: -20px; margin: -20px -20px 16px; padding: 16px 20px 12px; background: inherit; z-index: 2; }
+      .modal-actions { position: sticky; bottom: -20px; margin: 16px -20px -20px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px)); background: inherit; display: flex; gap: 10px; }
+      .modal-actions .btn { flex: 1; justify-content: center; min-height: 48px; }
+      /* Team 1 / VS / Team 2 stacked, full width */
+      .teams-vs-row { flex-direction: column !important; align-items: stretch !important; gap: 4px !important; }
+      .teams-vs-row .form-group { width: 100%; margin-bottom: 0; }
+      .teams-vs-row .form-select { width: 100%; }
+      .teams-vs-text { text-align: center; padding: 6px 0 !important; }
+      /* bigger score inputs */
+      .score-input { width: 84px !important; height: 64px !important; font-size: 30px !important; text-align: center; }
+      .score-dash { font-size: 28px; }
+      .form-input, .form-select, .form-textarea { min-height: 48px; font-size: 16px; }
+      .form-row { display: grid !important; grid-template-columns: 1fr 1fr; gap: 12px; }
+    }
+    /* ===== UI audit pass 2: compact match cards on phones ===== */
+    @media (max-width: 768px) {
+      .match-body { flex-direction: row !important; gap: 8px !important; align-items: stretch !important; }
+      .match-team-card { padding: 12px 6px !important; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .match-team-avatars { margin-bottom: 8px !important; gap: 4px !important; }
+      .match-team-avatars .avatar, .match-team-avatars img, .match-team-avatars > * { width: 30px !important; height: 30px !important; font-size: 12px !important; }
+      .match-team-name { font-size: 14px !important; line-height: 1.15; margin-bottom: 2px !important; }
+      .match-team-players { font-size: 11px !important; margin-bottom: 8px !important; }
+      .match-winner-badge { padding: 4px 10px !important; font-size: 10px !important; }
+      .match-scores { flex-direction: column !important; padding: 0 !important; min-width: 58px !important; gap: 6px !important; }
+      .match-set { padding: 6px 8px !important; gap: 4px !important; }
+      .match-score { font-size: 17px !important; }
+      .match-header { padding-bottom: 10px !important; margin-bottom: 12px !important; }
+      .match-card, .match-item { padding: 14px !important; }
+    }
 </style>
 </head>
 <body>
