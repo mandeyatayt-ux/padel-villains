@@ -3972,6 +3972,47 @@
     .notifications-header h3 { flex: 1; }
     .header { z-index: 500 !important; overflow: visible !important; }
     .user-dropdown { z-index: 600; }
+    /* ===== UI audit pass 1 (mobile consistency + contrast) ===== */
+    @media (max-width: 768px) {
+      /* 1. bare headings get the same 20px gutter as card content */
+      .tab > .section-header, .tab > h2, .tab > h3, .tab > .section-title, .tab > p.section-sub { padding-left: 20px; padding-right: 20px; }
+      .tab > .section-header { padding-top: 8px; }
+      /* 2. match-day mode picker: 2x2, breathing room */
+      .md-mode-toggle { display: grid !important; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .md-mode-btn { min-height: 92px; padding: 12px; }
+      .md-mode-btn-title { font-size: 15px; line-height: 1.2; margin-bottom: 4px; }
+      .md-mode-btn-desc { font-size: 12px; line-height: 1.3; }
+      /* courts / duration / estimate never clip */
+      .md-config { display: grid !important; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .md-config-card { min-width: 0; }
+      .md-config-card:last-child { grid-column: 1 / -1; }
+      .md-config-btn { font-size: 15px; min-width: 0; }
+      /* 3. players & teams: two per row, compact */
+      #playersGrid.grid-4, #teamsGrid.grid-4, #teamsGrid.grid-3, #teamsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+      .player-card { padding: 16px 12px !important; }
+      .player-card .player-avatar, .player-card .avatar { width: 56px !important; height: 56px !important; font-size: 22px !important; margin: 0 auto 8px !important; }
+      .player-card .player-name { font-size: 15px !important; }
+      .player-card .player-stats { gap: 8px !important; }
+      .player-card .stat-value, .player-card .player-stat-value { font-size: 18px !important; }
+      .players-hero-stats { grid-template-columns: repeat(2, 1fr) !important; display: grid !important; }
+      .team-card { padding: 16px 12px !important; }
+    }
+    /* 4. contrast */
+    .empty p, .matchday-log-stats, .matchday-log-venue, .achievement-card.locked .achievement-desc { color: var(--text) !important; opacity: .78; }
+    [data-theme="court-green"] .card[style*="--cg-orange"] .empty p, [data-theme="court-green"] .cg-band-orange .empty p { color: var(--cg-cream) !important; opacity: .9; }
+    /* 5. calendar legend & dots: three distinguishable colours in Court Green */
+    [data-theme="court-green"] .event-legend-dot.vibes, [data-theme="court-green"] .event-dot.vibes, [data-theme="court-green"] .cal-dot.vibes { background: var(--cg-lime) !important; }
+    [data-theme="court-green"] .event-legend-dot.training, [data-theme="court-green"] .event-dot.training, [data-theme="court-green"] .cal-dot.training { background: var(--cg-cream) !important; }
+    /* 6. filter button rows scroll instead of wrapping */
+    @media (max-width: 768px) {
+      .matches-filters { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto; gap: 8px; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+      .matches-filters::-webkit-scrollbar { display: none; }
+      .matches-filters .filter-btn { flex: 0 0 auto; white-space: nowrap; }
+    }
+    :root { --evt-vibes: var(--purple); --evt-training: var(--success); }
+    [data-theme="court-green"] { --evt-vibes: #E6F286; --evt-training: #F7EDDA; }
+    .event-legend-dot.vibes { background: var(--evt-vibes) !important; }
+    .event-legend-dot.training { background: var(--evt-training) !important; }
 </style>
 </head>
 <body>
@@ -16327,7 +16368,7 @@
         } else if (dayEvents.length > 1) {
           eventClasses = 'has-multiple';
           const types = [...new Set(dayEvents.map(e => e.type))];
-          dotsHtml = `<div class="event-dots">${types.map(t => `<span style="background:var(--${t === 'matchday' ? 'clay' : t === 'vibes' ? 'purple' : 'success'})"></span>`).join('')}</div>`;
+          dotsHtml = `<div class="event-dots">${types.map(t => `<span style="background:var(--${t === 'matchday' ? 'clay' : t === 'vibes' ? 'evt-vibes' : 'evt-training'})"></span>`).join('')}</div>`;
         }
         
         html += `<div class="event-calendar-day ${isToday ? 'today' : ''} ${eventClasses}" onclick="selectCalendarDate('${dateStr}')">${day}${dotsHtml}</div>`;
