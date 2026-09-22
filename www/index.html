@@ -17643,6 +17643,15 @@
       cands.sort((a, b) => a.date - b.date);
       return cands[0] || null;
     }
+    function pvNextHappenings(n) {
+      const today = new Date(); today.setHours(0,0,0,0); const seen = new Set(); const out = [];
+      const cands = [];
+      (matchdays || []).forEach(m => { if (m.status !== 'closed' && m.date) { const d = new Date(m.date + 'T00:00:00'); if (d >= today) cands.push({ date: d, type: 'matchday', venue: m.venue, start: m.start_time }); } });
+      (events || []).forEach(e => { if (e.date && e.type !== 'matchday') { const d = new Date(e.date + 'T00:00:00'); if (d >= today) cands.push({ date: d, type: e.type || 'event', venue: e.venue, start: e.start_time, title: e.title }); } });
+      cands.sort((a, b) => a.date - b.date);
+      for (const c of cands) { const k = c.type + c.date.toDateString(); if (seen.has(k)) continue; seen.add(k); out.push(c); if (out.length >= n) break; }
+      return out;
+    }
     function pvHappeningLabel(h) { return !h ? null : h.type === 'training' ? 'Training day' : h.type === 'vibes' ? 'Vibes sesh' : 'Match day'; }
     function renderTicker() {
       const el = document.getElementById('cgTicker'); if (!el) return;
@@ -17652,8 +17661,9 @@
       const stack = document.getElementById('cgHeroStack'); if (stack) stack.innerHTML = `<span class="hollow">${word}</span><span class="live">${word}</span><span class="hot">${word}</span>`;
       const nxt = document.getElementById('cgHeroNext'); if (nxt) nxt.textContent = h ? ('Next ' + word.toLowerCase() + ' · ' + h.date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })) : 'Nothing booked yet';
       const day = h ? h.date.toLocaleDateString('en-GB', { weekday: 'long' }) : null;
-      const items = h ? [pvHappeningLabel(h) + ' ' + day, h.venue ? 'at ' + h.venue : 'Get on court', h.start ? 'from ' + h.start : 'Good vibes only', 'The circuit']
-                      : ['Good vibes only', 'Get on court', 'No match day booked yet', 'The circuit'];
+      const ups = pvNextHappenings(2);
+      const fmt = x => pvHappeningLabel(x) + ' ' + x.date.toLocaleDateString('en-GB', { weekday: 'long' }) + (x.start ? ' ' + x.start : '') + (x.venue ? ' at ' + x.venue : '');
+      const items = ups.length ? [...ups.map(fmt), 'Good vibes only', 'The circuit'] : ['Good vibes only', 'Get on court', 'No match day booked yet', 'The circuit'];
       const seq = items.map(t => `<span>${t}</span><span>✦</span>`).join('');
       el.innerHTML = `<div>${seq}${seq}</div>`;
     }
