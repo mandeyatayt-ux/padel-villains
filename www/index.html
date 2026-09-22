@@ -12235,6 +12235,8 @@
           actions += `<button class="btn btn-sm btn-secondary md-act" onclick="showMatchDaySummary()"><i class="fas fa-trophy"></i> Recap</button>`;
         }
         // Single filled primary, always last
+        const calMd = mdViewingId ? matchdays.find(m => m.id === mdViewingId) : activeMatchday;
+        if (calMd && calMd.status !== 'closed') actions += `<button class="btn btn-sm btn-secondary md-act" onclick="pvAddToCalendar('matchday', ${calMd.id})"><i class="fas fa-calendar-plus"></i> Calendar</button>`;
         actions += `<button class="btn btn-sm md-act md-act-primary" onclick="shareEventImage()"><i class="fas fa-share-nodes"></i> Share</button>`;
         document.getElementById('mdInfoActions').innerHTML = actions;
       } else {
@@ -16723,7 +16725,9 @@
       let actionsHtml = '<button class="btn btn-secondary" onclick="closeModal(\'viewEvent\')">Close</button>';
       
       // Share button for ALL event types
-      const shareBtn = `<button class="btn btn-primary" onclick="shareCalendarEventImage(${JSON.stringify(event).replace(/"/g, '&quot;')})" style="background:${typeColor};border-radius:14px"><i class="fas fa-share-nodes"></i> Share</button>`;
+      const calMdRow = event.type === 'matchday' ? (matchdays.find(m => m.id === event.matchday_id) || matchdays.find(m => m.date === event.date)) : null;
+      const calId = calMdRow ? ['matchday', calMdRow.id] : (event.type !== 'matchday' && event.id ? ['event', event.id] : null);
+      const shareBtn = (calId && !isPast ? `<button class="btn btn-secondary" onclick="pvAddToCalendar('${calId[0]}', ${JSON.stringify(String(calId[1]))})" style="border-radius:14px"><i class="fas fa-calendar-plus"></i> Add to calendar</button>` : '') + `<button class="btn btn-primary" onclick="shareCalendarEventImage(${JSON.stringify(event).replace(/"/g, '&quot;')})" style="background:${typeColor};border-radius:14px"><i class="fas fa-share-nodes"></i> Share</button>`;
       
       if (event.type !== 'matchday' && !isPast) {
         actionsHtml = `
@@ -17582,6 +17586,14 @@
     function pvTimeOrderOk(start, end, label) {
       if (start && end && end <= start) { toast((label || 'Event') + ': end time must be after the start time', 'error'); return false; }
       return true;
+    }
+    // Add to calendar: .ics served by Supabase so iPhone/Android hand it straight to the Calendar app
+    function pvCalendarUrl(kind, id) { return `https://hihujmoapelzuvcrdhfh.supabase.co/functions/v1/calendar?${kind}=${encodeURIComponent(id)}`; }
+    async function pvAddToCalendar(kind, id) {
+      const url = pvCalendarUrl(kind, id);
+      const B = pvPlugin('Browser');
+      try { if (pvIsNativeApp() && B) { await B.open({ url }); return; } } catch (e) {}
+      window.open(url, '_blank');
     }
     // ===================== Push notifications + server inbox (v2) =====================
     let _pvPushWired = false, _pvInboxChannel = null;
