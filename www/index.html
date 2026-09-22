@@ -4143,6 +4143,13 @@
     .rankings-row { will-change: transform; }
     .pv-row-enter { animation: pvRowIn .4s ease-out both; }
     @keyframes pvRowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .pv-skel { border-radius: 14px; background: var(--bg-card); border: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .pv-skel-row { flex-direction: row; align-items: center; padding: 12px 16px; }
+    .pv-skel span { display: block; border-radius: 6px; background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.14) 50%, rgba(255,255,255,.06) 75%); background-size: 200% 100%; animation: pvShimmer 1.2s infinite linear; }
+    .pv-skel .c { width: 40px; height: 40px; border-radius: 50%; } .pv-skel .c.big { width: 56px; height: 56px; }
+    .pv-skel .l { height: 12px; } .pv-skel .w60 { width: 60%; } .pv-skel .w50 { width: 50%; } .pv-skel .w30 { width: 30%; } .pv-skel .w70 { width: 70%; } .pv-skel .w20 { width: 20%; margin-left: auto; }
+    @keyframes pvShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+    @media (prefers-reduced-motion: reduce) { .pv-skel span { animation: none; } }
 </style>
 </head>
 <body>
@@ -7687,12 +7694,14 @@
         
         applyData(data);
         cacheData(data);
+        pvFirstLoadDone = true;
         renderAll();
         updateSyncBadge();
         
         if (currentUser) renderMyProfile();
         loadEventsFromDb();
       } catch (e) {
+        pvFirstLoadDone = true; try { renderAll(); } catch (x) {}
         console.log('Background refresh failed:', e);
       }
     }
@@ -10603,7 +10612,7 @@
           ${badges.length ? `<div class="player-badges">${badges.map(b => `<span class="player-badge">${b}</span>`).join('')}</div>` : ''}
           ${streakHtml}
         </div>`;
-      }).join('') : '<div class="empty"><div class="empty-icon">👥</div><h3>No Players Yet</h3><p>Add your first player to get started</p></div>';
+      }).join('') : (pvSkel(6) || '<div class="empty"><div class="empty-icon">👥</div><h3>No Players Yet</h3><p>Add your first player to get started</p></div>');
     }
     
     // ===== TEAMS =====
@@ -10656,7 +10665,7 @@
           </div>
           <div class="team-winrate"><div class="team-winrate-bar"><div class="team-winrate-fill" style="width:${t.rate}%"></div></div><span class="team-winrate-text">${t.rate}%</span></div>
         </div>`;
-      }).join('') : '<div class="empty"><div class="empty-icon">🏅</div><h3>No Teams Yet</h3><p>Create your first team</p></div>';
+      }).join('') : (pvSkel(6) || '<div class="empty"><div class="empty-icon">🏅</div><h3>No Teams Yet</h3><p>Create your first team</p></div>');
     }
     
     // ===== ONGOING MATCHES =====
@@ -17694,6 +17703,14 @@
         el.style.transition = 'none'; el.style.transform = `translateY(${d}px)`;
         requestAnimationFrame(() => { el.style.transition = 'transform .45s cubic-bezier(.2,.8,.2,1)'; el.style.transform = ''; el.addEventListener('transitionend', () => { el.style.transition = ''; }, { once: true }); });
       });
+    }
+    // Skeleton placeholders until the first server load lands
+    let pvFirstLoadDone = false;
+    function pvSkel(n, kind) {
+      if (pvFirstLoadDone) return null;
+      const card = kind === 'row' ? '<div class="pv-skel pv-skel-row"><span class="c"></span><span class="l w60"></span><span class="l w20"></span></div>'
+        : '<div class="pv-skel pv-skel-card"><span class="c big"></span><span class="l w50"></span><span class="l w30"></span><span class="l w70"></span></div>';
+      return Array.from({ length: n }, () => card).join('');
     }
     // ===================== RESULT MOMENT (Phase D) =====================
     let _pvMomentTimer = null, _pvMomentRaf = null;
