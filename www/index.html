@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <script>/* Native app: never auto-zoom on field focus (iOS zooms <16px fields and leaves the page panned sideways) */try{if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()){document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover');}}catch(e){}</script>
   <title>Padel Villains – Social League</title>
   <meta name="description" content="Track your padel matches, rankings, and achievements">
   <meta name="theme-color" content="#09332C">
@@ -4165,6 +4166,20 @@
       [data-theme="court-green"] #mdCockpitCourts .md-cc-input { font-size: 34px !important; }
       #mdCockpitCourts .md-court-body > div:nth-child(2) span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     }
+
+    /* ===== Phone fit (pv-v87) =====
+       1. iOS zooms in when a field under 16px gets focus and stays zoomed, so the
+          page pans sideways. Every text field/select must be >= 16px.
+       2. Fixed elements parked off-screen (notifications panel, decorative blobs)
+          can widen the scrollable area in iOS WebKit. Keep them fully on-screen or gone. */
+    #playerSearch, #teamSearch, #teamPickerSearch, #newVenueName, #newVenueCourts,
+    #mdPickerSelect, #mdTeamPerfFilter, #mdResultsTeamFilter, #matchTeamFilter, #matchMatchdayFilter { font-size: 16px !important; }
+    .app::before, .app::after { display: none !important; content: none !important; }
+    .notifications-panel { display: none; transform: none !important; transition: none !important; }
+    .notifications-panel.open { display: block; visibility: visible; animation: pvPanelIn .28s cubic-bezier(.2,.8,.2,1); }
+    @keyframes pvPanelIn { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
+    @media (prefers-reduced-motion: reduce) { .notifications-panel.open { animation: none; } }
+    .app { overflow-x: clip !important; }
 </style>
 </head>
 <body>
