@@ -8087,7 +8087,7 @@
       if (!/^[A-Z0-9]$/i.test(initial)) initial = '?';
       const photo = p?.photo || photoCache[p?.id];
       if (photo) {
-        return `<div class="avatar ${size}"><img src="${esc(photo)}" alt="${esc(p.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${initial}'"></div>`;
+        return `<div class="avatar ${size}"><img src="${safeImg(photo)}" alt="${esc(p.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${initial}'"></div>`;
       }
       return `<div class="avatar ${size}">${initial}</div>`;
     };
@@ -9073,7 +9073,7 @@
       // Hero banner
       html += `<div style="background:linear-gradient(135deg,var(--brown-dark) 0%,#5D4E37 40%,var(--clay) 100%);color:white;padding:24px;border-radius:18px;text-align:center;margin-bottom:20px">
         <div style="font-size:12px;letter-spacing:3px;opacity:0.8">📅 ${dateStr}</div>
-        <div style="font-size:11px;opacity:0.7;margin-top:2px">${venue ? '📍 ' + venue : ''}</div>
+        <div style="font-size:11px;opacity:0.7;margin-top:2px">${venue ? '📍 ' + esc(venue) : ''}</div>
         <div style="font-family:'Sublime',sans-serif;font-size:38px;letter-spacing:3px;margin:12px 0">${dayMatches.length}</div>
         <div style="font-size:13px;opacity:0.9">MATCHES PLAYED</div>
       </div>`;
@@ -10682,7 +10682,7 @@
         const fullPlayer = players.find(pl => pl.id === p.id) || p;
         const playerPhoto = fullPlayer.photo || photoCache[fullPlayer.id];
         const photoHtml = playerPhoto 
-          ? `<div class="avatar lg"><img src="${playerPhoto}" alt="${esc(fullPlayer.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent='${(fullPlayer.name?.charAt(0) || '?').toUpperCase()}'"></div>`
+          ? `<div class="avatar lg"><img src="${safeImg(playerPhoto)}" alt="${esc(fullPlayer.name)}" loading="lazy" onerror="this.style.display='none';this.parentElement.textContent=(this.alt||'?').charAt(0).toUpperCase()"></div>`
           : `<div class="avatar lg">${fullPlayer.name?.charAt(0).toUpperCase() || '?'}</div>`;
         
         return `<div class="player-card ${top} ${inactive}" onclick="openPlayerProfile(${p.id})">
@@ -10691,7 +10691,7 @@
           <div class="player-avatar-wrap">${photoHtml}</div>
           <div class="player-name">${esc(p.name)}</div>
           ${p.nickname ? `<div class="player-nickname">"${esc(p.nickname)}"</div>` : ''}
-          ${p.position ? `<div class="player-position-tag">${p.position}</div>` : ''}
+          ${p.position ? `<div class="player-position-tag">${esc(p.position)}</div>` : ''}
           <div class="player-stats-row">
             <div class="player-stat"><div class="player-stat-value wins">${p.wins}</div><div class="player-stat-label">Wins</div></div>
             <div class="player-stat"><div class="player-stat-value losses">${p.losses}</div><div class="player-stat-label">Losses</div></div>
@@ -10949,7 +10949,7 @@
       const tile = (it, pos) => it ? `<div class="cg-pod ${pos === 1 ? 'one' : ''}">
           ${it.mv ? `<span class="cg-mv ${it.mv < 0 ? 'dn' : ''}">${it.mv > 0 ? '▲' : '▼'}${Math.abs(it.mv)}</span>` : ''}
           <div class="d cg-pod-p">${pos}</div>
-          <div class="cg-pod-n">${it.name}<small>${it.sub || ''}</small></div>
+          <div class="cg-pod-n">${esc(it.name)}<small>${esc(it.sub || '')}</small></div>
           <div class="d cg-pod-v">${it.val}<small>${it.unit || ''}</small></div>
         </div>` : '<div></div>';
       return `<div class="cg-only cg-podium">${tile(items[1], 2)}${tile(items[0], 1)}${tile(items[2], 3)}</div>`;
@@ -12732,8 +12732,8 @@
               <div class="match-team-stat"><div class="match-team-stat-value losses">${losses}</div><div class="match-team-stat-label">Losses</div></div>
               <div class="match-team-stat"><div class="match-team-stat-value rate">${rate}%</div><div class="match-team-stat-label">Win Rate</div></div>
             </div>
-            ${beat.length > 0 ? `<div style="margin-top:10px;font-size:12px;color:var(--text-muted)"><strong style="color:var(--success)">Beat:</strong> ${beat.join(', ')}</div>` : ''}
-            ${lostTo.length > 0 ? `<div style="margin-top:4px;font-size:12px;color:var(--text-muted)"><strong style="color:var(--danger)">Lost to:</strong> ${lostTo.join(', ')}</div>` : ''}
+            ${beat.length > 0 ? `<div style="margin-top:10px;font-size:12px;color:var(--text-muted)"><strong style="color:var(--success)">Beat:</strong> ${beat.map(esc).join(', ')}</div>` : ''}
+            ${lostTo.length > 0 ? `<div style="margin-top:4px;font-size:12px;color:var(--text-muted)"><strong style="color:var(--danger)">Lost to:</strong> ${lostTo.map(esc).join(', ')}</div>` : ''}
           </div>`;
       }
       
@@ -12934,9 +12934,9 @@
                 const names2 = m.team2.map(id => getPlayer(id)?.name || '?');
                 html += `<div class="md-schedule-match">
                   <div class="md-schedule-court">C${esc(m.court)}</div>
-                  <div class="md-schedule-team"><span class="md-schedule-team-name">${names1.join(' & ')}</span></div>
+                  <div class="md-schedule-team"><span class="md-schedule-team-name">${names1.map(esc).join(' & ')}</span></div>
                   <span class="md-schedule-vs">VS</span>
-                  <div class="md-schedule-team" style="justify-content:flex-end"><span class="md-schedule-team-name">${names2.join(' & ')}</span></div>
+                  <div class="md-schedule-team" style="justify-content:flex-end"><span class="md-schedule-team-name">${names2.map(esc).join(' & ')}</span></div>
                 </div>`;
               }
             });
@@ -12944,7 +12944,7 @@
             if (mdMode === 'roundrobin' || mdMode === 'draft') {
               const playingIds = new Set(roundMatches.flatMap(m => [m.t1, m.t2]));
               const sitting = mdActiveTeamIds.filter(id => !playingIds.has(id)).map(id => getTeam(id)?.name || '?');
-              if (sitting.length > 0) html += `<div class="md-sitting">☕ Sitting out: ${sitting.join(', ')}</div>`;
+              if (sitting.length > 0) html += `<div class="md-sitting">☕ Sitting out: ${sitting.map(esc).join(', ')}</div>`;
             }
           }
           container.innerHTML = html;
@@ -13136,7 +13136,7 @@
             return `<div class="md-tl-item">
               <div class="md-tl-dot-col"><div class="md-tl-dot" style="${idx === 0 ? 'background:var(--clay)' : 'background:var(--clay-light)'}"></div>${!isLast ? '<div class="md-tl-line"></div>' : ''}</div>
               <div class="md-tl-content">
-                <div class="md-tl-match"><strong>${winnerName}</strong> beat ${loserName} <strong>${wScore}-${lScore}</strong></div>
+                <div class="md-tl-match"><strong>${esc(winnerName)}</strong> beat ${esc(loserName)} <strong>${wScore}-${lScore}</strong></div>
                 <div class="md-tl-meta">${timeAgo}${m.court ? ` · ${esc(m.court)}` : ''} · R${m.round||'?'}
                   ${currentUser?.is_admin ? `<span style="margin-left:6px">
                     <button onclick="mdEditResult(${realIdx})" title="Edit" style="width:22px;height:22px;border-radius:4px;border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted);padding:0"><i class="fas fa-pen"></i></button>
@@ -13403,9 +13403,9 @@
       const playable = pending.map((q, idx) => ({ q, idx })).filter(({ q }) => mdMode === 'randomiser'
         ? !(q.team1 || []).concat(q.team2 || []).some(p => busyP.has(p))
         : !((q.t1 && busyT.has(q.t1)) || (q.t2 && busyT.has(q.t2))));
-      const label = q => mdMode === 'randomiser'
+      const label = q => esc(mdMode === 'randomiser'
         ? `${(q.team1 || []).map(p => getPlayer(p)?.name || '?').join(' & ')} v ${(q.team2 || []).map(p => getPlayer(p)?.name || '?').join(' & ')}`
-        : `${getTeam(q.t1)?.name || '?'} v ${getTeam(q.t2)?.name || '?'}`;
+        : `${getTeam(q.t1)?.name || '?'} v ${getTeam(q.t2)?.name || '?'}`);
       const pop = document.createElement('div');
       pop.className = 'md-court-popover';
       pop.innerHTML = `
@@ -13865,7 +13865,7 @@
           const mins = Math.floor((Date.now() - new Date(lastMatch.completedAt).getTime()) / 60000);
           waitTime = `${mins}m`;
         }
-        return `<span class="md-sitting-chip" onclick="mdMessageSittingTeam(${id})" style="cursor:pointer" title="Tap to WhatsApp"><span class="md-sitting-av">${(t?.name||'?').charAt(0)}</span>${t?.name||'?'}${waitTime ? ` <span class="md-sitting-time">${waitTime}</span>` : ''}<i class="fab fa-whatsapp" style="margin-left:4px;color:#25D366;font-size:12px"></i></span>`;
+        return `<span class="md-sitting-chip" onclick="mdMessageSittingTeam(${id})" style="cursor:pointer" title="Tap to WhatsApp"><span class="md-sitting-av">${esc((t?.name||'?').charAt(0))}</span>${esc(t?.name||'?')}${waitTime ? ` <span class="md-sitting-time">${waitTime}</span>` : ''}<i class="fab fa-whatsapp" style="margin-left:4px;color:#25D366;font-size:12px"></i></span>`;
       }).join('');
 
     }
@@ -14204,7 +14204,7 @@
         `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
           <span style="color:var(--text-muted);font-size:11px;width:40px">${l.time}</span>
           <span>${l.badge}</span>
-          <span style="flex:1"><strong>${l.winner === 'kings' ? l.kings : l.challenger}</strong> beat ${l.winner === 'kings' ? l.challenger : l.kings}</span>
+          <span style="flex:1"><strong>${esc(l.winner === 'kings' ? l.kings : l.challenger)}</strong> beat ${esc(l.winner === 'kings' ? l.challenger : l.kings)}</span>
           <span style="color:var(--clay);font-weight:600;font-size:12px">${l.points}</span>
         </div>`
       ).join('') : '<div style="color:var(--text-muted);text-align:center;padding:20px">No matches yet — record a result above!</div>';
@@ -14415,7 +14415,7 @@
       // Render current round matches
       const roundMatches = schedule.filter(m => m.round === currentRound);
       document.getElementById('randomLiveMatches').innerHTML = roundMatches.map(m => {
-        const pNames = (ids) => ids.map(id => getPlayer(id)?.name || '?').join(' & ');
+        const pNames = (ids) => ids.map(id => esc(getPlayer(id)?.name || '?')).join(' & ');
         const pAvatars = (ids) => ids.map(id => av(getPlayer(id), 'xs')).join('');
         const isDone = m.result !== null;
         
@@ -14739,7 +14739,7 @@
             tempPhotoData[modalType] = compressedData;
             const previewId = modalType === 'addPlayer' ? '.photo-preview' : '#editPlayerPhotoPreview';
             const preview = document.querySelector(`#${modalType}Modal ${previewId}`);
-            if (preview) preview.innerHTML = `<img src="${compressedData}" alt="Preview">`;
+            if (preview) preview.innerHTML = `<img src="${safeImg(compressedData)}" alt="Preview">`;
           };
           img.src = e.target.result;
         };
@@ -14767,7 +14767,7 @@
       document.getElementById('editPlayerActive').checked = p.active !== false;
       const preview = document.getElementById('editPlayerPhotoPreview');
       const editPhoto = p.photo || photoCache[p.id];
-      preview.innerHTML = editPhoto ? `<img src="${editPhoto}" alt="${esc(p.name)}">` : '<i class="fas fa-camera"></i>';
+      preview.innerHTML = editPhoto ? `<img src="${safeImg(editPhoto)}" alt="${esc(p.name)}">` : '<i class="fas fa-camera"></i>';
       tempPhotoData.editPlayer = editPhoto || null;
       
       // Show/hide delete button based on games and admin status
@@ -15658,7 +15658,7 @@
             <div class="record-value">${records.longestStreak.value} wins</div>
           </div>
           <div class="record-holder">
-            <div class="record-holder-name">${records.longestStreak.holder || '-'}</div>
+            <div class="record-holder-name">${esc(records.longestStreak.holder || '-')}</div>
           </div>
         </div>
         <div class="record-card">
@@ -15668,7 +15668,7 @@
             <div class="record-value">${records.mostWins.value} wins</div>
           </div>
           <div class="record-holder">
-            <div class="record-holder-name">${records.mostWins.holder || '-'}</div>
+            <div class="record-holder-name">${esc(records.mostWins.holder || '-')}</div>
           </div>
         </div>
         <div class="record-card">
@@ -15678,7 +15678,7 @@
             <div class="record-value">${records.bestWinRate.value}%</div>
           </div>
           <div class="record-holder">
-            <div class="record-holder-name">${records.bestWinRate.holder || '-'}</div>
+            <div class="record-holder-name">${esc(records.bestWinRate.holder || '-')}</div>
           </div>
         </div>
         <div class="record-card">
@@ -15688,7 +15688,7 @@
             <div class="record-value">${records.currentBestStreak.value} ${records.currentBestStreak.type}</div>
           </div>
           <div class="record-holder">
-            <div class="record-holder-name">${records.currentBestStreak.holder || '-'}</div>
+            <div class="record-holder-name">${esc(records.currentBestStreak.holder || '-')}</div>
           </div>
         </div>
       `;
@@ -15891,8 +15891,8 @@
       
       const { p1: t1p1 } = getTeamPlayers(team1);
       const { p1: t2p1 } = getTeamPlayers(team2);
-      document.getElementById('liveTeam1Avatar').innerHTML = t1p1?.photo ? `<img src="${t1p1.photo}" class="loaded">` : (t1p1?.name?.charAt(0) || '?');
-      document.getElementById('liveTeam2Avatar').innerHTML = t2p1?.photo ? `<img src="${t2p1.photo}" class="loaded">` : (t2p1?.name?.charAt(0) || '?');
+      document.getElementById('liveTeam1Avatar').innerHTML = t1p1?.photo ? `<img src="${safeImg(t1p1.photo)}" class="loaded">` : (t1p1?.name?.charAt(0) || '?');
+      document.getElementById('liveTeam2Avatar').innerHTML = t2p1?.photo ? `<img src="${safeImg(t2p1.photo)}" class="loaded">` : (t2p1?.name?.charAt(0) || '?');
       
       updateLiveScoreDisplay();
       addNotification('match_start', `${esc(team1.name)} vs ${esc(team2.name)} started`, 'fa-play');
@@ -16072,7 +16072,7 @@
         return `<div class="notification-item ${n.read ? '' : 'unread'}" ${target ? `onclick="pvOpenNotification('${target}')" style="cursor:pointer"` : ''}>
           <div class="notification-icon"><i class="fas ${n.icon}"></i></div>
           <div class="notification-content">
-            <div class="notification-title">${n.message}</div>
+            <div class="notification-title">${esc(n.message)}</div>
             <div class="notification-time">${timeStr}</div>
           </div>
         </div>`;
@@ -16315,7 +16315,7 @@
       const phoneText = document.getElementById('profilePhoneText');
       if (p.phone) { phoneDisplay.style.display = ''; phoneText.textContent = p.phone; }
       else { phoneDisplay.style.display = 'none'; }
-      document.getElementById('profileAvatar').innerHTML = (p.photo || photoCache[p.id]) ? `<img src="${p.photo || photoCache[p.id]}" class="loaded">` : p.name.charAt(0);
+      document.getElementById('profileAvatar').innerHTML = (p.photo || photoCache[p.id]) ? `<img src="${safeImg(p.photo || photoCache[p.id])}" class="loaded">` : p.name.charAt(0);
       
       // Calculate stats
       const playerTeams = teams.filter(t => t.player1_id === id || t.player2_id === id);
@@ -16353,7 +16353,7 @@
           const isActive = t.active !== false;
           return `
             <div class="pc-team-row" style="opacity:${isActive ? '1' : '0.5'}">
-              <div class="avatar sm" style="flex-shrink:0">${partner?.photo ? `<img src="${partner.photo}" class="loaded">` : (partner?.name?.charAt(0) || '?')}</div>
+              <div class="avatar sm" style="flex-shrink:0">${partner?.photo ? `<img src="${safeImg(partner.photo)}" class="loaded">` : (partner?.name?.charAt(0) || '?')}</div>
               <div style="flex:1;min-width:0">
                 <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.name)}</div>
                 <div style="font-size:11px;color:var(--text-muted)">with ${esc(partner?.name || 'Unknown')}</div>
@@ -16399,7 +16399,7 @@
       
       // Photo
       const preview = document.getElementById('editPlayerPhotoPreview');
-      preview.innerHTML = p.photo ? `<img src="${p.photo}">` : '<i class="fas fa-camera"></i>';
+      preview.innerHTML = p.photo ? `<img src="${safeImg(p.photo)}">` : '<i class="fas fa-camera"></i>';
       tempPhotoData.editPlayer = p.photo || null;
       
       openModal('editPlayer');
@@ -16419,16 +16419,16 @@
       
       // Create visual share card
       const avatarHtml = p.photo 
-        ? `<div class="avatar xl" style="border-color:white;margin:0 auto"><img src="${p.photo}" class="loaded"></div>`
+        ? `<div class="avatar xl" style="border-color:white;margin:0 auto"><img src="${safeImg(p.photo)}" class="loaded"></div>`
         : `<div class="avatar xl" style="border-color:white;margin:0 auto">${p.name.charAt(0)}</div>`;
       
       document.getElementById('shareProfileCard').innerHTML = `
         <div class="share-profile-card">
           <div class="share-profile-logo">🎾 PADEL VILLAINS</div>
           <div class="share-profile-avatar">${avatarHtml}</div>
-          <div class="share-profile-name">${name}</div>
+          <div class="share-profile-name">${esc(name)}</div>
           ${p.nickname ? `<div class="share-profile-nickname">"${esc(p.nickname)}"</div>` : '<div style="height:8px"></div>'}
-          <div style="font-size:12px;opacity:0.8;margin-bottom:16px">${position}</div>
+          <div style="font-size:12px;opacity:0.8;margin-bottom:16px">${esc(position)}</div>
           <div class="share-profile-stats">
             <div><div class="share-profile-stat-value">${wins}</div><div class="share-profile-stat-label">Wins</div></div>
             <div><div class="share-profile-stat-value">${losses}</div><div class="share-profile-stat-label">Losses</div></div>
@@ -16939,7 +16939,7 @@
       // Share button for ALL event types
       const calMdRow = event.type === 'matchday' ? (matchdays.find(m => m.id === event.matchday_id) || matchdays.find(m => m.date === event.date)) : null;
       const calId = calMdRow ? ['matchday', calMdRow.id] : (event.type !== 'matchday' && event.id ? ['event', event.id] : null);
-      const shareBtn = (calId && !isPast ? `<button class="btn btn-secondary" onclick="pvAddToCalendar('${calId[0]}', ${JSON.stringify(String(calId[1]))})" style="border-radius:14px"><i class="fas fa-calendar-plus"></i> Add to calendar</button>` : '') + `<button class="btn btn-primary" onclick="shareCalendarEventImage(${JSON.stringify(event).replace(/"/g, '&quot;')})" style="background:${typeColor};border-radius:14px"><i class="fas fa-share-nodes"></i> Share</button>`;
+      const shareBtn = (calId && !isPast ? `<button class="btn btn-secondary" onclick="pvAddToCalendar('${esc(calId[0])}', ${esc(JSON.stringify(String(calId[1])))})" style="border-radius:14px"><i class="fas fa-calendar-plus"></i> Add to calendar</button>` : '') + `<button class="btn btn-primary" onclick="shareCalendarEventImage(${JSON.stringify(event).replace(/"/g, '&quot;')})" style="background:${typeColor};border-radius:14px"><i class="fas fa-share-nodes"></i> Share</button>`;
       
       if (event.type !== 'matchday' && !isPast) {
         actionsHtml = `
@@ -16978,7 +16978,7 @@
             const typeEmoji = e.type === 'matchday' ? '🎾' : e.type === 'vibes' ? '🎉' : '💪';
             const timeStr = e.start_time || e.startTime || '09:00';
             return `
-              <div class="event-item" onclick="closeModal('viewEvent');setTimeout(()=>showEventSummary(${JSON.stringify(e).replace(/"/g, '&quot;')}),100)" style="margin-bottom:8px">
+              <div class="event-item" onclick="closeModal('viewEvent');setTimeout(()=>showEventSummary(${esc(JSON.stringify(e))}),100)" style="margin-bottom:8px">
                 <div class="event-item-type ${e.type}">${typeEmoji}</div>
                 <div class="event-item-info">
                   <div class="event-item-title">${esc(e.title || 'Event')}</div>
@@ -17353,7 +17353,7 @@
       
       const menu = document.getElementById('quickActionsMenu');
       const photoHtml = player.photo 
-        ? `<img src="${player.photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover">`
+        ? `<img src="${safeImg(player.photo)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover">`
         : `<div class="avatar">${player.name?.charAt(0).toUpperCase() || '?'}</div>`;
       
       menu.innerHTML = `
@@ -17807,7 +17807,7 @@
       const ups = pvNextHappenings(2);
       const fmt = x => pvHappeningLabel(x) + ' ' + x.date.toLocaleDateString('en-GB', { weekday: 'long' }) + (x.start ? ' ' + x.start : '') + (x.venue ? ' at ' + x.venue : '');
       const items = ups.length ? [...ups.map(fmt), 'Good vibes only', 'The circuit'] : ['Good vibes only', 'Get on court', 'No match day booked yet', 'The circuit'];
-      const seq = items.map(t => `<span>${t}</span><span>✦</span>`).join('');
+      const seq = items.map(t => `<span>${esc(t)}</span><span>✦</span>`).join('');
       el.innerHTML = `<div>${seq}${seq}</div>`;
     }
     function pvTimeOrderOk(start, end, label) {
@@ -17856,7 +17856,7 @@
       const items = mdChecklistItems();
       const blockers = items.filter(i => !i.ok && !i.warn).length;
       el.innerHTML = `<div class="md-check-head"><span>Before you generate</span><b class="${blockers ? 'bad' : 'good'}">${blockers ? blockers + ' to fix' : 'Ready'}</b></div>` +
-        items.map(i => `<div class="md-check-row ${i.ok ? 'ok' : i.warn ? 'warn' : 'bad'}"><i class="fas ${i.ok ? 'fa-circle-check' : i.warn ? 'fa-triangle-exclamation' : 'fa-circle-xmark'}"></i><div><div>${i.text}</div>${i.fix && !i.ok ? `<small>${i.fix}</small>` : ''}</div></div>`).join('');
+        items.map(i => `<div class="md-check-row ${i.ok ? 'ok' : i.warn ? 'warn' : 'bad'}"><i class="fas ${i.ok ? 'fa-circle-check' : i.warn ? 'fa-triangle-exclamation' : 'fa-circle-xmark'}"></i><div><div>${esc(i.text)}</div>${i.fix && !i.ok ? `<small>${esc(i.fix)}</small>` : ''}</div></div>`).join('');
       const btn = document.getElementById('mdGenerateBtn'); if (btn) btn.disabled = blockers > 0;
     }
     // FLIP: rows glide to their new position when a list re-renders
@@ -18022,7 +18022,7 @@
       try {
         let code = null;
         const m = location.pathname.match(/^\/join\/([A-Za-z0-9-]+)/); if (m) code = m[1];
-        const q = new URLSearchParams(location.search).get('invite'); if (q) code = q;
+        const q = new URLSearchParams(location.search).get('invite'); if (q && /^[A-Za-z0-9-]{1,40}$/.test(q)) code = q;
         if (code) { localStorage.setItem('pv_invite_code', code.toUpperCase()); history.replaceState({}, '', '/'); }
       } catch (e) {}
     }
@@ -18032,9 +18032,9 @@
       if (!code || !supabaseClient) { el.style.display = 'none'; return; }
       const { data, error } = await supabaseClient.rpc('invite_preview', { p_code: code });
       const r = data && data[0];
-      if (error || !r || !r.valid) { el.style.display = ''; el.innerHTML = `<b>Invite ${code}</b> — ${r?.reason || 'could not be checked'}. <a href="#" onclick="localStorage.removeItem('pv_invite_code');pvRenderInviteBanner();return false">Dismiss</a>`; return; }
+      if (error || !r || !r.valid) { el.style.display = ''; el.innerHTML = `<b>Invite ${esc(code)}</b> — ${esc(r?.reason || 'could not be checked')}. <a href="#" onclick="localStorage.removeItem('pv_invite_code');pvRenderInviteBanner();return false">Dismiss</a>`; return; }
       el.style.display = '';
-      el.innerHTML = `<b>You're joining ${r.circuit_name}${r.player_name ? ' as ' + r.player_name : ''}.</b><br><span>Sign in with Apple, Google or email below and your seat${r.player_name ? ' and stats' : ''} will be attached automatically.</span>`;
+      el.innerHTML = `<b>You're joining ${esc(r.circuit_name)}${r.player_name ? ' as ' + esc(r.player_name) : ''}.</b><br><span>Sign in with Apple, Google or email below and your seat${r.player_name ? ' and stats' : ''} will be attached automatically.</span>`;
     }
     async function pvApplyPendingInvite() {
       const code = localStorage.getItem('pv_invite_code'); if (!code || !supabaseClient) return null;
@@ -18064,7 +18064,7 @@
         const msg = encodeURIComponent(`Hey ${name} — Padel Villains has a proper app now. Tap this once to set up your login and keep your stats: ${inv ? pvInviteUrl(inv.code) : 'https://padelvillains.app'}`);
         return `<div class="pv-mig-row">
           <span class="pv-mig-dot ${linked ? 'ok' : ''}"></span>
-          <div class="pv-mig-name"><b>${name}</b><small>${linked ? 'Migrated' : (inv ? inv.code : 'no invite')}${a.is_admin ? ' · admin' : ''}</small></div>
+          <div class="pv-mig-name"><b>${esc(name)}</b><small>${linked ? 'Migrated' : (inv ? inv.code : 'no invite')}${a.is_admin ? ' · admin' : ''}</small></div>
           ${linked ? '' : inv ? `<button class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText('${pvInviteUrl(inv.code)}');toast('Link copied','success')"><i class="fas fa-link"></i></button>
           <a class="btn btn-sm" style="background:#25D366;color:#fff" href="https://wa.me/?text=${msg}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i></a>` : ''}
         </div>`;
@@ -18075,9 +18075,9 @@
       const orphans = userAccounts.filter(a => a.profile_id && !a.player_id);
       const oel = document.getElementById('pvOrphanList'); if (!oel) return;
       if (!orphans.length) { oel.innerHTML = '<p style="font-size:13px;color:var(--text-muted)">No unattached sign-ups.</p>'; return; }
-      const opts = players.filter(p => !p.profile_id).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-      oel.innerHTML = orphans.map(a => `<div class="pv-mig-row"><span class="pv-mig-dot warn"></span><div class="pv-mig-name"><b>${a.username}</b><small>signed up, no player yet</small></div>
-        <select class="form-select" style="width:auto;padding:8px 10px" id="pvAttach-${a.id}"><option value="">Attach player…</option><option value="__new">+ New player "${a.username}"</option>${opts}</select>
+      const opts = players.filter(p => !p.profile_id).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+      oel.innerHTML = orphans.map(a => `<div class="pv-mig-row"><span class="pv-mig-dot warn"></span><div class="pv-mig-name"><b>${esc(a.username)}</b><small>signed up, no player yet</small></div>
+        <select class="form-select" style="width:auto;padding:8px 10px" id="pvAttach-${a.id}"><option value="">Attach player…</option><option value="__new">+ New player "${esc(a.username)}"</option>${opts}</select>
         <button class="btn btn-sm btn-primary" onclick="pvAttachPlayer(${a.id})">Attach</button></div>`).join('');
     }
     async function pvAttachPlayer(accountId) {
@@ -18366,7 +18366,7 @@
         try {
           const cached = JSON.parse(localStorage.getItem('pv_me_avatar') || 'null');
           if (cached && String(cached.accountId) === String(currentUser.id)) {
-            const a = document.getElementById('userMenuAvatar'); if (a && cached.photo) a.innerHTML = `<img src="${cached.photo}" class="loaded">`;
+            const a = document.getElementById('userMenuAvatar'); if (a && cached.photo) a.innerHTML = `<img src="${safeImg(cached.photo)}" class="loaded">`;
             const nm = document.getElementById('userMenuName'); if (nm && cached.name) nm.textContent = cached.name;
           }
         } catch (e) {}
@@ -18380,7 +18380,7 @@
       document.getElementById('userMenuRole').textContent = currentUser.is_admin ? 'ADMIN' : 'PLAYER';
       const avatarEl = document.getElementById('userMenuAvatar');
       const userPhoto = player.photo || photoCache[player.id];
-      avatarEl.innerHTML = userPhoto ? `<img src="${userPhoto}" class="loaded" decoding="async">` : player.name.charAt(0);
+      avatarEl.innerHTML = userPhoto ? `<img src="${safeImg(userPhoto)}" class="loaded" decoding="async">` : player.name.charAt(0);
       
       // Update sidebar user info
       const sn = document.getElementById('sidebarName');
@@ -18388,7 +18388,7 @@
       const sa = document.getElementById('sidebarAvatar');
       if (sn) sn.textContent = player.name;
       if (sr) sr.textContent = currentUser.is_admin ? 'Admin' : 'Player';
-      if (sa) sa.innerHTML = userPhoto ? `<img src="${userPhoto}" style="width:36px;height:36px;border-radius:10px;object-fit:cover">` : player.name.charAt(0);
+      if (sa) sa.innerHTML = userPhoto ? `<img src="${safeImg(userPhoto)}" style="width:36px;height:36px;border-radius:10px;object-fit:cover">` : player.name.charAt(0);
       
       // Load user theme
       if (currentUser.theme && currentUser.theme !== 'default') {
@@ -18537,7 +18537,7 @@
       container.innerHTML = userAccounts.map(acc => {
         const player = players.find(p => Number(p.id) === Number(acc.player_id));
         const accPhoto = player?.photo || photoCache[player?.id];
-        const avatarContent = accPhoto ? `<img src="${accPhoto}" class="loaded">` : (player?.name?.charAt(0)?.toUpperCase() || '?');
+        const avatarContent = accPhoto ? `<img src="${safeImg(accPhoto)}" class="loaded">` : (player?.name?.charAt(0)?.toUpperCase() || '?');
         const isSelf = currentUser && currentUser.id === acc.id;
         
         return `
@@ -18982,7 +18982,7 @@
       const avatarEl = document.getElementById('myProfileAvatar');
       const myPhoto = player.photo || photoCache[player.id];
       if (myPhoto) {
-        avatarEl.innerHTML = `<img src="${myPhoto}" class="loaded">`;
+        avatarEl.innerHTML = `<img src="${safeImg(myPhoto)}" class="loaded">`;
       } else {
         avatarEl.textContent = player.name.charAt(0).toUpperCase();
       }
@@ -19072,7 +19072,7 @@
         return `
           <div class="my-team-card" onclick="openEditTeam(${t.id})">
             <div class="my-team-partner">
-              <div class="avatar md">${partner?.photo ? `<img src="${partner.photo}" class="loaded">` : (partner?.name?.charAt(0) || '?')}</div>
+              <div class="avatar md">${partner?.photo ? `<img src="${safeImg(partner.photo)}" class="loaded">` : (partner?.name?.charAt(0) || '?')}</div>
               <div class="my-team-info">
                 <h4>${esc(t.name)}</h4>
                 <p>with ${esc(partner?.name || 'Unknown')}</p>
@@ -19162,8 +19162,8 @@
       
       const container = document.getElementById('myGalleryGrid');
       container.innerHTML = myPhotos.map(photo => `
-        <div class="gallery-item" onclick="viewGalleryPhoto('${photo.id}')">
-          <img src="${photo.image_url}" alt="${photo.caption || 'Gallery photo'}">
+        <div class="gallery-item" onclick="viewGalleryPhoto(${esc(JSON.stringify(photo.id))})">
+          <img src="${safeImg(photo.image_url)}" alt="${esc(photo.caption || 'Gallery photo')}">
         </div>
       `).join('');
       
@@ -19250,10 +19250,10 @@
         
         return `
           <div class="message-item ${m.read ? '' : 'unread'}" onclick="viewMessage(${m.id})">
-            <div class="avatar sm message-avatar">${sender?.photo ? `<img src="${sender.photo}" class="loaded">` : (sender?.name?.charAt(0) || '?')}</div>
+            <div class="avatar sm message-avatar">${sender?.photo ? `<img src="${safeImg(sender.photo)}" class="loaded">` : (sender?.name?.charAt(0) || '?')}</div>
             <div class="message-content">
               <div class="message-sender">${esc(sender?.name || 'Unknown')}</div>
-              <div class="message-preview">${m.message.substring(0, 50)}${m.message.length > 50 ? '...' : ''}</div>
+              <div class="message-preview">${esc(m.message.substring(0, 50))}${m.message.length > 50 ? '...' : ''}</div>
             </div>
             <div class="message-time">${timeAgo}</div>
           </div>
@@ -19347,7 +19347,7 @@
       const sender = players.find(p => p.id === msg.from_player_id);
       
       document.getElementById('viewMessageFrom').innerHTML = `
-        <div class="avatar sm">${(sender?.photo || photoCache[sender?.id]) ? `<img src="${sender?.photo || photoCache[sender?.id]}" class="loaded">` : (sender?.name?.charAt(0) || '?')}</div>
+        <div class="avatar sm">${(sender?.photo || photoCache[sender?.id]) ? `<img src="${safeImg(sender?.photo || photoCache[sender?.id])}" class="loaded">` : (sender?.name?.charAt(0) || '?')}</div>
         <div>
           <div style="font-weight:600">${esc(sender?.name || 'Unknown')}</div>
         </div>
@@ -19746,7 +19746,7 @@
       teams.filter(t => t.player1_id === p.id || t.player2_id === p.id).forEach(t => { const st = calculateCurrentStreak(t.id); if (st.type === 'win' && st.count > bestStreak.count) bestStreak = st; });
 
       const photo = p.photo || photoCache[p.id];
-      const photoHtml = photo ? `<img src="${photo}" alt="${esc(p.name)}">` : `<div class="pcard-photo-ph">${p.name.charAt(0)}</div>`;
+      const photoHtml = photo ? `<img src="${safeImg(photo)}" alt="${esc(p.name)}">` : `<div class="pcard-photo-ph">${p.name.charAt(0)}</div>`;
       const squadNo = String((players.findIndex(x => x.id === p.id) + 1) || 0).padStart(2, '0');
       const formStr = v.form > 0 ? `<span class="up">&#9650; ${Math.round(v.form)}</span>` : v.form < 0 ? `<span class="down">&#9660; ${Math.abs(Math.round(v.form))}</span>` : '<span class="flat">&mdash;</span>';
       const winPct = stats.games ? Math.round(stats.wins / stats.games * 100) : 0;
@@ -19960,11 +19960,11 @@
       const active = players.filter(p => p.active !== false);
       document.getElementById('h2hPicker').innerHTML = active.map(p => {
         const photo = p.photo || photoCache[p.id];
-        const avatarHtml = photo ? `<div class="avatar sm"><img src="${photo}" class="loaded"></div>` : `<div class="avatar sm">${p.name.charAt(0)}</div>`;
+        const avatarHtml = photo ? `<div class="avatar sm"><img src="${safeImg(photo)}" class="loaded"></div>` : `<div class="avatar sm">${p.name.charAt(0)}</div>`;
         const sel = h2hSelected.includes(p.id) ? 'sel' : '';
         return `<div class="h2h-pick ${sel}" onclick="toggleH2HPick(${p.id})">
           ${avatarHtml}
-          <div class="name">${p.name.split(' ')[0]}</div>
+          <div class="name">${esc(p.name.split(' ')[0])}</div>
         </div>`;
       }).join('');
     }
@@ -20024,8 +20024,8 @@
       
       const photo1 = p1.photo || photoCache[p1.id];
       const photo2 = p2.photo || photoCache[p2.id];
-      const av1 = photo1 ? `<div class="avatar lg"><img src="${photo1}" class="loaded"></div>` : `<div class="avatar lg">${p1.name.charAt(0)}</div>`;
-      const av2 = photo2 ? `<div class="avatar lg"><img src="${photo2}" class="loaded"></div>` : `<div class="avatar lg">${p2.name.charAt(0)}</div>`;
+      const av1 = photo1 ? `<div class="avatar lg"><img src="${safeImg(photo1)}" class="loaded"></div>` : `<div class="avatar lg">${p1.name.charAt(0)}</div>`;
+      const av2 = photo2 ? `<div class="avatar lg"><img src="${safeImg(photo2)}" class="loaded"></div>` : `<div class="avatar lg">${p2.name.charAt(0)}</div>`;
       
       // Stat comparison bars
       function statBar(label, v1, v2) {
@@ -20049,13 +20049,13 @@
         <div class="h2h-fighters">
           <div class="h2h-fighter">
             ${av1}
-            <div class="h2h-fighter-name">${p1.name.split(' ')[0].toUpperCase()}</div>
+            <div class="h2h-fighter-name">${esc(p1.name.split(' ')[0].toUpperCase())}</div>
             <div class="h2h-fighter-rating">${r1.rating}</div>
           </div>
           <div class="h2h-vs">VS</div>
           <div class="h2h-fighter">
             ${av2}
-            <div class="h2h-fighter-name">${p2.name.split(' ')[0].toUpperCase()}</div>
+            <div class="h2h-fighter-name">${esc(p2.name.split(' ')[0].toUpperCase())}</div>
             <div class="h2h-fighter-rating">${r2.rating}</div>
           </div>
         </div>
@@ -20103,8 +20103,8 @@
         
         const { p1: wp1, p2: wp2 } = getTeamPlayers(winner);
         const { p1: lp1, p2: lp2 } = getTeamPlayers(loser);
-        const wNames = `${wp1?.name?.split(' ')[0] || '?'} & ${wp2?.name?.split(' ')[0] || '?'}`;
-        const lNames = `${lp1?.name?.split(' ')[0] || '?'} & ${lp2?.name?.split(' ')[0] || '?'}`;
+        const wNames = esc(`${wp1?.name?.split(' ')[0] || '?'} & ${wp2?.name?.split(' ')[0] || '?'}`);
+        const lNames = esc(`${lp1?.name?.split(' ')[0] || '?'} & ${lp2?.name?.split(' ')[0] || '?'}`);
         
         // Track wins
         [wp1, wp2].filter(Boolean).forEach(p => {
