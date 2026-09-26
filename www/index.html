@@ -4063,6 +4063,20 @@
     .md-court-time { flex: 1 1 0; min-width: 0; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; padding: 6px 4px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg-card); color: var(--text); }
     .md-court-row .md-court-name { flex: 0 0 auto; font-size: 13px; }
     .md-court-time::-webkit-calendar-picker-indicator { display: none; }
+    .md-ct-live:empty { display: none; }
+    .md-ct-live { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
+    .md-ct-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .md-ct-title { font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+    .md-ct-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--border); }
+    .md-ct-name { font-weight: 700; font-size: 13px; min-width: 56px; }
+    .md-ct-row .md-court-time { flex: 1 1 80px; }
+    .md-ct-window { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .md-ct-btn { border: 1.5px solid var(--border); background: transparent; color: var(--text); border-radius: 999px; padding: 6px 10px; font-size: 13px; font-weight: 700; cursor: pointer; min-height: 36px; }
+    .md-ct-btn.plus { border-color: var(--clay); color: var(--clay); }
+    .md-ct-tag { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-left: auto; }
+    .md-ct-tag.after { color: var(--danger); } .md-ct-tag.before { color: var(--gold); }
+    .md-ct-sum { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+    .md-ct-sum.warn { color: var(--gold); font-weight: 700; }
     .md-court-dash { color: var(--text-muted); }
     .md-court-name { flex: 1; font-weight: 700; font-size: 14px; }
     .md-stepper { display: inline-flex; align-items: center; border: 1.5px solid var(--border); border-radius: 999px; overflow: hidden; }
@@ -4879,6 +4893,7 @@
         
         <!-- Live Cockpit: courts (left) + queue rail (right); stacks on narrow screens -->
         <div id="mdInfoOngoing" style="display:none;margin-bottom:16px">
+          <div id="mdCourtTimesLive" class="md-ct-live"></div>
           <div id="mdCockpit">
             <div id="mdCockpitCourts"></div>
             <div id="mdCockpitRail">
@@ -11663,6 +11678,98 @@
       if (now > mdToMin(s.end) - MD_LAST_CALL_MINS) return 'after';
       return 'open';
     }
+    // ---- Live: extend/shorten bookings; the engine re-reads times on every fill ----
+    const MD_GAME_MINS = 15;
+    // How many more games can still START on court c (game length 15m, last call 10m before end)
+    function mdGamesLeftOnCourt(c) {
+      const s = mdCourtSlots[c - 1]; if (!s) return 0;
+      const lastStart = mdToMin(s.end) - MD_LAST_CALL_MINS;
+      let from = Math.max(mdNowMin(), mdToMin(s.start));
+      const cur = mdCourtMatch(c);
+      if (cur) {
+        const st = cur.started_at ? new Date(cur.started_at) : null;
+        const stMin = st ? st.getHours() * 60 + st.getMinutes() : mdNowMin();
+        from = Math.max(from, stMin + MD_GAME_MINS);
+      }
+      return from > lastStart ? 0 : Math.floor((lastStart - from) / MD_GAME_MINS) + 1;
+    }
+    function mdCapacityLeft() {
+      let fit = 0; for (let c = 1; c <= mdCourts; c++) fit += mdGamesLeftOnCourt(c);
+      const rrLeft = mdGetPendingQueue().filter(m => !m.bonus).length;
+      return { fit, rrLeft };
+    }
+    async function mdExtendCourt(i, delta) {
+      if (!mdAssertScorer('change court times')) return;
+      const c = mdCourtSlots[i]; if (!c) return;
+      delete c.auto;
+      const newEnd = mdToMin(c.end) + delta;
+      if (newEnd - mdToMin(c.start) < 30) { toast('A booking must be at least 30 minutes', 'error'); return; }
+      if (newEnd > 23 * 60 + 45) { toast('Bookings must end before midnight', 'error'); return; }
+      c.end = mdFromMin(newEnd);
+      await mdCourtTimesApplied();
+    }
+    async function mdExtendAll(delta) {
+      if (!mdAssertScorer('change court times')) return;
+      const now = mdNowMin();
+      // Extend the courts still in play (or the latest-ending ones if all have ended)
+      const latest = Math.max(...mdCourtSlots.map(c => mdToMin(c.end)));
+      const targets = mdCourtSlots.filter(c => mdToMin(c.end) >= now || mdToMin(c.end) === latest);
+      if (targets.some(c => mdToMin(c.end) + delta - mdToMin(c.start) < 30)) { toast('A booking must be at least 30 minutes', 'error'); return; }
+      targets.forEach(c => { delete c.auto; c.end = mdFromMin(mdToMin(c.end) + delta); });
+      await mdCourtTimesApplied();
+    }
+    async function mdLiveCourtTime(i, which, v) {
+      if (!mdAssertScorer('change court times')) { renderMDCourtTimesLive(); return; }
+      mdBookingTime(i, which, v); // validates, saves session, re-fills courts
+      await mdCourtTimesApplied(true);
+    }
+    // After any time change: save, refill courts that just opened, keep the match
+    // day's end time in step so the dashboard and other phones agree.
+    async function mdCourtTimesApplied(skipFill) {
+      mdSyncCourtDerived();
+      mdSaveSession();
+      if (!skipFill) await mdAutoFill();
+      const latest = mdFromMin(Math.max(...mdCourtSlots.map(c => mdToMin(c.end))));
+      if (activeMatchday && activeMatchday.end_time !== latest) {
+        activeMatchday.end_time = latest;
+        const md = matchdays.find(m => String(m.id) === String(activeMatchday.id)); if (md) md.end_time = latest;
+        saveLocal();
+        if (supabaseClient) pvDb(supabaseClient.from('matchdays').update({ end_time: latest }).eq('id', activeMatchday.id))
+          .catch(() => addToPendingSync({ type: 'update', table: 'matchdays', id: activeMatchday.id, data: { end_time: latest }, key: 'mdend_' + activeMatchday.id }));
+      }
+      const { fit, rrLeft } = mdCapacityLeft();
+      toast(`Court times updated · ~${fit} more game${fit === 1 ? '' : 's'} fit`, 'success');
+      renderMatchDay();
+    }
+    function renderMDCourtTimesLive() {
+      const el = document.getElementById('mdCourtTimesLive'); if (!el) return;
+      // Scorer's phone only: court times live in the scorer's session, other phones don't have them
+      if (mdStep !== 'live' || !mdCourtSlots.length || !mdIsScorer()) { el.innerHTML = ''; return; }
+      const canEdit = true;
+      const { fit, rrLeft } = mdCapacityLeft();
+      const short = rrLeft > fit;
+      const needMins = short ? Math.ceil((rrLeft - fit) / Math.max(1, mdCourts)) * MD_GAME_MINS : 0;
+      const rows = mdCourtSlots.map((c, i) => {
+        const st = mdCourtState(i + 1);
+        const tag = st === 'before' ? 'opens ' + c.start : st === 'after' ? 'ended' : mdGamesLeftOnCourt(i + 1) + ' left';
+        return `<div class="md-ct-row">
+          <span class="md-ct-name">Court ${i + 1}</span>
+          ${canEdit ? `<input type="time" class="md-court-time" step="900" value="${esc(c.start)}" onchange="mdLiveCourtTime(${i}, 'start', this.value)" aria-label="Court ${i + 1} start">
+          <span class="md-court-dash">–</span>
+          <input type="time" class="md-court-time" step="900" value="${esc(c.end)}" onchange="mdLiveCourtTime(${i}, 'end', this.value)" aria-label="Court ${i + 1} end">
+          <button type="button" class="md-ct-btn" onclick="mdExtendCourt(${i}, -30)" aria-label="Court ${i + 1} 30 minutes less">−30</button>
+          <button type="button" class="md-ct-btn plus" onclick="mdExtendCourt(${i}, 30)" aria-label="Court ${i + 1} 30 minutes more">+30</button>`
+          : `<span class="md-ct-window">${esc(c.start)}–${esc(c.end)}</span>`}
+          <span class="md-ct-tag ${st}">${tag}</span>
+        </div>`;
+      }).join('');
+      el.innerHTML = `<div class="md-ct-head">
+          <span class="md-ct-title"><i class="fas fa-clock"></i> Court times</span>
+          ${canEdit ? `<button type="button" class="md-ct-btn plus" onclick="mdExtendAll(30)">Extend all +30m</button>` : ''}
+        </div>
+        ${rows}
+        <div class="md-ct-sum ${short ? 'warn' : ''}">~${fit} more game${fit === 1 ? '' : 's'} fit in the time left · ${rrLeft} round-robin game${rrLeft === 1 ? '' : 's'} still to play${short ? ` — extend ~${needMins} min to finish them` : (rrLeft === 0 ? ' — extra time plays bonus games' : '')}</div>`;
+    }
     function mdCourtWindow(c) { const s = mdCourtSlots[c - 1]; return s && s.start && s.end ? `${s.start}–${s.end}` : ''; }
     function mdOpenCourtCount() { let n = 0; for (let c = 1; c <= mdCourts; c++) if (mdCourtOpenNow(c)) n++; return n; }
     // Planned schedule (preview only): which courts are booked during 15-min round N,
@@ -13043,6 +13150,7 @@
     }
     function renderMDLive() {
       renderMdScorerStrip();
+      try { renderMDCourtTimesLive(); } catch (e) { console.warn('court times', e); }
       // Spectator devices have no local session (mdGeneratedSchedule is
       // per-device) but must still see live courts from server-synced
       // ongoing matches.
