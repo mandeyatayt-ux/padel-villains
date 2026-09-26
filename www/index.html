@@ -4059,7 +4059,11 @@
     .md-config-btn { min-width: 52px; }
     /* courts & time steppers */
     .md-court-slots { display: flex; flex-direction: column; gap: 8px; }
-    .md-court-row { display: flex; align-items: center; gap: 10px; }
+    .md-court-row { display: flex; align-items: center; gap: 8px; }
+    .md-court-time { flex: 1 1 0; min-width: 0; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; padding: 6px 4px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg-card); color: var(--text); }
+    .md-court-row .md-court-name { flex: 0 0 auto; font-size: 13px; }
+    .md-court-time::-webkit-calendar-picker-indicator { display: none; }
+    .md-court-dash { color: var(--text-muted); }
     .md-court-name { flex: 1; font-weight: 700; font-size: 14px; }
     .md-stepper { display: inline-flex; align-items: center; border: 1.5px solid var(--border); border-radius: 999px; overflow: hidden; }
     .md-step { width: 40px; height: 40px; border: 0; background: transparent; color: var(--text); font-size: 20px; font-weight: 700; cursor: pointer; font-family: inherit; }
@@ -6638,7 +6642,7 @@
         mdMode = 'roundrobin';
         mdCourts = 1;
         mdDuration = 3;
-        mdCourtSlots = [{ mins: 180 }]; renderMDCourtSlots();
+        mdCourtSlots = [{ mins: 180, auto: true }]; renderMDCourtSlots();
         mdActiveTeamIds = [];
         mdDraftPlayerIds = [];
         mdDraftState = { drawnTeams: null, starPlayerId: null, createdTeamIds: [] };
@@ -11392,6 +11396,14 @@
     function mdToggleQueueExpand() { mdQueueExpanded = !mdQueueExpanded; renderMdInfoHub(); }
     // Refresh elapsed-time displays once a minute during a live session
     setInterval(() => { if (mdStep === 'live') { try { renderMDLive(); } catch (e) {} } }, 60000);
+    // Court bookings open/close on the clock (e.g. Court 2 from 18:00): fill any
+    // court that just opened, without waiting for a game to finish elsewhere.
+    setInterval(() => {
+      if (mdStep !== 'live' || document.hidden || !mdIsScorer()) return;
+      let free = false;
+      for (let c = 1; c <= mdCourts; c++) if (mdCourtOpenNow(c) && !mdHeldCourts.has(c) && !mdCourtMatch(c)) free = true;
+      if (free) mdAutoFill().then(() => { try { renderMatchDay(); } catch (e) {} });
+    }, 30000);
 
     // ===== LIVE POLL: keep shared viewers in sync during a match day =====
     // Lean fetch (ongoing + today's matches + matchday status) every 20s.
@@ -11554,7 +11566,7 @@
         mdStep = s.step;
         mdMode = s.mode || 'roundrobin';
         mdCourts = s.courts || 1;
-        mdCourtSlots = Array.isArray(s.courtSlots) && s.courtSlots.length ? s.courtSlots : Array.from({ length: mdCourts }, () => ({ mins: 180 }));
+        mdCourtSlots = Array.isArray(s.courtSlots) && s.courtSlots.length ? s.courtSlots : Array.from({ length: mdCourts }, () => ({ mins: 180, auto: true }));
         mdSyncCourtDerived(); renderMDCourtSlots();
         mdGeneratedSchedule = s.schedule;
         mdCompletedGames = s.completed || [];
@@ -11611,38 +11623,91 @@
     }
 
     // Per-court bookings: each court has its own minutes (30-min steps)
-    let mdCourtSlots = [{ mins: 180 }];
+    // Each booked court has its own window, e.g. Court 1 17:00–19:00, Court 2 18:00–19:00.
+    // c.mins is kept (derived) because the estimate/capacity code reads it.
+    let mdCourtSlots = [{ mins: 180, auto: true }];
+    const MD_LAST_CALL_MINS = 10; // don't start a new game this close to a court's end time
+    const mdToMin = t => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+    const mdFromMin = m => { m = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+    const mdNowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+    function mdNormalizeSlots() {
+      const dayStart = mdToMin(activeMatchday?.start_time), dayEnd = mdToMin(activeMatchday?.end_time);
+      mdCourtSlots.forEach(c => {
+        // Untouched defaults follow the match day's own times once it's known
+        if (c.auto || mdToMin(c.start) == null) {
+          const st = dayStart ?? mdToMin(c.start) ?? 17 * 60;
+          c.start = mdFromMin(st);
+          c.end = mdFromMin(c.auto && dayEnd != null && dayEnd > st ? dayEnd : st + (c.mins || 120));
+        }
+        if (mdToMin(c.end) == null) c.end = mdFromMin(mdToMin(c.start) + (c.mins || 120));
+        c.mins = Math.max(30, mdToMin(c.end) - mdToMin(c.start));
+      });
+    }
     function mdSyncCourtDerived() {
+      mdNormalizeSlots();
       mdCourts = Math.max(1, mdCourtSlots.length);
-      mdDuration = Math.max(...mdCourtSlots.map(c => c.mins)) / 60;
+      const st = Math.min(...mdCourtSlots.map(c => mdToMin(c.start))), en = Math.max(...mdCourtSlots.map(c => mdToMin(c.end)));
+      mdDuration = Math.max(0.5, (en - st) / 60);
     }
-    function mdCourtsAvailableAt(round) { // how many courts are still booked during 15-min round N (1-based)
-      const n = mdCourtSlots.filter(c => round * 15 <= c.mins).length;
-      return n > 0 ? n : mdCourtSlots.length; // past all bookings: assume overtime on every court
+    // Is court c (1-based) booked right now, with time left to start a game?
+    function mdCourtOpenNow(c) {
+      const s = mdCourtSlots[c - 1]; if (!s) return true;
+      const st = mdToMin(s.start), en = mdToMin(s.end); if (st == null || en == null) return true;
+      const now = mdNowMin();
+      return now >= st && now <= en - MD_LAST_CALL_MINS;
     }
+    function mdCourtState(c) { // 'open' | 'before' | 'after'
+      const s = mdCourtSlots[c - 1]; if (!s) return 'open';
+      const now = mdNowMin();
+      if (now < mdToMin(s.start)) return 'before';
+      if (now > mdToMin(s.end) - MD_LAST_CALL_MINS) return 'after';
+      return 'open';
+    }
+    function mdCourtWindow(c) { const s = mdCourtSlots[c - 1]; return s && s.start && s.end ? `${s.start}–${s.end}` : ''; }
+    function mdOpenCourtCount() { let n = 0; for (let c = 1; c <= mdCourts; c++) if (mdCourtOpenNow(c)) n++; return n; }
+    // Planned schedule (preview only): which courts are booked during 15-min round N,
+    // counted from the earliest court start.
+    function mdOpenCourtsAtRound(round) {
+      const t0 = Math.min(...mdCourtSlots.map(c => mdToMin(c.start)));
+      const t = t0 + (round - 1) * 15;
+      const open = [];
+      mdCourtSlots.forEach((c, i) => { if (mdToMin(c.start) <= t && t + 15 <= mdToMin(c.end)) open.push(i + 1); });
+      return open.length ? open : mdCourtSlots.map((_, i) => i + 1); // past every booking: overtime
+    }
+    function mdCourtsAvailableAt(round) { return mdOpenCourtsAtRound(round).length; }
     function mdFmtMins(m) { const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h}h ${r}m` : `${h}h`) : `${r}m`; }
     function renderMDCourtSlots() {
       const el = document.getElementById('mdCourtSlots'); if (!el) return;
+      mdNormalizeSlots();
       el.innerHTML = mdCourtSlots.map((c, i) => `
         <div class="md-court-row">
           <span class="md-court-name">Court ${i + 1}</span>
-          <div class="md-stepper">
-            <button type="button" class="md-step" onclick="mdBookingStep(${i}, -30)" ${c.mins <= 30 ? 'disabled' : ''} aria-label="30 minutes less">−</button>
-            <span class="md-step-val">${mdFmtMins(c.mins)}</span>
-            <button type="button" class="md-step" onclick="mdBookingStep(${i}, 30)" ${c.mins >= 360 ? 'disabled' : ''} aria-label="30 minutes more">+</button>
-          </div>
+          <input type="time" class="md-court-time" step="900" value="${esc(c.start)}" onchange="mdBookingTime(${i}, 'start', this.value)" aria-label="Court ${i + 1} start time">
+          <span class="md-court-dash">–</span>
+          <input type="time" class="md-court-time" step="900" value="${esc(c.end)}" onchange="mdBookingTime(${i}, 'end', this.value)" aria-label="Court ${i + 1} end time">
           ${mdCourtSlots.length > 1 ? `<button type="button" class="md-court-remove" onclick="mdBookingRemove(${i})" aria-label="Remove court"><i class="fas fa-xmark"></i></button>` : '<span class="md-court-remove-spacer"></span>'}
         </div>`).join('');
       const tot = mdCourtSlots.reduce((a, c) => a + c.mins, 0);
       const t = document.getElementById('mdCourtTotal'); if (t) t.textContent = `${mdFmtMins(tot)} court time`;
     }
-    function mdBookingStep(i, delta) { const c = mdCourtSlots[i]; if (!c) return; c.mins = Math.min(360, Math.max(30, c.mins + delta)); mdCourtsChanged(); }
-    function mdBookingAdd() { if (mdCourtSlots.length >= 6) return; mdCourtSlots.push({ mins: mdCourtSlots[mdCourtSlots.length - 1]?.mins || 120 }); mdCourtsChanged(); }
+    function mdBookingTime(i, which, v) {
+      const c = mdCourtSlots[i]; if (!c || mdToMin(v) == null) { renderMDCourtSlots(); return; }
+      delete c.auto;
+      c[which] = mdFromMin(mdToMin(v));
+      if (mdToMin(c.end) <= mdToMin(c.start)) {
+        if (which === 'start') c.end = mdFromMin(mdToMin(c.start) + 60); else c.start = mdFromMin(mdToMin(c.end) - 60);
+        toast('End must be after start — adjusted', 'info');
+      }
+      mdCourtsChanged();
+      if (mdStep === 'live') { mdSaveSession(); mdAutoFill().then(() => renderMatchDay()); }
+    }
+    function mdBookingStep(i, delta) { const c = mdCourtSlots[i]; if (!c) return; delete c.auto; c.end = mdFromMin(Math.max(mdToMin(c.start) + 30, mdToMin(c.end) + delta)); mdCourtsChanged(); }
+    function mdBookingAdd() { if (mdCourtSlots.length >= 6) return; const l = mdCourtSlots[mdCourtSlots.length - 1] || {}; mdCourtSlots.push({ start: l.start, end: l.end, mins: l.mins || 120 }); mdCourtsChanged(); }
     function mdBookingRemove(i) { if (mdCourtSlots.length <= 1) return; mdCourtSlots.splice(i, 1); mdCourtsChanged(); }
-    function mdCourtsChanged() { mdSyncCourtDerived(); mdGeneratedSchedule = null; renderMDCourtSlots(); mdUpdateEstimate(); renderMDChecklist(); }
+    function mdCourtsChanged() { mdSyncCourtDerived(); if (mdStep !== 'live') mdGeneratedSchedule = null; renderMDCourtSlots(); mdUpdateEstimate(); renderMDChecklist(); }
     // Back-compat shims (older callers)
-    function setMDCourts(n) { const cur = mdCourtSlots[0]?.mins || 180; mdCourtSlots = Array.from({ length: Math.max(1, n) }, () => ({ mins: cur })); mdCourtsChanged(); }
-    function setMDDuration(h) { mdCourtSlots.forEach(c => c.mins = Math.round(h * 60)); mdCourtsChanged(); }
+    function setMDCourts(n) { const l = mdCourtSlots[0] || { mins: 180, auto: true }; mdCourtSlots = Array.from({ length: Math.max(1, n) }, () => ({ ...l })); mdCourtsChanged(); }
+    function setMDDuration(h) { mdCourtSlots.forEach(c => { delete c.auto; c.end = mdFromMin(mdToMin(c.start) + Math.round(h * 60)); }); mdCourtsChanged(); }
 
     function setMDAmericanoRounds(r) {
       mdAmericanoRounds = r;
@@ -12080,14 +12145,15 @@
           // Multi-court: group matches from same logical round onto the courts still booked in that round
           for (let i = 0; i < logicalRound.length; ) {
             matchRound++;
-            const avail = Math.max(1, Math.min(courts, mdCourtsAvailableAt(matchRound)));
+            const openCourts = mdOpenCourtsAtRound(matchRound).slice(0, courts);
+            const avail = Math.max(1, openCourts.length);
             const start = i; i += avail;
             for (let c = 0; c < avail && (start + c) < logicalRound.length; c++) {
               scheduled.push({
                 t1: logicalRound[start + c][0],
                 t2: logicalRound[start + c][1],
                 round: matchRound,
-                court: c + 1
+                court: openCourts[c] || c + 1
               });
             }
           }
@@ -13035,7 +13101,7 @@
           const heldOcc = mdHeldCourts.has(c);
           courtHtml += `<div class="card md-court md-court-playing" data-court="${c}" style="border-radius:14px;overflow:hidden;padding:0">
             <div class="md-court-hd" style="background:var(--brown-dark);padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
-              <span class="md-court-num" style="color:var(--cream);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
+              <span class="md-court-num" style="color:var(--cream);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}<span style="opacity:.65;font-weight:600;letter-spacing:0;margin-left:6px">${mdCourtWindow(c)}</span></span>
               <div style="display:flex;align-items:center;gap:8px">
                 <span class="md-court-timer" style="color:var(--clay-light);font-size:11px;font-weight:600">${roundBadge}${elapsedMins !== null ? ` · ${elapsedMins}m` : ''}</span>
                 <button onclick="mdToggleHold(${c})" title="${heldOcc ? 'Held: will not auto-fill after this game' : 'Hold court after this game'}" style="background:${heldOcc ? 'var(--gold)' : 'rgba(255,255,255,0.15)'};border:none;color:${heldOcc ? 'var(--brown-dark)' : 'var(--cream)'};width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:10px;padding:0"><i class="fas fa-thumbtack"></i></button>
@@ -13060,8 +13126,13 @@
           const held = mdHeldCourts.has(c);
           // Explain WHY the court is idle: held, queue empty, or all queued teams busy
           let idleMsg = 'Waiting for next match';
+          const cState = mdCourtState(c);
           if (held) {
             idleMsg = 'Held — tap the pin to release';
+          } else if (cState === 'before') {
+            idleMsg = `Booked from ${mdCourtSlots[c - 1].start} — games start here automatically then`;
+          } else if (cState === 'after') {
+            idleMsg = `Booking ends ${mdCourtSlots[c - 1].end} — no new games on this court`;
           } else {
             const idlePending = mdGetPendingQueue();
             if (idlePending.length === 0) {
@@ -13083,7 +13154,7 @@
           }
           courtHtml += `<div class="card md-court md-court-idle md-court-drop${held ? ' md-court-held' : ''}" data-court="${c}" ondragover="mdCourtDragOver(event)" ondragleave="mdCourtDragLeave(event)" ondrop="mdCourtDrop(event, ${c})" style="border-radius:16px;overflow:hidden;padding:0${held ? ';opacity:0.85' : ''}">
             <div class="md-court-hd" style="background:var(--brown-dark);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
-              <span class="md-court-num" style="color:var(--cream);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}</span>
+              <span class="md-court-num" style="color:var(--cream);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Court ${c}<span style="opacity:.65;font-weight:600;letter-spacing:0;margin-left:6px">${mdCourtWindow(c)}</span></span>
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="font-size:10px;padding:2px 10px;border-radius:99px;font-weight:600;${held ? 'color:var(--brown-dark);background:var(--gold)' : 'color:var(--text-muted);background:rgba(255,255,255,0.1)'}">${held ? 'ON HOLD' : 'Idle'}</span>
                 <button onclick="mdToggleHold(${c})" title="${held ? 'Release court to auto-fill' : 'Hold court (no auto-fill)'}" style="background:${held ? 'var(--gold)' : 'rgba(255,255,255,0.15)'};border:none;color:${held ? 'var(--brown-dark)' : 'var(--cream)'};width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:11px;padding:0"><i class="fas fa-thumbtack"></i></button>
@@ -13175,7 +13246,10 @@
 
     // Court management
     function mdAddCourt() {
-      mdCourts++;
+      // A court added mid-session is open from now until the latest booking ends
+      const latest = Math.max(...mdCourtSlots.map(c => mdToMin(c.end) || 0), mdNowMin() + 60);
+      mdCourtSlots.push({ start: mdFromMin(Math.min(mdNowMin(), latest - 30)), end: mdFromMin(latest) });
+      mdSyncCourtDerived();
       document.querySelectorAll('.md-config-btns')[0]?.querySelectorAll('.md-config-btn').forEach(b => b.classList.remove('active'));
       mdReallocateCourts();
       toast(`Court ${mdCourts} added — matches redistributed`, 'success');
@@ -13212,7 +13286,7 @@
         const playable = pending.filter(m => mdMode === 'randomiser'
           ? !(m.team1 || []).concat(m.team2 || []).some(p => busyPlayers.has(p))
           : !((m.t1 && busyTeams.has(m.t1)) || (m.t2 && busyTeams.has(m.t2)))).length;
-        if (playable >= Math.max(1, mdCourts)) break;
+        if (playable >= Math.max(1, mdOpenCourtCount())) break;
         // only mint from teams/players not busy AND not already waiting in the queue
         const exclTeams = new Set([...busyTeams, ...queuedTeams]);
         const exclPlayers = new Set([...busyPlayers, ...queuedPlayers]);
@@ -13223,7 +13297,14 @@
       }
     }
 
+    let _mdFilling = null;
     async function mdAutoFill() {
+      // One fill at a time: the booking timer and a finished game can fire together
+      if (_mdFilling) return _mdFilling;
+      _mdFilling = mdAutoFillOnce().finally(() => { _mdFilling = null; });
+      return _mdFilling;
+    }
+    async function mdAutoFillOnce() {
       if (!mdIsScorer()) return; // spectators never write to the queue
       if (mdStep !== 'live' || !mdGeneratedSchedule || mdCourts < 1) return;
       mdTopUpQueue();
@@ -13253,6 +13334,7 @@
 
       for (let c = 1; c <= mdCourts; c++) {
         if (mdHeldCourts.has(c)) continue; // court on hold — skip auto-fill
+        if (!mdCourtOpenNow(c)) continue; // not booked yet, or booking (almost) over
         const label = `Court ${c}`;
         const occupied = !!mdCourtMatch(c);
         if (occupied) continue;
@@ -13335,7 +13417,8 @@
       if (hasMatch) { toast('Cannot remove court with active match', 'error'); return; }
       mdHeldCourts.delete(mdCourts);
       mdSaveHeldCourts();
-      mdCourts--;
+      mdCourtSlots.pop();
+      mdSyncCourtDerived();
       toast('Court removed', 'info');
       renderMDLive();
     }
@@ -17833,7 +17916,7 @@
                     : { ok: false, text: 'No match day selected', fix: 'Create or pick a match day first' });
       // 2. courts booked
       const capacity = mdCourtSlots.reduce((a, c) => a + c.mins, 0);
-      items.push({ ok: capacity > 0, text: `${mdCourtSlots.length} court${mdCourtSlots.length === 1 ? '' : 's'} · ${mdFmtMins(capacity)} court time` });
+      items.push({ ok: capacity > 0, text: mdCourtSlots.map((c, i) => `Court ${i + 1} ${c.start}–${c.end}`).join(' · ') + ` (${mdFmtMins(capacity)} court time)` });
       // 3. teams
       items.push({ ok: n >= 2, text: n >= 2 ? `${n} teams in` : `${n} team${n === 1 ? '' : 's'} selected — need at least 2`, fix: n < 2 ? 'Tap Add Teams' : null });
       // 4. no player on two teams
