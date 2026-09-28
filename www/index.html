@@ -6583,7 +6583,9 @@
     }
     let supabaseClient = null;
     let testMode = false;
-    let _supabaseOriginalFrom = null;
+    let _supabaseOriginalFrom = null, _supabaseOriginalRpc = null;
+    // Read-only RPCs that are safe in test mode; every other RPC writes (scorer lock, invites)
+    const PV_TEST_SAFE_RPCS = new Set(['invite_preview']);
 
     // Test Mode: proxy Supabase writes
     function createTestMockChain(table, operation, args) {
@@ -6615,6 +6617,13 @@
 
     function enableTestModeProxy() {
       if (!supabaseClient || _supabaseOriginalFrom) return;
+      // RPCs write too (the scorer lock went to the live DB in test mode) — block them
+      _supabaseOriginalRpc = supabaseClient.rpc.bind(supabaseClient);
+      supabaseClient.rpc = function(fn, args, opts) {
+        if (!testMode || PV_TEST_SAFE_RPCS.has(fn)) return _supabaseOriginalRpc(fn, args, opts);
+        console.log(`[TEST MODE] Blocked RPC "${fn}"`, args);
+        return Promise.resolve({ data: null, error: null });
+      };
       _supabaseOriginalFrom = supabaseClient.from.bind(supabaseClient);
       supabaseClient.from = function(table) {
         const builder = _supabaseOriginalFrom(table);
@@ -6640,6 +6649,7 @@
       if (_supabaseOriginalFrom && supabaseClient) {
         supabaseClient.from = _supabaseOriginalFrom;
         _supabaseOriginalFrom = null;
+        if (_supabaseOriginalRpc) { supabaseClient.rpc = _supabaseOriginalRpc; _supabaseOriginalRpc = null; }
       }
     }
 
@@ -7153,6 +7163,8 @@
     let pendingSync = JSON.parse(localStorage.getItem('pv_pending_sync') || '[]');
     
     function addToPendingSync(operation) {
+      // Test mode never queues: queued ops were replayed for real after leaving test mode
+      if (typeof testMode !== 'undefined' && testMode) { console.log('[TEST MODE] Not queued:', operation.type, operation.table || operation.fn); return; }
       // Deduplicate keyed ops (e.g. scorer claims) — keep the latest
       if (operation.key) pendingSync = pendingSync.filter(p => p.key !== operation.key);
       // Deduplicate same match_uid + type — the NEWEST wins, so a corrected
@@ -7238,6 +7250,7 @@
     let _pvSyncRun = null;
     async function processPendingSync() {
       if (!supabaseClient || pendingSync.length === 0) return;
+      if (typeof testMode !== 'undefined' && testMode) return; // never flush real writes while testing
       // One run at a time: overlapping runs replayed the same ops twice.
       if (_pvSyncRun) return _pvSyncRun;
       _pvSyncRun = processPendingSyncOnce().finally(() => { _pvSyncRun = null; });
