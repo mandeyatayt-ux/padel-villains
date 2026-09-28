@@ -12677,9 +12677,9 @@
           const roundBadge = `<span style="background:var(--clay);color:white;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">R${m.round}</span>`;
           const busyTag = (isBusy && !predCourts) ? '<span style="font-size:10px;color:var(--clay);font-weight:600">team on court</span>' : '';
           const playBtn = (!isBusy && freeUnheldCourt && currentUser?.is_admin)
-            ? `<button onclick="mdSendToCourt(${idx});event.stopPropagation()" title="Send to court" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--emerald);color:white;font-size:11px;cursor:pointer;padding:0;flex-shrink:0"><i class="fas fa-play"></i></button>`
+            ? `<button onclick="mdSendToCourt(${m.sid ? `'${esc(m.sid)}'` : idx});event.stopPropagation()" title="Send to court" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--emerald);color:white;font-size:11px;cursor:pointer;padding:0;flex-shrink:0"><i class="fas fa-play"></i></button>`
             : '';
-          return `<div class="md-q-row${isNext ? ' md-q-next' : ''}${predCourts ? ' md-q-pred' : ''}" data-pos="${String(idx + 1).padStart(2, '0')}" data-qidx="${idx}"${(!isBusy && currentUser?.is_admin) ? ' draggable="true" ondragstart="mdQueueDragStart(event)" ondragend="mdQueueDragEnd(event)"' : ''} style="background:var(--bg-card);border:1px solid ${isNext ? 'var(--emerald)' : predCourts ? 'var(--gold)' : 'var(--border)'};border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:6px${isBusy && !predCourts ? ';opacity:0.55' : ''}">
+          return `<div class="md-q-row${isNext ? ' md-q-next' : ''}${predCourts ? ' md-q-pred' : ''}" data-pos="${String(idx + 1).padStart(2, '0')}" data-qidx="${idx}"${m.sid ? ` data-qsid="${esc(m.sid)}"` : ''}${(!isBusy && currentUser?.is_admin) ? ' draggable="true" ondragstart="mdQueueDragStart(event)" ondragend="mdQueueDragEnd(event)"' : ''} style="background:var(--bg-card);border:1px solid ${isNext ? 'var(--emerald)' : predCourts ? 'var(--gold)' : 'var(--border)'};border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;margin-bottom:6px${isBusy && !predCourts ? ';opacity:0.55' : ''}">
             ${posBadge}${roundBadge}
             <span style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t1Name)} <span style="color:var(--clay);font-weight:400;font-size:11px">v</span> ${esc(t2Name)}</span>
             ${busyTag}${playBtn}
@@ -13675,7 +13675,7 @@
       pop.innerHTML = `
         <div class="md-pop-h">Court ${court}</div>
         <button class="md-pop-item" onclick="mdSkipToNext(${matchId}, ${court})"><b>Next match</b><small>Send this pair back to the queue, start the next playable game here</small></button>
-        ${playable.length ? `<div class="md-pop-sub">Or put a specific match on this court</div>${playable.slice(0, 6).map(({ q, idx }) => `<button class="md-pop-item md-pop-pick" onclick="mdSwapCourtMatch(${matchId}, ${court}, ${idx})">${esc(label(q))}</button>`).join('')}` : ''}
+        ${playable.length ? `<div class="md-pop-sub">Or put a specific match on this court</div>${playable.slice(0, 6).map(({ q, idx }) => `<button class="md-pop-item md-pop-pick" onclick="mdSwapCourtMatch(${matchId}, ${court}, ${q.sid ? `'${esc(q.sid)}'` : idx})">${esc(label(q))}</button>`).join('')}` : ''}
         <button class="md-pop-item" onclick="mdCloseCourtMenu(); mdReturnToQueue(${matchId}, false, true)"><b>Return to queue</b><small>Court stays free until you drag a match on or save a score</small></button>
         <button class="md-pop-item danger" onclick="mdCloseCourtMenu(); mdCancelCourtMatch(${matchId})"><b>Cancel match</b><small>Remove it from today entirely</small></button>`;
       const card = ev.currentTarget.closest('.md-court') || ev.currentTarget.parentElement;
@@ -13694,14 +13694,12 @@
       const now = mdCourtMatch(court);
       toast(now ? `Court ${court}: ${getTeam(now.team1_id)?.name || ''} v ${getTeam(now.team2_id)?.name || ''}` : `Court ${court} is free — nothing playable yet`, now ? 'success' : 'info');
     }
-    async function mdSwapCourtMatch(matchId, court, qidx) {
+    async function mdSwapCourtMatch(matchId, court, sid) {
       mdCloseCourtMenu();
       if (!mdAssertScorer('change the court')) return;
       await mdReturnToQueue(matchId, true, true);
-      // the queue re-indexes after the return; find the same fixture again by identity
-      const target = mdGetPendingQueue()[qidx];
-      const idx = mdGetPendingQueue().indexOf(target);
-      await mdSendToCourt(idx >= 0 ? idx : qidx, court);
+      // the queue re-indexes after the return; the sid still names the same fixture
+      await mdSendToCourt(sid, court);
       renderMDLive(); try { renderMdInfoHub(); } catch (e) {}
     }
 
@@ -13786,10 +13784,11 @@
     }
 
     // Send a queued match to the next free court
-    async function mdSendToCourt(queueIdx, targetCourt) {
+    // ref = fixture sid (preferred: stable) or a position in the current pending queue
+    async function mdSendToCourt(ref, targetCourt) {
       const queueMatches = mdGetPendingQueue();
-      const match = queueMatches[queueIdx];
-      if (!match) return;
+      const match = typeof ref === 'string' ? queueMatches.find(m => m.sid === ref) : queueMatches[ref];
+      if (!match) { toast('That match is no longer in the queue', 'error'); renderMatchDay(); return; }
       // Check if either team is already on court
       const teamsOnCourt = new Set();
       mdOnCourtMatches().forEach(m => {
@@ -13831,6 +13830,7 @@
       ongoingMatches.unshift(result.data || matchData);
       saveLocal();
       renderMDLive();
+      try { renderMdInfoHub(); } catch (e) {}
       renderOngoingMatches();
       toast(`${getTeam(match.t1)?.name} vs ${getTeam(match.t2)?.name} → Court ${freeCourt}`, 'success');
     }
@@ -13838,7 +13838,7 @@
     // Drag a queued match from the Up Next rail onto an idle court
     let _mdDragQIdx = null;
     function mdQueueDragStart(e) {
-      _mdDragQIdx = parseInt(e.currentTarget.dataset.qidx, 10);
+      _mdDragQIdx = e.currentTarget.dataset.qsid || parseInt(e.currentTarget.dataset.qidx, 10);
       e.currentTarget.classList.add('md-q-dragging');
       try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(_mdDragQIdx)); } catch (err) {}
       document.querySelectorAll('.md-court-drop').forEach(el => el.classList.add('md-court-can-drop'));
@@ -13851,10 +13851,11 @@
     function mdCourtDragLeave(e) { e.currentTarget.classList.remove('md-court-over'); }
     async function mdCourtDrop(e, court) {
       e.preventDefault();
-      const idx = _mdDragQIdx !== null ? _mdDragQIdx : parseInt(e.dataTransfer.getData('text/plain'), 10);
+      let idx = _mdDragQIdx !== null ? _mdDragQIdx : e.dataTransfer.getData('text/plain');
       _mdDragQIdx = null;
       document.querySelectorAll('.md-court-drop').forEach(el => el.classList.remove('md-court-can-drop', 'md-court-over'));
-      if (Number.isNaN(idx)) return;
+      if (idx === '' || idx == null) return;
+      if (typeof idx === 'string' && /^\d+$/.test(idx)) idx = parseInt(idx, 10); // old position-only payload
       if (!mdIsScorer()) { toast('Only the scorer device can send matches to court', 'error'); return; }
       await mdSendToCourt(idx, court);
     }
