@@ -4064,6 +4064,14 @@
     .md-court-row .md-court-name { flex: 0 0 auto; font-size: 13px; }
     .md-court-time::-webkit-calendar-picker-indicator { display: none; }
     .md-ct-live:empty { display: none; }
+    .md-win-row { display: flex; gap: 8px; align-items: stretch; }
+    .md-win-btn { flex: 1 1 0; min-width: 0; min-height: 52px; border-radius: 12px; border: 2px solid var(--clay); background: transparent; color: inherit; font-family: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 8px; -webkit-tap-highlight-color: transparent; }
+    .md-win-btn:active { background: var(--clay); color: #fff; }
+    .md-win-name { color: inherit; font-size: 14px; font-weight: 800; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .md-win-lbl { font-size: 10px; font-weight: 800; letter-spacing: 2px; color: var(--clay); }
+    .md-win-btn:active .md-win-lbl { color: #fff; }
+    .md-extend-cta { margin-top: 10px; min-height: 44px; padding: 8px 18px; border-radius: 999px; border: none; background: var(--clay); color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; }
+    .md-score-mode { display: block; margin: 8px auto 0; background: none; border: none; color: inherit; opacity: .6; font-size: 12px; text-decoration: underline; cursor: pointer; padding: 4px; }
     .md-ct-live { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
     .md-ct-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
     .md-ct-title { font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
@@ -11641,7 +11649,24 @@
     // Each booked court has its own window, e.g. Court 1 17:00–19:00, Court 2 18:00–19:00.
     // c.mins is kept (derived) because the estimate/capacity code reads it.
     let mdCourtSlots = [{ mins: 180, auto: true }];
-    const MD_LAST_CALL_MINS = 10; // don't start a new game this close to a court's end time
+    // Real game length, learned from finished games (start→save). Saturday's median
+    // was 6 min, not the 15 the app assumed. Today's games win once there are 3+.
+    let _mdGameMinsCache = { key: '', v: 10 };
+    function mdGameMins() {
+      const key = matches.length + ':' + (mdCompletedGames || []).length;
+      if (_mdGameMinsCache.key === key) return _mdGameMinsCache.v;
+      const dur = m => (m.started_at && m.finalized_at) ? (new Date(m.finalized_at) - new Date(m.started_at)) / 60000 : null;
+      const ok = d => d != null && d >= 2 && d <= 30;
+      const today = activeMatchday ? matches.filter(m => String(m.matchday_id) === String(activeMatchday.id)).map(dur).filter(ok) : [];
+      const pool = today.length >= 3 ? today : matches.slice().sort((a, b) => String(b.finalized_at || '').localeCompare(String(a.finalized_at || ''))).map(dur).filter(ok).slice(0, 40);
+      let v = 10;
+      if (pool.length >= 3) { const s = pool.slice().sort((a, b) => a - b); v = s[Math.floor(s.length / 2)]; }
+      v = Math.min(20, Math.max(4, Math.round(v)));
+      _mdGameMinsCache = { key, v };
+      return v;
+    }
+    // Don't start a game that can't finish before the booking ends
+    function mdLastCallMins() { return mdGameMins(); }
     const mdToMin = t => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; };
     const mdFromMin = m => { m = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
     const mdNowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
@@ -11669,29 +11694,28 @@
       const s = mdCourtSlots[c - 1]; if (!s) return true;
       const st = mdToMin(s.start), en = mdToMin(s.end); if (st == null || en == null) return true;
       const now = mdNowMin();
-      return now >= st && now <= en - MD_LAST_CALL_MINS;
+      return now >= st && now <= en - mdLastCallMins();
     }
     function mdCourtState(c) { // 'open' | 'before' | 'after'
       const s = mdCourtSlots[c - 1]; if (!s) return 'open';
       const now = mdNowMin();
       if (now < mdToMin(s.start)) return 'before';
-      if (now > mdToMin(s.end) - MD_LAST_CALL_MINS) return 'after';
+      if (now > mdToMin(s.end) - mdLastCallMins()) return 'after';
       return 'open';
     }
     // ---- Live: extend/shorten bookings; the engine re-reads times on every fill ----
-    const MD_GAME_MINS = 15;
     // How many more games can still START on court c (game length 15m, last call 10m before end)
     function mdGamesLeftOnCourt(c) {
       const s = mdCourtSlots[c - 1]; if (!s) return 0;
-      const lastStart = mdToMin(s.end) - MD_LAST_CALL_MINS;
+      const G = mdGameMins(), lastStart = mdToMin(s.end) - mdLastCallMins();
       let from = Math.max(mdNowMin(), mdToMin(s.start));
       const cur = mdCourtMatch(c);
       if (cur) {
         const st = cur.started_at ? new Date(cur.started_at) : null;
         const stMin = st ? st.getHours() * 60 + st.getMinutes() : mdNowMin();
-        from = Math.max(from, stMin + MD_GAME_MINS);
+        from = Math.max(from, stMin + G);
       }
-      return from > lastStart ? 0 : Math.floor((lastStart - from) / MD_GAME_MINS) + 1;
+      return from > lastStart ? 0 : Math.floor((lastStart - from) / G) + 1;
     }
     function mdCapacityLeft() {
       let fit = 0; for (let c = 1; c <= mdCourts; c++) fit += mdGamesLeftOnCourt(c);
@@ -11748,7 +11772,7 @@
       const canEdit = true;
       const { fit, rrLeft } = mdCapacityLeft();
       const short = rrLeft > fit;
-      const needMins = short ? Math.ceil((rrLeft - fit) / Math.max(1, mdCourts)) * MD_GAME_MINS : 0;
+      const needMins = short ? Math.ceil((rrLeft - fit) / Math.max(1, mdCourts)) * mdGameMins() : 0;
       const rows = mdCourtSlots.map((c, i) => {
         const st = mdCourtState(i + 1);
         const tag = st === 'before' ? 'opens ' + c.start : st === 'after' ? 'ended' : mdGamesLeftOnCourt(i + 1) + ' left';
@@ -11776,9 +11800,9 @@
     // counted from the earliest court start.
     function mdOpenCourtsAtRound(round) {
       const t0 = Math.min(...mdCourtSlots.map(c => mdToMin(c.start)));
-      const t = t0 + (round - 1) * 15;
+      const G = mdGameMins(), t = t0 + (round - 1) * G;
       const open = [];
-      mdCourtSlots.forEach((c, i) => { if (mdToMin(c.start) <= t && t + 15 <= mdToMin(c.end)) open.push(i + 1); });
+      mdCourtSlots.forEach((c, i) => { if (mdToMin(c.start) <= t && t + G <= mdToMin(c.end)) open.push(i + 1); });
       return open.length ? open : mdCourtSlots.map((_, i) => i + 1); // past every booking: overtime
     }
     function mdCourtsAvailableAt(round) { return mdOpenCourtsAtRound(round).length; }
@@ -12218,6 +12242,8 @@
     function mdScheduleMatches(pairs, courts, teamIds) {
       // Circle method: the standard round-robin scheduling algorithm
       // Produces perfectly balanced rounds where each team plays exactly once per logical round
+      const pairKey = (a, b) => String(a) < String(b) ? a + '~' + b : b + '~' + a;
+      const wanted = new Set((pairs || []).map(p => pairKey(p[0], p[1])));
       const n = teamIds.length;
       const teams = [...teamIds];
       const isOdd = n % 2 === 1;
@@ -12237,8 +12263,8 @@
         for (let i = 1; i < total / 2; i++) {
           roundMatches.push([rotating[i], rotating[total - 1 - i]]);
         }
-        // Remove BYE matches (null team)
-        logicalRounds.push(roundMatches.filter(m => m[0] !== null && m[1] !== null));
+        // Remove BYE matches (null team) and pairs not asked for (e.g. already played today)
+        logicalRounds.push(roundMatches.filter(m => m[0] !== null && m[1] !== null && wanted.has(pairKey(m[0], m[1]))));
         // Rotate: move first element to end
         rotating.push(rotating.shift());
       }
@@ -12247,7 +12273,7 @@
       const scheduled = [];
       let matchRound = 0;
       
-      for (const logicalRound of logicalRounds) {
+      for (const logicalRound of logicalRounds.filter(r => r.length)) {
         if (courts >= 2) {
           // Multi-court: group matches from same logical round onto the courts still booked in that round
           for (let i = 0; i < logicalRound.length; ) {
@@ -13222,12 +13248,19 @@
                 <span style="font-size:15px;font-weight:700;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right">${esc(t2Name)}</span>
               </div>
               ${t1Players || t2Players ? `<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:10px"><span style="font-size:11px;color:var(--text-muted)">${t1Players}</span><span style="font-size:11px;color:var(--text-muted);text-align:right">${t2Players}</span></div>` : '<div style="margin-bottom:10px"></div>'}
+              ${mdScoreMode() === 'winner' ? `
+              <div class="md-win-row">
+                <button class="md-win-btn" onclick="mdInlineFinalize(${courtMatch.id}, 1)" aria-label="${esc(t1Name)} won"><span class="md-win-name">${esc(t1Name)}</span><span class="md-win-lbl">WON</span></button>
+                <button class="md-win-btn" onclick="mdInlineFinalize(${courtMatch.id}, 2)" aria-label="${esc(t2Name)} won"><span class="md-win-name">${esc(t2Name)}</span><span class="md-win-lbl">WON</span></button>
+                <button class="btn btn-secondary md-court-more" style="width:44px;height:52px;border-radius:10px;font-size:18px;flex-shrink:0;padding:0" onclick="mdCourtMenu(event, ${courtMatch.id}, ${c})" title="More actions" aria-label="More actions">···</button>
+              </div>` : `
               <div class="md-cc-score-row">
                 <input class="md-cc-input" type="number" min="0" max="99" id="inlineScore1_${courtMatch.id}" placeholder="0" inputmode="numeric">
                 <input class="md-cc-input" type="number" min="0" max="99" id="inlineScore2_${courtMatch.id}" placeholder="0" inputmode="numeric">
                 <button class="md-score-save" onclick="mdInlineFinalize(${courtMatch.id})" style="height:44px">SAVE</button>
                 <button class="btn btn-secondary md-court-more" style="width:44px;height:44px;border-radius:10px;font-size:18px;flex-shrink:0;padding:0" onclick="mdCourtMenu(event, ${courtMatch.id}, ${c})" title="More actions" aria-label="More actions">···</button>
-              </div>
+              </div>`}
+              <button class="md-score-mode" onclick="mdSetScoreMode('${mdScoreMode() === 'winner' ? 'score' : 'winner'}')">${mdScoreMode() === 'winner' ? 'Enter the game score instead' : 'Just tap the winner instead'}</button>
             </div>
           </div>`;
         } else {
@@ -13241,6 +13274,7 @@
             idleMsg = `Booked from ${mdCourtSlots[c - 1].start} — games start here automatically then`;
           } else if (cState === 'after') {
             idleMsg = `Booking ends ${mdCourtSlots[c - 1].end} — no new games on this court`;
+            if (mdIsScorer()) idleMsg = `Booking ${mdNowMin() >= mdToMin(mdCourtSlots[c - 1].end) ? 'ended' : 'ends'} ${mdCourtSlots[c - 1].end}. Still playing?<br><button type="button" class="md-extend-cta" onclick="mdExtendCourt(${c - 1}, 15)">+15 min on Court ${c}</button>`;
           } else {
             const idlePending = mdGetPendingQueue();
             if (idlePending.length === 0) {
@@ -13380,6 +13414,7 @@
     // so the Up Next rail never shows "queue empty" with people sitting out.
     function mdTopUpQueue() {
       if (mdStep !== 'live' || !mdGeneratedSchedule) return;
+      if (mdRoundRobinPending()) return; // round-robin games first; rematches only once they're done
       const busyTeams = new Set(), busyPlayers = new Set();
       mdOnCourtMatches().forEach(m => {
         if (m.team1_id) busyTeams.add(m.team1_id);
@@ -13403,6 +13438,41 @@
         if (f.t1) { queuedTeams.add(f.t1); queuedTeams.add(f.t2); }
         (f.team1 || []).concat(f.team2 || []).forEach(p => queuedPlayers.add(p));
       }
+    }
+
+    // ---- Who plays next: longest-waiting teams first, round robin before rematches ----
+    function mdRestInfo() {
+      const last = new Map(), games = new Map();
+      (mdCompletedGames || []).forEach((g, i) => {
+        const sides = g.t1 ? [g.t1, g.t2] : [...(g.team1 || []), ...(g.team2 || [])];
+        sides.forEach(s => { last.set(String(s), i); games.set(String(s), (games.get(String(s)) || 0) + 1); });
+      });
+      return { last, games, n: (mdCompletedGames || []).length };
+    }
+    // Among fixtures that can start now: unplayed round-robin games first, then the pair
+    // whose least-rested side has waited longest, then fewest games; schedule order breaks ties.
+    function mdPickFixture(cands) {
+      if (!cands.length) return null;
+      if (mdMode === 'randomiser' || cands.length === 1) return cands[0];
+      const { last, games, n } = mdRestInfo();
+      const rest = s => n - (last.has(String(s)) ? last.get(String(s)) : -1);
+      const g = s => games.get(String(s)) || 0;
+      let best = null, bestScore = -Infinity;
+      cands.forEach((f, idx) => {
+        const sides = [f.t1, f.t2];
+        const score = (f.bonus ? 0 : 1e9) + Math.min(...sides.map(rest)) * 1e5 + (rest(f.t1) + rest(f.t2)) * 100 - (g(f.t1) + g(f.t2)) - idx * 1e-3;
+        if (score > bestScore) { bestScore = score; best = f; }
+      });
+      return best;
+    }
+    function mdRoundRobinPending() { return mdGetPendingQueue().some(m => !m.bonus); }
+    // A court with nothing playable waits (round-robin games are still to come) — but
+    // never longer than about half a game; after that a rematch beats an empty court.
+    const _mdIdleSince = {};
+    function mdMayRematch(c) {
+      if (!mdRoundRobinPending()) return true;
+      if (!_mdIdleSince[c]) _mdIdleSince[c] = Date.now();
+      return Date.now() - _mdIdleSince[c] >= mdGameMins() * 30000;
     }
 
     let _mdFilling = null;
@@ -13447,9 +13517,10 @@
         const occupied = !!mdCourtMatch(c);
         if (occupied) continue;
 
-        let next = mdGeneratedSchedule.find(isEligible);
-        if (!next) next = mdMintBonusFixture(busyTeams, busyPlayers); // nobody idle: allow a rematch
+        let next = mdPickFixture(mdGeneratedSchedule.filter(isEligible));
+        if (!next && mdMayRematch(c)) next = mdMintBonusFixture(busyTeams, busyPlayers); // nobody idle: allow a rematch
         if (!next) continue; // nothing eligible for this court right now
+        delete _mdIdleSince[c];
 
         const base = {
           id: generateNumericId(),
@@ -13505,7 +13576,9 @@
         if (free.length < 2) return null;
         let best = null, bestScore = Infinity;
         for (let i = 0; i < free.length; i++) for (let j = i + 1; j < free.length; j++) {
-          const score = played(free[i], free[j]) * 100 + games(free[i]) + games(free[j]) + Math.random();
+          const { last, n } = mdRestInfo();
+          const rest = s => n - (last.has(String(s)) ? last.get(String(s)) : -1);
+          const score = played(free[i], free[j]) * 1e4 - Math.min(rest(free[i]), rest(free[j])) * 100 + games(free[i]) + games(free[j]) + Math.random();
           if (score < bestScore) { bestScore = score; best = [free[i], free[j]]; }
         }
         fixture = { t1: best[0], t2: best[1], round: nextRound, court: 1, sid, bonus: true };
@@ -13983,16 +14056,26 @@
 
     // Inline score finalize (no modal)
     let _mdSaving = false;
-    async function mdInlineFinalize(matchId) {
+    // Court card scoring: tap the winner (default — how the circuit actually scores)
+    // or type the game score. Remembered per phone.
+    function mdScoreMode() { try { return localStorage.getItem('pv_md_score_mode') === 'score' ? 'score' : 'winner'; } catch (e) { return 'winner'; } }
+    function mdSetScoreMode(m) { try { localStorage.setItem('pv_md_score_mode', m); } catch (e) {} renderMatchDay(); }
+    // winnerSide: 1 or 2 from the winner buttons (saved as 1-0 / 0-1); omitted = read the score boxes
+    async function mdInlineFinalize(matchId, winnerSide) {
       if (_mdSaving) return;
       if (!mdAssertScorer('save scores')) return;
       _mdSaving = true;
       try {
-      const s1El = document.getElementById(`inlineScore1_${matchId}`);
-      const s2El = document.getElementById(`inlineScore2_${matchId}`);
-      if (!s1El || !s2El) return;
-      const scoreA = pvParseScore(s1El.value);
-      const scoreB = pvParseScore(s2El.value);
+      let scoreA, scoreB;
+      if (winnerSide === 1 || winnerSide === 2) {
+        scoreA = winnerSide === 1 ? 1 : 0; scoreB = winnerSide === 1 ? 0 : 1;
+      } else {
+        const s1El = document.getElementById(`inlineScore1_${matchId}`);
+        const s2El = document.getElementById(`inlineScore2_${matchId}`);
+        if (!s1El || !s2El) return;
+        scoreA = pvParseScore(s1El.value);
+        scoreB = pvParseScore(s2El.value);
+      }
       const bad = pvScoreProblem(scoreA, scoreB);
       if (bad) { toast(bad, 'error'); return; }
       const m = ongoingMatches.find(x => String(x.id) === String(matchId));
@@ -14029,7 +14112,7 @@
       renderAll();
       const n1 = isAmericano ? (m.team1_players||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ') : (getTeam(m.team1_id)?.name || '?');
       const n2 = isAmericano ? (m.team2_players||[]).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ') : (getTeam(m.team2_id)?.name || '?');
-      toast(`${n1} ${scoreA}-${scoreB} ${n2} ✓`, 'success');
+      toast(winnerSide ? `${winnerSide === 1 ? n1 : n2} beat ${winnerSide === 1 ? n2 : n1} ✓ (wrong? Undo in Results)` : `${n1} ${scoreA}-${scoreB} ${n2} ✓`, 'success');
       } finally { _mdSaving = false; }
     }
 
