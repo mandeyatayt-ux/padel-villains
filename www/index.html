@@ -9659,320 +9659,280 @@
     }
     
     // ===== EVENT SHARE IMAGE (1080x1920 for iPhone WhatsApp) =====
-    function generateEventShareCanvas(md) {
-      if (!md) md = activeMatchday;
-      if (!md) return null;
-      
-      const W = 1080, H = 1920;
+    // ===== SHARE CARDS — Court Green (one renderer for match day, training, vibes) =====
+    const PV_CG = { green: '#09332C', green2: '#2E4B3C', cream: '#F7EDDA', cream2: '#EFE0C4', orange: '#FE4F2D', lime: '#E6F286', ink: '#0B1F1A' };
+    const PV_ANTON = "'Anton', Impact, 'Arial Narrow', sans-serif";
+    const PV_MANROPE = "'Manrope', 'DM Sans', system-ui, sans-serif";
+
+    async function pvShareFontsReady() {
+      if (!document.fonts || !document.fonts.load) return;
+      const loads = Promise.all([
+        document.fonts.load(`100px ${PV_ANTON}`),
+        document.fonts.load(`600 30px ${PV_MANROPE}`),
+        document.fonts.load(`800 30px ${PV_MANROPE}`)
+      ]).catch(() => {});
+      await Promise.race([loads, new Promise(r => setTimeout(r, 2500))]);
+    }
+
+    function pvLoadImg(src) {
+      return new Promise(resolve => {
+        if (!src) return resolve(null);
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    }
+
+    // Letter-spaced text drawn glyph by glyph (ctx.letterSpacing isn't reliable on older iOS WebKit)
+    function pvSpaced(ctx, text, x, y, spacing) {
+      let cx = x;
+      for (const ch of String(text)) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + spacing; }
+      return cx - spacing;
+    }
+
+    function pvFitFont(ctx, text, family, weight, maxW, maxSize, minSize) {
+      let size = maxSize;
+      ctx.font = `${weight} ${size}px ${family}`;
+      while (size > minSize && ctx.measureText(text).width > maxW) {
+        size -= 2;
+        ctx.font = `${weight} ${size}px ${family}`;
+      }
+      return size;
+    }
+
+    function pvHairline(ctx, x1, y1, x2, y2, alpha) {
+      ctx.save();
+      ctx.strokeStyle = PV_CG.cream;
+      ctx.globalAlpha = alpha == null ? 0.18 : alpha;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.restore();
+    }
+
+    function pvFmtClock(t) { return String(t || '').slice(0, 5); }
+
+    // o: { kind, heroWord, format, date, venue, start, end, note, confirmed, total, attendees[] }
+    async function pvDrawShareCard(o) {
+      await pvShareFontsReady();
+      const W = 1080, H = 1920, M = 72;
       const canvas = document.createElement('canvas');
       canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext('2d');
-      
-      // === BACKGROUND: Rich gradient ===
-      const bgGrad = ctx.createLinearGradient(0, 0, W * 0.3, H);
-      bgGrad.addColorStop(0, '#1A120A');
-      bgGrad.addColorStop(0.3, '#2D1F14');
-      bgGrad.addColorStop(0.6, '#3D2E1A');
-      bgGrad.addColorStop(1, '#4A2A18');
-      ctx.fillStyle = bgGrad;
+      ctx.textBaseline = 'alphabetic';
+      ctx.textAlign = 'left';
+
+      // Field + hairline padel court (the only texture allowed)
+      ctx.fillStyle = PV_CG.green;
       ctx.fillRect(0, 0, W, H);
-      
-      // === DECORATIVE: Large gradient orb (top-right) ===
-      const orbGrad = ctx.createRadialGradient(W * 0.85, H * 0.18, 0, W * 0.85, H * 0.18, 500);
-      orbGrad.addColorStop(0, 'rgba(224,120,80,0.25)');
-      orbGrad.addColorStop(0.5, 'rgba(224,120,80,0.08)');
-      orbGrad.addColorStop(1, 'transparent');
-      ctx.fillStyle = orbGrad;
-      ctx.fillRect(0, 0, W, H);
-      
-      // === DECORATIVE: Bottom-left orb (gold) ===
-      const orbGrad2 = ctx.createRadialGradient(W * 0.1, H * 0.75, 0, W * 0.1, H * 0.75, 400);
-      orbGrad2.addColorStop(0, 'rgba(212,168,83,0.12)');
-      orbGrad2.addColorStop(1, 'transparent');
-      ctx.fillStyle = orbGrad2;
-      ctx.fillRect(0, 0, W, H);
-      
-      // === DECORATIVE: Subtle diagonal lines pattern ===
       ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,255,0.015)';
-      ctx.lineWidth = 1;
-      for (let i = -H; i < W + H; i += 60) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i + H, H);
-        ctx.stroke();
-      }
+      ctx.strokeStyle = PV_CG.cream; ctx.globalAlpha = 0.07; ctx.lineWidth = 2;
+      const cx0 = 36, cx1 = W - 36, cy0 = 36, cy1 = H - 36, net = (cy0 + cy1) / 2, half = (cy1 - cy0) / 2;
+      ctx.strokeRect(cx0, cy0, cx1 - cx0, cy1 - cy0);
+      const sv = half * 0.695;
+      [net - sv, net + sv].forEach(y => { ctx.beginPath(); ctx.moveTo(cx0, y); ctx.lineTo(cx1, y); ctx.stroke(); });
+      ctx.beginPath(); ctx.moveTo(W / 2, net - sv); ctx.lineTo(W / 2, net + sv); ctx.stroke();
+      ctx.globalAlpha = 0.12; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(cx0, net); ctx.lineTo(cx1, net); ctx.stroke();
       ctx.restore();
-      
-      // === DECORATIVE: Large circle ring (behind content) ===
-      ctx.strokeStyle = 'rgba(224,120,80,0.06)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(W * 0.5, H * 0.42, 360, 0, Math.PI * 2);
-      ctx.stroke();
-      
-      ctx.strokeStyle = 'rgba(224,120,80,0.03)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(W * 0.5, H * 0.42, 420, 0, Math.PI * 2);
-      ctx.stroke();
-      
-      // === TOP: PV Logo and branding ===
-      let y = 100;
-      
-      // Logo circle
-      const logoCx = W / 2, logoCy = y + 40;
-      const logoGrad = ctx.createLinearGradient(logoCx - 36, logoCy - 36, logoCx + 36, logoCy + 36);
-      logoGrad.addColorStop(0, '#E07850');
-      logoGrad.addColorStop(1, '#C4603A');
-      ctx.fillStyle = logoGrad;
-      roundRect(ctx, logoCx - 36, logoCy - 36, 72, 72, 20);
-      ctx.fill();
-      
-      // Logo shadow
-      ctx.shadowColor = 'rgba(224,120,80,0.4)';
-      ctx.shadowBlur = 30;
-      ctx.fillStyle = logoGrad;
-      roundRect(ctx, logoCx - 36, logoCy - 36, 72, 72, 20);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      
-      // PV text in logo
-      ctx.fillStyle = 'white';
-      ctx.font = '900 30px "DM Sans", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('PV', logoCx, logoCy + 11);
-      
-      y += 110;
-      
-      // Brand name
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '700 16px "DM Sans", sans-serif';
-      ctx.letterSpacing = '6px';
-      ctx.textAlign = 'center';
-      ctx.fillText('P A D E L   V I L L A I N S', W / 2, y);
-      
-      y += 14;
-      ctx.fillStyle = 'rgba(224,120,80,0.5)';
-      ctx.font = '600 11px "DM Sans", sans-serif';
-      ctx.fillText('H A R A R E   C I R C U I T', W / 2, y);
-      
-      // === DIVIDER LINE ===
-      y += 50;
-      const divGrad = ctx.createLinearGradient(W * 0.2, 0, W * 0.8, 0);
-      divGrad.addColorStop(0, 'transparent');
-      divGrad.addColorStop(0.5, 'rgba(224,120,80,0.3)');
-      divGrad.addColorStop(1, 'transparent');
-      ctx.strokeStyle = divGrad;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(W * 0.2, y);
-      ctx.lineTo(W * 0.8, y);
-      ctx.stroke();
-      
-      // === MAIN HEADLINE ===
-      y += 80;
-      ctx.fillStyle = 'rgba(224,120,80,0.8)';
-      ctx.font = '700 18px "DM Sans", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Y O U  A R E  I N V I T E D  T O', W / 2, y);
-      
-      y += 80;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '900 96px "DM Sans", sans-serif';
-      ctx.fillText('MATCH', W / 2, y);
-      y += 100;
-      ctx.fillText('DAY', W / 2, y);
-      
-      // Glow behind MATCH DAY
-      ctx.save();
-      ctx.globalAlpha = 0.15;
-      ctx.shadowColor = '#E07850';
-      ctx.shadowBlur = 60;
-      ctx.fillStyle = '#E07850';
-      ctx.fillText('DAY', W / 2, y);
-      ctx.restore();
-      
-      // === EVENT TYPE PILL ===
-      y += 60;
-      const pillText = md.game_mode === 'kotc' ? '👑 KING OF THE COURT' : md.game_mode === 'randomiser' ? '🎲 RANDOMISER' : '🏆 ROUND ROBIN';
-      const pillW = 300, pillH = 44;
-      ctx.fillStyle = 'rgba(224,120,80,0.12)';
-      ctx.strokeStyle = 'rgba(224,120,80,0.25)';
-      ctx.lineWidth = 1;
-      roundRect(ctx, W/2 - pillW/2, y - pillH/2, pillW, pillH, 22);
-      ctx.fill();
-      roundRect(ctx, W/2 - pillW/2, y - pillH/2, pillW, pillH, 22);
-      ctx.stroke();
-      ctx.fillStyle = '#E07850';
-      ctx.font = '700 16px "DM Sans", sans-serif';
-      ctx.fillText(pillText, W / 2, y + 6);
-      
-      // === DATE BLOCK (the hero info) ===
-      y += 90;
-      const d = new Date(md.date + 'T12:00:00');
-      const dayName = d.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
-      const dayNum = d.getDate();
-      const monthName = d.toLocaleDateString('en-GB', { month: 'long' }).toUpperCase();
-      const year = d.getFullYear();
-      
-      // Date card background
-      const cardY = y - 30;
-      const cardH = 260;
-      ctx.fillStyle = 'rgba(255,255,255,0.03)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = 1;
-      roundRect(ctx, 100, cardY, W - 200, cardH, 28);
-      ctx.fill();
-      roundRect(ctx, 100, cardY, W - 200, cardH, 28);
-      ctx.stroke();
-      
-      // Day name
-      ctx.fillStyle = 'rgba(224,120,80,0.9)';
-      ctx.font = '700 22px "DM Sans", sans-serif';
-      ctx.fillText(dayName, W / 2, y + 10);
-      
-      // Day number
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '900 120px "DM Sans", sans-serif';
-      ctx.fillText(dayNum.toString(), W / 2, y + 130);
-      
-      // Month + year
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.font = '600 24px "DM Sans", sans-serif';
-      ctx.fillText(`${monthName}  ${year}`, W / 2, y + 170);
-      
-      // === VENUE + TIME INFO ===
-      y = cardY + cardH + 60;
-      
-      // Venue
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '700 28px "DM Sans", sans-serif';
-      ctx.fillText('📍  ' + (md.venue || 'TBC'), W / 2, y);
-      
-      y += 50;
-      
-      // Time
-      const startT = md.start_time || '18:00';
-      const endT = md.end_time || '20:00';
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.font = '600 24px "DM Sans", sans-serif';
-      ctx.fillText('🕐  ' + startT + '  —  ' + endT, W / 2, y);
-      
-      // === CONFIRMED PLAYERS ===
-      y += 70;
-      const confirmed = availablePlayers ? availablePlayers.length : 0;
-      const totalActive = activePlayers().length;
-      
-      if (confirmed > 0) {
-        ctx.fillStyle = 'rgba(224,120,80,0.12)';
-        roundRect(ctx, W/2 - 160, y - 24, 320, 52, 26);
-        ctx.fill();
-        ctx.fillStyle = '#22c55e';
-        ctx.font = '800 22px "DM Sans", sans-serif';
-        ctx.fillText('✅  ' + confirmed + ' / ' + totalActive + '  CONFIRMED', W / 2, y + 8);
+
+      // === Header lockup: badge + PADEL VILLAINS / HARARE CIRCUIT ===
+      let y = 96;
+      const logoEl = document.querySelector('.sidebar-logo img, img.logo-img');
+      const logo = await pvLoadImg(logoEl && logoEl.src);
+      const B = 96;
+      if (logo) {
+        ctx.save(); ctx.beginPath(); ctx.arc(M + B / 2, y + B / 2, B / 2, 0, Math.PI * 2); ctx.clip();
+        ctx.drawImage(logo, M, y, B, B); ctx.restore();
+      } else {
+        ctx.fillStyle = PV_CG.orange; ctx.beginPath(); ctx.arc(M + B / 2, y + B / 2, B / 2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = PV_CG.cream; ctx.font = `40px ${PV_ANTON}`; ctx.textAlign = 'center';
+        ctx.fillText('PV', M + B / 2, y + B / 2 + 15); ctx.textAlign = 'left';
       }
-      
-      // === AVAILABLE PLAYER AVATARS (up to 8) ===
-      y += 70;
+      ctx.fillStyle = PV_CG.cream; ctx.font = `46px ${PV_ANTON}`;
+      pvSpaced(ctx, 'PADEL VILLAINS', M + B + 28, y + 50, 3);
+      ctx.fillStyle = PV_CG.lime; ctx.font = `800 22px ${PV_MANROPE}`;
+      pvSpaced(ctx, 'HARARE CIRCUIT', M + B + 30, y + 86, 5);
+
+      y = 250;
+      pvHairline(ctx, 0, y, W, y);
+
+      // === Meta row ===
+      y += 74;
+      ctx.font = `600 32px ${PV_MANROPE}`;
+      ctx.fillStyle = PV_CG.cream2;
+      ctx.fillText("You're invited", M, y);
+      ctx.fillStyle = PV_CG.lime; ctx.font = `800 32px ${PV_MANROPE}`;
+      const fmt = String(o.format || '');
+      ctx.textAlign = 'right'; ctx.fillText(fmt, W - M, y); ctx.textAlign = 'left';
+
+      // === Hero stack: outline → cream → orange ===
+      const word = String(o.heroWord || 'Match day').toUpperCase();
+      const S = pvFitFont(ctx, word, PV_ANTON, '400', W - M * 2, 216, 110);
+      const step = Math.round(S * 0.86);
+      y += 36 + Math.round(S * 0.9);
+      ctx.font = `${S}px ${PV_ANTON}`;
+      ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = PV_CG.cream; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+      ctx.strokeText(word, M, y); ctx.restore();
+      y += step; ctx.fillStyle = PV_CG.cream; ctx.fillText(word, M, y);
+      y += step; ctx.fillStyle = PV_CG.orange; ctx.fillText(word, M, y);
+
+      // === Date band (cream, full bleed) ===
+      const d = new Date((o.date || '') + 'T12:00:00');
+      const valid = !isNaN(d);
+      const dayName = valid ? d.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase() : 'DATE TBC';
+      const dayNum = valid ? String(d.getDate()) : '—';
+      const month = valid ? d.toLocaleDateString('en-GB', { month: 'long' }).toUpperCase() : '';
+      const year = valid ? String(d.getFullYear()) : '';
+      const bandTop = y + 48, bandH = 300;
+      ctx.fillStyle = PV_CG.cream; ctx.fillRect(0, bandTop, W, bandH);
+      ctx.fillStyle = PV_CG.green;
+      ctx.font = `272px ${PV_ANTON}`;
+      const numBase = bandTop + bandH - 42;
+      ctx.fillText(dayNum, M - 6, numBase);
+      const numW = ctx.measureText(dayNum).width;
+      const colX = M + numW + 40;
+      const colW = W - M - colX;
+      ctx.fillStyle = PV_CG.green;
+      ctx.font = `800 30px ${PV_MANROPE}`;
+      pvSpaced(ctx, dayName, colX, bandTop + 80, 4);
+      ctx.fillStyle = PV_CG.green;
+      pvFitFont(ctx, month, PV_ANTON, '400', colW, 110, 60);
+      ctx.fillText(month, colX, bandTop + 184);
+      ctx.font = `64px ${PV_ANTON}`; ctx.fillStyle = PV_CG.green2;
+      ctx.fillText(year, colX, numBase);
+
+      // === Hairline detail rows ===
+      y = bandTop + bandH;
+      const rows = [['Venue', o.venue || 'TBC'], ['Time', `${pvFmtClock(o.start) || '18:00'} – ${pvFmtClock(o.end) || '20:00'}`]];
+      if (o.note) rows.push(['Note', o.note]);
+      const rowH = 100;
+      rows.forEach(([label, value]) => {
+        ctx.fillStyle = PV_CG.cream2; ctx.font = `600 28px ${PV_MANROPE}`;
+        ctx.fillText(label, M, y + 62);
+        ctx.fillStyle = PV_CG.cream;
+        let v = String(value).toUpperCase();
+        const maxW = W - M - 260;
+        ctx.font = `56px ${PV_ANTON}`;
+        while (v.length > 4 && ctx.measureText(v).width > maxW) v = v.slice(0, -2).trimEnd();
+        if (v !== String(value).toUpperCase()) v += '…';
+        ctx.fillText(v, 260, y + 68);
+        y += rowH;
+        pvHairline(ctx, 0, y, W, y);
+      });
+
+      // === Who's in ===
+      y += 34;
+      const confirmed = o.confirmed || 0;
       if (confirmed > 0) {
-        const showPlayers = activePlayers().filter(p => availablePlayers.includes(p.id)).slice(0, 8);
-        const avatarSize = 52;
-        const gap = 12;
-        const totalW = showPlayers.length * avatarSize + (showPlayers.length - 1) * gap;
-        let ax = W / 2 - totalW / 2;
-        
-        showPlayers.forEach((p, i) => {
-          // Avatar circle
-          const colors = ['#E07850','#D4A853','#293a4c','#7C3AED','#059669','#E11D48','#2563EB','#8B5CF6'];
-          ctx.fillStyle = colors[i % colors.length];
-          ctx.beginPath();
-          ctx.arc(ax + avatarSize/2, y + avatarSize/2, avatarSize/2, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Border
-          ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-          
-          // Initial
-          ctx.fillStyle = 'white';
-          ctx.font = '700 18px "DM Sans", sans-serif';
-          ctx.fillText(p.name.charAt(0), ax + avatarSize/2, y + avatarSize/2 + 7);
-          
-          ax += avatarSize + gap;
-        });
-        
-        if (confirmed > 8) {
-          ctx.fillStyle = 'rgba(255,255,255,0.3)';
-          ctx.font = '600 18px "DM Sans", sans-serif';
-          ctx.fillText('+' + (confirmed - 8), ax + 20, y + avatarSize/2 + 7);
+        ctx.fillStyle = PV_CG.lime; ctx.font = `92px ${PV_ANTON}`;
+        ctx.fillText(String(confirmed), M, y + 80);
+        const nW = ctx.measureText(String(confirmed)).width;
+        ctx.fillStyle = PV_CG.cream; ctx.font = `700 30px ${PV_MANROPE}`;
+        ctx.fillText(o.total ? `of ${o.total} villains in` : 'villains in', M + nW + 20, y + 76);
+        // avatar pills, right-aligned
+        const people = (o.attendees || []).slice(0, 6);
+        const A = 72, overlap = 20;
+        let ax = W - M - A;
+        const extra = confirmed - people.length;
+        if (extra > 0) {
+          ctx.fillStyle = PV_CG.green2; ctx.beginPath(); ctx.arc(ax + A / 2, y + A / 2 + 12, A / 2, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = PV_CG.green; ctx.lineWidth = 4; ctx.stroke();
+          ctx.fillStyle = PV_CG.lime; ctx.font = `800 24px ${PV_MANROPE}`; ctx.textAlign = 'center';
+          ctx.fillText('+' + extra, ax + A / 2, y + A / 2 + 21); ctx.textAlign = 'left';
+          ax -= A - overlap;
         }
+        const imgs = await Promise.all(people.map(p => pvLoadImg(p.photo)));
+        for (let i = people.length - 1; i >= 0; i--) {
+          const p = people[i], img = imgs[i];
+          const cxp = ax + A / 2, cyp = y + A / 2 + 12;
+          ctx.save(); ctx.beginPath(); ctx.arc(cxp, cyp, A / 2, 0, Math.PI * 2); ctx.closePath();
+          if (img) {
+            ctx.clip();
+            const s = Math.max(A / img.width, A / img.height);
+            ctx.drawImage(img, cxp - img.width * s / 2, cyp - img.height * s / 2, img.width * s, img.height * s);
+          } else {
+            ctx.fillStyle = i % 2 ? PV_CG.cream : PV_CG.lime; ctx.fill();
+            ctx.fillStyle = PV_CG.green; ctx.font = `34px ${PV_ANTON}`; ctx.textAlign = 'center';
+            ctx.fillText((p.name || '?').charAt(0).toUpperCase(), cxp, cyp + 13);
+          }
+          ctx.restore();
+          ctx.strokeStyle = PV_CG.green; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.arc(cxp, cyp, A / 2, 0, Math.PI * 2); ctx.stroke();
+          ax -= A - overlap;
+        }
+      } else {
+        ctx.fillStyle = PV_CG.cream; ctx.font = `700 34px ${PV_MANROPE}`;
+        ctx.fillText('Be the first villain to lock in.', M, y + 62);
       }
-      
-      // === BOTTOM: CTA ===
-      y = H - 280;
-      
-      // Divider
-      const div2 = ctx.createLinearGradient(W * 0.15, 0, W * 0.85, 0);
-      div2.addColorStop(0, 'transparent');
-      div2.addColorStop(0.5, 'rgba(224,120,80,0.2)');
-      div2.addColorStop(1, 'transparent');
-      ctx.strokeStyle = div2;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(W * 0.15, y);
-      ctx.lineTo(W * 0.85, y);
-      ctx.stroke();
-      
-      y += 60;
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
-      ctx.font = '700 18px "DM Sans", sans-serif';
-      ctx.fillText('S E E  Y O U  O N  C O U R T', W / 2, y);
-      
-      y += 50;
-      // CTA Button
-      const btnW = 380, btnH = 64;
-      const btnGrad = ctx.createLinearGradient(W/2 - btnW/2, y, W/2 + btnW/2, y);
-      btnGrad.addColorStop(0, '#E07850');
-      btnGrad.addColorStop(1, '#C4603A');
-      ctx.fillStyle = btnGrad;
-      roundRect(ctx, W/2 - btnW/2, y - btnH/2, btnW, btnH, 18);
-      ctx.fill();
-      
-      // Button shadow
-      ctx.shadowColor = 'rgba(224,120,80,0.4)';
-      ctx.shadowBlur = 24;
-      ctx.fillStyle = btnGrad;
-      roundRect(ctx, W/2 - btnW/2, y - btnH/2, btnW, btnH, 18);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      
-      ctx.fillStyle = 'white';
-      ctx.font = '800 20px "DM Sans", sans-serif';
-      ctx.fillText('🎾  MARK YOUR ATTENDANCE', W / 2, y + 7);
-      
-      // === FOOTER ===
-      y = H - 80;
-      ctx.fillStyle = 'rgba(255,255,255,0.15)';
-      ctx.font = '500 14px "DM Sans", sans-serif';
-      ctx.fillText('padel-villains.vercel.app', W / 2, y);
-      
-      y += 24;
-      ctx.fillStyle = 'rgba(224,120,80,0.3)';
-      ctx.font = '600 11px "DM Sans", sans-serif';
-      ctx.fillText('🎾  PADEL VILLAINS  •  HARARE CIRCUIT', W / 2, y);
-      
+
+      // === CTA: lime pill (lime = go) ===
+      const tickH = 112;
+      const pillH = 104, pillY = H - tickH - 88 - pillH;
+      ctx.fillStyle = PV_CG.lime;
+      roundRect(ctx, M, pillY, W - M * 2, pillH, pillH / 2); ctx.fill();
+      ctx.fillStyle = PV_CG.green; ctx.font = `800 34px ${PV_MANROPE}`;
+      const cta = o.kind === 'matchday' ? 'Mark your attendance' : o.kind === 'vibes' ? 'Pull up' : 'Get on court';
+      ctx.fillText(cta, M + 52, pillY + pillH / 2 + 12);
+      // arrow
+      const axr = W - M - 64, ayr = pillY + pillH / 2;
+      ctx.strokeStyle = PV_CG.green; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(axr - 34, ayr); ctx.lineTo(axr, ayr); ctx.moveTo(axr - 14, ayr - 18); ctx.lineTo(axr, ayr); ctx.lineTo(axr - 14, ayr + 18); ctx.stroke();
+      ctx.lineCap = 'butt';
+      ctx.fillStyle = PV_CG.cream2; ctx.font = `600 26px ${PV_MANROPE}`;
+      ctx.fillText('in the app · padelvillains.app', M + 52, pillY + pillH + 52);
+
+      // === Ticker strip (cream band, bottom) ===
+      const tY = H - tickH;
+      ctx.fillStyle = PV_CG.cream; ctx.fillRect(0, tY, W, tickH);
+      ctx.fillStyle = PV_CG.green; ctx.font = `50px ${PV_ANTON}`;
+      const shortDate = valid ? d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase().replace(',', '') : '';
+      const seg = [word, shortDate, String(o.venue || '').toUpperCase(), pvFmtClock(o.start)].filter(Boolean).join('  ·  ') + '  ·  ';
+      let tx = -40;
+      while (tx < W) { ctx.fillText(seg, tx, tY + tickH / 2 + 20); tx += ctx.measureText(seg).width; }
+
       return canvas;
     }
-    
+
+    async function generateEventShareCanvas(md) {
+      if (!md) md = activeMatchday;
+      if (!md) return null;
+      const roster = (typeof activePlayers === 'function' ? activePlayers() : []) || [];
+      const ids = (availablePlayers || []).map(String);
+      const attendees = roster.filter(p => ids.includes(String(p.id)));
+      return pvDrawShareCard({
+        kind: 'matchday',
+        heroWord: 'Match day',
+        format: md.game_mode === 'kotc' ? 'King of the Court' : md.game_mode === 'randomiser' ? 'Randomiser' : 'Round Robin',
+        date: md.date, venue: md.venue, start: md.start_time, end: md.end_time,
+        confirmed: ids.length, total: roster.length,
+        attendees
+      });
+    }
+
+    async function generateCalendarEventCanvas(event) {
+      if (!event) return null;
+      const kind = event.type === 'training' ? 'training' : event.type === 'vibes' ? 'vibes' : 'matchday';
+      const hero = pvHappeningLabel({ type: kind });
+      const title = String(event.title || '').trim();
+      const note = event.description ? String(event.description).trim() : '';
+      return pvDrawShareCard({
+        kind,
+        heroWord: hero,
+        format: title && title.toLowerCase() !== hero.toLowerCase() ? title : (kind === 'training' ? 'Level up' : kind === 'vibes' ? 'Good vibes only' : 'Round Robin'),
+        date: event.date, venue: event.venue,
+        start: event.start_time || event.startTime, end: event.end_time || event.endTime,
+        note
+      });
+    }
+
     async function shareEventImage() {
       const btn = document.getElementById('shareEventBtn');
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; }
       
       try {
         const md = viewingMatchday || activeMatchday;
-        const canvas = generateEventShareCanvas(md);
+        const canvas = await generateEventShareCanvas(md);
         if (!canvas) { toast('No match day to share', 'error'); return; }
         
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -9998,280 +9958,6 @@
       }
     }
     
-    // ===== CALENDAR EVENT SHARE IMAGE (Training / Vibes / Match Day) =====
-    function generateCalendarEventCanvas(event) {
-      if (!event) return null;
-      
-      const W = 1080, H = 1920;
-      const canvas = document.createElement('canvas');
-      canvas.width = W; canvas.height = H;
-      const ctx = canvas.getContext('2d');
-      
-      // Theme per event type
-      const themes = {
-        training: {
-          bg1: '#0A1A12', bg2: '#122A1C', bg3: '#1A3D28', bg4: '#1A4A2E',
-          accent: '#22c55e', accentLight: '#4ade80', accentGlow: 'rgba(34,197,94,0.25)',
-          orbColor: 'rgba(34,197,94,0.08)', orb2Color: 'rgba(74,222,128,0.05)',
-          emoji: '💪', label: 'TRAINING SESSION',
-          tagline: 'TIME TO LEVEL UP', cta: '🔥  GET ON COURT',
-        },
-        vibes: {
-          bg1: '#120A1A', bg2: '#1E1230', bg3: '#2D1A48', bg4: '#3A1E5A',
-          accent: '#A855F7', accentLight: '#C084FC', accentGlow: 'rgba(168,85,247,0.25)',
-          orbColor: 'rgba(168,85,247,0.08)', orb2Color: 'rgba(192,132,252,0.05)',
-          emoji: '🎉', label: 'VIBES SESSION',
-          tagline: 'GOOD VIBES ONLY', cta: '🎶  PULL UP',
-        },
-        matchday: {
-          bg1: '#1A120A', bg2: '#2D1F14', bg3: '#3D2E1A', bg4: '#4A2A18',
-          accent: '#E07850', accentLight: '#F0A080', accentGlow: 'rgba(224,120,80,0.25)',
-          orbColor: 'rgba(224,120,80,0.08)', orb2Color: 'rgba(212,168,83,0.05)',
-          emoji: '🎾', label: 'MATCH DAY',
-          tagline: 'GAME TIME', cta: '⚔️  SEE YOU THERE',
-        }
-      };
-      const t = themes[event.type] || themes.matchday;
-      
-      // === BACKGROUND ===
-      const bgGrad = ctx.createLinearGradient(0, 0, W * 0.3, H);
-      bgGrad.addColorStop(0, t.bg1);
-      bgGrad.addColorStop(0.3, t.bg2);
-      bgGrad.addColorStop(0.6, t.bg3);
-      bgGrad.addColorStop(1, t.bg4);
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, W, H);
-      
-      // === DECORATIVE: Large orb (top-right) ===
-      const orbG = ctx.createRadialGradient(W * 0.82, H * 0.15, 0, W * 0.82, H * 0.15, 500);
-      orbG.addColorStop(0, t.accentGlow);
-      orbG.addColorStop(0.5, t.orbColor);
-      orbG.addColorStop(1, 'transparent');
-      ctx.fillStyle = orbG;
-      ctx.fillRect(0, 0, W, H);
-      
-      // === DECORATIVE: Bottom-left orb ===
-      const orbG2 = ctx.createRadialGradient(W * 0.15, H * 0.78, 0, W * 0.15, H * 0.78, 400);
-      orbG2.addColorStop(0, t.orb2Color);
-      orbG2.addColorStop(1, 'transparent');
-      ctx.fillStyle = orbG2;
-      ctx.fillRect(0, 0, W, H);
-      
-      // === DECORATIVE: Diagonal lines ===
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,255,0.012)';
-      ctx.lineWidth = 1;
-      for (let i = -H; i < W + H; i += 55) {
-        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke();
-      }
-      ctx.restore();
-      
-      // === DECORATIVE: Circle rings ===
-      ctx.strokeStyle = t.accent + '10';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(W * 0.5, H * 0.38, 340, 0, Math.PI * 2); ctx.stroke();
-      ctx.strokeStyle = t.accent + '08';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(W * 0.5, H * 0.38, 400, 0, Math.PI * 2); ctx.stroke();
-      
-      // === DECORATIVE: Corner accent arc ===
-      ctx.strokeStyle = t.accent + '12';
-      ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(0, 0, 200, 0, Math.PI * 0.5); ctx.stroke();
-      ctx.beginPath(); ctx.arc(W, H, 250, Math.PI, Math.PI * 1.5); ctx.stroke();
-      
-      let y = 100;
-      
-      // === PV LOGO ===
-      const logoCx = W / 2, logoCy = y + 40;
-      const logoG = ctx.createLinearGradient(logoCx - 36, logoCy - 36, logoCx + 36, logoCy + 36);
-      logoG.addColorStop(0, t.accent);
-      logoG.addColorStop(1, t.accentLight);
-      ctx.shadowColor = t.accentGlow;
-      ctx.shadowBlur = 30;
-      ctx.fillStyle = logoG;
-      roundRect(ctx, logoCx - 36, logoCy - 36, 72, 72, 20);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      
-      ctx.fillStyle = 'white';
-      ctx.font = '900 30px "DM Sans", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('PV', logoCx, logoCy + 11);
-      
-      y += 110;
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.font = '700 16px "DM Sans", sans-serif';
-      ctx.fillText('P A D E L   V I L L A I N S', W / 2, y);
-      y += 14;
-      ctx.fillStyle = t.accent + 'AA';
-      ctx.font = '600 11px "DM Sans", sans-serif';
-      ctx.fillText('H A R A R E   C I R C U I T', W / 2, y);
-      
-      // === DIVIDER ===
-      y += 50;
-      const dG = ctx.createLinearGradient(W * 0.2, 0, W * 0.8, 0);
-      dG.addColorStop(0, 'transparent');
-      dG.addColorStop(0.5, t.accent + '55');
-      dG.addColorStop(1, 'transparent');
-      ctx.strokeStyle = dG;
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(W * 0.2, y); ctx.lineTo(W * 0.8, y); ctx.stroke();
-      
-      // === TAGLINE ===
-      y += 70;
-      ctx.fillStyle = t.accent;
-      ctx.font = '800 20px "DM Sans", sans-serif';
-      ctx.fillText(t.tagline, W / 2, y);
-      
-      // === LARGE EMOJI ===
-      y += 80;
-      ctx.font = '120px sans-serif';
-      ctx.fillText(t.emoji, W / 2, y);
-      
-      // === EVENT TITLE ===
-      y += 80;
-      ctx.fillStyle = t.accent + 'CC';
-      ctx.font = '700 18px "DM Sans", sans-serif';
-      ctx.fillText(t.label, W / 2, y);
-      
-      y += 70;
-      const title = (event.title || t.label).toUpperCase();
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '900 64px "DM Sans", sans-serif';
-      // Word wrap for long titles
-      const words = title.split(' ');
-      let lines = [];
-      let currentLine = '';
-      words.forEach(w => {
-        const test = currentLine ? currentLine + ' ' + w : w;
-        if (ctx.measureText(test).width > W - 160) {
-          lines.push(currentLine);
-          currentLine = w;
-        } else {
-          currentLine = test;
-        }
-      });
-      if (currentLine) lines.push(currentLine);
-      
-      lines.forEach((line, i) => {
-        ctx.fillText(line, W / 2, y + i * 76);
-      });
-      
-      // Glow
-      ctx.save();
-      ctx.globalAlpha = 0.12;
-      ctx.shadowColor = t.accent;
-      ctx.shadowBlur = 60;
-      ctx.fillStyle = t.accent;
-      lines.forEach((line, i) => { ctx.fillText(line, W / 2, y + i * 76); });
-      ctx.restore();
-      
-      y += (lines.length - 1) * 76 + 40;
-      
-      // === DESCRIPTION (if exists) ===
-      if (event.description) {
-        y += 30;
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-        const descW = 600, descH = 56;
-        roundRect(ctx, W/2 - descW/2, y - 20, descW, descH, 16);
-        ctx.fill();
-        roundRect(ctx, W/2 - descW/2, y - 20, descW, descH, 16);
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.font = '500 18px "DM Sans", sans-serif';
-        const desc = event.description.length > 50 ? event.description.substring(0, 47) + '...' : event.description;
-        ctx.fillText(`"${desc}"`, W / 2, y + 12);
-        y += 50;
-      }
-      
-      // === DATE CARD ===
-      y += 50;
-      const d = new Date(event.date + 'T12:00:00');
-      const dayName = d.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
-      const dayNum = d.getDate();
-      const monthName = d.toLocaleDateString('en-GB', { month: 'long' }).toUpperCase();
-      const year = d.getFullYear();
-      
-      const cardY = y - 30;
-      const cardH = 260;
-      ctx.fillStyle = 'rgba(255,255,255,0.025)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-      ctx.lineWidth = 1;
-      roundRect(ctx, 120, cardY, W - 240, cardH, 28);
-      ctx.fill();
-      roundRect(ctx, 120, cardY, W - 240, cardH, 28);
-      ctx.stroke();
-      
-      ctx.fillStyle = t.accent;
-      ctx.font = '700 22px "DM Sans", sans-serif';
-      ctx.fillText(dayName, W / 2, y + 10);
-      
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '900 120px "DM Sans", sans-serif';
-      ctx.fillText(dayNum.toString(), W / 2, y + 130);
-      
-      ctx.fillStyle = 'rgba(255,255,255,0.45)';
-      ctx.font = '600 24px "DM Sans", sans-serif';
-      ctx.fillText(`${monthName}  ${year}`, W / 2, y + 170);
-      
-      // === VENUE + TIME ===
-      y = cardY + cardH + 55;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '700 28px "DM Sans", sans-serif';
-      ctx.fillText('📍  ' + (event.venue || 'TBC'), W / 2, y);
-      
-      y += 48;
-      const sT = event.start_time || event.startTime || '18:00';
-      const eT = event.end_time || event.endTime || '20:00';
-      ctx.fillStyle = 'rgba(255,255,255,0.65)';
-      ctx.font = '600 24px "DM Sans", sans-serif';
-      ctx.fillText('🕐  ' + sT + '  —  ' + eT, W / 2, y);
-      
-      // === BOTTOM CTA ===
-      y = H - 280;
-      const d2 = ctx.createLinearGradient(W * 0.15, 0, W * 0.85, 0);
-      d2.addColorStop(0, 'transparent');
-      d2.addColorStop(0.5, t.accent + '33');
-      d2.addColorStop(1, 'transparent');
-      ctx.strokeStyle = d2;
-      ctx.beginPath(); ctx.moveTo(W * 0.15, y); ctx.lineTo(W * 0.85, y); ctx.stroke();
-      
-      y += 55;
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.font = '700 18px "DM Sans", sans-serif';
-      ctx.fillText('S E E  Y O U  O N  C O U R T', W / 2, y);
-      
-      y += 50;
-      const bW = 380, bH = 64;
-      const bG = ctx.createLinearGradient(W/2 - bW/2, y, W/2 + bW/2, y);
-      bG.addColorStop(0, t.accent);
-      bG.addColorStop(1, t.accentLight);
-      ctx.shadowColor = t.accentGlow;
-      ctx.shadowBlur = 24;
-      ctx.fillStyle = bG;
-      roundRect(ctx, W/2 - bW/2, y - bH/2, bW, bH, 18);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      
-      ctx.fillStyle = 'white';
-      ctx.font = '800 20px "DM Sans", sans-serif';
-      ctx.fillText(t.cta, W / 2, y + 7);
-      
-      // === FOOTER ===
-      y = H - 80;
-      ctx.fillStyle = 'rgba(255,255,255,0.12)';
-      ctx.font = '500 14px "DM Sans", sans-serif';
-      ctx.fillText('padel-villains.vercel.app', W / 2, y);
-      y += 24;
-      ctx.fillStyle = t.accent + '50';
-      ctx.font = '600 11px "DM Sans", sans-serif';
-      ctx.fillText('🎾  PADEL VILLAINS  •  HARARE CIRCUIT', W / 2, y);
-      
-      return canvas;
-    }
-    
     async function shareCalendarEventImage(event) {
       if (!event) { toast('No event to share', 'error'); return; }
       
@@ -10280,7 +9966,7 @@
         const md = matchdays.find(m => m.id === event.id || m.date === event.date) || activeMatchday;
         if (md) {
           // Temporarily close modal, generate and share
-          const canvas = generateEventShareCanvas(md);
+          const canvas = await generateEventShareCanvas(md);
           if (canvas) {
             try {
               const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -10302,7 +9988,7 @@
       
       // For Training and Vibes (and matchday fallback)
       try {
-        const canvas = generateCalendarEventCanvas(event);
+        const canvas = await generateCalendarEventCanvas(event);
         if (!canvas) { toast('Could not generate image', 'error'); return; }
         
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
