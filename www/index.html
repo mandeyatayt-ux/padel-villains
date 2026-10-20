@@ -6568,19 +6568,9 @@
       return /^(data:image\/|https:\/\/|blob:)/i.test(s) ? esc(s) : '';
     }
     
-    // SHA-256 password hashing using Web Crypto API
-    async function hashPassword(password) {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(password + '_pv_salt_2026');
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-    
-    // Check if a string looks like a SHA-256 hash (64 hex chars)
-    function isHashed(str) {
-      return typeof str === 'string' && /^[a-f0-9]{64}$/.test(str);
-    }
+    // Legacy password hashing moved server-side (pv_legacy_login + friends).
+    // The hash never leaves Postgres — the client just sends the plaintext
+    // password to the RPC over TLS.
     let supabaseClient = null;
     let testMode = false;
     let _supabaseOriginalFrom = null, _supabaseOriginalRpc = null;
