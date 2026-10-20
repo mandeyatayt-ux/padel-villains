@@ -14515,7 +14515,7 @@
       // Update court dropdown
       const venue = getCurrentVenue();
       if (venue) {
-        document.getElementById('matchCourt').innerHTML = venue.courts.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('matchCourt').innerHTML = venue.courts.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       }
     }
     
@@ -15822,7 +15822,7 @@
       const venue = getCurrentVenue();
       const courts = venue?.courts || ['Court 1'];
       const courtSelect = document.getElementById('liveScoreCourt');
-      courtSelect.innerHTML = courts.map(c => `<option value="${c}">${c}</option>`).join('');
+      courtSelect.innerHTML = courts.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       
       const activeTeams = teams.filter(t => t.active !== false);
       const teamOptions = '<option value="">Select team</option>' + activeTeams.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
@@ -18248,67 +18248,51 @@
       e.preventDefault();
       const usernameInput = document.getElementById('loginUsername').value.trim();
       const password = document.getElementById('loginPassword').value;
-      
+
       if (!usernameInput) {
         showLoginError('Please enter your name');
         return;
       }
-      
-      // Find player by name (case-insensitive)
+
+      // Find the player locally just to show a nicer welcome toast.
+      // Authentication itself happens server-side via the RPC below —
+      // the password hash never leaves the server.
       const matchedPlayer = players.find(p => p.name.toLowerCase() === usernameInput.toLowerCase());
-      
-      if (!matchedPlayer) {
-        showLoginError('Player not found. Check your spelling.');
+
+      if (!supabaseClient) {
+        showLoginError('Not connected. Please try again.');
         return;
       }
-      
-      // Reload accounts from DB to get latest
+
+      // Server-side verification: pv_legacy_login hashes & compares in Postgres
+      // and returns the account row minus the hash. A wrong name or password
+      // yields an empty result — indistinguishable to the caller.
+      const resolvedName = matchedPlayer?.name || usernameInput;
+      const loginName = (matchedPlayer?.name || usernameInput).toLowerCase().replace(/\s+/g, '');
+      const { data, error } = await supabaseClient.rpc('pv_legacy_login', {
+        p_username: loginName,
+        p_password: password,
+      });
+
+      if (error) {
+        console.error('legacy login', error);
+        showLoginError('Sign-in failed. Please try again.');
+        return;
+      }
+
+      const account = Array.isArray(data) ? data[0] : data;
+      if (!account) {
+        showLoginError('Invalid name or password');
+        return;
+      }
+
+      // Refresh the local accounts cache so the rest of the app sees the row.
       await loadUserAccounts();
-      
-      // Check if account exists for this player
-      const existingAccount = userAccounts.find(acc => Number(acc.player_id) === Number(matchedPlayer.id));
-      
-      if (existingAccount) {
-        // Get stored password — no default fallback
-        const storedPassword = existingAccount.settings?.password;
-        if (!storedPassword) {
-          showLoginError('No password set for this account. Contact an admin to reset it.');
-          return;
-        }
-        const inputHash = await hashPassword(password);
-        
-        // Compare: check against hash first, then plaintext for migration
-        let passwordMatch = false;
-        if (isHashed(storedPassword)) {
-          // Already hashed — compare hashes
-          passwordMatch = (inputHash === storedPassword);
-        } else {
-          // Still plaintext — compare directly, then auto-migrate
-          passwordMatch = (password === storedPassword);
-          if (passwordMatch) {
-            // Auto-migrate to hashed password
-            if (!existingAccount.settings) existingAccount.settings = {};
-            existingAccount.settings.password = inputHash;
-            await saveUserAccounts();
-            await saveUserAccountToDb(existingAccount);
-            console.log('Password auto-migrated to hash for', existingAccount.username);
-          }
-        }
-        
-        if (!passwordMatch) {
-          showLoginError('Invalid password');
-          return;
-        }
-        // Login to existing account
-        currentUser = existingAccount;
-        localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
-        showMainApp();
-        updateUserUI();
-        toast(`Welcome back, ${matchedPlayer.name}!`, 'success');
-      } else {
-        showLoginError('No account found. Contact an admin.');
-        return;
-      }
+      currentUser = userAccounts.find(a => Number(a.id) === Number(account.id)) || account;
+      localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+      showMainApp();
+      updateUserUI();
+      toast(`Welcome back, ${resolvedName}!`, 'success');
     }
     
     function showLoginError(msg) {
@@ -18560,18 +18544,24 @@
       if (!acc) return;
       const player = players.find(p => Number(p.id) === Number(acc.player_id));
       const name = player?.name || 'this user';
-      
-      const newPassword = prompt(`Set new password for ${name}:\n(min 4 characters)`);
+
+      const newPassword = prompt(`Set new password for ${name}:\n(min 8 characters)`);
       if (newPassword === null) return;
-      if (!newPassword.trim() || newPassword.trim().length < 6) {
-        toast('Password must be at least 6 characters', 'error');
+      if (!newPassword.trim() || newPassword.trim().length < 8) {
+        toast('Password must be at least 8 characters', 'error');
         return;
       }
-      
-      if (!acc.settings) acc.settings = {};
-      acc.settings.password = await hashPassword(newPassword.trim());
-      await saveUserAccounts();
-      await saveUserAccountToDb(acc);
+      if (!supabaseClient) { toast('Not connected', 'error'); return; }
+
+      const { error } = await supabaseClient.rpc('pv_admin_set_password', {
+        p_user_id: Number(acc.id),
+        p_new_password: newPassword.trim(),
+      });
+      if (error) {
+        const msg = /admin required/i.test(error.message) ? 'Only an admin signed in with email can reset passwords.' : (error.message || 'Could not update password');
+        toast(msg, 'error');
+        return;
+      }
       toast(`Password updated for ${name}`, 'success');
     }
     
@@ -18594,40 +18584,53 @@
       const playerId = parseInt(document.getElementById('createAccountPlayer').value);
       const isAdmin = document.getElementById('createAccountAdmin').checked;
       const passwordRaw = document.getElementById('createAccountPassword').value.trim() || genTempPassword();
-      
+
       if (!playerId) {
         toast('Please select a player', 'error');
         return;
       }
-      
-      if (passwordRaw.length < 6) {
-        toast('Password must be at least 6 characters', 'error');
+
+      if (passwordRaw.length < 8) {
+        toast('Password must be at least 8 characters', 'error');
         return;
       }
-      
+
       // Check if account already exists
       if (userAccounts.some(acc => Number(acc.player_id) === playerId)) {
         toast('Account already exists for this player', 'error');
         return;
       }
-      
-      const hashedPw = await hashPassword(passwordRaw);
+
       const player = players.find(p => Number(p.id) === playerId);
       const safeId = Math.floor(Date.now() / 1000) % 2000000000 + Math.floor(Math.random() * 1000);
+      // Password is NEVER sent in settings — the DB trigger would strip it
+      // anyway and we don't want it crossing the wire in cleartext/hash form.
       const newAccount = {
         id: safeId,
         player_id: playerId,
         username: player.name.toLowerCase().replace(/\s+/g, ''),
         is_admin: isAdmin,
         theme: 'default',
-        settings: { password: hashedPw },
+        settings: {},
         created_at: new Date().toISOString()
       };
-      
+
       userAccounts.push(newAccount);
       await saveUserAccounts();
       await saveUserAccountToDb(newAccount);
-      
+
+      // Set the password server-side (requires admin via Supabase Auth).
+      if (supabaseClient) {
+        const { error } = await supabaseClient.rpc('pv_admin_set_password', {
+          p_user_id: safeId,
+          p_new_password: passwordRaw,
+        });
+        if (error) {
+          const msg = /admin required/i.test(error.message) ? 'Account created but could not set the password — only an admin signed in with email can set passwords.' : (error.message || 'Could not set the password');
+          toast(msg, 'error');
+        }
+      }
+
       closeModal('createAccount');
       renderUserAccounts();
       toast(`Account created for ${player.name}`, 'success');
@@ -18666,11 +18669,11 @@
       }
       
       // Validate new password if provided
-      if (newPassword && newPassword.length < 6) {
-        toast('Password must be at least 6 characters', 'error');
+      if (newPassword && newPassword.length < 8) {
+        toast('Password must be at least 8 characters', 'error');
         return;
       }
-      
+
       // Prevent removing your own admin rights if you're the last admin
       if (!isAdmin && acc.is_admin) {
         const adminCount = userAccounts.filter(a => a.is_admin).length;
@@ -18679,17 +18682,24 @@
           return;
         }
       }
-      
+
       acc.is_admin = isAdmin;
-      
-      // Update password if provided
-      if (newPassword) {
-        if (!acc.settings) acc.settings = {};
-        acc.settings.password = await hashPassword(newPassword);
-      }
-      
+
       await saveUserAccounts();
       await saveUserAccountToDb(acc);
+
+      // Password updates go through the admin RPC — the hash never crosses
+      // the wire and the DB trigger blocks direct writes to password_hash.
+      if (newPassword && supabaseClient) {
+        const { error: pwErr } = await supabaseClient.rpc('pv_admin_set_password', {
+          p_user_id: Number(accountId),
+          p_new_password: newPassword,
+        });
+        if (pwErr) {
+          const msg = /admin required/i.test(pwErr.message) ? 'Only an admin signed in with email can set passwords.' : (pwErr.message || 'Could not update password');
+          toast(msg, 'error');
+        }
+      }
       
       // If editing current user, update currentUser
       if (currentUser && currentUser.id === accountId) {
@@ -18801,63 +18811,50 @@
     // Self-service password change from My Profile
     async function changeMyPassword() {
       if (!currentUser) return;
-      
+
       const currentPw = document.getElementById('myCurrentPassword').value;
       const newPw = document.getElementById('myNewPassword').value.trim();
       const confirmPw = document.getElementById('myConfirmPassword').value.trim();
-      
+
       if (!currentPw || !newPw || !confirmPw) {
         toast('Please fill in all password fields', 'error');
         return;
       }
-      
-      if (newPw.length < 6) {
-        toast('New password must be at least 6 characters', 'error');
+
+      if (newPw.length < 8) {
+        toast('New password must be at least 8 characters', 'error');
         return;
       }
-      
+
       if (newPw !== confirmPw) {
         toast('New passwords do not match', 'error');
         return;
       }
-      
-      // Verify current password
-      const storedPassword = currentUser.settings?.password;
-      if (!storedPassword) { toast('No password set for this account. Contact an admin.', 'error'); return; }
-      const currentHash = await hashPassword(currentPw);
-      let verified = false;
-      
-      if (isHashed(storedPassword)) {
-        verified = (currentHash === storedPassword);
-      } else {
-        verified = (currentPw === storedPassword);
-      }
-      
-      if (!verified) {
-        toast('Current password is incorrect', 'error');
+
+      if (!supabaseClient || !currentUser.username) {
+        toast('Not connected', 'error');
         return;
       }
-      
-      // Set new hashed password
-      if (!currentUser.settings) currentUser.settings = {};
-      currentUser.settings.password = await hashPassword(newPw);
-      
-      // Update in accounts array
-      const acc = userAccounts.find(a => a.id === currentUser.id);
-      if (acc) {
-        if (!acc.settings) acc.settings = {};
-        acc.settings.password = currentUser.settings.password;
+
+      // Verification and update happen server-side. The hash never leaves
+      // the browser twice: we send the plaintext over HTTPS to the RPC,
+      // Postgres hashes & compares, then stores the new hash. The RPC
+      // raises 'Current password incorrect' on mismatch.
+      const { error } = await supabaseClient.rpc('pv_legacy_change_password', {
+        p_username: currentUser.username,
+        p_old_password: currentPw,
+        p_new_password: newPw,
+      });
+      if (error) {
+        toast(error.message || 'Could not update password', 'error');
+        return;
       }
-      
-      localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
-      await saveUserAccounts();
-      await saveUserAccountToDb(acc || currentUser);
-      
+
       // Clear fields
       document.getElementById('myCurrentPassword').value = '';
       document.getElementById('myNewPassword').value = '';
       document.getElementById('myConfirmPassword').value = '';
-      
+
       toast('Password changed successfully!', 'success');
     }
     
