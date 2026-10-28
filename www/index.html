@@ -5090,11 +5090,11 @@
           </div>
         </div>
 
-        <div class="card" style="margin-bottom:20px;padding:20px;text-align:center">
-          <div style="font-size:12px;letter-spacing:2px;color:var(--text-muted);font-weight:700;margin-bottom:12px">RECORD RESULT</div>
-          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="kotcRecordWin('kings')" style="padding:12px 24px;border-radius:14px;font-family:'Sublime',sans-serif;letter-spacing:2px">👑 Kings Win</button>
-            <button class="btn" onclick="kotcRecordWin('challenger')" style="padding:12px 24px;border-radius:14px;background:var(--gold);color:var(--brown-dark);font-family:'Sublime',sans-serif;letter-spacing:2px;border:none">⚔️ Challenger Wins</button>
+        <div class="card" style="margin-bottom:20px;padding:20px">
+          <div style="font-size:12px;letter-spacing:2px;color:var(--text-muted);font-weight:700;margin-bottom:12px;text-align:center">RECORD RESULT</div>
+          <div class="md-win-row">
+            <button class="md-win-btn" onclick="kotcRecordWin('kings')" aria-label="Kings won"><span class="md-win-name">👑 Kings</span><span class="md-win-lbl">WON</span></button>
+            <button class="md-win-btn" onclick="kotcRecordWin('challenger')" aria-label="Challenger won"><span class="md-win-name">⚔️ Challenger</span><span class="md-win-lbl">WON</span></button>
           </div>
         </div>
 
