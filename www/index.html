@@ -4977,8 +4977,8 @@
             <div class="md-mode-btn-desc">Defend your throne</div>
           </button>
           <button class="md-mode-btn" id="mdModeRandom" onclick="setMatchDayMode('randomiser')">
-            <div class="md-mode-btn-title"><span class="nav-icon" data-icon="smash" style="display:inline-flex;width:16px;height:16px;vertical-align:-3px;margin-right:6px"></span>Randomiser</div>
-            <div class="md-mode-btn-desc">Random pairs, everyone plays</div>
+            <div class="md-mode-btn-title"><span class="nav-icon" data-icon="smash" style="display:inline-flex;width:16px;height:16px;vertical-align:-3px;margin-right:6px"></span>Americano</div>
+            <div class="md-mode-btn-desc">Rotating pairs, everyone plays</div>
           </button>
         </div>
       </div>
@@ -5113,54 +5113,19 @@
         </div>
       </div>
 
-      <!-- RANDOMISER Section -->
+      <!-- AMERICANO (ex-Randomiser) setup — preview + live reuse the shared sections below -->
       <div id="mdRandomiserSection" style="display:none">
         <div class="card" style="margin-bottom:24px">
           <div class="section-header" style="margin-bottom:16px">
             <div>
-              <h3 style="font-size:18px;font-weight:700">🎲 Select Players Present</h3>
-              <p style="font-size:12px;color:var(--text-muted)">Tap players who are here. They'll be randomly paired into teams. Need 4+ (multiples of 4 ideal).</p>
+              <h3 style="font-size:18px;font-weight:700">🎾 Select Players Present</h3>
+              <p style="font-size:12px;color:var(--text-muted)">Tap players who are here. They'll rotate partners each round. Need 4+ (multiples of 4 ideal).</p>
             </div>
-            <span id="mdRandomCount" style="background:#7C3AED;color:white;padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
+            <span id="mdRandomCount" style="background:var(--clay);color:white;padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
           </div>
           <div class="md-americano-players" id="mdRandomPlayers"></div>
-          <button class="md-generate-btn" id="mdRandomGenBtn" onclick="randomiserGenerate()" disabled style="background:linear-gradient(135deg,#7C3AED 0%,#6D28D9 100%)">🎲 Shuffle & Generate Matches</button>
+          <button class="md-generate-btn" id="mdRandomGenBtn" onclick="mdGenerate()" disabled>🎾 Generate Matches</button>
           <button class="btn btn-secondary" onclick="randomiserPlayerIds=[];randomiserRenderPlayers();" style="margin-top:8px;width:100%">Clear Selection</button>
-        </div>
-      </div>
-
-      <!-- Randomiser Preview Section -->
-      <div id="mdRandomPreview" style="display:none">
-        <div class="card" style="margin-bottom:24px">
-          <div class="section-header" style="margin-bottom:16px">
-            <div>
-              <h3 style="font-size:18px;font-weight:700">🎲 Random Matches Preview</h3>
-              <p style="font-size:12px;color:var(--text-muted)" id="mdRandomPreviewSummary">These won't affect team rankings</p>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="randomiserGenerate()"><i class="fas fa-shuffle"></i> Re-shuffle</button>
-          </div>
-          <div id="mdRandomPreviewMatches"></div>
-          <div style="display:flex;gap:12px;margin-top:16px">
-            <button class="btn btn-secondary" onclick="randomiserBackToSetup()" style="flex:1">← Back</button>
-            <button class="btn btn-primary" onclick="randomiserStart()" style="flex:2">✅ Start Matches</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Randomiser Live Section -->
-      <div id="mdRandomLive" style="display:none">
-        <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,#7C3AED 0%,#6D28D9 100%);color:white;border:none;text-align:center;padding:24px;border-radius:20px">
-          <div style="font-size:12px;letter-spacing:3px;opacity:0.8">🎲 RANDOMISER</div>
-          <div style="font-family:'Sublime',sans-serif;font-size:28px;letter-spacing:2px;margin-top:4px" id="randomLiveRound">Round 1</div>
-          <div style="font-size:13px;opacity:0.85;margin-top:4px" id="randomLiveProgress">0 of 0 matches complete</div>
-        </div>
-        <div id="randomLiveMatches" style="margin-bottom:20px"></div>
-        <div class="card" style="padding:20px">
-          <div style="font-size:14px;font-weight:700;letter-spacing:2px;margin-bottom:12px;font-family:'Sublime',sans-serif">📊 PLAYER STATS</div>
-          <div id="randomLiveStats"></div>
-        </div>
-        <div style="margin-top:16px;text-align:center">
-          <button class="btn btn-secondary" onclick="randomiserEnd()">End Randomiser</button>
         </div>
       </div>
 
@@ -6680,7 +6645,6 @@
         kotcTeamIds = [];
         kotcState = { active: false, kingsId: null, streak: 0, challengerId: null, queue: [], scores: {}, matchLog: [], matchCount: 0 };
         randomiserPlayerIds = [];
-        randomiserState = { active: false, schedule: null, playerStats: {}, currentRound: 1 };
         toast('Test Mode OFF — reloading live data...', 'info');
         // Reload from Supabase to discard test changes
         if (supabaseClient) fetchFromDatabase();
@@ -11324,8 +11288,6 @@
       document.getElementById('mdKOTCSection').style.display = mode === 'kotc' ? '' : 'none';
       document.getElementById('mdKOTCLiveSection').style.display = 'none';
       document.getElementById('mdRandomiserSection').style.display = mode === 'randomiser' ? '' : 'none';
-      document.getElementById('mdRandomPreview').style.display = 'none';
-      document.getElementById('mdRandomLive').style.display = 'none';
       document.getElementById('mdPreviewSection').style.display = 'none';
       document.getElementById('mdLiveSection').style.display = 'none';
       mdUpdateEstimate();
@@ -12005,24 +11967,85 @@
     }
 
     // --- AMERICANO SCHEDULING ---
-    function mdGenerateAmericano(playerIds, rounds) {
+    // Builds a schedule in the SAME shape the shared engine (mdAutoFill /
+    // renderMDLive / mdInlineFinalize) already understands for `is_americano`
+    // matches: { team1:[p1,p2], team2:[p3,p4], round, court, sid }.
+    //
+    // Each round we fit floor(N/4) matches across the configured courts; the
+    // leftover players sit out. We rotate the sit-outs each round and we try
+    // (up to 24 candidate shuffles) to minimise partner-repeats so people
+    // actually partner with new villains over the night — real Americano.
+    function mdGenerateAmericano(playerIds, courts) {
       const schedule = [];
-      const shuffled = [...playerIds];
-      const usable = shuffled.length - (shuffled.length % 4); // only use multiples of 4
-      for (let r = 0; r < rounds; r++) {
-        for (let i = usable - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      const N = playerIds.length;
+      if (N < 4) return schedule;
+
+      const perRound = Math.min(courts, Math.floor(N / 4));
+      if (perRound < 1) return schedule;
+
+      // Decide how many rounds so every player plays about the same amount.
+      // 4*perRound of the N players play each round; aim for ~N/2 games each.
+      const roundsNeeded = Math.max(4, Math.min(8, Math.ceil(N / perRound)));
+
+      // Partner-count history: how many times has (a,b) been partners?
+      const pairKey = (a, b) => a < b ? `${a}|${b}` : `${b}|${a}`;
+      const partnered = new Map();
+      const bump = (a, b) => partnered.set(pairKey(a, b), (partnered.get(pairKey(a, b)) || 0) + 1);
+      const partnerCost = (a, b) => (partnered.get(pairKey(a, b)) || 0);
+
+      // Round-robin sit-outs so no one gets stuck watching.
+      const gamesPlayed = new Map(playerIds.map(p => [p, 0]));
+      const idle = (p) => (Math.max(...gamesPlayed.values()) - gamesPlayed.get(p));
+
+      for (let r = 0; r < roundsNeeded; r++) {
+        // Pick the 4*perRound players who have played least so far; break ties randomly.
+        const sortedByNeed = [...playerIds].sort((a, b) =>
+          (gamesPlayed.get(a) - gamesPlayed.get(b)) || (Math.random() - 0.5)
+        );
+        const playing = sortedByNeed.slice(0, perRound * 4);
+
+        // Try a handful of random court assignments; keep the one with the
+        // lowest total partner-repeat cost. 24 tries is enough for 8–16 players.
+        let bestCourts = null, bestScore = Infinity;
+        for (let attempt = 0; attempt < 24; attempt++) {
+          const shuffled = [...playing];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          const courtsThisRound = [];
+          let score = 0;
+          for (let c = 0; c < perRound; c++) {
+            const quad = shuffled.slice(c * 4, c * 4 + 4);
+            // Within a quad, the pairing that repeats partners the least.
+            const pairings = [
+              { t1: [quad[0], quad[1]], t2: [quad[2], quad[3]] },
+              { t1: [quad[0], quad[2]], t2: [quad[1], quad[3]] },
+              { t1: [quad[0], quad[3]], t2: [quad[1], quad[2]] },
+            ];
+            const best = pairings
+              .map(p => ({ ...p, cost: partnerCost(p.t1[0], p.t1[1]) + partnerCost(p.t2[0], p.t2[1]) }))
+              .sort((a, b) => a.cost - b.cost)[0];
+            courtsThisRound.push(best);
+            score += best.cost;
+          }
+          if (score < bestScore) { bestScore = score; bestCourts = courtsThisRound; if (score === 0) break; }
         }
-        for (let i = 0; i < usable; i += 4) {
+
+        bestCourts.forEach((match, idx) => {
+          bump(match.t1[0], match.t1[1]);
+          bump(match.t2[0], match.t2[1]);
+          match.t1.concat(match.t2).forEach(p => gamesPlayed.set(p, gamesPlayed.get(p) + 1));
           schedule.push({
-            team1: [shuffled[i], shuffled[i+1]],
-            team2: [shuffled[i+2], shuffled[i+3]],
+            team1: match.t1,
+            team2: match.t2,
             round: r + 1,
-            court: Math.floor(i / 4) + 1
+            court: idx + 1,
+            sid: `s_am_${Date.now()}_${r}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
           });
-        }
+        });
       }
+
       return schedule;
     }
 
@@ -12033,6 +12056,12 @@
         const existingPairs = mdCompletedGames.map(m => [m.t1, m.t2]);
         const pairs = mdGenerateRoundRobin(mdActiveTeamIds, existingPairs);
         mdGeneratedSchedule = mdScheduleMatches(pairs, mdCourts, mdActiveTeamIds);
+      } else if (mdMode === 'randomiser') {
+        // Americano: rotate random partners each round, feeding the SAME shared
+        // engine Round Robin uses (mdAutoFill / renderMDLive / mdInlineFinalize).
+        if (randomiserPlayerIds.length < 4) { toast('Need at least 4 players', 'error'); return; }
+        mdGeneratedSchedule = mdGenerateAmericano(randomiserPlayerIds, mdCourts);
+        if (!mdGeneratedSchedule.length) { toast('Could not generate — check player count & courts', 'error'); return; }
       } else {
         return; // Draft mode uses draftConfirmAndGenerate()
       }
@@ -12682,7 +12711,7 @@
       // Gather all cockpit (live-control) sections so we can toggle them as one
       const cockpitSectionIds = [
         'mdRoundRobinSection','mdDraftSection','mdDraftReveal','mdKOTCSection','mdKOTCLiveSection',
-        'mdRandomiserSection','mdRandomPreview','mdRandomLive','mdPreviewSection','mdLiveSection'
+        'mdRandomiserSection','mdPreviewSection','mdLiveSection'
       ];
       const heroEl = document.querySelector('#matchday .md-hero');
       const configEl = document.querySelector('#matchday .md-config');
@@ -12720,8 +12749,6 @@
         document.getElementById('mdKOTCSection').style.display = 'none';
         document.getElementById('mdKOTCLiveSection').style.display = 'none';
         document.getElementById('mdRandomiserSection').style.display = 'none';
-        document.getElementById('mdRandomPreview').style.display = 'none';
-        document.getElementById('mdRandomLive').style.display = 'none';
       } else if (mdMode === 'draft') {
         document.getElementById('mdRoundRobinSection').style.display = 'none';
         document.getElementById('mdDraftSection').style.display = mdDraftState.drawnTeams ? 'none' : (showSetup ? '' : 'none');
@@ -12729,8 +12756,6 @@
         document.getElementById('mdKOTCSection').style.display = 'none';
         document.getElementById('mdKOTCLiveSection').style.display = 'none';
         document.getElementById('mdRandomiserSection').style.display = 'none';
-        document.getElementById('mdRandomPreview').style.display = 'none';
-        document.getElementById('mdRandomLive').style.display = 'none';
         if (!mdDraftState.drawnTeams) draftRenderPlayers();
       } else if (mdMode === 'kotc') {
         document.getElementById('mdRoundRobinSection').style.display = 'none';
@@ -12739,38 +12764,21 @@
         document.getElementById('mdKOTCSection').style.display = kotcState.active ? 'none' : (showSetup ? '' : 'none');
         document.getElementById('mdKOTCLiveSection').style.display = kotcState.active ? '' : 'none';
         document.getElementById('mdRandomiserSection').style.display = 'none';
-        document.getElementById('mdRandomPreview').style.display = 'none';
-        document.getElementById('mdRandomLive').style.display = 'none';
         document.getElementById('mdPreviewSection').style.display = 'none';
         document.getElementById('mdLiveSection').style.display = 'none';
         if (!kotcState.active) { kotcRenderTeamGrid(); } else { kotcRenderLive(); }
         return;
       } else if (mdMode === 'randomiser') {
+        // Americano now rides the same setup → preview → live pipeline as
+        // Round Robin. Only the setup card is Americano-specific; preview and
+        // live reuse #mdPreviewSection and #mdLiveSection.
         document.getElementById('mdRoundRobinSection').style.display = 'none';
         document.getElementById('mdDraftSection').style.display = 'none';
         document.getElementById('mdDraftReveal').style.display = 'none';
         document.getElementById('mdKOTCSection').style.display = 'none';
         document.getElementById('mdKOTCLiveSection').style.display = 'none';
-        document.getElementById('mdPreviewSection').style.display = 'none';
-        document.getElementById('mdLiveSection').style.display = 'none';
-        // Randomiser has its own sections
-        if (randomiserState.active) {
-          document.getElementById('mdRandomiserSection').style.display = 'none';
-          document.getElementById('mdRandomPreview').style.display = 'none';
-          document.getElementById('mdRandomLive').style.display = '';
-          randomiserRenderLive();
-        } else if (randomiserState.schedule) {
-          document.getElementById('mdRandomiserSection').style.display = 'none';
-          document.getElementById('mdRandomPreview').style.display = '';
-          document.getElementById('mdRandomLive').style.display = 'none';
-          randomiserRenderPreview();
-        } else {
-          document.getElementById('mdRandomiserSection').style.display = '';
-          document.getElementById('mdRandomPreview').style.display = 'none';
-          document.getElementById('mdRandomLive').style.display = 'none';
-          randomiserRenderPlayers();
-        }
-        return;
+        document.getElementById('mdRandomiserSection').style.display = showSetup ? '' : 'none';
+        if (showSetup) randomiserRenderPlayers();
       }
       document.getElementById('mdPreviewSection').style.display = showPreview ? '' : 'none';
       document.getElementById('mdLiveSection').style.display = showLive ? '' : 'none';
@@ -12828,10 +12836,14 @@
                 </div>`;
               }
             });
-            // Show sitting out teams
+            // Show sitting out
             if (mdMode === 'roundrobin' || mdMode === 'draft') {
               const playingIds = new Set(roundMatches.flatMap(m => [m.t1, m.t2]));
               const sitting = mdActiveTeamIds.filter(id => !playingIds.has(id)).map(id => getTeam(id)?.name || '?');
+              if (sitting.length > 0) html += `<div class="md-sitting">☕ Sitting out: ${sitting.map(esc).join(', ')}</div>`;
+            } else if (mdMode === 'randomiser') {
+              const playingPIds = new Set(roundMatches.flatMap(m => [...(m.team1||[]), ...(m.team2||[])]));
+              const sitting = randomiserPlayerIds.filter(id => !playingPIds.has(id)).map(id => getPlayer(id)?.name || '?');
               if (sitting.length > 0) html += `<div class="md-sitting">☕ Sitting out: ${sitting.map(esc).join(', ')}</div>`;
             }
           }
@@ -14185,21 +14197,17 @@
       toast('👑 King of the Court cleared', 'success');
     }
 
-    // ===== RANDOMISER =====
+    // ===== AMERICANO (internal mode key stays 'randomiser' for saved-session compat) =====
+    // Setup state only — the schedule, scoring, and standings all flow through
+    // the shared Match Day engine (mdGenerate / mdConfirmSchedule / mdAutoFill /
+    // renderMDLive / mdInlineFinalize). Nothing Americano-specific below the
+    // player picker.
     let randomiserPlayerIds = [];
-    let randomiserState = {
-      active: false,
-      schedule: null,   // [{round, team1:[p1,p2], team2:[p3,p4], court, result:null}]
-      playerStats: {},  // {playerId: {wins, losses, points}}
-      currentRound: 1
-    };
 
     function randomiserTogglePlayer(id) {
       const idx = randomiserPlayerIds.indexOf(id);
       if (idx >= 0) randomiserPlayerIds.splice(idx, 1);
       else randomiserPlayerIds.push(id);
-      document.getElementById('mdRandomCount').textContent = randomiserPlayerIds.length;
-      document.getElementById('mdRandomGenBtn').disabled = randomiserPlayerIds.length < 4;
       randomiserRenderPlayers();
     }
 
@@ -14208,232 +14216,16 @@
       if (!grid) return;
       grid.innerHTML = activePlayers().map(p => {
         const active = randomiserPlayerIds.includes(p.id);
-        return `<button class="md-americano-btn ${active ? 'active' : ''}" onclick="randomiserTogglePlayer(${p.id})" style="${active ? 'border-color:#7C3AED;background:rgba(124,58,237,0.06)' : ''}">
+        return `<button class="md-americano-btn ${active ? 'active' : ''}" onclick="randomiserTogglePlayer(${p.id})">
           ${av(p, 'xs')}
           <span class="md-americano-name">${esc(p.name)}</span>
           ${active ? '<span class="md-americano-check"><i class="fas fa-check"></i></span>' : ''}
         </button>`;
       }).join('');
-      document.getElementById('mdRandomCount').textContent = randomiserPlayerIds.length;
-      document.getElementById('mdRandomGenBtn').disabled = randomiserPlayerIds.length < 4;
-    }
-
-    function randomiserGenerate() {
-      const pIds = [...randomiserPlayerIds];
-      if (pIds.length < 4) { toast('Need at least 4 players', 'error'); return; }
-      
-      // Shuffle players
-      for (let i = pIds.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pIds[i], pIds[j]] = [pIds[j], pIds[i]];
-      }
-      
-      const usable = pIds.slice(0, pIds.length - (pIds.length % 4));
-      const sitting = pIds.slice(usable.length);
-      
-      // Generate round-robin rotation: each player partners with different people
-      const schedule = [];
-      const numPlayers = usable.length;
-      const numRounds = Math.min(numPlayers - 1, 6); // Cap at 6 rounds
-      
-      // Use circle method for balanced rotation
-      const fixed = usable.slice();
-      for (let r = 0; r < numRounds; r++) {
-        // Shuffle for this round to create random pairings
-        const roundPlayers = [...fixed];
-        for (let i = roundPlayers.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [roundPlayers[i], roundPlayers[j]] = [roundPlayers[j], roundPlayers[i]];
-        }
-        
-        let court = 1;
-        for (let i = 0; i < roundPlayers.length; i += 4) {
-          if (i + 3 < roundPlayers.length) {
-            schedule.push({
-              round: r + 1,
-              team1: [roundPlayers[i], roundPlayers[i+1]],
-              team2: [roundPlayers[i+2], roundPlayers[i+3]],
-              court: court++,
-              result: null,
-              id: Date.now() + Math.random()
-            });
-          }
-        }
-        
-        // If sitting out players, rotate them in
-        if (sitting.length > 0 && r < numRounds - 1) {
-          const rotateOut = fixed.splice(0, sitting.length);
-          fixed.push(...sitting);
-          sitting.length = 0;
-          sitting.push(...rotateOut);
-        }
-      }
-      
-      randomiserState.schedule = schedule;
-      randomiserState.active = false;
-      document.getElementById('mdRandomiserSection').style.display = 'none';
-      document.getElementById('mdRandomPreview').style.display = '';
-      randomiserRenderPreview();
-    }
-
-    function randomiserRenderPreview() {
-      const schedule = randomiserState.schedule;
-      if (!schedule) return;
-      const rounds = [...new Set(schedule.map(m => m.round))].sort((a,b) => a-b);
-      document.getElementById('mdRandomPreviewSummary').textContent = `${schedule.length} matches in ${rounds.length} rounds • Won't affect team rankings`;
-      
-      document.getElementById('mdRandomPreviewMatches').innerHTML = rounds.map(r => {
-        const roundMatches = schedule.filter(m => m.round === r);
-        return `<div style="margin-bottom:16px">
-          <div style="font-size:12px;font-weight:700;letter-spacing:2px;color:var(--text-muted);margin-bottom:8px">ROUND ${r}</div>
-          ${roundMatches.map(m => {
-            const p = (ids) => ids.map(id => getPlayer(id)?.name || '?').join(' & ');
-            return `<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--cream);border-radius:12px;margin-bottom:6px">
-              <span style="font-size:11px;color:var(--text-muted)">Court ${esc(m.court)}</span>
-              <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">
-                <span style="font-weight:600;font-size:13px">${p(m.team1)}</span>
-                <span style="color:var(--clay);font-family:'SaltyAges',serif;font-size:14px">vs</span>
-                <span style="font-weight:600;font-size:13px">${p(m.team2)}</span>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>`;
-      }).join('');
-    }
-
-    function randomiserBackToSetup() {
-      randomiserState.schedule = null;
-      document.getElementById('mdRandomPreview').style.display = 'none';
-      document.getElementById('mdRandomiserSection').style.display = '';
-      randomiserRenderPlayers();
-    }
-
-    function randomiserStart() {
-      randomiserState.active = true;
-      randomiserState.currentRound = 1;
-      randomiserState.playerStats = {};
-      randomiserPlayerIds.forEach(id => {
-        randomiserState.playerStats[id] = { wins: 0, losses: 0, points: 0 };
-      });
-      document.getElementById('mdRandomPreview').style.display = 'none';
-      document.getElementById('mdRandomLive').style.display = '';
-      randomiserRenderLive();
-      toast('🎲 Randomiser started!', 'success');
-    }
-
-    function randomiserRecordResult(matchId, team1Wins) {
-      const m = randomiserState.schedule.find(s => s.id === matchId);
-      if (!m || m.result !== null) return;
-      m.result = team1Wins ? 'team1' : 'team2';
-      
-      const winners = team1Wins ? m.team1 : m.team2;
-      const losers = team1Wins ? m.team2 : m.team1;
-      winners.forEach(id => { randomiserState.playerStats[id].wins++; randomiserState.playerStats[id].points += 2; });
-      losers.forEach(id => { randomiserState.playerStats[id].losses++; });
-      
-      // Check if round is complete, auto-advance
-      const roundMatches = randomiserState.schedule.filter(s => s.round === m.round);
-      if (roundMatches.every(s => s.result !== null)) {
-        const maxRound = Math.max(...randomiserState.schedule.map(s => s.round));
-        if (m.round < maxRound) {
-          randomiserState.currentRound = m.round + 1;
-        }
-      }
-      
-      // Save as match record (game_mode: randomiser, no winner_id to skip team rankings)
-      const matchRecord = {
-        id: generateNumericId(),
-        match_uid: mdMatchUid({ round: m.round, p1: m.team1, p2: m.team2 }),
-        matchday_id: mdActiveId(),
-        date: activeMatchday?.date || getLocalDateStr(),
-        location: activeMatchday?.venue || '',
-        court: 'Random Court ' + m.court,
-        team1_players: m.team1,
-        team2_players: m.team2,
-        scores: [[team1Wins ? 1 : 0, team1Wins ? 0 : 1]],
-        finalized_at: new Date().toISOString(),
-        game_mode: 'randomiser',
-        device_id: PV_DEVICE_ID,
-        created_at: new Date().toISOString()
-      };
-      saveMatchToSupabase(matchRecord).then(result => {
-        if (result.closed) return; // server refused: day closed — don't show it as saved
-        matches.unshift(result.data || matchRecord);
-        saveLocal();
-      });
-      
-      randomiserRenderLive();
-    }
-
-    function randomiserRenderLive() {
-      const { schedule, currentRound, playerStats } = randomiserState;
-      if (!schedule) return;
-      
-      const totalMatches = schedule.length;
-      const completedMatches = schedule.filter(m => m.result !== null).length;
-      const maxRound = Math.max(...schedule.map(s => s.round));
-      
-      document.getElementById('randomLiveRound').textContent = `Round ${currentRound} of ${maxRound}`;
-      document.getElementById('randomLiveProgress').textContent = `${completedMatches} of ${totalMatches} matches complete`;
-      
-      // Render current round matches
-      const roundMatches = schedule.filter(m => m.round === currentRound);
-      document.getElementById('randomLiveMatches').innerHTML = roundMatches.map(m => {
-        const pNames = (ids) => ids.map(id => esc(getPlayer(id)?.name || '?')).join(' & ');
-        const pAvatars = (ids) => ids.map(id => av(getPlayer(id), 'xs')).join('');
-        const isDone = m.result !== null;
-        
-        return `<div class="card" style="margin-bottom:12px;padding:16px;${isDone ? 'opacity:0.7' : ''}">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${isDone ? '0' : '12'}px">
-            <div style="display:flex;align-items:center;gap:8px">
-              ${pAvatars(m.team1)}
-              <span style="font-weight:600;font-size:13px">${pNames(m.team1)}</span>
-            </div>
-            <span style="color:var(--clay);font-family:'SaltyAges',serif;font-size:14px">${isDone ? (m.result === 'team1' ? '✓ WON' : 'LOST') : 'vs'}</span>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-weight:600;font-size:13px">${pNames(m.team2)}</span>
-              ${pAvatars(m.team2)}
-            </div>
-          </div>
-          ${!isDone ? `<div style="display:flex;gap:8px">
-            <button class="btn btn-primary btn-sm" onclick="randomiserRecordResult(${m.id},true)" style="flex:1;border-radius:10px">${pNames(m.team1)} Win</button>
-            <button class="btn btn-sm" onclick="randomiserRecordResult(${m.id},false)" style="flex:1;border-radius:10px;background:var(--gold);color:var(--brown-dark);border:none">${pNames(m.team2)} Win</button>
-          </div>` : ''}
-        </div>`;
-      }).join('');
-      
-      // Round nav
-      if (maxRound > 1) {
-        document.getElementById('randomLiveMatches').innerHTML += `<div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
-          ${Array.from({length: maxRound}, (_, i) => i + 1).map(r => 
-            `<button class="btn btn-sm ${r === currentRound ? 'btn-primary' : 'btn-secondary'}" onclick="randomiserState.currentRound=${r};randomiserRenderLive()" style="min-width:40px;border-radius:10px">R${r}</button>`
-          ).join('')}
-        </div>`;
-      }
-      
-      // Player stats
-      const sorted = Object.entries(playerStats).sort((a,b) => b[1].points - a[1].points);
-      document.getElementById('randomLiveStats').innerHTML = sorted.map(([id, s], i) => {
-        const p = getPlayer(parseInt(id));
-        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
-        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
-          <span style="font-family:'Sublime',sans-serif;font-size:16px;width:28px;text-align:center">${medal}</span>
-          ${av(p, 'xs')}
-          <div style="flex:1"><span style="font-weight:600;font-size:13px">${esc(p?.name || '?')}</span></div>
-          <span style="font-size:12px;color:var(--text-muted)">${s.wins}W ${s.losses}L</span>
-          <span style="font-family:'DirtyWeather',sans-serif;font-size:18px;color:var(--clay)">${s.points}</span>
-        </div>`;
-      }).join('');
-    }
-
-    function randomiserEnd() {
-      if (randomiserState.active && !confirm('End Randomiser session?')) return;
-      randomiserState = { active: false, schedule: null, playerStats: {}, currentRound: 1 };
-      randomiserPlayerIds = [];
-      document.getElementById('mdRandomLive').style.display = 'none';
-      document.getElementById('mdRandomiserSection').style.display = '';
-      randomiserRenderPlayers();
-      toast('🎲 Randomiser cleared', 'success');
+      const countEl = document.getElementById('mdRandomCount');
+      if (countEl) countEl.textContent = randomiserPlayerIds.length;
+      const btn = document.getElementById('mdRandomGenBtn');
+      if (btn) btn.disabled = randomiserPlayerIds.length < 4;
     }
 
     function viewMatchday(id) {
