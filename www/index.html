@@ -7841,8 +7841,11 @@
     }
     
     // ===== HELPERS =====
-    const getPlayer = id => players.find(p => p.id === id);
-    const getTeam = id => teams.find(t => t.id === id);
+    // Bigint columns come back from PostgREST as either numbers or strings
+    // depending on whether they were a scalar or an array (`_int8`). Match
+    // by string value so lookups work either way.
+    const getPlayer = id => id == null ? undefined : players.find(p => String(p.id) === String(id));
+    const getTeam   = id => id == null ? undefined : teams.find(t   => String(t.id) === String(id));
     const getTeamPlayers = t => t ? { p1: getPlayer(t.player1_id), p2: getPlayer(t.player2_id) } : { p1: null, p2: null };
     const winRate = (w, l) => (w + l) > 0 ? Math.round((w / (w + l)) * 100) : 0;
     
@@ -13159,20 +13162,22 @@
     function mdTopUpQueue() {
       if (mdStep !== 'live' || !mdGeneratedSchedule) return;
       if (mdRoundRobinPending()) return; // round-robin games first; rematches only once they're done
+      // See the note in mdAutoFillOnce: IDs come back as strings from
+      // bigint[] columns, so compare as strings throughout.
       const busyTeams = new Set(), busyPlayers = new Set();
       mdOnCourtMatches().forEach(m => {
-        if (m.team1_id) busyTeams.add(m.team1_id);
-        if (m.team2_id) busyTeams.add(m.team2_id);
-        (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(p));
+        if (m.team1_id) busyTeams.add(String(m.team1_id));
+        if (m.team2_id) busyTeams.add(String(m.team2_id));
+        (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(String(p)));
       });
       const queuedTeams = new Set(), queuedPlayers = new Set();
       let guard = 0;
       while (guard++ < 12) {
         const pending = mdGetPendingQueue();
-        pending.forEach(m => { if (m.t1) queuedTeams.add(m.t1); if (m.t2) queuedTeams.add(m.t2); (m.team1 || []).concat(m.team2 || []).forEach(p => queuedPlayers.add(p)); });
+        pending.forEach(m => { if (m.t1) queuedTeams.add(String(m.t1)); if (m.t2) queuedTeams.add(String(m.t2)); (m.team1 || []).concat(m.team2 || []).forEach(p => queuedPlayers.add(String(p))); });
         const playable = pending.filter(m => mdMode === 'randomiser'
-          ? !(m.team1 || []).concat(m.team2 || []).some(p => busyPlayers.has(p))
-          : !((m.t1 && busyTeams.has(m.t1)) || (m.t2 && busyTeams.has(m.t2)))).length;
+          ? !(m.team1 || []).concat(m.team2 || []).some(p => busyPlayers.has(String(p)))
+          : !((m.t1 && busyTeams.has(String(m.t1))) || (m.t2 && busyTeams.has(String(m.t2))))).length;
         if (playable >= Math.max(1, mdOpenCourtCount())) break;
         // only mint from teams/players not busy AND not already waiting in the queue
         const exclTeams = new Set([...busyTeams, ...queuedTeams]);
@@ -13233,13 +13238,16 @@
       const completedSids = new Set(mdCompletedGames.map(m => m.sid));
 
       // Who is on court right now?
+      // Normalise IDs to strings — team1_players/team2_players come back from
+      // PostgREST as string[] (bigint array), while the local schedule holds
+      // numbers; mixing them in a Set silently double-books players.
       const busyTeams = new Set();
       const busyPlayers = new Set();
       const onCourtKeys = new Set();
       mdOnCourtMatches().forEach(m => {
-        if (m.team1_id) busyTeams.add(m.team1_id);
-        if (m.team2_id) busyTeams.add(m.team2_id);
-        (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(p));
+        if (m.team1_id) busyTeams.add(String(m.team1_id));
+        if (m.team2_id) busyTeams.add(String(m.team2_id));
+        (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(String(p)));
         onCourtKeys.add(mdOngoingMatchKey(m));
       });
 
@@ -13247,10 +13255,10 @@
         if (completedSids.has(s.sid)) return false;
         if (onCourtKeys.has(mdSchedMatchKey(s))) return false;
         if (mdMode === 'randomiser') {
-          return !(s.team1 || []).concat(s.team2 || []).some(p => busyPlayers.has(p));
+          return !(s.team1 || []).concat(s.team2 || []).some(p => busyPlayers.has(String(p)));
         }
-        if (s.t1 && busyTeams.has(s.t1)) return false;
-        if (s.t2 && busyTeams.has(s.t2)) return false;
+        if (s.t1 && busyTeams.has(String(s.t1))) return false;
+        if (s.t2 && busyTeams.has(String(s.t2))) return false;
         return true;
       };
 
@@ -13288,9 +13296,9 @@
         ongoingMatches.unshift(result.data || matchData);
 
         // Update busy sets so the next court can't grab overlapping teams
-        if (next.t1) busyTeams.add(next.t1);
-        if (next.t2) busyTeams.add(next.t2);
-        (next.team1 || []).concat(next.team2 || []).forEach(p => busyPlayers.add(p));
+        if (next.t1) busyTeams.add(String(next.t1));
+        if (next.t2) busyTeams.add(String(next.t2));
+        (next.team1 || []).concat(next.team2 || []).forEach(p => busyPlayers.add(String(p)));
         onCourtKeys.add(mdSchedMatchKey(next));
       }
       saveLocal();
