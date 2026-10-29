@@ -7933,6 +7933,21 @@
       let wins = 0, losses = 0, games = 0;
       matches.forEach(m => {
         if (filterDate && m.date !== filterDate) return;
+        // Americano / ad-hoc player-pair matches: no team_id, players live on
+        // team1_players[] / team2_players[], winner is whichever side scored
+        // more in scores[0] (mdInlineFinalize writes [[1,0]] or [[0,1]] for a
+        // tap-the-winner save, or real set scores for score mode).
+        if (m.is_americano || (!m.team1_id && !m.team2_id && (m.team1_players || m.team2_players))) {
+          const onT1 = (m.team1_players || []).some(id => String(id) === String(playerId));
+          const onT2 = (m.team2_players || []).some(id => String(id) === String(playerId));
+          if (!onT1 && !onT2) return;
+          games++;
+          const s1 = m.score1 ?? (m.scores?.[0]?.[0] ?? 0);
+          const s2 = m.score2 ?? (m.scores?.[0]?.[1] ?? 0);
+          const team1Won = s1 > s2;
+          ((onT1 && team1Won) || (onT2 && !team1Won)) ? wins++ : losses++;
+          return;
+        }
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
         const isOnT1 = t1 && (t1.player1_id === playerId || t1.player2_id === playerId);
         const isOnT2 = t2 && (t2.player1_id === playerId || t2.player2_id === playerId);
@@ -7960,14 +7975,42 @@
       const closedDates = new Set(closed.map(m => m.date));
       // Includes each result + line-up, so editing a match invalidates the cache
       const key = `${closed.map(m => m.id).join(',')}|${teams.length}|${players.length}|` +
-        matches.map(m => `${m.id}:${m.winner_id}:${m.team1_id}:${m.team2_id}:${m.date}`).join(',');
+        matches.map(m => `${m.id}:${m.winner_id}:${m.team1_id}:${m.team2_id}:${m.date}:${m.is_americano?1:0}:${m.score1 ?? ''}:${m.score2 ?? ''}`).join(',');
       if (_vrCache && _vrKey === key) return _vrCache;
       const P = new Map(), T = new Map();
       const gp = id => { if (!P.has(id)) P.set(id, { vr: VR_START, games: 0, wins: 0, losses: 0, days: new Set(), history: [] }); return P.get(id); };
       const gt = id => { if (!T.has(id)) T.set(id, { vr: VR_START, games: 0, wins: 0, losses: 0, days: new Set(), history: [] }); return T.get(id); };
-      const pool = matches.filter(m => closedDates.has(m.date) && m.winner_id != null && getTeam(m.team1_id) && getTeam(m.team2_id))
-        .sort((a, b) => (a.date + (a.created_at || '')).localeCompare(b.date + (b.created_at || '')));
+      // Pool keeps BOTH team-based matches (with a resolved winner_id) and
+      // Americano / ad-hoc player-pair matches (no team_id, winner inferred
+      // from the saved score). Both are processed in chronological order.
+      const isAmericanoMatch = m => (m.is_americano || (!m.team1_id && !m.team2_id && (m.team1_players || m.team2_players)));
+      const pool = matches.filter(m => {
+        if (!closedDates.has(m.date)) return false;
+        if (isAmericanoMatch(m)) return (m.team1_players || []).length && (m.team2_players || []).length;
+        return m.winner_id != null && getTeam(m.team1_id) && getTeam(m.team2_id);
+      }).sort((a, b) => (a.date + (a.created_at || '')).localeCompare(b.date + (b.created_at || '')));
       for (const m of pool) {
+        if (isAmericanoMatch(m)) {
+          // Americano: move individual ratings only. The pair is one-off, so
+          // the team ladder stays out of it (same policy as is_temp teams).
+          const p1 = (m.team1_players || []).filter(Boolean);
+          const p2 = (m.team2_players || []).filter(Boolean);
+          const s1 = p1.reduce((a, id) => a + gp(id).vr, 0) / p1.length;
+          const s2 = p2.reduce((a, id) => a + gp(id).vr, 0) / p2.length;
+          const e1 = vrExpected(s1, s2), e2 = 1 - e1;
+          const sc1 = m.score1 ?? (m.scores?.[0]?.[0] ?? 0);
+          const sc2 = m.score2 ?? (m.scores?.[0]?.[1] ?? 0);
+          if (sc1 === sc2) continue; // no winner determined, skip
+          const w1 = sc1 > sc2;
+          for (const [ids, e, won] of [[p1, e1, w1], [p2, e2, !w1]]) {
+            for (const id of ids) {
+              const r = gp(id); const k = r.games < VR_PLACEMENT_GAMES ? VR_K_NEW : VR_K;
+              const d = k * ((won ? 1 : 0) - e);
+              r.vr += d; r.games++; won ? r.wins++ : r.losses++; r.days.add(m.date); r.history.push({ date: m.date, d });
+            }
+          }
+          continue;
+        }
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
         const p1 = [t1.player1_id, t1.player2_id].filter(Boolean), p2 = [t2.player1_id, t2.player2_id].filter(Boolean);
         const s1 = p1.length ? p1.reduce((a, id) => a + gp(id).vr, 0) / p1.length : VR_START;
