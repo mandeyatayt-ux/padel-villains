@@ -13541,26 +13541,40 @@
       const queueMatches = mdGetPendingQueue();
       const match = typeof ref === 'string' ? queueMatches.find(m => m.sid === ref) : queueMatches[ref];
       if (!match) { toast('That match is no longer in the queue', 'error'); renderMatchDay(); return; }
-      // Check if either team is already on court
-      const teamsOnCourt = new Set();
-      mdOnCourtMatches().forEach(m => {
-        if (m.team1_id) teamsOnCourt.add(m.team1_id);
-        if (m.team2_id) teamsOnCourt.add(m.team2_id);
-      });
-      if ((match.t1 && teamsOnCourt.has(match.t1)) || (match.t2 && teamsOnCourt.has(match.t2))) {
-        toast('One of these teams is already on court', 'error');
-        return;
+
+      // Americano fixtures carry player arrays (team1/team2); team-based
+      // fixtures carry team ids (t1/t2). Treat them separately throughout.
+      const isAmericano = mdMode === 'randomiser' || (!match.t1 && !match.t2 && (match.team1 || match.team2));
+
+      // Already-on-court check: teams for team modes, players for Americano
+      if (isAmericano) {
+        const busyPlayers = new Set();
+        mdOnCourtMatches().forEach(m => (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(String(p))));
+        const matchPlayers = (match.team1 || []).concat(match.team2 || []).map(String);
+        if (matchPlayers.some(p => busyPlayers.has(p))) {
+          toast('One of these players is already on court', 'error');
+          return;
+        }
+      } else {
+        const teamsOnCourt = new Set();
+        mdOnCourtMatches().forEach(m => {
+          if (m.team1_id) teamsOnCourt.add(String(m.team1_id));
+          if (m.team2_id) teamsOnCourt.add(String(m.team2_id));
+        });
+        if ((match.t1 && teamsOnCourt.has(String(match.t1))) || (match.t2 && teamsOnCourt.has(String(match.t2)))) {
+          toast('One of these teams is already on court', 'error');
+          return;
+        }
       }
+
       // Find a free court — prefer un-held; manual send may use a held court as last resort
       let freeCourt = null, heldFallback = null;
       if (targetCourt) {
-        const tl = `Court ${targetCourt}`;
         const tBusy = !!mdCourtMatch(targetCourt);
         if (tBusy) { toast(`Court ${targetCourt} is busy`, 'error'); return; }
         freeCourt = targetCourt; // an explicit drop may use a held court
       }
       for (let c = 1; c <= mdCourts && !freeCourt; c++) {
-        const label = `Court ${c}`;
         const busy = !!mdCourtMatch(c);
         if (busy) continue;
         if (mdHeldCourts.has(c)) { if (!heldFallback) heldFallback = c; continue; }
@@ -13568,23 +13582,38 @@
       }
       if (!freeCourt) freeCourt = heldFallback;
       if (!freeCourt) { toast('All courts are busy', 'error'); return; }
-      const matchData = {
-        id: generateNumericId(), match_uid: mdMatchUid({ round: match.round, t1: match.t1, t2: match.t2 }),
+
+      const base = {
+        id: generateNumericId(),
+        match_uid: isAmericano
+          ? mdMatchUid({ round: match.round, p1: match.team1, p2: match.team2 })
+          : mdMatchUid({ round: match.round, t1: match.t1, t2: match.t2 }),
         matchday_id: mdActiveId(),
         date: activeMatchday?.date || getLocalDateStr(),
         location: activeMatchday?.venue || '',
         court: 'Court ' + freeCourt,
-        team1_id: match.t1, team2_id: match.t2,
-        status: 'ongoing', started_at: new Date().toISOString(),
-        md_round: match.round, device_id: PV_DEVICE_ID
+        status: 'ongoing',
+        started_at: new Date().toISOString(),
+        md_round: match.round,
+        device_id: PV_DEVICE_ID,
       };
+      const matchData = isAmericano
+        ? { ...base, team1_players: match.team1, team2_players: match.team2, is_americano: true }
+        : { ...base, team1_id: match.t1, team2_id: match.t2 };
+
       const result = await queueMatchToSupabase(matchData);
       ongoingMatches.unshift(result.data || matchData);
       saveLocal();
       renderMDLive();
       try { renderMdInfoHub(); } catch (e) {}
       renderOngoingMatches();
-      toast(`${getTeam(match.t1)?.name} vs ${getTeam(match.t2)?.name} → Court ${freeCourt}`, 'success');
+      const n1 = isAmericano
+        ? (match.team1 || []).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ')
+        : (getTeam(match.t1)?.name || '?');
+      const n2 = isAmericano
+        ? (match.team2 || []).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ')
+        : (getTeam(match.t2)?.name || '?');
+      toast(`${n1} vs ${n2} → Court ${freeCourt}`, 'success');
     }
 
     // Drag a queued match from the Up Next rail onto an idle court
