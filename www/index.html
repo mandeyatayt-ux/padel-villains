@@ -7406,7 +7406,10 @@
       
       if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        // Self-hosted so sign-in doesn't depend on an external CDN
+        // (jsdelivr was intermittently unreachable for some villains).
+        // The file lives at /vendor/supabase-js.js and is precached by sw.js.
+        s.src = '/vendor/supabase-js.js';
         s.onload = async () => {
           try {
             const { createClient } = window.supabase;
