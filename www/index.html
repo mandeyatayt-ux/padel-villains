@@ -17956,8 +17956,32 @@
       document.getElementById('pvAuthPassword').autocomplete = signup ? 'new-password' : 'current-password';
       pvAuthMsg('');
     }
+    // The Supabase JS SDK loads async from the CDN. If the villain taps a
+    // sign-in button before it arrives, wait up to ~8s instead of bombing
+    // instantly with "Not connected yet". A spinner message keeps them
+    // oriented in the meantime.
+    function pvWaitForSupabase(timeoutMs = 8000) {
+      if (supabaseClient) return Promise.resolve(true);
+      return new Promise(resolve => {
+        const started = Date.now();
+        const spinnerStart = Date.now();
+        const spin = ['', '.', '..', '...'];
+        const spinTimer = setInterval(() => {
+          if (supabaseClient) { clearInterval(spinTimer); return; }
+          const i = Math.floor((Date.now() - spinnerStart) / 400) % spin.length;
+          pvAuthMsg('Connecting' + spin[i]);
+        }, 400);
+        const tick = () => {
+          if (supabaseClient) { clearInterval(spinTimer); pvAuthMsg(''); resolve(true); return; }
+          if (Date.now() - started >= timeoutMs) { clearInterval(spinTimer); resolve(false); return; }
+          setTimeout(tick, 100);
+        };
+        tick();
+      });
+    }
     async function pvOAuth(provider) {
-      if (!supabaseClient) { pvAuthMsg('Not connected yet, try again in a second.', 'err'); return; }
+      const ready = await pvWaitForSupabase();
+      if (!ready) { pvAuthMsg("Still can't reach the server. Check your network and try again.", 'err'); return; }
       pvAuthMsg('Opening ' + (provider === 'apple' ? 'Apple' : 'Google') + '…');
       try {
         const native = pvIsNativeApp();
@@ -17973,7 +17997,8 @@
       } catch (err) { console.error('oauth', err); pvAuthMsg(err.message || 'Sign-in failed', 'err'); }
     }
     async function pvEmailSubmit() {
-      if (!supabaseClient) return;
+      const ready = await pvWaitForSupabase();
+      if (!ready) { pvAuthMsg("Still can't reach the server. Check your network and try again.", 'err'); return; }
       const email = document.getElementById('pvAuthEmailInput').value.trim();
       const password = document.getElementById('pvAuthPassword').value;
       const name = document.getElementById('pvAuthName').value.trim();
@@ -17997,6 +18022,8 @@
     }
     async function pvForgotPassword(e) {
       if (e) e.preventDefault();
+      const ready = await pvWaitForSupabase();
+      if (!ready) { pvAuthMsg("Still can't reach the server. Check your network and try again.", 'err'); return; }
       const email = document.getElementById('pvAuthEmailInput').value.trim();
       if (!email) { pvAuthMsg('Type your email first, then tap Forgot password.', 'err'); return; }
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
