@@ -7405,9 +7405,16 @@
       fetchWeather();
       
       if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-        const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-        s.onload = async () => {
+        // Load the Supabase SDK with CDN fallbacks. jsdelivr sometimes
+        // hiccups on specific networks (DNS, VPN, extension-blocked);
+        // falling through to unpkg / esm.sh means a single CDN outage
+        // doesn't lock everyone out of sign-in.
+        const SDK_URLS = [
+          'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+          'https://unpkg.com/@supabase/supabase-js@2',
+          'https://esm.sh/@supabase/supabase-js@2',
+        ];
+        const initSupabase = async () => {
           try {
             const { createClient } = window.supabase;
             pvCaptureInvite();
@@ -7424,11 +7431,19 @@
             renderAll();
           }
         };
-        s.onerror = () => { console.error('Failed to load Supabase'); loadLocal(); renderAll(); };
-        document.head.appendChild(s);
-      } else { 
-        loadLocal(); 
-        renderAll(); 
+        const tryLoad = (i) => {
+          if (i >= SDK_URLS.length) { console.error('All Supabase SDK CDNs failed'); loadLocal(); renderAll(); return; }
+          const s = document.createElement('script');
+          s.src = SDK_URLS[i];
+          s.async = true;
+          s.onload = () => { if (window.supabase?.createClient) initSupabase(); else { console.warn('SDK loaded but missing createClient — trying next CDN'); tryLoad(i + 1); } };
+          s.onerror = () => { console.warn('SDK CDN failed:', SDK_URLS[i], '— trying next'); tryLoad(i + 1); };
+          document.head.appendChild(s);
+        };
+        tryLoad(0);
+      } else {
+        loadLocal();
+        renderAll();
       }
     });
     
