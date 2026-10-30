@@ -1,5 +1,5 @@
 // Padel Villains Service Worker
-const CACHE_VERSION = 'pv-v102';
+const CACHE_VERSION = 'pv-v103';
 const CACHE_NAME = `padel-villains-${CACHE_VERSION}`;
 
 // Core assets to cache for offline use
@@ -10,7 +10,7 @@ const PRECACHE_ASSETS = [
   '/manifest.json',
   '/icon-192x192.png',
   '/icon-512x512.png',
-  '/vendor/supabase-js.js'
+  '/vendor/supabase-2.118.0.js'
 ];
 
 // External CDN assets to cache on first use

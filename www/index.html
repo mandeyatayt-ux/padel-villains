@@ -7408,8 +7408,10 @@
         const s = document.createElement('script');
         // Self-hosted so sign-in doesn't depend on an external CDN
         // (jsdelivr was intermittently unreachable for some villains).
-        // The file lives at /vendor/supabase-js.js and is precached by sw.js.
-        s.src = '/vendor/supabase-js.js';
+        // Versioned filename so an SDK bump invalidates stale copies even
+        // if someone forgets to touch sw.js CACHE_VERSION. sw.js precaches
+        // this exact path on install.
+        s.src = '/vendor/supabase-2.118.0.js';
         s.onload = async () => {
           try {
             const { createClient } = window.supabase;
@@ -17959,16 +17961,37 @@
       document.getElementById('pvAuthPassword').autocomplete = signup ? 'new-password' : 'current-password';
       pvAuthMsg('');
     }
-    // The Supabase JS SDK loads async from the CDN. If the villain taps a
+    // The Supabase JS SDK loads async from /vendor/. If the villain taps a
     // sign-in button before it arrives, wait up to ~8s instead of bombing
-    // instantly with "Not connected yet". A spinner message keeps them
-    // oriented in the meantime.
+    // instantly. A spinner keeps them oriented. If the wait times out we
+    // reload the script tag once — covers the (rare) case where the first
+    // load silently failed and the shell is still running.
+    let _pvSdkRetryInFlight = false;
+    function pvSdkRetry() {
+      if (_pvSdkRetryInFlight || window.supabase?.createClient) return;
+      _pvSdkRetryInFlight = true;
+      const s = document.createElement('script');
+      s.src = '/vendor/supabase-2.118.0.js?retry=' + Date.now();
+      s.onload = () => {
+        _pvSdkRetryInFlight = false;
+        try {
+          if (!supabaseClient && window.supabase?.createClient) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+            pvWireAuth();
+            enableTestModeProxy();
+          }
+        } catch (e) { console.error('SDK retry init error:', e); }
+      };
+      s.onerror = () => { _pvSdkRetryInFlight = false; };
+      document.head.appendChild(s);
+    }
     function pvWaitForSupabase(timeoutMs = 8000) {
       if (supabaseClient) return Promise.resolve(true);
       return new Promise(resolve => {
         const started = Date.now();
         const spinnerStart = Date.now();
         const spin = ['', '.', '..', '...'];
+        let retriedAt = null;
         const spinTimer = setInterval(() => {
           if (supabaseClient) { clearInterval(spinTimer); return; }
           const i = Math.floor((Date.now() - spinnerStart) / 400) % spin.length;
@@ -17976,7 +17999,10 @@
         }, 400);
         const tick = () => {
           if (supabaseClient) { clearInterval(spinTimer); pvAuthMsg(''); resolve(true); return; }
-          if (Date.now() - started >= timeoutMs) { clearInterval(spinTimer); resolve(false); return; }
+          const elapsed = Date.now() - started;
+          // Halfway through, re-attempt the load once.
+          if (!retriedAt && elapsed >= timeoutMs / 2) { retriedAt = Date.now(); pvSdkRetry(); }
+          if (elapsed >= timeoutMs) { clearInterval(spinTimer); resolve(false); return; }
           setTimeout(tick, 100);
         };
         tick();
@@ -17984,7 +18010,7 @@
     }
     async function pvOAuth(provider) {
       const ready = await pvWaitForSupabase();
-      if (!ready) { pvAuthMsg("Still can't reach the server. Check your network and try again.", 'err'); return; }
+      if (!ready) { pvAuthMsg("Couldn't load sign-in. Tap any sign-in button to retry.", 'err'); return; }
       pvAuthMsg('Opening ' + (provider === 'apple' ? 'Apple' : 'Google') + '…');
       try {
         const native = pvIsNativeApp();
@@ -18001,7 +18027,7 @@
     }
     async function pvEmailSubmit() {
       const ready = await pvWaitForSupabase();
-      if (!ready) { pvAuthMsg("Still can't reach the server. Check your network and try again.", 'err'); return; }
+      if (!ready) { pvAuthMsg("Couldn't load sign-in. Tap any sign-in button to retry.", 'err'); return; }
       const email = document.getElementById('pvAuthEmailInput').value.trim();
       const password = document.getElementById('pvAuthPassword').value;
       const name = document.getElementById('pvAuthName').value.trim();
@@ -18026,7 +18052,7 @@
     async function pvForgotPassword(e) {
       if (e) e.preventDefault();
       const ready = await pvWaitForSupabase();
-      if (!ready) { pvAuthMsg("Still can't reach the server. Check your network and try again.", 'err'); return; }
+      if (!ready) { pvAuthMsg("Couldn't load sign-in. Tap any sign-in button to retry.", 'err'); return; }
       const email = document.getElementById('pvAuthEmailInput').value.trim();
       if (!email) { pvAuthMsg('Type your email first, then tap Forgot password.', 'err'); return; }
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
@@ -18285,10 +18311,10 @@
             userAccounts = data;
             localStorage.setItem('pv_userAccounts', JSON.stringify(userAccounts));
           } else if (error) {
-            // RLS or other DB error — fall back to localStorage silently
-            if (error.code === '42501' || error.message?.includes('row-level security')) {
-              console.warn('RLS policy missing on user_accounts — using localStorage. Run RLS fix SQL in Supabase.');
-            } else {
+            // 42501 here is expected when an anon-key call hits an identity-
+            // scoped policy (e.g. before Supabase Auth sign-in). Local cache
+            // keeps the UI working; nothing to warn about.
+            if (error.code !== '42501' && !error.message?.includes('row-level security')) {
               console.log('User accounts sync error:', error.message);
             }
           }
@@ -18330,11 +18356,11 @@
           .upsert(payload, { onConflict: 'id' });
           
         if (error) {
-          // RLS policy violation — common when table has RLS enabled without policies
+          // 42501 means the current session doesn't satisfy the identity-based
+          // RLS policy (e.g. legacy login without a Supabase Auth JWT). Expected
+          // and non-destructive: the row stays in localStorage until the user
+          // links an auth session. Don't recommend disabling RLS.
           if (error.code === '42501' || error.message?.includes('row-level security')) {
-            console.warn('RLS policy missing on user_accounts table. Account saved to localStorage only. Run the RLS fix SQL in Supabase dashboard.');
-            console.warn('SQL: ALTER TABLE user_accounts DISABLE ROW LEVEL SECURITY;');
-            // Don't show toast for RLS — it's a setup issue, not a user error
             return;
           }
           console.error('Database Sync Error:', error.message, error.code);
