@@ -5015,8 +5015,8 @@
             <div class="md-mode-btn-desc">Defend your throne</div>
           </button>
           <button class="md-mode-btn" id="mdModeRandom" onclick="setMatchDayMode('randomiser')">
-            <div class="md-mode-btn-title"><span class="nav-icon" data-icon="smash" style="display:inline-flex;width:16px;height:16px;vertical-align:-3px;margin-right:6px"></span>Randomiser</div>
-            <div class="md-mode-btn-desc">Random pairs, everyone plays</div>
+            <div class="md-mode-btn-title"><span class="nav-icon" data-icon="smash" style="display:inline-flex;width:16px;height:16px;vertical-align:-3px;margin-right:6px"></span>Americano</div>
+            <div class="md-mode-btn-desc">Rotating pairs, everyone plays</div>
           </button>
         </div>
       </div>
@@ -5128,11 +5128,11 @@
           </div>
         </div>
 
-        <div class="card" style="margin-bottom:20px;padding:20px;text-align:center">
-          <div style="font-size:12px;letter-spacing:2px;color:var(--text-muted);font-weight:700;margin-bottom:12px">RECORD RESULT</div>
-          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="kotcRecordWin('kings')" style="padding:12px 24px;border-radius:14px;font-family:'Sublime',sans-serif;letter-spacing:2px">👑 Kings Win</button>
-            <button class="btn" onclick="kotcRecordWin('challenger')" style="padding:12px 24px;border-radius:14px;background:var(--gold);color:var(--brown-dark);font-family:'Sublime',sans-serif;letter-spacing:2px;border:none">⚔️ Challenger Wins</button>
+        <div class="card" style="margin-bottom:20px;padding:20px">
+          <div style="font-size:12px;letter-spacing:2px;color:var(--text-muted);font-weight:700;margin-bottom:12px;text-align:center">RECORD RESULT</div>
+          <div class="md-win-row">
+            <button class="md-win-btn" onclick="kotcRecordWin('kings')" aria-label="Kings won"><span class="md-win-name">👑 Kings</span><span class="md-win-lbl">WON</span></button>
+            <button class="md-win-btn" onclick="kotcRecordWin('challenger')" aria-label="Challenger won"><span class="md-win-name">⚔️ Challenger</span><span class="md-win-lbl">WON</span></button>
           </div>
         </div>
 
@@ -5151,54 +5151,19 @@
         </div>
       </div>
 
-      <!-- RANDOMISER Section -->
+      <!-- AMERICANO (ex-Randomiser) setup — preview + live reuse the shared sections below -->
       <div id="mdRandomiserSection" style="display:none">
         <div class="card" style="margin-bottom:24px">
           <div class="section-header" style="margin-bottom:16px">
             <div>
-              <h3 style="font-size:18px;font-weight:700">🎲 Select Players Present</h3>
-              <p style="font-size:12px;color:var(--text-muted)">Tap players who are here. They'll be randomly paired into teams. Need 4+ (multiples of 4 ideal).</p>
+              <h3 style="font-size:18px;font-weight:700">🎾 Select Players Present</h3>
+              <p style="font-size:12px;color:var(--text-muted)">Tap players who are here. They'll rotate partners each round. Need 4+ (multiples of 4 ideal).</p>
             </div>
-            <span id="mdRandomCount" style="background:#7C3AED;color:white;padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
+            <span id="mdRandomCount" style="background:var(--clay);color:white;padding:4px 14px;border-radius:20px;font-size:14px;font-weight:600">0</span>
           </div>
           <div class="md-americano-players" id="mdRandomPlayers"></div>
-          <button class="md-generate-btn" id="mdRandomGenBtn" onclick="randomiserGenerate()" disabled style="background:linear-gradient(135deg,#7C3AED 0%,#6D28D9 100%)">🎲 Shuffle & Generate Matches</button>
+          <button class="md-generate-btn" id="mdRandomGenBtn" onclick="mdGenerate()" disabled>🎾 Generate Matches</button>
           <button class="btn btn-secondary" onclick="randomiserPlayerIds=[];randomiserRenderPlayers();" style="margin-top:8px;width:100%">Clear Selection</button>
-        </div>
-      </div>
-
-      <!-- Randomiser Preview Section -->
-      <div id="mdRandomPreview" style="display:none">
-        <div class="card" style="margin-bottom:24px">
-          <div class="section-header" style="margin-bottom:16px">
-            <div>
-              <h3 style="font-size:18px;font-weight:700">🎲 Random Matches Preview</h3>
-              <p style="font-size:12px;color:var(--text-muted)" id="mdRandomPreviewSummary">These won't affect team rankings</p>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="randomiserGenerate()"><i class="fas fa-shuffle"></i> Re-shuffle</button>
-          </div>
-          <div id="mdRandomPreviewMatches"></div>
-          <div style="display:flex;gap:12px;margin-top:16px">
-            <button class="btn btn-secondary" onclick="randomiserBackToSetup()" style="flex:1">← Back</button>
-            <button class="btn btn-primary" onclick="randomiserStart()" style="flex:2">✅ Start Matches</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Randomiser Live Section -->
-      <div id="mdRandomLive" style="display:none">
-        <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,#7C3AED 0%,#6D28D9 100%);color:white;border:none;text-align:center;padding:24px;border-radius:20px">
-          <div style="font-size:12px;letter-spacing:3px;opacity:0.8">🎲 RANDOMISER</div>
-          <div style="font-family:'Sublime',sans-serif;font-size:28px;letter-spacing:2px;margin-top:4px" id="randomLiveRound">Round 1</div>
-          <div style="font-size:13px;opacity:0.85;margin-top:4px" id="randomLiveProgress">0 of 0 matches complete</div>
-        </div>
-        <div id="randomLiveMatches" style="margin-bottom:20px"></div>
-        <div class="card" style="padding:20px">
-          <div style="font-size:14px;font-weight:700;letter-spacing:2px;margin-bottom:12px;font-family:'Sublime',sans-serif">📊 PLAYER STATS</div>
-          <div id="randomLiveStats"></div>
-        </div>
-        <div style="margin-top:16px;text-align:center">
-          <button class="btn btn-secondary" onclick="randomiserEnd()">End Randomiser</button>
         </div>
       </div>
 
@@ -6606,19 +6571,9 @@
       return /^(data:image\/|https:\/\/|blob:)/i.test(s) ? esc(s) : '';
     }
     
-    // SHA-256 password hashing using Web Crypto API
-    async function hashPassword(password) {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(password + '_pv_salt_2026');
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-    
-    // Check if a string looks like a SHA-256 hash (64 hex chars)
-    function isHashed(str) {
-      return typeof str === 'string' && /^[a-f0-9]{64}$/.test(str);
-    }
+    // Legacy password hashing moved server-side (pv_legacy_login + friends).
+    // The hash never leaves Postgres — the client just sends the plaintext
+    // password to the RPC over TLS.
     let supabaseClient = null;
     let testMode = false;
     let _supabaseOriginalFrom = null, _supabaseOriginalRpc = null;
@@ -6728,7 +6683,6 @@
         kotcTeamIds = [];
         kotcState = { active: false, kingsId: null, streak: 0, challengerId: null, queue: [], scores: {}, matchLog: [], matchCount: 0 };
         randomiserPlayerIds = [];
-        randomiserState = { active: false, schedule: null, playerStats: {}, currentRound: 1 };
         toast('Test Mode OFF — reloading live data...', 'info');
         // Reload from Supabase to discard test changes
         if (supabaseClient) fetchFromDatabase();
@@ -7490,7 +7444,12 @@
       
       if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        // Self-hosted so sign-in doesn't depend on an external CDN
+        // (jsdelivr was intermittently unreachable for some villains).
+        // Versioned filename so an SDK bump invalidates stale copies even
+        // if someone forgets to touch sw.js CACHE_VERSION. sw.js precaches
+        // this exact path on install.
+        s.src = '/vendor/supabase-2.118.0.js';
         s.onload = async () => {
           try {
             const { createClient } = window.supabase;
@@ -7510,9 +7469,9 @@
         };
         s.onerror = () => { console.error('Failed to load Supabase'); loadLocal(); renderAll(); };
         document.head.appendChild(s);
-      } else { 
-        loadLocal(); 
-        renderAll(); 
+      } else {
+        loadLocal();
+        renderAll();
       }
     });
     
@@ -7925,8 +7884,11 @@
     }
     
     // ===== HELPERS =====
-    const getPlayer = id => players.find(p => p.id === id);
-    const getTeam = id => teams.find(t => t.id === id);
+    // Bigint columns come back from PostgREST as either numbers or strings
+    // depending on whether they were a scalar or an array (`_int8`). Match
+    // by string value so lookups work either way.
+    const getPlayer = id => id == null ? undefined : players.find(p => String(p.id) === String(id));
+    const getTeam   = id => id == null ? undefined : teams.find(t   => String(t.id) === String(id));
     const getTeamPlayers = t => t ? { p1: getPlayer(t.player1_id), p2: getPlayer(t.player2_id) } : { p1: null, p2: null };
     const winRate = (w, l) => (w + l) > 0 ? Math.round((w / (w + l)) * 100) : 0;
     
@@ -8017,6 +7979,21 @@
       let wins = 0, losses = 0, games = 0;
       matches.forEach(m => {
         if (filterDate && m.date !== filterDate) return;
+        // Americano / ad-hoc player-pair matches: no team_id, players live on
+        // team1_players[] / team2_players[], winner is whichever side scored
+        // more in scores[0] (mdInlineFinalize writes [[1,0]] or [[0,1]] for a
+        // tap-the-winner save, or real set scores for score mode).
+        if (m.is_americano || (!m.team1_id && !m.team2_id && (m.team1_players || m.team2_players))) {
+          const onT1 = (m.team1_players || []).some(id => String(id) === String(playerId));
+          const onT2 = (m.team2_players || []).some(id => String(id) === String(playerId));
+          if (!onT1 && !onT2) return;
+          games++;
+          const s1 = m.score1 ?? (m.scores?.[0]?.[0] ?? 0);
+          const s2 = m.score2 ?? (m.scores?.[0]?.[1] ?? 0);
+          const team1Won = s1 > s2;
+          ((onT1 && team1Won) || (onT2 && !team1Won)) ? wins++ : losses++;
+          return;
+        }
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
         const isOnT1 = t1 && (t1.player1_id === playerId || t1.player2_id === playerId);
         const isOnT2 = t2 && (t2.player1_id === playerId || t2.player2_id === playerId);
@@ -8044,14 +8021,42 @@
       const closedDates = new Set(closed.map(m => m.date));
       // Includes each result + line-up, so editing a match invalidates the cache
       const key = `${closed.map(m => m.id).join(',')}|${teams.length}|${players.length}|` +
-        matches.map(m => `${m.id}:${m.winner_id}:${m.team1_id}:${m.team2_id}:${m.date}`).join(',');
+        matches.map(m => `${m.id}:${m.winner_id}:${m.team1_id}:${m.team2_id}:${m.date}:${m.is_americano?1:0}:${m.score1 ?? ''}:${m.score2 ?? ''}`).join(',');
       if (_vrCache && _vrKey === key) return _vrCache;
       const P = new Map(), T = new Map();
       const gp = id => { if (!P.has(id)) P.set(id, { vr: VR_START, games: 0, wins: 0, losses: 0, days: new Set(), history: [] }); return P.get(id); };
       const gt = id => { if (!T.has(id)) T.set(id, { vr: VR_START, games: 0, wins: 0, losses: 0, days: new Set(), history: [] }); return T.get(id); };
-      const pool = matches.filter(m => closedDates.has(m.date) && m.winner_id != null && getTeam(m.team1_id) && getTeam(m.team2_id))
-        .sort((a, b) => (a.date + (a.created_at || '')).localeCompare(b.date + (b.created_at || '')));
+      // Pool keeps BOTH team-based matches (with a resolved winner_id) and
+      // Americano / ad-hoc player-pair matches (no team_id, winner inferred
+      // from the saved score). Both are processed in chronological order.
+      const isAmericanoMatch = m => (m.is_americano || (!m.team1_id && !m.team2_id && (m.team1_players || m.team2_players)));
+      const pool = matches.filter(m => {
+        if (!closedDates.has(m.date)) return false;
+        if (isAmericanoMatch(m)) return (m.team1_players || []).length && (m.team2_players || []).length;
+        return m.winner_id != null && getTeam(m.team1_id) && getTeam(m.team2_id);
+      }).sort((a, b) => (a.date + (a.created_at || '')).localeCompare(b.date + (b.created_at || '')));
       for (const m of pool) {
+        if (isAmericanoMatch(m)) {
+          // Americano: move individual ratings only. The pair is one-off, so
+          // the team ladder stays out of it (same policy as is_temp teams).
+          const p1 = (m.team1_players || []).filter(Boolean);
+          const p2 = (m.team2_players || []).filter(Boolean);
+          const s1 = p1.reduce((a, id) => a + gp(id).vr, 0) / p1.length;
+          const s2 = p2.reduce((a, id) => a + gp(id).vr, 0) / p2.length;
+          const e1 = vrExpected(s1, s2), e2 = 1 - e1;
+          const sc1 = m.score1 ?? (m.scores?.[0]?.[0] ?? 0);
+          const sc2 = m.score2 ?? (m.scores?.[0]?.[1] ?? 0);
+          if (sc1 === sc2) continue; // no winner determined, skip
+          const w1 = sc1 > sc2;
+          for (const [ids, e, won] of [[p1, e1, w1], [p2, e2, !w1]]) {
+            for (const id of ids) {
+              const r = gp(id); const k = r.games < VR_PLACEMENT_GAMES ? VR_K_NEW : VR_K;
+              const d = k * ((won ? 1 : 0) - e);
+              r.vr += d; r.games++; won ? r.wins++ : r.losses++; r.days.add(m.date); r.history.push({ date: m.date, d });
+            }
+          }
+          continue;
+        }
         const t1 = getTeam(m.team1_id), t2 = getTeam(m.team2_id);
         const p1 = [t1.player1_id, t1.player2_id].filter(Boolean), p2 = [t2.player1_id, t2.player2_id].filter(Boolean);
         const s1 = p1.length ? p1.reduce((a, id) => a + gp(id).vr, 0) / p1.length : VR_START;
@@ -11357,8 +11362,6 @@
       document.getElementById('mdKOTCSection').style.display = mode === 'kotc' ? '' : 'none';
       document.getElementById('mdKOTCLiveSection').style.display = 'none';
       document.getElementById('mdRandomiserSection').style.display = mode === 'randomiser' ? '' : 'none';
-      document.getElementById('mdRandomPreview').style.display = 'none';
-      document.getElementById('mdRandomLive').style.display = 'none';
       document.getElementById('mdPreviewSection').style.display = 'none';
       document.getElementById('mdLiveSection').style.display = 'none';
       mdUpdateEstimate();
@@ -12038,24 +12041,85 @@
     }
 
     // --- AMERICANO SCHEDULING ---
-    function mdGenerateAmericano(playerIds, rounds) {
+    // Builds a schedule in the SAME shape the shared engine (mdAutoFill /
+    // renderMDLive / mdInlineFinalize) already understands for `is_americano`
+    // matches: { team1:[p1,p2], team2:[p3,p4], round, court, sid }.
+    //
+    // Each round we fit floor(N/4) matches across the configured courts; the
+    // leftover players sit out. We rotate the sit-outs each round and we try
+    // (up to 24 candidate shuffles) to minimise partner-repeats so people
+    // actually partner with new villains over the night — real Americano.
+    function mdGenerateAmericano(playerIds, courts) {
       const schedule = [];
-      const shuffled = [...playerIds];
-      const usable = shuffled.length - (shuffled.length % 4); // only use multiples of 4
-      for (let r = 0; r < rounds; r++) {
-        for (let i = usable - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      const N = playerIds.length;
+      if (N < 4) return schedule;
+
+      const perRound = Math.min(courts, Math.floor(N / 4));
+      if (perRound < 1) return schedule;
+
+      // Decide how many rounds so every player plays about the same amount.
+      // 4*perRound of the N players play each round; aim for ~N/2 games each.
+      const roundsNeeded = Math.max(4, Math.min(8, Math.ceil(N / perRound)));
+
+      // Partner-count history: how many times has (a,b) been partners?
+      const pairKey = (a, b) => a < b ? `${a}|${b}` : `${b}|${a}`;
+      const partnered = new Map();
+      const bump = (a, b) => partnered.set(pairKey(a, b), (partnered.get(pairKey(a, b)) || 0) + 1);
+      const partnerCost = (a, b) => (partnered.get(pairKey(a, b)) || 0);
+
+      // Round-robin sit-outs so no one gets stuck watching.
+      const gamesPlayed = new Map(playerIds.map(p => [p, 0]));
+      const idle = (p) => (Math.max(...gamesPlayed.values()) - gamesPlayed.get(p));
+
+      for (let r = 0; r < roundsNeeded; r++) {
+        // Pick the 4*perRound players who have played least so far; break ties randomly.
+        const sortedByNeed = [...playerIds].sort((a, b) =>
+          (gamesPlayed.get(a) - gamesPlayed.get(b)) || (Math.random() - 0.5)
+        );
+        const playing = sortedByNeed.slice(0, perRound * 4);
+
+        // Try a handful of random court assignments; keep the one with the
+        // lowest total partner-repeat cost. 24 tries is enough for 8–16 players.
+        let bestCourts = null, bestScore = Infinity;
+        for (let attempt = 0; attempt < 24; attempt++) {
+          const shuffled = [...playing];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          const courtsThisRound = [];
+          let score = 0;
+          for (let c = 0; c < perRound; c++) {
+            const quad = shuffled.slice(c * 4, c * 4 + 4);
+            // Within a quad, the pairing that repeats partners the least.
+            const pairings = [
+              { t1: [quad[0], quad[1]], t2: [quad[2], quad[3]] },
+              { t1: [quad[0], quad[2]], t2: [quad[1], quad[3]] },
+              { t1: [quad[0], quad[3]], t2: [quad[1], quad[2]] },
+            ];
+            const best = pairings
+              .map(p => ({ ...p, cost: partnerCost(p.t1[0], p.t1[1]) + partnerCost(p.t2[0], p.t2[1]) }))
+              .sort((a, b) => a.cost - b.cost)[0];
+            courtsThisRound.push(best);
+            score += best.cost;
+          }
+          if (score < bestScore) { bestScore = score; bestCourts = courtsThisRound; if (score === 0) break; }
         }
-        for (let i = 0; i < usable; i += 4) {
+
+        bestCourts.forEach((match, idx) => {
+          bump(match.t1[0], match.t1[1]);
+          bump(match.t2[0], match.t2[1]);
+          match.t1.concat(match.t2).forEach(p => gamesPlayed.set(p, gamesPlayed.get(p) + 1));
           schedule.push({
-            team1: [shuffled[i], shuffled[i+1]],
-            team2: [shuffled[i+2], shuffled[i+3]],
+            team1: match.t1,
+            team2: match.t2,
             round: r + 1,
-            court: Math.floor(i / 4) + 1
+            court: idx + 1,
+            sid: `s_am_${Date.now()}_${r}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
           });
-        }
+        });
       }
+
       return schedule;
     }
 
@@ -12066,6 +12130,12 @@
         const existingPairs = mdCompletedGames.map(m => [m.t1, m.t2]);
         const pairs = mdGenerateRoundRobin(mdActiveTeamIds, existingPairs);
         mdGeneratedSchedule = mdScheduleMatches(pairs, mdCourts, mdActiveTeamIds);
+      } else if (mdMode === 'randomiser') {
+        // Americano: rotate random partners each round, feeding the SAME shared
+        // engine Round Robin uses (mdAutoFill / renderMDLive / mdInlineFinalize).
+        if (randomiserPlayerIds.length < 4) { toast('Need at least 4 players', 'error'); return; }
+        mdGeneratedSchedule = mdGenerateAmericano(randomiserPlayerIds, mdCourts);
+        if (!mdGeneratedSchedule.length) { toast('Could not generate — check player count & courts', 'error'); return; }
       } else {
         return; // Draft mode uses draftConfirmAndGenerate()
       }
@@ -12715,7 +12785,7 @@
       // Gather all cockpit (live-control) sections so we can toggle them as one
       const cockpitSectionIds = [
         'mdRoundRobinSection','mdDraftSection','mdDraftReveal','mdKOTCSection','mdKOTCLiveSection',
-        'mdRandomiserSection','mdRandomPreview','mdRandomLive','mdPreviewSection','mdLiveSection'
+        'mdRandomiserSection','mdPreviewSection','mdLiveSection'
       ];
       const heroEl = document.querySelector('#matchday .md-hero');
       const configEl = document.querySelector('#matchday .md-config');
@@ -12753,8 +12823,6 @@
         document.getElementById('mdKOTCSection').style.display = 'none';
         document.getElementById('mdKOTCLiveSection').style.display = 'none';
         document.getElementById('mdRandomiserSection').style.display = 'none';
-        document.getElementById('mdRandomPreview').style.display = 'none';
-        document.getElementById('mdRandomLive').style.display = 'none';
       } else if (mdMode === 'draft') {
         document.getElementById('mdRoundRobinSection').style.display = 'none';
         document.getElementById('mdDraftSection').style.display = mdDraftState.drawnTeams ? 'none' : (showSetup ? '' : 'none');
@@ -12762,8 +12830,6 @@
         document.getElementById('mdKOTCSection').style.display = 'none';
         document.getElementById('mdKOTCLiveSection').style.display = 'none';
         document.getElementById('mdRandomiserSection').style.display = 'none';
-        document.getElementById('mdRandomPreview').style.display = 'none';
-        document.getElementById('mdRandomLive').style.display = 'none';
         if (!mdDraftState.drawnTeams) draftRenderPlayers();
       } else if (mdMode === 'kotc') {
         document.getElementById('mdRoundRobinSection').style.display = 'none';
@@ -12772,38 +12838,21 @@
         document.getElementById('mdKOTCSection').style.display = kotcState.active ? 'none' : (showSetup ? '' : 'none');
         document.getElementById('mdKOTCLiveSection').style.display = kotcState.active ? '' : 'none';
         document.getElementById('mdRandomiserSection').style.display = 'none';
-        document.getElementById('mdRandomPreview').style.display = 'none';
-        document.getElementById('mdRandomLive').style.display = 'none';
         document.getElementById('mdPreviewSection').style.display = 'none';
         document.getElementById('mdLiveSection').style.display = 'none';
         if (!kotcState.active) { kotcRenderTeamGrid(); } else { kotcRenderLive(); }
         return;
       } else if (mdMode === 'randomiser') {
+        // Americano now rides the same setup → preview → live pipeline as
+        // Round Robin. Only the setup card is Americano-specific; preview and
+        // live reuse #mdPreviewSection and #mdLiveSection.
         document.getElementById('mdRoundRobinSection').style.display = 'none';
         document.getElementById('mdDraftSection').style.display = 'none';
         document.getElementById('mdDraftReveal').style.display = 'none';
         document.getElementById('mdKOTCSection').style.display = 'none';
         document.getElementById('mdKOTCLiveSection').style.display = 'none';
-        document.getElementById('mdPreviewSection').style.display = 'none';
-        document.getElementById('mdLiveSection').style.display = 'none';
-        // Randomiser has its own sections
-        if (randomiserState.active) {
-          document.getElementById('mdRandomiserSection').style.display = 'none';
-          document.getElementById('mdRandomPreview').style.display = 'none';
-          document.getElementById('mdRandomLive').style.display = '';
-          randomiserRenderLive();
-        } else if (randomiserState.schedule) {
-          document.getElementById('mdRandomiserSection').style.display = 'none';
-          document.getElementById('mdRandomPreview').style.display = '';
-          document.getElementById('mdRandomLive').style.display = 'none';
-          randomiserRenderPreview();
-        } else {
-          document.getElementById('mdRandomiserSection').style.display = '';
-          document.getElementById('mdRandomPreview').style.display = 'none';
-          document.getElementById('mdRandomLive').style.display = 'none';
-          randomiserRenderPlayers();
-        }
-        return;
+        document.getElementById('mdRandomiserSection').style.display = showSetup ? '' : 'none';
+        if (showSetup) randomiserRenderPlayers();
       }
       document.getElementById('mdPreviewSection').style.display = showPreview ? '' : 'none';
       document.getElementById('mdLiveSection').style.display = showLive ? '' : 'none';
@@ -12861,10 +12910,14 @@
                 </div>`;
               }
             });
-            // Show sitting out teams
+            // Show sitting out
             if (mdMode === 'roundrobin' || mdMode === 'draft') {
               const playingIds = new Set(roundMatches.flatMap(m => [m.t1, m.t2]));
               const sitting = mdActiveTeamIds.filter(id => !playingIds.has(id)).map(id => getTeam(id)?.name || '?');
+              if (sitting.length > 0) html += `<div class="md-sitting">☕ Sitting out: ${sitting.map(esc).join(', ')}</div>`;
+            } else if (mdMode === 'randomiser') {
+              const playingPIds = new Set(roundMatches.flatMap(m => [...(m.team1||[]), ...(m.team2||[])]));
+              const sitting = randomiserPlayerIds.filter(id => !playingPIds.has(id)).map(id => getPlayer(id)?.name || '?');
               if (sitting.length > 0) html += `<div class="md-sitting">☕ Sitting out: ${sitting.map(esc).join(', ')}</div>`;
             }
           }
@@ -13137,20 +13190,22 @@
     function mdTopUpQueue() {
       if (mdStep !== 'live' || !mdGeneratedSchedule) return;
       if (mdRoundRobinPending()) return; // round-robin games first; rematches only once they're done
+      // See the note in mdAutoFillOnce: IDs come back as strings from
+      // bigint[] columns, so compare as strings throughout.
       const busyTeams = new Set(), busyPlayers = new Set();
       mdOnCourtMatches().forEach(m => {
-        if (m.team1_id) busyTeams.add(m.team1_id);
-        if (m.team2_id) busyTeams.add(m.team2_id);
-        (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(p));
+        if (m.team1_id) busyTeams.add(String(m.team1_id));
+        if (m.team2_id) busyTeams.add(String(m.team2_id));
+        (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(String(p)));
       });
       const queuedTeams = new Set(), queuedPlayers = new Set();
       let guard = 0;
       while (guard++ < 12) {
         const pending = mdGetPendingQueue();
-        pending.forEach(m => { if (m.t1) queuedTeams.add(m.t1); if (m.t2) queuedTeams.add(m.t2); (m.team1 || []).concat(m.team2 || []).forEach(p => queuedPlayers.add(p)); });
+        pending.forEach(m => { if (m.t1) queuedTeams.add(String(m.t1)); if (m.t2) queuedTeams.add(String(m.t2)); (m.team1 || []).concat(m.team2 || []).forEach(p => queuedPlayers.add(String(p))); });
         const playable = pending.filter(m => mdMode === 'randomiser'
-          ? !(m.team1 || []).concat(m.team2 || []).some(p => busyPlayers.has(p))
-          : !((m.t1 && busyTeams.has(m.t1)) || (m.t2 && busyTeams.has(m.t2)))).length;
+          ? !(m.team1 || []).concat(m.team2 || []).some(p => busyPlayers.has(String(p)))
+          : !((m.t1 && busyTeams.has(String(m.t1))) || (m.t2 && busyTeams.has(String(m.t2))))).length;
         if (playable >= Math.max(1, mdOpenCourtCount())) break;
         // only mint from teams/players not busy AND not already waiting in the queue
         const exclTeams = new Set([...busyTeams, ...queuedTeams]);
@@ -13211,13 +13266,16 @@
       const completedSids = new Set(mdCompletedGames.map(m => m.sid));
 
       // Who is on court right now?
+      // Normalise IDs to strings — team1_players/team2_players come back from
+      // PostgREST as string[] (bigint array), while the local schedule holds
+      // numbers; mixing them in a Set silently double-books players.
       const busyTeams = new Set();
       const busyPlayers = new Set();
       const onCourtKeys = new Set();
       mdOnCourtMatches().forEach(m => {
-        if (m.team1_id) busyTeams.add(m.team1_id);
-        if (m.team2_id) busyTeams.add(m.team2_id);
-        (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(p));
+        if (m.team1_id) busyTeams.add(String(m.team1_id));
+        if (m.team2_id) busyTeams.add(String(m.team2_id));
+        (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(String(p)));
         onCourtKeys.add(mdOngoingMatchKey(m));
       });
 
@@ -13225,10 +13283,10 @@
         if (completedSids.has(s.sid)) return false;
         if (onCourtKeys.has(mdSchedMatchKey(s))) return false;
         if (mdMode === 'randomiser') {
-          return !(s.team1 || []).concat(s.team2 || []).some(p => busyPlayers.has(p));
+          return !(s.team1 || []).concat(s.team2 || []).some(p => busyPlayers.has(String(p)));
         }
-        if (s.t1 && busyTeams.has(s.t1)) return false;
-        if (s.t2 && busyTeams.has(s.t2)) return false;
+        if (s.t1 && busyTeams.has(String(s.t1))) return false;
+        if (s.t2 && busyTeams.has(String(s.t2))) return false;
         return true;
       };
 
@@ -13266,9 +13324,9 @@
         ongoingMatches.unshift(result.data || matchData);
 
         // Update busy sets so the next court can't grab overlapping teams
-        if (next.t1) busyTeams.add(next.t1);
-        if (next.t2) busyTeams.add(next.t2);
-        (next.team1 || []).concat(next.team2 || []).forEach(p => busyPlayers.add(p));
+        if (next.t1) busyTeams.add(String(next.t1));
+        if (next.t2) busyTeams.add(String(next.t2));
+        (next.team1 || []).concat(next.team2 || []).forEach(p => busyPlayers.add(String(p)));
         onCourtKeys.add(mdSchedMatchKey(next));
       }
       saveLocal();
@@ -13511,26 +13569,40 @@
       const queueMatches = mdGetPendingQueue();
       const match = typeof ref === 'string' ? queueMatches.find(m => m.sid === ref) : queueMatches[ref];
       if (!match) { toast('That match is no longer in the queue', 'error'); renderMatchDay(); return; }
-      // Check if either team is already on court
-      const teamsOnCourt = new Set();
-      mdOnCourtMatches().forEach(m => {
-        if (m.team1_id) teamsOnCourt.add(m.team1_id);
-        if (m.team2_id) teamsOnCourt.add(m.team2_id);
-      });
-      if ((match.t1 && teamsOnCourt.has(match.t1)) || (match.t2 && teamsOnCourt.has(match.t2))) {
-        toast('One of these teams is already on court', 'error');
-        return;
+
+      // Americano fixtures carry player arrays (team1/team2); team-based
+      // fixtures carry team ids (t1/t2). Treat them separately throughout.
+      const isAmericano = mdMode === 'randomiser' || (!match.t1 && !match.t2 && (match.team1 || match.team2));
+
+      // Already-on-court check: teams for team modes, players for Americano
+      if (isAmericano) {
+        const busyPlayers = new Set();
+        mdOnCourtMatches().forEach(m => (m.team1_players || []).concat(m.team2_players || []).forEach(p => busyPlayers.add(String(p))));
+        const matchPlayers = (match.team1 || []).concat(match.team2 || []).map(String);
+        if (matchPlayers.some(p => busyPlayers.has(p))) {
+          toast('One of these players is already on court', 'error');
+          return;
+        }
+      } else {
+        const teamsOnCourt = new Set();
+        mdOnCourtMatches().forEach(m => {
+          if (m.team1_id) teamsOnCourt.add(String(m.team1_id));
+          if (m.team2_id) teamsOnCourt.add(String(m.team2_id));
+        });
+        if ((match.t1 && teamsOnCourt.has(String(match.t1))) || (match.t2 && teamsOnCourt.has(String(match.t2)))) {
+          toast('One of these teams is already on court', 'error');
+          return;
+        }
       }
+
       // Find a free court — prefer un-held; manual send may use a held court as last resort
       let freeCourt = null, heldFallback = null;
       if (targetCourt) {
-        const tl = `Court ${targetCourt}`;
         const tBusy = !!mdCourtMatch(targetCourt);
         if (tBusy) { toast(`Court ${targetCourt} is busy`, 'error'); return; }
         freeCourt = targetCourt; // an explicit drop may use a held court
       }
       for (let c = 1; c <= mdCourts && !freeCourt; c++) {
-        const label = `Court ${c}`;
         const busy = !!mdCourtMatch(c);
         if (busy) continue;
         if (mdHeldCourts.has(c)) { if (!heldFallback) heldFallback = c; continue; }
@@ -13538,23 +13610,38 @@
       }
       if (!freeCourt) freeCourt = heldFallback;
       if (!freeCourt) { toast('All courts are busy', 'error'); return; }
-      const matchData = {
-        id: generateNumericId(), match_uid: mdMatchUid({ round: match.round, t1: match.t1, t2: match.t2 }),
+
+      const base = {
+        id: generateNumericId(),
+        match_uid: isAmericano
+          ? mdMatchUid({ round: match.round, p1: match.team1, p2: match.team2 })
+          : mdMatchUid({ round: match.round, t1: match.t1, t2: match.t2 }),
         matchday_id: mdActiveId(),
         date: activeMatchday?.date || getLocalDateStr(),
         location: activeMatchday?.venue || '',
         court: 'Court ' + freeCourt,
-        team1_id: match.t1, team2_id: match.t2,
-        status: 'ongoing', started_at: new Date().toISOString(),
-        md_round: match.round, device_id: PV_DEVICE_ID
+        status: 'ongoing',
+        started_at: new Date().toISOString(),
+        md_round: match.round,
+        device_id: PV_DEVICE_ID,
       };
+      const matchData = isAmericano
+        ? { ...base, team1_players: match.team1, team2_players: match.team2, is_americano: true }
+        : { ...base, team1_id: match.t1, team2_id: match.t2 };
+
       const result = await queueMatchToSupabase(matchData);
       ongoingMatches.unshift(result.data || matchData);
       saveLocal();
       renderMDLive();
       try { renderMdInfoHub(); } catch (e) {}
       renderOngoingMatches();
-      toast(`${getTeam(match.t1)?.name} vs ${getTeam(match.t2)?.name} → Court ${freeCourt}`, 'success');
+      const n1 = isAmericano
+        ? (match.team1 || []).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ')
+        : (getTeam(match.t1)?.name || '?');
+      const n2 = isAmericano
+        ? (match.team2 || []).map(id => getPlayer(id)?.name?.split(' ')[0] || '?').join(' & ')
+        : (getTeam(match.t2)?.name || '?');
+      toast(`${n1} vs ${n2} → Court ${freeCourt}`, 'success');
     }
 
     // Drag a queued match from the Up Next rail onto an idle court
@@ -14218,21 +14305,17 @@
       toast('👑 King of the Court cleared', 'success');
     }
 
-    // ===== RANDOMISER =====
+    // ===== AMERICANO (internal mode key stays 'randomiser' for saved-session compat) =====
+    // Setup state only — the schedule, scoring, and standings all flow through
+    // the shared Match Day engine (mdGenerate / mdConfirmSchedule / mdAutoFill /
+    // renderMDLive / mdInlineFinalize). Nothing Americano-specific below the
+    // player picker.
     let randomiserPlayerIds = [];
-    let randomiserState = {
-      active: false,
-      schedule: null,   // [{round, team1:[p1,p2], team2:[p3,p4], court, result:null}]
-      playerStats: {},  // {playerId: {wins, losses, points}}
-      currentRound: 1
-    };
 
     function randomiserTogglePlayer(id) {
       const idx = randomiserPlayerIds.indexOf(id);
       if (idx >= 0) randomiserPlayerIds.splice(idx, 1);
       else randomiserPlayerIds.push(id);
-      document.getElementById('mdRandomCount').textContent = randomiserPlayerIds.length;
-      document.getElementById('mdRandomGenBtn').disabled = randomiserPlayerIds.length < 4;
       randomiserRenderPlayers();
     }
 
@@ -14241,232 +14324,16 @@
       if (!grid) return;
       grid.innerHTML = activePlayers().map(p => {
         const active = randomiserPlayerIds.includes(p.id);
-        return `<button class="md-americano-btn ${active ? 'active' : ''}" onclick="randomiserTogglePlayer(${p.id})" style="${active ? 'border-color:#7C3AED;background:rgba(124,58,237,0.06)' : ''}">
+        return `<button class="md-americano-btn ${active ? 'active' : ''}" onclick="randomiserTogglePlayer(${p.id})">
           ${av(p, 'xs')}
           <span class="md-americano-name">${esc(p.name)}</span>
           ${active ? '<span class="md-americano-check"><i class="fas fa-check"></i></span>' : ''}
         </button>`;
       }).join('');
-      document.getElementById('mdRandomCount').textContent = randomiserPlayerIds.length;
-      document.getElementById('mdRandomGenBtn').disabled = randomiserPlayerIds.length < 4;
-    }
-
-    function randomiserGenerate() {
-      const pIds = [...randomiserPlayerIds];
-      if (pIds.length < 4) { toast('Need at least 4 players', 'error'); return; }
-      
-      // Shuffle players
-      for (let i = pIds.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pIds[i], pIds[j]] = [pIds[j], pIds[i]];
-      }
-      
-      const usable = pIds.slice(0, pIds.length - (pIds.length % 4));
-      const sitting = pIds.slice(usable.length);
-      
-      // Generate round-robin rotation: each player partners with different people
-      const schedule = [];
-      const numPlayers = usable.length;
-      const numRounds = Math.min(numPlayers - 1, 6); // Cap at 6 rounds
-      
-      // Use circle method for balanced rotation
-      const fixed = usable.slice();
-      for (let r = 0; r < numRounds; r++) {
-        // Shuffle for this round to create random pairings
-        const roundPlayers = [...fixed];
-        for (let i = roundPlayers.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [roundPlayers[i], roundPlayers[j]] = [roundPlayers[j], roundPlayers[i]];
-        }
-        
-        let court = 1;
-        for (let i = 0; i < roundPlayers.length; i += 4) {
-          if (i + 3 < roundPlayers.length) {
-            schedule.push({
-              round: r + 1,
-              team1: [roundPlayers[i], roundPlayers[i+1]],
-              team2: [roundPlayers[i+2], roundPlayers[i+3]],
-              court: court++,
-              result: null,
-              id: Date.now() + Math.random()
-            });
-          }
-        }
-        
-        // If sitting out players, rotate them in
-        if (sitting.length > 0 && r < numRounds - 1) {
-          const rotateOut = fixed.splice(0, sitting.length);
-          fixed.push(...sitting);
-          sitting.length = 0;
-          sitting.push(...rotateOut);
-        }
-      }
-      
-      randomiserState.schedule = schedule;
-      randomiserState.active = false;
-      document.getElementById('mdRandomiserSection').style.display = 'none';
-      document.getElementById('mdRandomPreview').style.display = '';
-      randomiserRenderPreview();
-    }
-
-    function randomiserRenderPreview() {
-      const schedule = randomiserState.schedule;
-      if (!schedule) return;
-      const rounds = [...new Set(schedule.map(m => m.round))].sort((a,b) => a-b);
-      document.getElementById('mdRandomPreviewSummary').textContent = `${schedule.length} matches in ${rounds.length} rounds • Won't affect team rankings`;
-      
-      document.getElementById('mdRandomPreviewMatches').innerHTML = rounds.map(r => {
-        const roundMatches = schedule.filter(m => m.round === r);
-        return `<div style="margin-bottom:16px">
-          <div style="font-size:12px;font-weight:700;letter-spacing:2px;color:var(--text-muted);margin-bottom:8px">ROUND ${r}</div>
-          ${roundMatches.map(m => {
-            const p = (ids) => ids.map(id => getPlayer(id)?.name || '?').join(' & ');
-            return `<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--cream);border-radius:12px;margin-bottom:6px">
-              <span style="font-size:11px;color:var(--text-muted)">Court ${esc(m.court)}</span>
-              <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px">
-                <span style="font-weight:600;font-size:13px">${p(m.team1)}</span>
-                <span style="color:var(--clay);font-family:'SaltyAges',serif;font-size:14px">vs</span>
-                <span style="font-weight:600;font-size:13px">${p(m.team2)}</span>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>`;
-      }).join('');
-    }
-
-    function randomiserBackToSetup() {
-      randomiserState.schedule = null;
-      document.getElementById('mdRandomPreview').style.display = 'none';
-      document.getElementById('mdRandomiserSection').style.display = '';
-      randomiserRenderPlayers();
-    }
-
-    function randomiserStart() {
-      randomiserState.active = true;
-      randomiserState.currentRound = 1;
-      randomiserState.playerStats = {};
-      randomiserPlayerIds.forEach(id => {
-        randomiserState.playerStats[id] = { wins: 0, losses: 0, points: 0 };
-      });
-      document.getElementById('mdRandomPreview').style.display = 'none';
-      document.getElementById('mdRandomLive').style.display = '';
-      randomiserRenderLive();
-      toast('🎲 Randomiser started!', 'success');
-    }
-
-    function randomiserRecordResult(matchId, team1Wins) {
-      const m = randomiserState.schedule.find(s => s.id === matchId);
-      if (!m || m.result !== null) return;
-      m.result = team1Wins ? 'team1' : 'team2';
-      
-      const winners = team1Wins ? m.team1 : m.team2;
-      const losers = team1Wins ? m.team2 : m.team1;
-      winners.forEach(id => { randomiserState.playerStats[id].wins++; randomiserState.playerStats[id].points += 2; });
-      losers.forEach(id => { randomiserState.playerStats[id].losses++; });
-      
-      // Check if round is complete, auto-advance
-      const roundMatches = randomiserState.schedule.filter(s => s.round === m.round);
-      if (roundMatches.every(s => s.result !== null)) {
-        const maxRound = Math.max(...randomiserState.schedule.map(s => s.round));
-        if (m.round < maxRound) {
-          randomiserState.currentRound = m.round + 1;
-        }
-      }
-      
-      // Save as match record (game_mode: randomiser, no winner_id to skip team rankings)
-      const matchRecord = {
-        id: generateNumericId(),
-        match_uid: mdMatchUid({ round: m.round, p1: m.team1, p2: m.team2 }),
-        matchday_id: mdActiveId(),
-        date: activeMatchday?.date || getLocalDateStr(),
-        location: activeMatchday?.venue || '',
-        court: 'Random Court ' + m.court,
-        team1_players: m.team1,
-        team2_players: m.team2,
-        scores: [[team1Wins ? 1 : 0, team1Wins ? 0 : 1]],
-        finalized_at: new Date().toISOString(),
-        game_mode: 'randomiser',
-        device_id: PV_DEVICE_ID,
-        created_at: new Date().toISOString()
-      };
-      saveMatchToSupabase(matchRecord).then(result => {
-        if (result.closed) return; // server refused: day closed — don't show it as saved
-        matches.unshift(result.data || matchRecord);
-        saveLocal();
-      });
-      
-      randomiserRenderLive();
-    }
-
-    function randomiserRenderLive() {
-      const { schedule, currentRound, playerStats } = randomiserState;
-      if (!schedule) return;
-      
-      const totalMatches = schedule.length;
-      const completedMatches = schedule.filter(m => m.result !== null).length;
-      const maxRound = Math.max(...schedule.map(s => s.round));
-      
-      document.getElementById('randomLiveRound').textContent = `Round ${currentRound} of ${maxRound}`;
-      document.getElementById('randomLiveProgress').textContent = `${completedMatches} of ${totalMatches} matches complete`;
-      
-      // Render current round matches
-      const roundMatches = schedule.filter(m => m.round === currentRound);
-      document.getElementById('randomLiveMatches').innerHTML = roundMatches.map(m => {
-        const pNames = (ids) => ids.map(id => esc(getPlayer(id)?.name || '?')).join(' & ');
-        const pAvatars = (ids) => ids.map(id => av(getPlayer(id), 'xs')).join('');
-        const isDone = m.result !== null;
-        
-        return `<div class="card" style="margin-bottom:12px;padding:16px;${isDone ? 'opacity:0.7' : ''}">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${isDone ? '0' : '12'}px">
-            <div style="display:flex;align-items:center;gap:8px">
-              ${pAvatars(m.team1)}
-              <span style="font-weight:600;font-size:13px">${pNames(m.team1)}</span>
-            </div>
-            <span style="color:var(--clay);font-family:'SaltyAges',serif;font-size:14px">${isDone ? (m.result === 'team1' ? '✓ WON' : 'LOST') : 'vs'}</span>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-weight:600;font-size:13px">${pNames(m.team2)}</span>
-              ${pAvatars(m.team2)}
-            </div>
-          </div>
-          ${!isDone ? `<div style="display:flex;gap:8px">
-            <button class="btn btn-primary btn-sm" onclick="randomiserRecordResult(${m.id},true)" style="flex:1;border-radius:10px">${pNames(m.team1)} Win</button>
-            <button class="btn btn-sm" onclick="randomiserRecordResult(${m.id},false)" style="flex:1;border-radius:10px;background:var(--gold);color:var(--brown-dark);border:none">${pNames(m.team2)} Win</button>
-          </div>` : ''}
-        </div>`;
-      }).join('');
-      
-      // Round nav
-      if (maxRound > 1) {
-        document.getElementById('randomLiveMatches').innerHTML += `<div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
-          ${Array.from({length: maxRound}, (_, i) => i + 1).map(r => 
-            `<button class="btn btn-sm ${r === currentRound ? 'btn-primary' : 'btn-secondary'}" onclick="randomiserState.currentRound=${r};randomiserRenderLive()" style="min-width:40px;border-radius:10px">R${r}</button>`
-          ).join('')}
-        </div>`;
-      }
-      
-      // Player stats
-      const sorted = Object.entries(playerStats).sort((a,b) => b[1].points - a[1].points);
-      document.getElementById('randomLiveStats').innerHTML = sorted.map(([id, s], i) => {
-        const p = getPlayer(parseInt(id));
-        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
-        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${i < sorted.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
-          <span style="font-family:'Sublime',sans-serif;font-size:16px;width:28px;text-align:center">${medal}</span>
-          ${av(p, 'xs')}
-          <div style="flex:1"><span style="font-weight:600;font-size:13px">${esc(p?.name || '?')}</span></div>
-          <span style="font-size:12px;color:var(--text-muted)">${s.wins}W ${s.losses}L</span>
-          <span style="font-family:'DirtyWeather',sans-serif;font-size:18px;color:var(--clay)">${s.points}</span>
-        </div>`;
-      }).join('');
-    }
-
-    function randomiserEnd() {
-      if (randomiserState.active && !confirm('End Randomiser session?')) return;
-      randomiserState = { active: false, schedule: null, playerStats: {}, currentRound: 1 };
-      randomiserPlayerIds = [];
-      document.getElementById('mdRandomLive').style.display = 'none';
-      document.getElementById('mdRandomiserSection').style.display = '';
-      randomiserRenderPlayers();
-      toast('🎲 Randomiser cleared', 'success');
+      const countEl = document.getElementById('mdRandomCount');
+      if (countEl) countEl.textContent = randomiserPlayerIds.length;
+      const btn = document.getElementById('mdRandomGenBtn');
+      if (btn) btn.disabled = randomiserPlayerIds.length < 4;
     }
 
     function viewMatchday(id) {
@@ -14538,7 +14405,7 @@
       // Update court dropdown
       const venue = getCurrentVenue();
       if (venue) {
-        document.getElementById('matchCourt').innerHTML = venue.courts.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('matchCourt').innerHTML = venue.courts.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       }
     }
     
@@ -15845,7 +15712,7 @@
       const venue = getCurrentVenue();
       const courts = venue?.courts || ['Court 1'];
       const courtSelect = document.getElementById('liveScoreCourt');
-      courtSelect.innerHTML = courts.map(c => `<option value="${c}">${c}</option>`).join('');
+      courtSelect.innerHTML = courts.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       
       const activeTeams = teams.filter(t => t.active !== false);
       const teamOptions = '<option value="">Select team</option>' + activeTeams.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
@@ -18117,8 +17984,56 @@
       document.getElementById('pvAuthPassword').autocomplete = signup ? 'new-password' : 'current-password';
       pvAuthMsg('');
     }
+    // The Supabase JS SDK loads async from /vendor/. If the villain taps a
+    // sign-in button before it arrives, wait up to ~8s instead of bombing
+    // instantly. A spinner keeps them oriented. If the wait times out we
+    // reload the script tag once — covers the (rare) case where the first
+    // load silently failed and the shell is still running.
+    let _pvSdkRetryInFlight = false;
+    function pvSdkRetry() {
+      if (_pvSdkRetryInFlight || window.supabase?.createClient) return;
+      _pvSdkRetryInFlight = true;
+      const s = document.createElement('script');
+      s.src = '/vendor/supabase-2.118.0.js?retry=' + Date.now();
+      s.onload = () => {
+        _pvSdkRetryInFlight = false;
+        try {
+          if (!supabaseClient && window.supabase?.createClient) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+            pvWireAuth();
+            enableTestModeProxy();
+          }
+        } catch (e) { console.error('SDK retry init error:', e); }
+      };
+      s.onerror = () => { _pvSdkRetryInFlight = false; };
+      document.head.appendChild(s);
+    }
+    function pvWaitForSupabase(timeoutMs = 8000) {
+      if (supabaseClient) return Promise.resolve(true);
+      return new Promise(resolve => {
+        const started = Date.now();
+        const spinnerStart = Date.now();
+        const spin = ['', '.', '..', '...'];
+        let retriedAt = null;
+        const spinTimer = setInterval(() => {
+          if (supabaseClient) { clearInterval(spinTimer); return; }
+          const i = Math.floor((Date.now() - spinnerStart) / 400) % spin.length;
+          pvAuthMsg('Connecting' + spin[i]);
+        }, 400);
+        const tick = () => {
+          if (supabaseClient) { clearInterval(spinTimer); pvAuthMsg(''); resolve(true); return; }
+          const elapsed = Date.now() - started;
+          // Halfway through, re-attempt the load once.
+          if (!retriedAt && elapsed >= timeoutMs / 2) { retriedAt = Date.now(); pvSdkRetry(); }
+          if (elapsed >= timeoutMs) { clearInterval(spinTimer); resolve(false); return; }
+          setTimeout(tick, 100);
+        };
+        tick();
+      });
+    }
     async function pvOAuth(provider) {
-      if (!supabaseClient) { pvAuthMsg('Not connected yet, try again in a second.', 'err'); return; }
+      const ready = await pvWaitForSupabase();
+      if (!ready) { pvAuthMsg("Couldn't load sign-in. Tap any sign-in button to retry.", 'err'); return; }
       pvAuthMsg('Opening ' + (provider === 'apple' ? 'Apple' : 'Google') + '…');
       try {
         const native = pvIsNativeApp();
@@ -18134,7 +18049,8 @@
       } catch (err) { console.error('oauth', err); pvAuthMsg(err.message || 'Sign-in failed', 'err'); }
     }
     async function pvEmailSubmit() {
-      if (!supabaseClient) return;
+      const ready = await pvWaitForSupabase();
+      if (!ready) { pvAuthMsg("Couldn't load sign-in. Tap any sign-in button to retry.", 'err'); return; }
       const email = document.getElementById('pvAuthEmailInput').value.trim();
       const password = document.getElementById('pvAuthPassword').value;
       const name = document.getElementById('pvAuthName').value.trim();
@@ -18158,6 +18074,8 @@
     }
     async function pvForgotPassword(e) {
       if (e) e.preventDefault();
+      const ready = await pvWaitForSupabase();
+      if (!ready) { pvAuthMsg("Couldn't load sign-in. Tap any sign-in button to retry.", 'err'); return; }
       const email = document.getElementById('pvAuthEmailInput').value.trim();
       if (!email) { pvAuthMsg('Type your email first, then tap Forgot password.', 'err'); return; }
       const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
@@ -18271,67 +18189,51 @@
       e.preventDefault();
       const usernameInput = document.getElementById('loginUsername').value.trim();
       const password = document.getElementById('loginPassword').value;
-      
+
       if (!usernameInput) {
         showLoginError('Please enter your name');
         return;
       }
-      
-      // Find player by name (case-insensitive)
+
+      // Find the player locally just to show a nicer welcome toast.
+      // Authentication itself happens server-side via the RPC below —
+      // the password hash never leaves the server.
       const matchedPlayer = players.find(p => p.name.toLowerCase() === usernameInput.toLowerCase());
-      
-      if (!matchedPlayer) {
-        showLoginError('Player not found. Check your spelling.');
+
+      if (!supabaseClient) {
+        showLoginError('Not connected. Please try again.');
         return;
       }
-      
-      // Reload accounts from DB to get latest
+
+      // Server-side verification: pv_legacy_login hashes & compares in Postgres
+      // and returns the account row minus the hash. A wrong name or password
+      // yields an empty result — indistinguishable to the caller.
+      const resolvedName = matchedPlayer?.name || usernameInput;
+      const loginName = (matchedPlayer?.name || usernameInput).toLowerCase().replace(/\s+/g, '');
+      const { data, error } = await supabaseClient.rpc('pv_legacy_login', {
+        p_username: loginName,
+        p_password: password,
+      });
+
+      if (error) {
+        console.error('legacy login', error);
+        showLoginError('Sign-in failed. Please try again.');
+        return;
+      }
+
+      const account = Array.isArray(data) ? data[0] : data;
+      if (!account) {
+        showLoginError('Invalid name or password');
+        return;
+      }
+
+      // Refresh the local accounts cache so the rest of the app sees the row.
       await loadUserAccounts();
-      
-      // Check if account exists for this player
-      const existingAccount = userAccounts.find(acc => Number(acc.player_id) === Number(matchedPlayer.id));
-      
-      if (existingAccount) {
-        // Get stored password — no default fallback
-        const storedPassword = existingAccount.settings?.password;
-        if (!storedPassword) {
-          showLoginError('No password set for this account. Contact an admin to reset it.');
-          return;
-        }
-        const inputHash = await hashPassword(password);
-        
-        // Compare: check against hash first, then plaintext for migration
-        let passwordMatch = false;
-        if (isHashed(storedPassword)) {
-          // Already hashed — compare hashes
-          passwordMatch = (inputHash === storedPassword);
-        } else {
-          // Still plaintext — compare directly, then auto-migrate
-          passwordMatch = (password === storedPassword);
-          if (passwordMatch) {
-            // Auto-migrate to hashed password
-            if (!existingAccount.settings) existingAccount.settings = {};
-            existingAccount.settings.password = inputHash;
-            await saveUserAccounts();
-            await saveUserAccountToDb(existingAccount);
-            console.log('Password auto-migrated to hash for', existingAccount.username);
-          }
-        }
-        
-        if (!passwordMatch) {
-          showLoginError('Invalid password');
-          return;
-        }
-        // Login to existing account
-        currentUser = existingAccount;
-        localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
-        showMainApp();
-        updateUserUI();
-        toast(`Welcome back, ${matchedPlayer.name}!`, 'success');
-      } else {
-        showLoginError('No account found. Contact an admin.');
-        return;
-      }
+      currentUser = userAccounts.find(a => Number(a.id) === Number(account.id)) || account;
+      localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
+      showMainApp();
+      updateUserUI();
+      toast(`Welcome back, ${resolvedName}!`, 'success');
     }
     
     function showLoginError(msg) {
@@ -18432,10 +18334,10 @@
             userAccounts = data;
             localStorage.setItem('pv_userAccounts', JSON.stringify(userAccounts));
           } else if (error) {
-            // RLS or other DB error — fall back to localStorage silently
-            if (error.code === '42501' || error.message?.includes('row-level security')) {
-              console.warn('RLS policy missing on user_accounts — using localStorage. Run RLS fix SQL in Supabase.');
-            } else {
+            // 42501 here is expected when an anon-key call hits an identity-
+            // scoped policy (e.g. before Supabase Auth sign-in). Local cache
+            // keeps the UI working; nothing to warn about.
+            if (error.code !== '42501' && !error.message?.includes('row-level security')) {
               console.log('User accounts sync error:', error.message);
             }
           }
@@ -18477,11 +18379,11 @@
           .upsert(payload, { onConflict: 'id' });
           
         if (error) {
-          // RLS policy violation — common when table has RLS enabled without policies
+          // 42501 means the current session doesn't satisfy the identity-based
+          // RLS policy (e.g. legacy login without a Supabase Auth JWT). Expected
+          // and non-destructive: the row stays in localStorage until the user
+          // links an auth session. Don't recommend disabling RLS.
           if (error.code === '42501' || error.message?.includes('row-level security')) {
-            console.warn('RLS policy missing on user_accounts table. Account saved to localStorage only. Run the RLS fix SQL in Supabase dashboard.');
-            console.warn('SQL: ALTER TABLE user_accounts DISABLE ROW LEVEL SECURITY;');
-            // Don't show toast for RLS — it's a setup issue, not a user error
             return;
           }
           console.error('Database Sync Error:', error.message, error.code);
@@ -18583,18 +18485,24 @@
       if (!acc) return;
       const player = players.find(p => Number(p.id) === Number(acc.player_id));
       const name = player?.name || 'this user';
-      
-      const newPassword = prompt(`Set new password for ${name}:\n(min 4 characters)`);
+
+      const newPassword = prompt(`Set new password for ${name}:\n(min 8 characters)`);
       if (newPassword === null) return;
-      if (!newPassword.trim() || newPassword.trim().length < 6) {
-        toast('Password must be at least 6 characters', 'error');
+      if (!newPassword.trim() || newPassword.trim().length < 8) {
+        toast('Password must be at least 8 characters', 'error');
         return;
       }
-      
-      if (!acc.settings) acc.settings = {};
-      acc.settings.password = await hashPassword(newPassword.trim());
-      await saveUserAccounts();
-      await saveUserAccountToDb(acc);
+      if (!supabaseClient) { toast('Not connected', 'error'); return; }
+
+      const { error } = await supabaseClient.rpc('pv_admin_set_password', {
+        p_user_id: Number(acc.id),
+        p_new_password: newPassword.trim(),
+      });
+      if (error) {
+        const msg = /admin required/i.test(error.message) ? 'Only an admin signed in with email can reset passwords.' : (error.message || 'Could not update password');
+        toast(msg, 'error');
+        return;
+      }
       toast(`Password updated for ${name}`, 'success');
     }
     
@@ -18617,40 +18525,53 @@
       const playerId = parseInt(document.getElementById('createAccountPlayer').value);
       const isAdmin = document.getElementById('createAccountAdmin').checked;
       const passwordRaw = document.getElementById('createAccountPassword').value.trim() || genTempPassword();
-      
+
       if (!playerId) {
         toast('Please select a player', 'error');
         return;
       }
-      
-      if (passwordRaw.length < 6) {
-        toast('Password must be at least 6 characters', 'error');
+
+      if (passwordRaw.length < 8) {
+        toast('Password must be at least 8 characters', 'error');
         return;
       }
-      
+
       // Check if account already exists
       if (userAccounts.some(acc => Number(acc.player_id) === playerId)) {
         toast('Account already exists for this player', 'error');
         return;
       }
-      
-      const hashedPw = await hashPassword(passwordRaw);
+
       const player = players.find(p => Number(p.id) === playerId);
       const safeId = Math.floor(Date.now() / 1000) % 2000000000 + Math.floor(Math.random() * 1000);
+      // Password is NEVER sent in settings — the DB trigger would strip it
+      // anyway and we don't want it crossing the wire in cleartext/hash form.
       const newAccount = {
         id: safeId,
         player_id: playerId,
         username: player.name.toLowerCase().replace(/\s+/g, ''),
         is_admin: isAdmin,
         theme: 'default',
-        settings: { password: hashedPw },
+        settings: {},
         created_at: new Date().toISOString()
       };
-      
+
       userAccounts.push(newAccount);
       await saveUserAccounts();
       await saveUserAccountToDb(newAccount);
-      
+
+      // Set the password server-side (requires admin via Supabase Auth).
+      if (supabaseClient) {
+        const { error } = await supabaseClient.rpc('pv_admin_set_password', {
+          p_user_id: safeId,
+          p_new_password: passwordRaw,
+        });
+        if (error) {
+          const msg = /admin required/i.test(error.message) ? 'Account created but could not set the password — only an admin signed in with email can set passwords.' : (error.message || 'Could not set the password');
+          toast(msg, 'error');
+        }
+      }
+
       closeModal('createAccount');
       renderUserAccounts();
       toast(`Account created for ${player.name}`, 'success');
@@ -18689,11 +18610,11 @@
       }
       
       // Validate new password if provided
-      if (newPassword && newPassword.length < 6) {
-        toast('Password must be at least 6 characters', 'error');
+      if (newPassword && newPassword.length < 8) {
+        toast('Password must be at least 8 characters', 'error');
         return;
       }
-      
+
       // Prevent removing your own admin rights if you're the last admin
       if (!isAdmin && acc.is_admin) {
         const adminCount = userAccounts.filter(a => a.is_admin).length;
@@ -18702,17 +18623,24 @@
           return;
         }
       }
-      
+
       acc.is_admin = isAdmin;
-      
-      // Update password if provided
-      if (newPassword) {
-        if (!acc.settings) acc.settings = {};
-        acc.settings.password = await hashPassword(newPassword);
-      }
-      
+
       await saveUserAccounts();
       await saveUserAccountToDb(acc);
+
+      // Password updates go through the admin RPC — the hash never crosses
+      // the wire and the DB trigger blocks direct writes to password_hash.
+      if (newPassword && supabaseClient) {
+        const { error: pwErr } = await supabaseClient.rpc('pv_admin_set_password', {
+          p_user_id: Number(accountId),
+          p_new_password: newPassword,
+        });
+        if (pwErr) {
+          const msg = /admin required/i.test(pwErr.message) ? 'Only an admin signed in with email can set passwords.' : (pwErr.message || 'Could not update password');
+          toast(msg, 'error');
+        }
+      }
       
       // If editing current user, update currentUser
       if (currentUser && currentUser.id === accountId) {
@@ -18824,63 +18752,50 @@
     // Self-service password change from My Profile
     async function changeMyPassword() {
       if (!currentUser) return;
-      
+
       const currentPw = document.getElementById('myCurrentPassword').value;
       const newPw = document.getElementById('myNewPassword').value.trim();
       const confirmPw = document.getElementById('myConfirmPassword').value.trim();
-      
+
       if (!currentPw || !newPw || !confirmPw) {
         toast('Please fill in all password fields', 'error');
         return;
       }
-      
-      if (newPw.length < 6) {
-        toast('New password must be at least 6 characters', 'error');
+
+      if (newPw.length < 8) {
+        toast('New password must be at least 8 characters', 'error');
         return;
       }
-      
+
       if (newPw !== confirmPw) {
         toast('New passwords do not match', 'error');
         return;
       }
-      
-      // Verify current password
-      const storedPassword = currentUser.settings?.password;
-      if (!storedPassword) { toast('No password set for this account. Contact an admin.', 'error'); return; }
-      const currentHash = await hashPassword(currentPw);
-      let verified = false;
-      
-      if (isHashed(storedPassword)) {
-        verified = (currentHash === storedPassword);
-      } else {
-        verified = (currentPw === storedPassword);
-      }
-      
-      if (!verified) {
-        toast('Current password is incorrect', 'error');
+
+      if (!supabaseClient || !currentUser.username) {
+        toast('Not connected', 'error');
         return;
       }
-      
-      // Set new hashed password
-      if (!currentUser.settings) currentUser.settings = {};
-      currentUser.settings.password = await hashPassword(newPw);
-      
-      // Update in accounts array
-      const acc = userAccounts.find(a => a.id === currentUser.id);
-      if (acc) {
-        if (!acc.settings) acc.settings = {};
-        acc.settings.password = currentUser.settings.password;
+
+      // Verification and update happen server-side. The hash never leaves
+      // the browser twice: we send the plaintext over HTTPS to the RPC,
+      // Postgres hashes & compares, then stores the new hash. The RPC
+      // raises 'Current password incorrect' on mismatch.
+      const { error } = await supabaseClient.rpc('pv_legacy_change_password', {
+        p_username: currentUser.username,
+        p_old_password: currentPw,
+        p_new_password: newPw,
+      });
+      if (error) {
+        toast(error.message || 'Could not update password', 'error');
+        return;
       }
-      
-      localStorage.setItem('pv_currentUser', JSON.stringify(currentUser));
-      await saveUserAccounts();
-      await saveUserAccountToDb(acc || currentUser);
-      
+
       // Clear fields
       document.getElementById('myCurrentPassword').value = '';
       document.getElementById('myNewPassword').value = '';
       document.getElementById('myConfirmPassword').value = '';
-      
+
       toast('Password changed successfully!', 'success');
     }
     
