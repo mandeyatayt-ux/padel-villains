@@ -17,10 +17,7 @@ const PRECACHE_ASSETS = [
 const CDN_DOMAINS = [
   'fonts.googleapis.com',
   'fonts.gstatic.com',
-  'cdnjs.cloudflare.com',
-  'cdn.jsdelivr.net',
-  'unpkg.com',
-  'esm.sh'
+  'cdnjs.cloudflare.com'
 ];
 
 // Install: precache core assets

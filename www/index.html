@@ -16,7 +16,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://hihujmoapelzuvcrdhfh.supabase.co">
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
   <!-- Load fonts with display swap for faster text rendering -->
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Anton&family=Manrope:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -6565,6 +6564,21 @@
       if (s === null || s === undefined) return '';
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
+    // Match-day/event times and match scores are printed into the page in many
+    // places. The database rejects anything that is not a time or a list of
+    // numbers, but copies cached on a phone are not re-checked, so clean them
+    // every time they are loaded.
+    const PV_TIME_RE = /^\d{1,2}:\d{2}(:\d{2})?$/;
+    function pvCleanTime(t) { return t == null ? t : (typeof t === 'string' && PV_TIME_RE.test(t) ? t : ''); }
+    function pvCleanScores(sc) { return Array.isArray(sc) ? sc.filter(Array.isArray).map(set => set.map(v => Number(v) || 0)) : []; }
+    function pvCleanMatches(rows) { return (Array.isArray(rows) ? rows : []).filter(m => m && typeof m === 'object').map(m => ({ ...m, scores: pvCleanScores(m.scores) })); }
+    function pvCleanTimed(rows) {
+      return (Array.isArray(rows) ? rows : []).filter(r => r && typeof r === 'object').map(r => {
+        const o = { ...r };
+        ['start_time', 'end_time', 'startTime', 'endTime'].forEach(k => { if (k in o) o[k] = pvCleanTime(o[k]); });
+        return o;
+      });
+    }
     // Image URL for src="": only data:image, https and blob URLs, escaped for the attribute.
     function safeImg(u) {
       const s = String(u || '').trim();
@@ -7589,6 +7603,21 @@
       }
     }
     
+    // Phone and email are readable only after a Google/Apple/email sign-in, and
+    // the password hash never is. Asking for '*' therefore fails for everyone
+    // on accounts and for name-and-password sessions on players, which left
+    // those sessions with an empty app. Ask for the columns the session may read.
+    const PV_PLAYER_COLS_PUBLIC = 'id,name,photo,wins,losses,games_played,active,available,nickname,bio,position,circuit_id,profile_id,claimed_at,is_guest,created_at,updated_at';
+    const PV_PLAYER_COLS_ALL = PV_PLAYER_COLS_PUBLIC + ',phone,email';
+    const PV_ACCOUNT_COLS = 'id,player_id,profile_id,username,is_admin,theme,settings,last_login,created_at,updated_at,circuit_id';
+    async function pvSelectPlayers() {
+      const r = await supabaseClient.from('players').select(PV_PLAYER_COLS_ALL).order('created_at');
+      if (r.error && (r.error.code === '42501' || /permission denied/i.test(r.error.message || ''))) {
+        return supabaseClient.from('players').select(PV_PLAYER_COLS_PUBLIC).order('created_at');
+      }
+      return r;
+    }
+
     async function fetchFromDatabase() {
       try {
         // Push any pending writes to Supabase first
@@ -7596,7 +7625,7 @@
         
         // Fetch core tables in parallel
         const results = await Promise.all([
-          supabaseClient.from('players').select('*').order('created_at'),
+          pvSelectPlayers(),
           supabaseClient.from('teams').select('*').order('created_at'),
           supabaseClient.from('matches').select('*').is('deleted_at', null).order('date', { ascending: false }).limit(500),
           supabaseClient.from('venues').select('*').order('name')
@@ -7680,10 +7709,10 @@
     function applyData(data) {
       players = mergeAdditive(data.players, players);
       teams = mergeAdditive(data.teams, teams);
-      matches = mergeMatches(data.matches, matches);
+      matches = mergeMatches(pvCleanMatches(data.matches), matches);
       venues = data.venues?.length ? data.venues : defaultVenues;
       ongoingMatches = data.ongoing_matches || [];
-      matchdays = data.matchdays || [];
+      matchdays = pvCleanTimed(data.matchdays);
       determineActiveMatchday();
       
       // Sync photo cache: save new photos, restore stripped ones
@@ -7756,7 +7785,7 @@
         
         // Fetch all tables in parallel
         const results = await Promise.all([
-          supabaseClient.from('players').select('*').order('created_at'),
+          pvSelectPlayers(),
           supabaseClient.from('teams').select('*').order('created_at'),
           supabaseClient.from('matches').select('*').is('deleted_at', null).order('date', { ascending: false }).limit(500),
           supabaseClient.from('venues').select('*').order('name'),
@@ -7826,10 +7855,10 @@
       try {
         players = JSON.parse(localStorage.getItem('pv_players') || '[]');
         teams = JSON.parse(localStorage.getItem('pv_teams') || '[]');
-        matches = JSON.parse(localStorage.getItem('pv_matches') || '[]');
+        matches = pvCleanMatches(JSON.parse(localStorage.getItem('pv_matches') || '[]'));
         venues = JSON.parse(localStorage.getItem('pv_venues') || JSON.stringify(defaultVenues));
         ongoingMatches = JSON.parse(localStorage.getItem('pv_ongoing') || '[]');
-        matchdays = JSON.parse(localStorage.getItem('pv_matchdays') || '[]');
+        matchdays = pvCleanTimed(JSON.parse(localStorage.getItem('pv_matchdays') || '[]'));
         determineActiveMatchday();
         mdRestoreSession();
         
@@ -11186,9 +11215,9 @@
           // days are untouched. Local-only rows survive only while queued.
           const inDay = x => activeMatchday ? matchBelongsTo(x, activeMatchday) : x.date === today;
           const others = matches.filter(x => !inDay(x));
-          matches = [...others, ...mergeMatches(m.data, matches.filter(inDay))];
+          matches = [...others, ...mergeMatches(pvCleanMatches(m.data), matches.filter(inDay))];
         }
-        if (!md.error && md.data) { matchdays = md.data; determineActiveMatchday(); }
+        if (!md.error && md.data) { matchdays = pvCleanTimed(md.data); determineActiveMatchday(); }
         localStorage.setItem('pv_ongoing', JSON.stringify(ongoingMatches));
         if (!mdScoreEntryInProgress()) {
           renderMatchDay();
@@ -16543,11 +16572,11 @@
           const data = JSON.parse(cached);
           players = mergeAdditive(data.players, players);
           teams = mergeAdditive(data.teams, teams);
-          matches = mergeAdditive(data.matches, matches);
+          matches = mergeAdditive(pvCleanMatches(data.matches), matches);
           venues = data.venues?.length ? data.venues : defaultVenues;
           ongoingMatches = data.ongoingMatches || [];
-          matchdays = data.matchdays || [];
-          events = data.events || [];
+          matchdays = pvCleanTimed(data.matchdays);
+          events = pvCleanTimed(data.events);
           return true;
         }
       } catch (e) {
@@ -16558,7 +16587,7 @@
     
     // ===== EVENT CALENDAR =====
     function loadEvents() {
-      events = JSON.parse(localStorage.getItem('pv_events') || '[]');
+      events = pvCleanTimed(JSON.parse(localStorage.getItem('pv_events') || '[]'));
     }
     
     function saveEvents() {
@@ -16616,8 +16645,8 @@
             title: e.title,
             date: e.date,
             venue: e.venue,
-            startTime: e.start_time,
-            endTime: e.end_time,
+            startTime: pvCleanTime(e.start_time),
+            endTime: pvCleanTime(e.end_time),
             description: e.description,
             createdAt: e.created_at
           }));
@@ -17999,9 +18028,15 @@
         _pvSdkRetryInFlight = false;
         try {
           if (!supabaseClient && window.supabase?.createClient) {
+            pvCaptureInvite();
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
             pvWireAuth();
             enableTestModeProxy();
+            // Same start-up as the first load, or sign-in lands in an empty app.
+            Promise.resolve(fetchData()).then(() => {
+              mdRealtimeStart();
+              pvDataRealtimeStart(); setTimeout(pvPresenceStart, 1500);
+            }).catch(err => console.error('SDK retry data load:', err));
           }
         } catch (e) { console.error('SDK retry init error:', e); }
       };
@@ -18090,17 +18125,27 @@
         await pvApplyPendingInvite();
         await loadUserAccounts();
         let acc = userAccounts.find(a => a.profile_id === uid);
-        if (!acc) {
-          // Linking: a legacy account asked to attach this login
-          const linkId = localStorage.getItem('pv_link_account_id');
-          const legacy = linkId ? userAccounts.find(a => String(a.id) === String(linkId)) : null;
-          if (legacy && !legacy.profile_id) {
-            legacy.profile_id = uid;
-            await saveUserAccountToDb(legacy);
-            await saveUserAccounts();
-            acc = legacy;
-            localStorage.removeItem('pv_link_account_id');
-            setTimeout(() => toast('Sign-in linked to your account', 'success'), 600);
+        if (!acc && localStorage.getItem('pv_link_account_id')) {
+          // Linking: a legacy account asked to attach this login. The server
+          // checks the one-time token issued when the legacy password was verified.
+          const linkToken = localStorage.getItem('pv_link_token');
+          localStorage.removeItem('pv_link_account_id');
+          localStorage.removeItem('pv_link_token');
+          const { data: lr, error: le } = linkToken
+            ? await supabaseClient.rpc('pv_redeem_link_token', { p_token: linkToken })
+            : { data: null, error: null };
+          if (!le && lr?.ok) {
+            await loadUserAccounts();
+            acc = userAccounts.find(a => a.profile_id === uid) || null;
+            if (acc) setTimeout(() => toast('Sign-in linked to your account', 'success'), 600);
+          } else {
+            // Do not create a second, empty account for this login: undo the
+            // sign-in and keep the player on their name-and-password session.
+            try { await supabaseClient.auth.signOut(); } catch (e) {}
+            const msg = (lr && lr.error) || 'Could not link your account. Sign in with your name and password again, then link.';
+            setTimeout(() => toast(msg, 'error'), 600);
+            if (currentUser) { showMainApp(); updateUserUI(); } else { showLoginScreen(); }
+            return;
           }
         }
         if (!acc) {
@@ -18123,6 +18168,10 @@
     }
     function pvLinkAccount(provider) {
       if (!currentUser) return;
+      if (!localStorage.getItem('pv_link_token')) {
+        toast('Sign out, sign in again with your name and password, then tap link', 'info');
+        return;
+      }
       localStorage.setItem('pv_link_account_id', String(currentUser.id));
       if (provider === 'email') { showLoginScreen(); pvAuthMode('signup'); toast('Create your email login — it will link to this account', 'info'); return; }
       pvOAuth(provider);
@@ -18226,6 +18275,13 @@
         showLoginError('Invalid name or password');
         return;
       }
+      // One-time token proving this device knew the password; it lets the
+      // player link Google/Apple/email to this account later (pvLinkAccount).
+      try {
+        if (account.link_token) localStorage.setItem('pv_link_token', account.link_token);
+        else localStorage.removeItem('pv_link_token');
+        delete account.link_token;
+      } catch (e) {}
 
       // Refresh the local accounts cache so the rest of the app sees the row.
       await loadUserAccounts();
@@ -18250,6 +18306,7 @@
       currentUser = null;
       localStorage.removeItem('pv_currentUser');
       localStorage.removeItem('pv_link_account_id');
+      localStorage.removeItem('pv_link_token');
       document.body.classList.remove('is-admin');
       try { if (supabaseClient?.auth) await supabaseClient.auth.signOut(); } catch (e) {}
       showLoginScreen();
@@ -18327,7 +18384,7 @@
         try {
           const { data, error } = await supabaseClient
             .from('user_accounts')
-            .select('*')
+            .select(PV_ACCOUNT_COLS)
             .order('created_at');
           
           if (data && !error) {
